@@ -179,15 +179,32 @@ Stated plainly rather than described as if it were finished:
 
 **AGPL-3.0-only.** See [LICENSE](LICENSE).
 
-In plain terms: anyone may use, modify and redistribute this, including commercially. If you
-modify it **and run it as a service other people can reach**, you have to publish your modified
-source. That is the difference between the AGPL and the GPL, and it is the point — it keeps a
-hosting company from taking this closed.
+In plain terms: anyone may use, modify and redistribute this, including commercially. If
+you modify it **and run it as a service other people can reach**, you have to publish your
+modified source. That is the difference between the AGPL and the GPL, and it is the point —
+it keeps a hosting company from taking this closed.
 
-An optional **Brand pack** exists for people who would rather buy their own logo, favicon and
-sender address than build it. It is not required to run Pharos, and nothing is gated behind it.
+If that obligation does not work for your organisation, there is a
+[commercial licence](COMMERCIAL-LICENSE.md) that lifts it. Buying one does not take Pharos
+away from anyone: every release stays published under the AGPL.
 
----
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md), which includes the
+short contributor licence agreement that makes the dual licence possible.
+
+### Paid, and entirely optional
+
+| | |
+|---|---|
+| **Brand pack** | One-time. Your logo, favicon and sender address; the "Powered by Pharos" credit removed. |
+| **Supported** | Yearly. Signed one-click updates from the admin panel, and support beyond the public issue tracker. |
+| **Commercial licence** | Yearly. The AGPL publication requirement lifted for one organisation. |
+
+None of it is required to run Pharos, and nothing is gated behind it. Every feature is in
+the free version. What you are paying for is convenience, support, and not having to
+publish your own changes.
+
+Licences are verified locally with an Ed25519 signature. Pharos never phones home to ask
+whether you are allowed to run it.
 
 ## Support the work
 

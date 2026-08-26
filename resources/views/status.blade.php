@@ -104,7 +104,8 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 .auto{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
 .foot{display:flex;gap:18px;flex-wrap:wrap;margin-top:44px;padding-top:20px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-3)}
 .foot a{text-decoration:none}
-.foot .cr{margin-left:auto}
+.foot .cr{margin-left:auto;text-decoration:none;color:inherit}
+.foot .cr:hover{color:var(--accent);text-decoration:underline}
 </style>
 </head>
 <body>
@@ -257,7 +258,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 
   <footer class="foot">
     @if ($modules['page.show_api_link'])<a href="{{ url('/api/v1/components') }}">API</a>@endif
-    @unless ($branding->creditHidden())<span class="cr">Powered by Pharos</span>@endunless
+    @unless ($branding->creditHidden())<a class="cr" href="https://pharos.solutionmax.net" rel="noopener">Powered by Pharos</a>@endunless
   </footer>
 </div>
 </body>

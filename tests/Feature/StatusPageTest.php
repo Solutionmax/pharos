@@ -141,4 +141,18 @@ class StatusPageTest extends TestCase
 
         $this->get('/')->assertDontSee('Powered by Pharos');
     }
+
+    /**
+     * The credit is the only thing the free version asks for, so it has to be a
+     * link — a plain <span> would be worth nothing and would break silently.
+     */
+    public function test_the_footer_credit_links_back(): void
+    {
+        $this->makeComponent();
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('href="https://pharos.solutionmax.net"', escape: false)
+            ->assertSee('Powered by Pharos');
+    }
 }
