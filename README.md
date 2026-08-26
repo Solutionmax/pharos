@@ -1,155 +1,204 @@
+<p align="center">
+  <img src="docs/img/banner.png" alt="Pharos — your status page is green. Your server is not." width="100%">
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img alt="Licence: AGPL-3.0" src="https://img.shields.io/badge/licence-AGPL--3.0-0079d2"></a>
+  <img alt="PHP 8.3+" src="https://img.shields.io/badge/PHP-8.3%2B-777bb4">
+  <img alt="Laravel 12 LTS" src="https://img.shields.io/badge/Laravel-12%20LTS-ff2d20">
+  <img alt="186 tests" src="https://img.shields.io/badge/tests-186%20passing-12b76a">
+  <img alt="Runs on shared hosting" src="https://img.shields.io/badge/runs%20on-shared%20hosting%20%C2%B7%20Docker-475467">
+</p>
+
 # Pharos
 
-An open-source status page that watches your services itself, and passes status
-downstream to the people who resell them.
+**A self-hosted status page that runs its own checks.**
 
-Built because Cachet 2.x is unmaintained, Cachet 3.x is no longer open source,
-and neither of them can tell you that a server is down without a human pressing
-a button.
+Every status page you know waits for a human to notice. Pharos polls HTTP endpoints and TCP
+ports, listens for heartbeats from jobs it cannot see from outside, and sets component status
+without anyone pressing a button. A failing check opens an incident and posts the first update;
+a recovered check closes it and posts the closing update.
 
-## What it does that Cachet does not
+It runs on PHP 8.3 with SQLite — which means the shared cPanel account you already pay for,
+not a VPS.
 
-- **Checks its own components.** HTTP, TCP and heartbeat checks set component
-  status without anyone typing anything.
-- **Opens and closes incidents by itself.** A failing check opens an incident;
-  a recovered check closes it and posts the closing update.
-- **Heartbeat checks.** Your backup cron calls in; silence is the alarm. For
-  things you cannot see from the outside.
-- **Uptime that means something.** Daily roll-ups give a 90-day bar and a real
-  percentage. Days without data are grey, not green.
-- **One incident, many components.** A hypervisor failure affects more than one
-  server; Cachet 2.x allows exactly one.
-- **Impact levels.** Minor, major, critical — separate from status.
-- **Templates with variables.** `{{server}}` and `{{started_at}}` instead of
-  retyping the same sentence.
+---
 
-## Modular by default
+## Why it exists
 
-Every section of the public page is a checkbox in Settings: the overall banner,
-the uptime bar, the services list, per-component bars, scheduled maintenance,
-incident history, empty days, the subscribe button, the API link. Switch them
-off and the page follows. A bare component list, an announcements-only page or
-a single uptime figure are all configurations, not forks.
+- **Cachet 2.x has had no release since 2021.** Nothing checks anything: a component turns red
+  because a person made it red, so it is usually still green while the site is down.
+- **Cachet 3.x is no longer open source.** Its licence forbids removing its notices and forbids
+  distributing it as a standalone product — which rules it out for anyone reselling hosting.
+- **One incident, one component.** A hypervisor failure that takes down four customer sites gets
+  logged four times, or once while ignoring three of them.
 
-## Admin
+Pharos speaks the Cachet 2.x API on purpose, so scripts written against Cachet keep working.
 
-Session auth with a rate-limited login. Components with their check
-configuration, incidents across several components at once, search and
-filtering, users, API tokens, an outgoing webhook, branding, and light/dark
-with the visitor's own choice remembered.
+---
 
-## Compatibility with Cachet 2.x
+## What it looks like
 
-Existing scripts do not need changing:
+<img src="docs/img/status-page.webp" alt="The public status page: overall headline, a 90-day uptime bar, services grouped into rows, and incidents listed per day." width="100%">
 
-- `/api/v1/components` returns the same envelope, with the same status integers.
-- `X-Cachet-Token` is accepted alongside `Authorization: Bearer`.
-- `POST /api/v1/components/{id}` works as well as `PUT`.
+<em>The public page. Every section on it is a switch in Settings.</em>
 
-## Requirements
+<img src="docs/img/admin-components.webp" alt="The components screen with tiles showing what is down right now, average uptime, and how many components are checked automatically." width="100%">
 
-PHP 8.3+, and either SQLite or MySQL. It runs on shared cPanel hosting as well
-as in Docker; the only difference is how the scheduler is triggered.
+<em>Components. The tiles answer “what is wrong right now” before the table does — including how
+many components still rely on someone noticing.</em>
+
+<img src="docs/img/admin-settings.webp" alt="The settings screen with section toggles on the left and a live preview of the public status page on the right." width="100%">
+
+<em>Settings. Tick a section off and it disappears from the preview beside it — the real page,
+rendered from values you have not saved yet.</em>
+
+---
 
 ## Install
 
+### Shared hosting (cPanel)
+
+Requires PHP 8.3 or later with the usual Laravel extensions, and either SQLite or MySQL.
+No daemon, no worker queue, no root.
+
 ```bash
+# 1. upload or clone into a directory outside public_html
+git clone https://github.com/solutionmax/pharos.git ~/pharos
+cd ~/pharos
+
+# 2. dependencies
 composer install --no-dev --optimize-autoloader
-cp .env.example .env && php artisan key:generate
+
+# 3. configuration
+cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite
 php artisan migrate --force
-php artisan pharos:token "n8n"      # shown once
+
+# 4. your first administrator
+php artisan pharos:user you@example.com
+
+# 5. point the document root at ~/pharos/public
 ```
 
-Point the web server at `public/`.
+Then add **one** cron entry. This is the entire scheduler:
+
+```
+* * * * * cd ~/pharos && php artisan schedule:run
+```
+
+In cPanel's cron form the first five stars go in the schedule fields and the rest in the
+command field.
 
 ### Docker
 
 ```bash
+git clone https://github.com/solutionmax/pharos.git
+cd pharos
 cp .env.docker.example .env
-docker compose run --rm app php artisan key:generate --show   # paste into .env
 docker compose up -d
 ```
 
-Two containers: Apache with mod_php, and a scheduler running `schedule:work`.
-Apache rather than something more fashionable, because it is the same shape as
-the shared hosting this also has to run on.
+Two containers: the application on `php:8.3-apache`, and a second one running
+`php artisan schedule:work`. The database is SQLite on a volume by default; point
+`DB_CONNECTION` at MySQL if you prefer.
 
-### Keeping checks running
+### Check it is alive
 
-On a VPS, a systemd timer calling `php artisan schedule:run` every minute.
-On shared hosting, one cPanel cron line does the same job:
-
-```
-* * * * * cd /home/you/pharos && php artisan schedule:run >/dev/null 2>&1
+```bash
+php artisan pharos:check --force
 ```
 
-## API
+Runs every enabled check immediately and prints what it found, instead of waiting for the
+scheduler.
+
+---
+
+## How checks work
+
+| Type | What it does | Good for |
+|---|---|---|
+| **HTTP** | Requests a URL, expects a status code | Websites, APIs, control panels |
+| **TCP** | Opens a socket to host:port | Mail, databases, anything without HTTP |
+| **Heartbeat** | Waits for *your* job to call in — silence is the failure | Backups, cron scripts, anything you cannot poll from outside |
+
+A check has to fail twice before the component goes red, and has to succeed three times in a row
+before the incident closes. That is deliberate: one dropped packet should not publish an outage.
+
+---
+
+## Connecting it to what you already run
+
+The API is **Cachet 2.x compatible**: same endpoints, same status integers, and
+`X-Cachet-Token` accepted alongside `Authorization: Bearer`.
 
 ```bash
 curl -X POST https://status.example.com/api/v1/incidents \
-  -H "Authorization: Bearer $PHAROS_TOKEN" \
-  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{
-    "template":   "server-unreachable",
-    "vars":       { "server": "web-06.example.net" },
-    "status":     "investigating",
-    "impact":     "major",
-    "components": { "7": "major_outage", "8": "degraded" },
-    "auto_resolve": true
-  }'
+        "template":   "server-unreachable",
+        "vars":       { "server": "web-06.example.net" },
+        "status":     "investigating",
+        "components": { "7": "major_outage" }
+      }'
 ```
 
-Heartbeats need no token, only an unguessable path:
+- **Uptime Kuma** — a push monitor calls in; silence turns the component red
+- **n8n** — both directions, with an HMAC-signed outgoing webhook on every incident
+- **Zabbix and Grafana** — through the same API, no plugin needed
+- **Anything else** — a token and a POST is the whole contract
 
-```
-* * * * * restic backup /data && curl -fsS -X POST https://status.example.com/api/v1/heartbeat/hb_xxxxx
-```
+---
 
 ## Updates
 
-Pharos checks once an hour for a **signed** release manifest and shows what is
-available under Updates. How it installs depends on where it runs:
+Pharos checks for a signed release manifest and shows what is available under **Updates**.
 
-- **Shared hosting** — the app owns its files, so it downloads the release,
-  checks the archive against the signed checksum, copies the current version to
-  `storage/app/backups`, replaces the files and runs migrations. Your `.env`,
-  database and uploads are never touched.
-- **Docker** — the image belongs to the host, so the app cannot replace itself.
-  A host-side updater writes a status file, the app shows the banner, and
-  applying drops a trigger file the host watches. The same shape Portalis uses.
+On shared hosting it downloads the release, verifies the SHA-256, backs up the current version
+and replaces its own files, keeping `.env`, `storage/` and the database. On Docker the host
+pulls the new image.
 
-Both refuse anything that is not signed by the vendor key. A release manifest
-carries `purpose: pharos-release` and a licence key does not, so one can never
-be replayed as the other even though the same key signs both. A release server
-that cannot be reached reads as "no news", never as an error on a status page.
+Manifests are signed with **Ed25519** and verified locally. If the release server cannot be
+reached, that reads as *no update available* — never as an error.
 
-```bash
-php artisan pharos:update --check    # what is available
-php artisan pharos:update            # install it
-```
+---
 
-Cutting a release, vendor side:
+## Not implemented yet
 
-```bash
-php artisan pharos:release:sign 1.1.0 https://.../pharos-1.1.0.zip ./pharos-1.1.0.zip \
-  --notes="What changed" --key=/path/to/secret.hex
-```
+Stated plainly rather than described as if it were finished:
 
-Publish that one line as `latest.json`. The version itself comes from
-`PHAROS_VERSION` at build time, never from a constant edited by hand.
+- **Subscriber email notifications.** The setting exists, the sending flow does not.
+- **External probe locations.** Everything is checked from wherever Pharos runs, which is why
+  you should host it away from what it is watching.
+- **Cachet importer.** Moving from an existing Cachet install is manual for now.
 
-## Tests
-
-```bash
-php artisan test
-```
-
-182 tests. They have already caught these real bugs: Carbon mutating `last_run_at`
-so checks drifted apart, a date-cast mismatch that dropped today from the uptime
-window, recovery logic that could never close an incident, and SQLite needing a
-writable directory rather than just a writable file.
+---
 
 ## Licence
 
-Core: AGPL-3.0. The `ee/` directory (branding pack, reseller features) is under
-a separate commercial licence — see `ee/LICENCE` once it exists.
+**AGPL-3.0-only.** See [LICENSE](LICENSE).
+
+In plain terms: anyone may use, modify and redistribute this, including commercially. If you
+modify it **and run it as a service other people can reach**, you have to publish your modified
+source. That is the difference between the AGPL and the GPL, and it is the point — it keeps a
+hosting company from taking this closed.
+
+An optional **Brand pack** exists for people who would rather buy their own logo, favicon and
+sender address than build it. It is not required to run Pharos, and nothing is gated behind it.
+
+---
+
+## Support the work
+
+Pharos is built and maintained by [SolutionMAX](https://solutionmax.net) and given away.
+If it saved you an afternoon:
+
+<a href="https://buymeacoffee.com/solutionmax">
+  <img alt="Buy me a coffee" src="https://img.shields.io/badge/Buy%20me%20a%20coffee-ffdd00?logo=buymeacoffee&logoColor=000">
+</a>
+
+---
+
+<sub>Pharos — a <a href="https://solutionmax.net">SolutionMAX</a> product ·
+<a href="https://github.com/solutionmax/pharos-site">website and documentation</a></sub>
