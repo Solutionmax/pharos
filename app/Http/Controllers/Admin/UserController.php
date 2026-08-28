@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -22,26 +23,34 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(12)],
+            'role' => ['sometimes', Rule::enum(UserRole::class)],
         ]);
 
         User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'role' => $data['role'] ?? UserRole::User,
         ]);
 
         return redirect()->route('admin.users')->with('status', "{$data['name']} can now sign in.");
     }
 
-    public function updatePassword(Request $request, User $user)
+    public function updateRole(Request $request, User $user)
     {
-        $data = $request->validate([
-            'password' => ['required', 'confirmed', Password::min(12)],
-        ]);
+        $data = $request->validate(['role' => ['required', Rule::enum(UserRole::class)]]);
+        $role = UserRole::from($data['role']);
 
-        $user->update(['password' => Hash::make($data['password'])]);
+        // Same reasoning as the last account: an install with no administrator left
+        // cannot be repaired through the interface, only from the CLI.
+        if ($role === UserRole::User && $user->isAdmin() && User::where('role', UserRole::Admin)->count() <= 1) {
+            return back()->withErrors(['role' => 'This is the only administrator. Promote someone else first.']);
+        }
 
-        return redirect()->route('admin.users')->with('status', "Password changed for {$user->name}.");
+        $user->update(['role' => $role]);
+
+        return redirect()->route('admin.users')
+            ->with('status', "{$user->name} is now a {$role->label()}.");
     }
 
     public function destroy(Request $request, User $user)

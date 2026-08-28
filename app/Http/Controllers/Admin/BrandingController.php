@@ -25,6 +25,9 @@ class BrandingController extends Controller
             ],
             'licensed' => $this->license->has(License::FEATURE_BRAND_PACK),
             'issuedTo' => $this->license->issuedTo(),
+            'expiresAt' => $this->license->expiresAt(),
+            'daysLeft' => $this->license->daysLeft(),
+            'expiringSoon' => $this->license->expiringSoon(),
         ]);
     }
 

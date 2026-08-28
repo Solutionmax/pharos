@@ -256,4 +256,98 @@ class UpdateTest extends TestCase
             ->assertOk()
             ->assertDontSee('class="dot-new"', false);
     }
+
+    // ---------- the version has to travel with the release ----------
+
+    public function test_the_shipped_env_example_does_not_pin_the_version(): void
+    {
+        // .env is never replaced by an update, so a version pinned there survives
+        // the upgrade: the install keeps reporting the old number and offers the
+        // same release for ever. The number has to come from the code that ships.
+        $this->assertStringNotContainsString(
+            'PHAROS_VERSION=',
+            (string) file_get_contents(base_path('.env.example')),
+        );
+    }
+
+    public function test_it_warns_when_the_version_is_pinned_in_the_environment(): void
+    {
+        putenv('PHAROS_VERSION=0.1.0-dev');
+        $_ENV['PHAROS_VERSION'] = $_SERVER['PHAROS_VERSION'] = '0.1.0-dev';
+
+        try {
+            $this->assertTrue(app(Updater::class)->versionIsPinned());
+
+            $this->actingAs($this->user)->get('/admin/updates')
+                ->assertOk()
+                ->assertSee('PHAROS_VERSION');
+        } finally {
+            putenv('PHAROS_VERSION');
+            unset($_ENV['PHAROS_VERSION'], $_SERVER['PHAROS_VERSION']);
+        }
+    }
+
+    public function test_nothing_is_flagged_when_the_version_comes_from_the_code(): void
+    {
+        putenv('PHAROS_VERSION');
+        unset($_ENV['PHAROS_VERSION'], $_SERVER['PHAROS_VERSION']);
+
+        $this->assertFalse(app(Updater::class)->versionIsPinned());
+    }
+
+    // ---------- what an archive may contain ----------
+
+    /** Builds a release archive under storage/app/testing and returns its path. */
+    protected function archive(callable $fill): string
+    {
+        File::ensureDirectoryExists(storage_path('app/testing'));
+        $path = storage_path('app/testing/release.zip');
+
+        $zip = new \ZipArchive;
+        $zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $fill($zip);
+        $zip->close();
+
+        return $path;
+    }
+
+    /** @return array{ok:bool,message:string} */
+    protected function applyArchive(string $path): array
+    {
+        Http::fake(['releases.example.net/pharos-1.1.0.zip' => Http::response(file_get_contents($path))]);
+
+        return app(SelfUpdater::class)->apply([
+            'purpose' => 'pharos-release', 'version' => '1.1.0',
+            'url' => 'https://releases.example.net/pharos-1.1.0.zip',
+            'sha256' => hash_file('sha256', $path),
+        ]);
+    }
+
+    public function test_an_archive_that_climbs_out_of_its_folder_is_refused(): void
+    {
+        // Neither entry belongs in anything we built; the checksum passes because
+        // the point is what happens after it.
+        $result = $this->applyArchive($this->archive(function (\ZipArchive $zip) {
+            $zip->addFromString('pharos/README.md', 'fine');
+            $zip->addFromString('../evil.txt', 'gotcha');
+        }));
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('../evil.txt', $result['message']);
+        $this->assertStringContainsString('Nothing was installed', $result['message']);
+        $this->assertFileDoesNotExist(storage_path('app/evil.txt'));
+    }
+
+    public function test_an_archive_with_a_symlink_is_refused(): void
+    {
+        $result = $this->applyArchive($this->archive(function (\ZipArchive $zip) {
+            $zip->addFromString('pharos/README.md', 'fine');
+            $zip->addFromString('pharos/storage', '/etc');
+            $zip->setExternalAttributesName('pharos/storage', \ZipArchive::OPSYS_UNIX, (0120000 | 0777) << 16);
+        }));
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('pharos/storage', $result['message']);
+        $this->assertStringContainsString('symlink', $result['message']);
+    }
 }

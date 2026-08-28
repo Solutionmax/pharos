@@ -87,3 +87,22 @@ A status page must not go down because a licence check had a bad day. That rule 
 - **No per-domain binding.** A key is issued to an email address, not to a hostname. It is
   a receipt, not a lock, and pretending otherwise would only punish honest customers who
   move their install.
+
+## Keys that run out
+
+A key may carry `expires_at`. Sign one with a term:
+
+```bash
+php artisan pharos:license:sign klant@example.net --features=brand_pack --months=12
+```
+
+Leave `--months` off and the claim is absent, which means the key never expires —
+that is what every key signed before this existed does, and they keep working.
+
+An expired key stops being a licence: `verify()` returns null, so its features go
+back to the free set. The branding screen shows the date, and warns for the last
+thirty days.
+
+There is still nothing to revoke a key that is already out there. That is the
+price of checking offline, and expiry is the answer: a key that was passed around
+runs out on its own.

@@ -1,6 +1,16 @@
 @extends('layouts.admin')
 @section('title', 'Updates')
 @section('content')
+
+@if ($versionPinned)
+  <div class="callout warn">
+    <b>The version is pinned in .env.</b> <span class="mono">PHAROS_VERSION</span> is set there, and
+    an update never replaces <span class="mono">.env</span> — so after installing a release this
+    screen would keep reporting the old version and offer the same update again. Remove that line;
+    the version then comes from the code, which is what an update actually replaces.
+  </div>
+@endif
+
 @include('partials.pagehead', [
   'title' => 'Updates',
   'sub' => 'What you are running, and what is available',
@@ -57,7 +67,10 @@
         running now is copied to <span class="mono">storage/app/backups</span> first.
       </div>
       <form method="POST" action="{{ route('admin.updates.apply') }}"
-            onsubmit="return confirm('Install {{ $latest['version'] }}? The site is briefly unavailable while files are replaced.')">
+            data-confirm-title="Install {{ $latest['version'] }}?"
+            data-confirm="Pharos replaces its own files and is <strong>briefly unavailable</strong> while it does. Your settings, uploads and database are kept, and the current version is backed up first."
+            data-confirm-action="Install update"
+            data-confirm-safe="1">
         @csrf
         <button class="btn" type="submit">Install {{ $latest['version'] }}</button>
       </form>

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use App\Enums\Impact;
 use App\Enums\IncidentStatus;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Incident extends Model
 {
+    use Auditable;
+
     protected $guarded = [];
 
     protected $casts = [

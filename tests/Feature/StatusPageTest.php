@@ -9,13 +9,30 @@ use App\Models\Incident;
 use App\Models\IncidentUpdate;
 use App\Enums\IncidentStatus;
 use App\Models\UptimeDay;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class StatusPageTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * An installed status page has an owner. Without one the root URL is the
+     * setup screen, so every test here starts from a finished install.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        User::create([
+            'name' => 'Admin',
+            'email' => 'admin@example.net',
+            'password' => Hash::make('correct-horse-battery-staple'),
+        ]);
+    }
 
     protected function makeComponent(array $attributes = []): Component
     {
@@ -26,6 +43,54 @@ class StatusPageTest extends TestCase
             'name' => 'web-01',
             'status' => ComponentStatus::Operational,
         ], $attributes));
+    }
+
+    /**
+     * "Ungrouped" is the default on the component form, and deleting a service
+     * drops its components there. If the page skips them, both of those are a
+     * silent way to publish nothing.
+     */
+    public function test_a_component_in_no_service_is_still_published(): void
+    {
+        Component::create([
+            'name' => 'Website',
+            'description' => 'Availability of your website',
+            'status' => ComponentStatus::Operational,
+        ]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Website')
+            ->assertSee('Availability of your website');
+    }
+
+    public function test_a_component_link_becomes_a_link_on_the_page(): void
+    {
+        Component::create([
+            'name' => 'Website',
+            'link' => 'https://example.net/shop',
+            'status' => ComponentStatus::Operational,
+        ]);
+
+        $this->get('/')->assertOk()->assertSee('href="https://example.net/shop"', false);
+    }
+
+    public function test_an_ungrouped_outage_still_drives_the_headline(): void
+    {
+        Component::create(['name' => 'Website', 'status' => ComponentStatus::MajorOutage]);
+
+        $this->get('/')->assertOk()->assertSee(ComponentStatus::MajorOutage->label());
+    }
+
+    public function test_a_disabled_ungrouped_component_stays_off_the_page(): void
+    {
+        Component::create([
+            'name' => 'Retired box',
+            'status' => ComponentStatus::Operational,
+            'enabled' => false,
+        ]);
+
+        $this->get('/')->assertOk()->assertDontSee('Retired box');
     }
 
     public function test_it_renders_groups_and_components(): void
@@ -154,5 +219,32 @@ class StatusPageTest extends TestCase
             ->assertOk()
             ->assertSee('href="https://pharos.solutionmax.net"', escape: false)
             ->assertSee('Powered by Pharos');
+    }
+
+    public function test_incident_messages_render_markdown_but_never_raw_html(): void
+    {
+        $incident = Incident::create([
+            'name' => 'Mail delayed',
+            'status' => IncidentStatus::Investigating,
+            'impact' => 'minor',
+            'visibility' => 'public',
+            'occurred_at' => now(),
+        ]);
+
+        IncidentUpdate::create([
+            'incident_id' => $incident->id,
+            'status' => IncidentStatus::Investigating,
+            'message' => "We are **on it**.\nNext update at 14:00.\n\n- queue drained\n\n<script>alert(1)</script>",
+            'automatic' => false,
+        ]);
+
+        $response = $this->get('/');
+
+        $response->assertSee('<strong>on it</strong>', false);
+        $response->assertSee('<li>queue drained</li>', false);
+        // A single Enter is a line break, not a space: two typed lines stay two lines.
+        $response->assertSee('<br>', false);
+        // The tag is shown as text, not run. That is html_input=escape doing its job.
+        $response->assertDontSee('<script>alert(1)</script>', false);
     }
 }

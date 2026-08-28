@@ -45,7 +45,9 @@
             <span class="rowacts">
               <a href="{{ route('admin.groups.edit', array_filter(['group' => $group->id, 'from' => $from])) }}">Edit</a>
               <form method="POST" action="{{ route('admin.groups.destroy', $group) }}"
-                    onsubmit="return confirm('Delete {{ $group->name }}? Its {{ $group->components_count }} component(s) are kept but become ungrouped.')">
+                    data-confirm-title="Delete {{ $group->name }}?"
+                    data-confirm="Its {{ $group->components_count }} {{ \Illuminate\Support\Str::plural('component', $group->components_count) }} and their uptime history are <strong>kept</strong> — they move to the page without a heading. Only the grouping is lost."
+                    data-confirm-action="Delete service">
                 @csrf @method('DELETE')
                 <button type="submit">Delete</button>
               </form>
@@ -57,12 +59,5 @@
     </table>
   </div>
   @endif
-</div>
-
-<div class="callout">
-  <b>Where the demo names came from.</b> "Shared hosting", "Email" and "Network &amp; DNS" are
-  seeded demo data, shaped after a real hosting company's page. Rename them, delete them, or
-  start over — deleting a service keeps its components and their history, they just become
-  ungrouped.
 </div>
 @endsection

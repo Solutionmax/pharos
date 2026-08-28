@@ -20,7 +20,6 @@ class Branding
         'page.show_component_uptime' => ['label' => 'Uptime bar per component', 'help' => 'The small bar next to each component.', 'default' => true],
         'page.show_incidents' => ['label' => 'Incident history', 'help' => 'Incidents grouped per day.', 'default' => true],
         'page.show_empty_days' => ['label' => 'Days without incidents', 'help' => 'Shows "No incidents" rather than skipping the day.', 'default' => true],
-        'page.show_subscribe' => ['label' => 'Subscribe button', 'help' => 'Let visitors sign up for notifications.', 'default' => true],
         'page.show_api_link' => ['label' => 'API link in the footer', 'help' => 'Points at the public JSON feed.', 'default' => true],
     ];
 

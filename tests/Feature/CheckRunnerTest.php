@@ -186,8 +186,45 @@ class CheckRunnerTest extends TestCase
         $this->assertTrue($check->fresh()->last_run_at->isAfter(now()->subMinute()));
     }
 
+    public function test_a_single_ping_clears_a_heartbeat_outage(): void
+    {
+        $check = $this->makeCheck([
+            'type' => CheckType::Heartbeat,
+            'target' => 'hb_secret',
+            'interval_seconds' => 86400,
+            'last_run_at' => now()->subDays(3),
+            'retries' => 1,
+        ]);
+
+        // Silence first, the way a missed nightly backup gets there.
+        (new CheckRunner(new Probe, app(OutgoingWebhook::class)))->runOne($check);
+        $this->assertSame(ComponentStatus::MajorOutage, $check->component->fresh()->status);
+        $this->assertSame(1, Incident::whereNull('resolved_at')->count());
+
+        $this->postJson('/api/v1/heartbeat/hb_secret')->assertOk();
+
+        // The job reporting in IS the recovery. Waiting for two more daily cycles
+        // would keep the page red for days after the backup demonstrably ran.
+        $this->assertSame(ComponentStatus::Operational, $check->component->fresh()->status);
+        $this->assertSame(0, Incident::whereNull('resolved_at')->count());
+    }
+
     public function test_an_unknown_heartbeat_token_is_a_404(): void
     {
         $this->postJson('/api/v1/heartbeat/nope')->assertStatus(404);
+    }
+
+    public function test_a_second_run_is_skipped_while_one_is_still_going(): void
+    {
+        $check = $this->makeCheck(['retries' => 0]);
+
+        $lock = \Illuminate\Support\Facades\Cache::lock('pharos:checks', 300);
+        $this->assertTrue($lock->get());
+
+        $this->artisan('pharos:check --force')->assertSuccessful();
+
+        $this->assertSame(0, \App\Models\CheckResult::count());
+
+        $lock->release();
     }
 }

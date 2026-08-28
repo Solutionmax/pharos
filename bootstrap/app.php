@@ -1,9 +1,12 @@
 <?php
 
+use App\Http\Middleware\ApiTokenAuth;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,6 +20,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // name does not exist here.
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
         $middleware->redirectUsersTo(fn () => route('admin.components'));
+
+        $middleware->web(append: SecurityHeaders::class);
+
+        // The token check has to run before route-model binding, or a request
+        // without a token gets a 404 that tells a stranger which ids exist.
+        $middleware->prependToPriorityList(SubstituteBindings::class, ApiTokenAuth::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

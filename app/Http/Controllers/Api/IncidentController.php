@@ -23,7 +23,16 @@ class IncidentController extends Controller
         $incidents = Incident::public()->with('updates', 'components')
             ->latest('occurred_at')->limit(50)->get();
 
-        return response()->json(['data' => $incidents->map(fn ($i) => $this->present($i))->all()]);
+        return response()->json([
+            'meta' => ['pagination' => [
+                'total' => $incidents->count(),
+                'count' => $incidents->count(),
+                'per_page' => $incidents->count(),
+                'current_page' => 1,
+                'total_pages' => 1,
+            ]],
+            'data' => $incidents->map(fn ($i) => $this->present($i))->all(),
+        ]);
     }
 
     public function store(Request $request)
@@ -33,8 +42,10 @@ class IncidentController extends Controller
             'template' => ['sometimes', 'string', 'exists:incident_templates,slug'],
             'vars' => ['sometimes', 'array'],
             'vars.*' => ['string', 'max:255'],
-            'status' => ['required', 'string'],
+            'status' => ['required'],
             'message' => ['required_without:template', 'string'],
+            'component_id' => ['sometimes', 'integer'],
+            'component_status' => ['sometimes', 'integer', 'min:1', 'max:5'],
             'impact' => ['sometimes', Rule::in(['minor', 'major', 'critical'])],
             'visibility' => ['sometimes', Rule::in(['public', 'authenticated', 'internal'])],
             'components' => ['sometimes', 'array'],
@@ -43,11 +54,11 @@ class IncidentController extends Controller
             'occurred_at' => ['sometimes', 'date'],
         ]);
 
-        try {
-            $status = IncidentStatus::fromName($data['status']);
-        } catch (\ValueError) {
+        $status = $this->parseStatus($data['status']);
+
+        if (! $status) {
             return response()->json([
-                'error' => 'Unknown status. Use investigating, identified, watching or resolved.',
+                'error' => 'Unknown status. Use investigating, identified, watching or resolved, or 1-4.',
             ], 422);
         }
 
@@ -80,7 +91,7 @@ class IncidentController extends Controller
                 'automatic' => false,
             ]);
 
-            $this->applyComponents($incident, $data['components'] ?? []);
+            $this->applyComponents($incident, $this->componentMap($data));
 
             return $incident;
         });
@@ -95,14 +106,14 @@ class IncidentController extends Controller
     public function addUpdate(Request $request, Incident $incident)
     {
         $data = $request->validate([
-            'status' => ['required', 'string'],
+            'status' => ['required'],
             'message' => ['required', 'string'],
             'components' => ['sometimes', 'array'],
         ]);
 
-        try {
-            $status = IncidentStatus::fromName($data['status']);
-        } catch (\ValueError) {
+        $status = $this->parseStatus($data['status']);
+
+        if (! $status) {
             return response()->json(['error' => 'Unknown status.'], 422);
         }
 
@@ -142,6 +153,41 @@ class IncidentController extends Controller
      * Accepts {"4": "partial_outage"} or {"4": 3}. Cachet 2.x allows a single
      * component per incident; a hypervisor failure takes down more than one.
      */
+    /**
+     * Cachet 2.x sends the status as 1-4, newer clients send the name. Both are
+     * the same four states, so accept either rather than break existing scripts.
+     */
+    protected function parseStatus(mixed $status): ?IncidentStatus
+    {
+        if (is_numeric($status)) {
+            return IncidentStatus::tryFrom((int) $status);
+        }
+
+        try {
+            return IncidentStatus::fromName((string) $status);
+        } catch (\ValueError) {
+            return null;
+        }
+    }
+
+    /**
+     * Cachet 2.x attaches exactly one component through component_id +
+     * component_status; ours takes a map. Fold the flat pair into the map.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<int|string, mixed>
+     */
+    protected function componentMap(array $data): array
+    {
+        $components = $data['components'] ?? [];
+
+        if (isset($data['component_id'])) {
+            $components[$data['component_id']] = $data['component_status'] ?? ComponentStatus::MajorOutage->value;
+        }
+
+        return $components;
+    }
+
     protected function applyComponents(Incident $incident, array $components): void
     {
         foreach ($components as $id => $status) {

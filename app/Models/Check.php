@@ -2,12 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use App\Enums\CheckType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Check extends Model
 {
+    use Auditable;
+
+    /** Columns the check runner and delivery code touch on their own. */
+    protected $auditIgnore = ['last_run_at', 'consecutive_failures', 'consecutive_successes', 'last_status', 'last_error', 'next_run_at'];
+
     protected $guarded = [];
 
     protected $attributes = [

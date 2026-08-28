@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Setting;
 use App\Services\CheckRunner;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 
 class RunChecks extends Command
 {
@@ -13,6 +15,33 @@ class RunChecks extends Command
 
     public function handle(CheckRunner $runner): int
     {
+        // Two runners at once open two incidents for one outage, and fire two
+        // Slack messages. The scheduler guards itself, but a hand-run
+        // `pharos:check` races it — which is exactly how this was found.
+        // ponytail: one lock for the whole run, not per check. Go per check only
+        // if a single slow probe starts holding up the rest.
+        $lock = Cache::lock('pharos:checks', 300);
+
+        if (! $lock->get()) {
+            $this->warn('Another check run is still going; skipped.');
+
+            return self::SUCCESS;
+        }
+
+        try {
+            return $this->runAll($runner);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    protected function runAll(CheckRunner $runner): int
+    {
+        // Stamped on every run, due checks or not: this is the only evidence that
+        // the one cron line exists. Without it a forgotten scheduler looks exactly
+        // like a healthy install — every component green, nothing ever checked.
+        Setting::put('checks.last_run_at', now()->toIso8601String());
+
         if ($this->option('force')) {
             $checks = \App\Models\Check::with('component')->where('enabled', true)->get();
             foreach ($checks as $check) {

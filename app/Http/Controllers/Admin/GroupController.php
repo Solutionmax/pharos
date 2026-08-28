@@ -60,9 +60,16 @@ class GroupController extends Controller
     {
         $data = $this->validated($request);
 
-        ComponentGroup::create($data + [
+        $group = ComponentGroup::create($data + [
             'position' => (ComponentGroup::max('position') ?? 0) + 1,
         ]);
+
+        // The component form creates services from a dialog without leaving the
+        // page, so it needs the new row back rather than a redirect. Same
+        // validation, same rules — only the reply differs.
+        if ($request->expectsJson()) {
+            return response()->json(['id' => $group->id, 'name' => $group->name], 201);
+        }
 
         return redirect()->to($this->back($request))->with('status', "Service \"{$data['name']}\" added.");
     }
@@ -83,6 +90,10 @@ class GroupController extends Controller
 
         $name = $group->name;
         $group->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['deleted' => true, 'orphans' => $orphans]);
+        }
 
         return redirect()->to($this->back($request))->with(
             'status',

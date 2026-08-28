@@ -28,7 +28,15 @@
 @endif
 
 <div class="panel">
-  <div class="panel-hd"><h3>All components</h3><span class="hint">Last 30 days shown</span></div>
+  <div class="panel-hd">
+    <h3>All components</h3>
+    {{-- Two windows sit side by side in this table and they are not the same:
+         the bars are 30 days, the percentage is 90. Say so, and only once there
+         is a table to say it about. --}}
+    @unless ($components->isEmpty())
+      <span class="hint">Bars cover 30 days &middot; uptime is measured over 90</span>
+    @endunless
+  </div>
   @if ($components->isEmpty())
     <div class="empty">
       @include('partials.icon', ['name' => 'empty', 'size' => 28])
@@ -72,7 +80,9 @@
             <span class="rowacts">
               <a href="{{ route('admin.components.edit', $component) }}">Edit</a>
               <form method="POST" action="{{ route('admin.components.destroy', $component) }}"
-                    onsubmit="return confirm('Delete {{ $component->name }}? Its uptime history goes with it.')">
+                    data-confirm-title="Delete {{ $component->name }}?"
+                    data-confirm="Its <strong>{{ number_format($uptime[$component->id], 2) }}% uptime history</strong> is deleted with it, and it disappears from the public page. This cannot be undone."
+                    data-confirm-action="Delete component">
                 @csrf @method('DELETE')
                 <button type="submit">Delete</button>
               </form>

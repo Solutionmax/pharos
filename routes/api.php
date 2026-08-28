@@ -11,9 +11,11 @@ Route::prefix('v1')->group(function () {
     Route::get('components', [ComponentController::class, 'index']);
     Route::get('components/{component}', [ComponentController::class, 'show']);
     Route::get('incidents', [IncidentController::class, 'index']);
-    Route::post('heartbeat/{token}', [HeartbeatController::class, 'ping']);
+    // Per IP, with its own bucket: a job pings once a minute at most, but many
+    // jobs behind one NAT add up, and they must not use up the write budget.
+    Route::post('heartbeat/{token}', [HeartbeatController::class, 'ping'])->middleware('throttle:120,1,heartbeat');
 
-    Route::middleware(ApiTokenAuth::class)->group(function () {
+    Route::middleware([ApiTokenAuth::class, 'throttle:60,1,api-write'])->group(function () {
         Route::put('components/{component}', [ComponentController::class, 'update']);
         Route::post('components/{component}', [ComponentController::class, 'update']); // Cachet 2.x used POST
         Route::post('incidents', [IncidentController::class, 'store']);

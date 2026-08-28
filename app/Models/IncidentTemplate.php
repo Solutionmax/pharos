@@ -2,10 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class IncidentTemplate extends Model
 {
+    use Auditable;
+
+    protected $auditName = 'incident_template';
+
     protected $guarded = [];
 
     /** Replaces {{name}} placeholders. Unknown placeholders are left alone, never blanked. */
