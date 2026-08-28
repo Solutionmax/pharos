@@ -195,9 +195,10 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
             <span class="rng">last {{ \App\Services\Uptime::WINDOW_DAYS }} days</span>
           </div>
           @php
-            $overallBar = [];
+            $overallBar = []; $overallDays = [];
             for ($i = 0; $i < \App\Services\Uptime::WINDOW_DAYS; $i++) {
                 $tones = collect($bars)->map(fn ($b) => $b[$i]['tone'])->all();
+                $overallDays[] = collect($bars)->first()[$i]['day'] ?? null;
                 $overallBar[] = in_array('b', $tones, true) ? 'b'
                     : (in_array('p', $tones, true) ? 'p'
                     : (in_array('w', $tones, true) ? 'w'
@@ -205,7 +206,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
             }
           @endphp
           <div class="bar" aria-label="Daily availability over the last {{ \App\Services\Uptime::WINDOW_DAYS }} days">
-            @foreach ($overallBar as $tone)<span class="{{ $tone }}"></span>@endforeach
+            @foreach ($overallBar as $i => $tone)<span class="{{ $tone }}" title="{{ $overallDays[$i] ? \Carbon\Carbon::parse($overallDays[$i])->format('j M') : '' }}{{ ['b' => ' · major outage', 'p' => ' · partial outage', 'w' => ' · degraded', 'unknown' => ' · no data'][$tone] ?? ' · all operational' }}"></span>@endforeach
           </div>
           <div class="scale"><span>{{ \App\Services\Uptime::WINDOW_DAYS }} days ago</span><span>today</span></div>
         </div>

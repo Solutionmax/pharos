@@ -82,7 +82,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .state-cell .txt{font-size:13px;font-weight:600}
 
 /* ---------- 30-day strip, read next to its own number ---------- */
-.strip{display:flex;gap:1.5px;height:20px;align-items:stretch;width:132px}
+.strip{display:flex;gap:2px;height:20px;align-items:stretch;width:180px}  /* 30 days at ~4px each; a hover names the day */
 .strip span{flex:1;border-radius:1.5px;background:var(--green);opacity:.85}
 .strip span.w{background:var(--amber)}.strip span.p{background:var(--orange)}
 .strip span.b{background:var(--red)}.strip span.m{background:var(--blue)}

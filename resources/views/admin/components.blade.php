@@ -64,8 +64,8 @@
             @endif
           </td>
           <td>
-            <span class="strip" aria-hidden="true">
-              @foreach ($strips[$component->id] as $d)<span class="{{ $d['tone'] === 'ok' ? '' : $d['tone'] }}"></span>@endforeach
+            <span class="strip">
+              @foreach ($strips[$component->id] as $d)<span class="{{ $d['tone'] === 'ok' ? '' : $d['tone'] }}" title="{{ \Carbon\Carbon::parse($d['day'])->format('j M') }}{{ $d['known'] ? ' · '.number_format($d['pct'], 2).'%' : ' · no data' }}"></span>@endforeach
             </span>
           </td>
           <td class="num">{{ number_format($uptime[$component->id], 2) }}%</td>

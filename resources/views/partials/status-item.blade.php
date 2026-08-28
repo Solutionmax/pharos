@@ -11,8 +11,9 @@
     @if ($component->description)<br><span class="desc">{{ $component->description }}</span>@endif
   </span>
   @if ($modules['page.show_component_uptime'] && $component->show_uptime)
-    <span class="bar mini" aria-hidden="true">
-      @foreach ($bars[$component->id] as $d)<span class="{{ $d['tone'] === 'ok' ? '' : $d['tone'] }}"></span>@endforeach
+    {{-- One title per day: the bar is 90 slivers, a hover is the only way to read one of them. --}}
+    <span class="bar mini">
+      @foreach ($bars[$component->id] as $d)<span class="{{ $d['tone'] === 'ok' ? '' : $d['tone'] }}" title="{{ \Carbon\Carbon::parse($d['day'])->format('j M') }}{{ $d['known'] ? ' · '.number_format($d['pct'], 2).'%' : ' · no data' }}"></span>@endforeach
     </span>
     <span class="pct">{{ number_format($percentages[$component->id], 2) }}%</span>
   @endif
