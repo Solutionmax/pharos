@@ -32,6 +32,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToPriorityList(SubstituteBindings::class, ApiTokenAuth::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // A form posted after the session expired used to end on a bare "419 Page
+        // Expired". Say what happened and put the person back at the door.
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
+            if ($request->expectsJson()) {
+                return null;
+            }
+
+            return redirect()->route('admin.login')->with('status', 'Your session had expired, so that was not saved. Sign in and try again.');
+        });
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );

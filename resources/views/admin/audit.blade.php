@@ -65,11 +65,15 @@
               @endif
             </td>
             <td class="sub">
-              @forelse ($entry->changes ?? [] as $field => $change)
+              @forelse ($entry->changeLines() as $line)
                 <div>
-                  <span style="color:var(--ink)">{{ ucfirst(str_replace('_', ' ', $field)) }}</span>:
-                  <span style="text-decoration:line-through;color:var(--ink-3)">{{ $change['from'] ?? '—' }}</span>
-                  &rarr; {{ $change['to'] ?? '—' }}
+                  <span style="color:var(--ink)">{{ $line['field'] }}</span>:
+                  @if ($line['plain'])
+                    {{ $line['to'] }}
+                  @else
+                    <span style="text-decoration:line-through;color:var(--ink-3)">{{ $line['from'] ?? '—' }}</span>
+                    &rarr; {{ $line['to'] ?? '—' }}
+                  @endif
                 </div>
               @empty
                 —

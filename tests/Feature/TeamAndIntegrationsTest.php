@@ -637,4 +637,10 @@ class TeamAndIntegrationsTest extends TestCase
         $endpoint->refresh();
         $this->assertStringContainsString('never', $endpoint->last_error);
     }
+
+    public function test_a_masked_url_keeps_its_port(): void
+    {
+        $e = new \App\Models\WebhookEndpoint(['url' => 'http://192.168.18.162:8799/hook/very-long-path']);
+        $this->assertSame('http://192.168.18.162:8799/hook/ve…', $e->maskedUrl());
+    }
 }

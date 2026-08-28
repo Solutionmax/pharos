@@ -206,7 +206,7 @@ class AuditTest extends TestCase
         $this->assertStringContainsString('attachment; filename=', $response->headers->get('content-disposition'));
 
         $csv = $response->streamedContent();
-        $this->assertStringStartsWith("when,actor,ip,action,subject,changes\n", $csv);
+        $this->assertStringStartsWith("\xEF\xBB\xBFwhen,actor,ip,action,subject,changes\n", $csv);
         $this->assertStringContainsString('"API token: deploy",203.0.113.9,component.updated,Website,"status: Operational → Major outage"', $csv);
         $this->assertStringNotContainsString('Anita', $csv, 'the filter applies to the download too');
     }
@@ -231,5 +231,24 @@ class AuditTest extends TestCase
         // so a spreadsheet reads it right and a script can still do the maths.
         $this->assertStringContainsString('2026-08-28T10:24:00+02:00,', $csv);
         $this->assertDatabaseHas('audit_log', ['created_at' => '2026-08-28 08:24:00']);
+    }
+
+    /** A backup line stores a plain name, not a from/to pair; it must not read as "— → —". */
+    public function test_a_plain_value_change_is_shown_as_is_on_the_page_and_in_the_csv(): void
+    {
+        $user = $this->admin();
+        AuditEntry::create(['actor' => 'Anita', 'action' => 'backup.created', 'changes' => ['name' => '1.0.0-20260828-120000', 'size' => '29.3 MB'], 'created_at' => now()]);
+
+        $this->actingAs($user)->get(route('admin.audit'))->assertOk()
+            ->assertSee('1.0.0-20260828-120000')->assertSee('29.3 MB')->assertDontSee('— → —');
+        $csv = $this->actingAs($user)->get(route('admin.audit.export'))->streamedContent();
+        $this->assertStringContainsString('name: 1.0.0-20260828-120000; size: 29.3 MB', $csv);
+        $this->assertStringNotContainsString('— → —', $csv);
+    }
+
+    public function test_the_csv_starts_with_a_utf8_bom_so_excel_reads_it(): void
+    {
+        $csv = $this->actingAs($this->admin())->get(route('admin.audit.export'))->streamedContent();
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $csv);
     }
 }

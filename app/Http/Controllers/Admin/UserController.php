@@ -50,7 +50,7 @@ class UserController extends Controller
         $user->update(['role' => $role]);
 
         return redirect()->route('admin.users')
-            ->with('status', "{$user->name} is now a {$role->label()}.");
+            ->with('status', "{$user->name} is now {$role->label()}.");
     }
 
     public function destroy(Request $request, User $user)
