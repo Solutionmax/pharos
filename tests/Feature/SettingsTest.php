@@ -124,7 +124,7 @@ class SettingsTest extends TestCase
     {
         // An unchecked box is simply absent from the request, so the controller
         // must iterate over the known modules rather than over what was posted.
-        $this->actingAs($this->user)->put('/admin/settings', [
+        $this->actingAs($this->user)->put('/admin/status-page', [
             'theme' => 'dark',
             'incident_days' => 7,
             'modules' => ['page.show_services' => '1'],
@@ -197,11 +197,10 @@ class SettingsTest extends TestCase
 
     public function test_the_display_time_zone_can_be_chosen(): void
     {
+        // Settings is installation-level: the first account is an admin, so this passes the gate.
         $this->actingAs($this->user)->put('/admin/settings', [
-            'theme' => 'system',
-            'incident_days' => 5,
             'timezone' => 'Europe/Amsterdam',
-        ])->assertRedirect();
+        ])->assertRedirect('/admin/settings');
 
         $this->assertSame('Europe/Amsterdam', Setting::get('app.timezone'));
         $this->assertSame('Europe/Amsterdam', Clock::timezone());
@@ -210,8 +209,6 @@ class SettingsTest extends TestCase
     public function test_an_unknown_time_zone_is_refused(): void
     {
         $this->actingAs($this->user)->putJson('/admin/settings', [
-            'theme' => 'system',
-            'incident_days' => 5,
             'timezone' => 'Not/AZone',
         ])->assertStatus(422)->assertJsonValidationErrors('timezone');
 

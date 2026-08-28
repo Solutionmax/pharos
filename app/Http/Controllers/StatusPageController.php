@@ -37,8 +37,8 @@ class StatusPageController extends Controller
 
     /**
      * The same page rendered from unsaved form values, for the preview beside the
-     * settings form. Behind auth, and it writes nothing: what you see here is the
-     * real template, not a mock-up of it.
+     * form on the Status page screen. Behind auth, and it writes nothing: what you
+     * see here is the real template, not a mock-up of it.
      */
     public function preview(Request $request)
     {
@@ -68,7 +68,7 @@ class StatusPageController extends Controller
         );
 
         // Every other page refuses to be framed (SecurityHeaders). This one is
-        // built to sit in the settings page's iframe, so it alone allows its own
+        // built to sit in the Status page screen's iframe, so it alone allows its own
         // origin; the middleware leaves headers that are already set untouched.
         return response($page)->withHeaders([
             'X-Frame-Options' => 'SAMEORIGIN',

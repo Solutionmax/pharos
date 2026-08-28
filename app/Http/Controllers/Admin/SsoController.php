@@ -90,15 +90,7 @@ class SsoController extends Controller
         return redirect()->intended(route('admin.components'));
     }
 
-    // ---------- administration ----------
-
-    public function edit()
-    {
-        return view('admin.sso', [
-            'sso' => $this->sso,
-            'callbackUrl' => $this->callbackUrl(),
-        ]);
-    }
+    // ---------- administration (the form sits on the Settings screen) ----------
 
     public function update(Request $request)
     {
@@ -127,7 +119,7 @@ class SsoController extends Controller
         if (! isset($data['enabled'])) {
             Setting::put('sso.enabled', '0');
 
-            return redirect()->route('admin.sso')->with('status', 'Single sign-on is off.');
+            return redirect()->to(route('admin.settings').'#sso')->with('status', 'Single sign-on is off.');
         }
 
         // Switching it on without checking would leave a button that only fails.
@@ -141,7 +133,7 @@ class SsoController extends Controller
 
         Setting::put('sso.enabled', '1');
 
-        return redirect()->route('admin.sso')
+        return redirect()->to(route('admin.settings').'#sso')
             ->with('status', 'Single sign-on is on. Try it in a private window before you rely on it.');
     }
 

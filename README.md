@@ -41,16 +41,16 @@ Pharos speaks the Cachet 2.x API on purpose, so scripts written against Cachet k
 
 <img src="docs/img/status-page.webp" alt="The public status page: overall headline, a 90-day uptime bar, services grouped into rows, and incidents listed per day." width="100%">
 
-<em>The public page. Every section on it is a switch in Settings.</em>
+<em>The public page. Every section on it is a switch on the Status page screen.</em>
 
 <img src="docs/img/admin-components.webp" alt="The components screen with tiles showing what is down right now, average uptime, and how many components are checked automatically." width="100%">
 
 <em>Components. The tiles answer “what is wrong right now” before the table does — including how
 many components still rely on someone noticing.</em>
 
-<img src="docs/img/admin-settings.webp" alt="The settings screen with section toggles on the left and a live preview of the public status page on the right." width="100%">
+<img src="docs/img/admin-settings.webp" alt="The Status page screen with section toggles on the left and a live preview of the public status page on the right." width="100%">
 
-<em>Settings. Tick a section off and it disappears from the preview beside it — the real page,
+<em>Status page. Tick a section off and it disappears from the preview beside it — the real page,
 rendered from values you have not saved yet.</em>
 
 ---

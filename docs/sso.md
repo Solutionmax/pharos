@@ -54,7 +54,7 @@ differ from the one that was checked (rebinding), and **follows no redirects**.
 
 Plenty of self-hosted installs run Pharos and their identity provider on the same
 internal network, where a private issuer is simply the normal case. **Internal
-provider hosts** on the SSO screen vouches for named hosts:
+provider hosts** under **Settings → Single sign-on** vouches for named hosts:
 
 ```
 id.intern.example.net, 192.168.1.20
@@ -74,7 +74,8 @@ own two-factor off; that is the user's decision, not the login flow's.
 
 ## What an administrator configures
 
-`sso.enabled`, `sso.provider_name` (the button text), `sso.issuer`,
+Under **Admin → Settings → Single sign-on** (`/admin/settings#sso`; the old
+`/admin/sso` address redirects there): `sso.enabled`, `sso.provider_name` (the button text), `sso.issuer`,
 `sso.client_id`, `sso.client_secret`. The secret is stored encrypted and never
 rendered back into the form.
 

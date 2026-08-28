@@ -54,17 +54,17 @@ class SettingsPreviewTest extends TestCase
         }
 
         return $this->actingAs($this->user)
-            ->get(route('admin.settings.preview', array_merge(['m' => $m], $extra)));
+            ->get(route('admin.status-page.preview', array_merge(['m' => $m], $extra)));
     }
 
     public function test_the_preview_is_not_public(): void
     {
-        $this->get(route('admin.settings.preview'))->assertRedirect('/admin/login');
+        $this->get(route('admin.status-page.preview'))->assertRedirect('/admin/login');
     }
 
-    public function test_the_preview_may_be_framed_by_the_settings_page(): void
+    public function test_the_preview_may_be_framed_by_the_status_page_screen(): void
     {
-        // Every other page carries frame-ancestors 'none'. The settings page
+        // Every other page carries frame-ancestors 'none'. The status page screen
         // embeds this one in an iframe, so it alone must allow its own origin,
         // otherwise the live preview is a blank box in every browser.
         $this->preview(['page.show_overall' => true])
@@ -157,12 +157,12 @@ class SettingsPreviewTest extends TestCase
         $this->get('/')->assertSee('All systems operational');
     }
 
-    public function test_the_settings_page_carries_the_preview_frame(): void
+    public function test_the_status_page_screen_carries_the_preview_frame(): void
     {
-        $this->actingAs($this->user)->get('/admin/settings')
+        $this->actingAs($this->user)->get('/admin/status-page')
             ->assertOk()
             ->assertSee('Live preview')
             ->assertSee('id="preview"', false)
-            ->assertSee(route('admin.settings.preview'));
+            ->assertSee(route('admin.status-page.preview'));
     }
 }

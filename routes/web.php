@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SsoController;
+use App\Http\Controllers\Admin\StatusPageSettingsController;
 use App\Http\Controllers\Admin\TwoFactorController;
 use App\Http\Controllers\Admin\UpdateController;
 use App\Http\Controllers\Admin\UserController;
@@ -71,9 +72,9 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         Route::post('incidents/{incident}/update', [IncidentController::class, 'addUpdate'])->name('incidents.update');
         Route::delete('incidents/{incident}', [IncidentController::class, 'destroy'])->name('incidents.destroy');
 
-        Route::get('settings', [SettingsController::class, 'edit'])->name('settings');
-        Route::get('settings/preview', [StatusPageController::class, 'preview'])->name('settings.preview');
-        Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::get('status-page', [StatusPageSettingsController::class, 'edit'])->name('status-page');
+        Route::get('status-page/preview', [StatusPageController::class, 'preview'])->name('status-page.preview');
+        Route::put('status-page', [StatusPageSettingsController::class, 'update'])->name('status-page.update');
 
         Route::get('integrations', [IntegrationController::class, 'index'])->name('integrations');
         Route::post('integrations/notifications', [IntegrationController::class, 'storeEndpoint'])->name('integrations.endpoints.store');
@@ -105,7 +106,12 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
             Route::get('updates', [UpdateController::class, 'index'])->name('updates');
             Route::post('updates', [UpdateController::class, 'apply'])->name('updates.apply');
 
-            Route::get('sso', [SsoController::class, 'edit'])->name('sso');
+            Route::get('settings', [SettingsController::class, 'edit'])->name('settings');
+            Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+
+            // The single sign-on form lives on the Settings screen now; the old
+            // address stays for bookmarks and the docs.
+            Route::get('sso', fn () => redirect()->to(route('admin.settings').'#sso', 301))->name('sso');
             Route::put('sso', [SsoController::class, 'update'])->name('sso.update');
 
             Route::get('branding', [BrandingController::class, 'edit'])->name('branding');
