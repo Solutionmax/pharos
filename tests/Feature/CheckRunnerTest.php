@@ -14,6 +14,7 @@ use App\Services\OutgoingWebhook;
 use App\Services\Probe;
 use App\Services\ProbeResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /** Probe stub: the runner is what we are testing, not the network. */
@@ -124,6 +125,7 @@ class CheckRunnerTest extends TestCase
 
     public function test_it_records_uptime_per_day(): void
     {
+        $this->travelTo(Carbon::parse('2026-08-27 12:00:00'));
         $check = $this->makeCheck();
         $this->runner(true)->runOne($check);
 
@@ -133,8 +135,111 @@ class CheckRunnerTest extends TestCase
         $this->assertSame(100.0, $day->percentage());
     }
 
+    public function test_uptime_credits_the_wall_time_between_runs_not_the_interval(): void
+    {
+        $this->travelTo(Carbon::parse('2026-08-27 12:00:00'));
+        $check = $this->makeCheck(['interval_seconds' => 60]);
+        $runner = $this->runner(true);
+
+        $runner->runOne($check);
+        $this->travel(60)->seconds();
+        $runner->runOne($check->fresh());
+        $this->travel(60)->seconds();
+        $runner->runOne($check->fresh());
+
+        $this->assertSame(180, UptimeDay::first()->up_seconds);
+    }
+
+    public function test_a_stalled_scheduler_does_not_back_fill_more_than_one_interval(): void
+    {
+        $this->travelTo(Carbon::parse('2026-08-27 12:00:00'));
+        $check = $this->makeCheck(['interval_seconds' => 60]);
+        $runner = $this->runner(true);
+
+        $runner->runOne($check);
+        $this->travel(3)->hours();
+        $runner->runOne($check->fresh());
+
+        $this->assertSame(120, UptimeDay::first()->up_seconds);
+    }
+
+    public function test_a_run_just_after_midnight_does_not_credit_yesterday_to_today(): void
+    {
+        $this->travelTo(Carbon::parse('2026-08-27 23:59:40'));
+        $check = $this->makeCheck(['interval_seconds' => 60]);
+        $runner = $this->runner(true);
+
+        $runner->runOne($check);
+        $this->travel(40)->seconds();
+        $runner->runOne($check->fresh());
+
+        $today = UptimeDay::where('day', Carbon::parse('2026-08-28'))->first();
+        $this->assertSame(20, $today->up_seconds);
+    }
+
+    /**
+     * Regression: a due heartbeat is evaluated on every scheduler tick, and each
+     * tick credited the full 24 h interval. One day of "Backups" reached
+     * up_seconds = 101,952,000.
+     */
+    public function test_a_heartbeat_evaluated_every_tick_never_exceeds_the_day(): void
+    {
+        $this->travelTo(Carbon::parse('2026-08-27 03:30:00'));
+        $check = $this->makeCheck([
+            'type' => CheckType::Heartbeat,
+            'target' => 'hb_backups',
+            'interval_seconds' => 86400,
+            'last_run_at' => now(),
+        ]);
+        $runner = new CheckRunner(new Probe, app(OutgoingWebhook::class));
+
+        // Next day, the ping is late but within grace: due on every tick from here on.
+        $this->travel(1)->day();
+        $this->assertTrue($check->fresh()->isDue(now()));
+        $runner->runOne($check->fresh(), now());
+        $afterFirst = UptimeDay::first()->up_seconds;
+
+        $this->travel(1)->minute();
+        $runner->runOne($check->fresh(), now());
+        $this->travel(1)->minute();
+        $runner->runOne($check->fresh(), now());
+
+        $day = UptimeDay::first();
+        $total = $day->up_seconds + $day->down_seconds;
+
+        $this->assertSame($afterFirst + 120, $day->up_seconds, 'each tick credits the elapsed minute');
+        $this->assertLessThanOrEqual(now()->secondsSinceMidnight(), $total);
+        $this->assertLessThanOrEqual(86400, $total);
+        $this->assertSame(100.0, $day->percentage());
+    }
+
+    public function test_a_stale_heartbeat_accrues_down_time_per_tick(): void
+    {
+        $this->travelTo(Carbon::parse('2026-08-27 12:00:00'));
+        $check = $this->makeCheck([
+            'type' => CheckType::Heartbeat,
+            'target' => 'hb_backups',
+            'interval_seconds' => 86400,
+            'last_run_at' => now()->subDays(3),
+            'retries' => 1,
+        ]);
+        $runner = new CheckRunner(new Probe, app(OutgoingWebhook::class));
+
+        $runner->runOne($check->fresh(), now());
+        $afterFirst = UptimeDay::first()->down_seconds;
+        $this->travel(1)->minute();
+        $runner->runOne($check->fresh(), now());
+
+        $day = UptimeDay::first();
+        $this->assertSame($afterFirst + 60, $day->down_seconds);
+        $this->assertSame(0, $day->up_seconds);
+        $this->assertLessThanOrEqual(86400, $day->down_seconds);
+        $this->assertSame(0.0, $day->percentage());
+    }
+
     public function test_a_failure_marks_the_day_as_degraded(): void
     {
+        $this->travelTo(Carbon::parse('2026-08-27 12:00:00'));
         $check = $this->makeCheck();
         $this->runner(false)->runOne($check);
 
