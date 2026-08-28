@@ -99,7 +99,7 @@
             </div>
           </div>
           <div class="actions">
-            <button class="btn" type="submit">Save settings</button>
+            <button class="btn" type="submit">Save status page</button>
             <button class="btn ghost" type="reset" id="reset-settings">Undo my changes</button>
           </div>
         </div>
@@ -122,7 +122,7 @@
       </div>
       <p class="hint-row">
         This is the real page rendered from the values above, not a mock-up.
-        Nothing is saved until you press <b>Save settings</b>.
+        Nothing is saved until you press <b>Save status page</b>.
       </p>
     </div>
   </div>
