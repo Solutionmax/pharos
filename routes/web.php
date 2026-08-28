@@ -107,6 +107,8 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
             Route::get('updates', [UpdateController::class, 'index'])->name('updates');
             Route::post('updates', [UpdateController::class, 'apply'])->name('updates.apply');
             Route::post('updates/backup', [UpdateController::class, 'backup'])->name('updates.backup');
+            // Before {name}, so "progress" is never read as a backup to download.
+            Route::get('updates/backup/progress', [UpdateController::class, 'progress'])->name('updates.backup.progress');
             // The name is a folder under storage/app/backups; the pattern keeps
             // slashes and dots out of it, and the controller checks the path again.
             Route::get('updates/backup/{name}', [UpdateController::class, 'download'])->name('updates.backup.download')->where('name', SelfUpdater::NAME_PATTERN);

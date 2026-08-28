@@ -124,10 +124,15 @@ php artisan pharos:update</pre>
 <div class="panel">
   <div class="panel-hd">
     <h3>Backups kept</h3><span class="hint mono">storage/app/backups</span>
-    <form method="POST" action="{{ route('admin.updates.backup') }}">
+    <form method="POST" action="{{ route('admin.updates.backup') }}" id="backup-form" data-progress="{{ route('admin.updates.backup.progress') }}">
       @csrf
       <button class="btn" type="submit">Back up now</button>
     </form>
+  </div>
+  {{-- Filled by the script below while a backup runs; without JS the form posts as before. --}}
+  <div class="backup-progress" id="backup-progress" hidden>
+    <span class="mono" data-label></span><span class="mono" data-pct></span>
+    <progress class="bar"></progress>
   </div>
   @if ($backups)
     <div class="scroll">
@@ -169,4 +174,60 @@ php artisan pharos:update</pre>
     </p>
   </div>
 </div>
+
+<script>
+(function () {
+  var form = document.getElementById('backup-form'), box = document.getElementById('backup-progress');
+  if (!form || !window.fetch) return;
+  var bar = box.querySelector('progress'), label = box.querySelector('[data-label]'), pct = box.querySelector('[data-pct]'), btn = form.querySelector('button');
+  var words = {counting: 'Counting files…', code: 'Copying code…', vendor: 'Copying vendor…', database: 'Copying the database…', finishing: 'Finishing…'};
+  var fmt = function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f'); };
+  function show(s) {
+    if (s.state === 'idle' || s.state === 'failed') return;
+    var text = words[s.stage] || s.stage;
+    if (s.total) { bar.max = s.total; bar.value = s.done; pct.textContent = Math.floor(100 * s.done / s.total) + '%'; text += ' ' + fmt(s.done) + ' / ' + fmt(s.total) + ' files'; }
+    label.textContent = text;
+  }
+  function poll() {
+    return fetch(form.dataset.progress, {credentials: 'same-origin', headers: {Accept: 'application/json'}}).then(function (r) { return r.json(); }).then(show).catch(function () {});
+  }
+  function finish(text, bad) { bar.hidden = true; pct.textContent = ''; label.textContent = text; box.classList.toggle('bad', !!bad); }
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    btn.disabled = true; box.hidden = false; box.classList.remove('bad');
+    bar.hidden = false; bar.removeAttribute('value'); label.textContent = 'Starting…'; pct.textContent = '';
+    // `php artisan serve` is single-threaded, so there the polls queue behind the
+    // POST and the bar only moves at the end. Real web servers are fine.
+    var timer = setInterval(poll, 500);
+    fetch(form.action, {method: 'POST', credentials: 'same-origin', headers: {Accept: 'application/json', 'X-CSRF-TOKEN': form.querySelector('[name=_token]').value}})
+      .then(function (r) {
+        if (!/json/.test(r.headers.get('content-type') || '')) throw new Error('Backup failed (HTTP ' + r.status + ').');
+        return r.json();
+      })
+      .then(function (j) {
+        clearInterval(timer);
+        return poll().then(function () {
+          if (!j.ok) throw new Error(j.message || 'Backup failed.');
+          finish('Backup made: ' + j.name + ' (' + j.size + ')');
+          setTimeout(function () { location.reload(); }, 1500); // the table and the flash come with the fresh page
+        });
+      })
+      .catch(function (err) { clearInterval(timer); finish(err.message || 'Backup failed.', true); btn.disabled = false; });
+  });
+})();
+</script>
+@push('head')
+<style>
+.backup-progress{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--bg-tint);font-size:12px;color:var(--ink-3)}
+.backup-progress.bad{color:var(--red-ink)}
+.backup-progress .bar{grid-column:1/-1;width:100%;height:8px;border:0;border-radius:4px;overflow:hidden;background:var(--line);accent-color:var(--brand);-webkit-appearance:none;appearance:none}
+.backup-progress .bar::-webkit-progress-bar{background:var(--line);border-radius:4px}
+.backup-progress .bar::-webkit-progress-value{background:var(--brand);border-radius:4px;transition:width .3s var(--ease)}
+.backup-progress .bar::-moz-progress-bar{background:var(--brand);border-radius:4px}
+/* No value yet: a sliding band until the first sample arrives. */
+.backup-progress .bar:indeterminate::-webkit-progress-bar,.backup-progress .bar:indeterminate::-moz-progress-bar{background:linear-gradient(90deg,var(--line) 0 35%,var(--brand) 50%,var(--line) 65% 100%) 0 0/200% 100%;animation:bar-slide 1.2s linear infinite}
+@keyframes bar-slide{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.backup-progress .bar:indeterminate::-webkit-progress-bar,.backup-progress .bar:indeterminate::-moz-progress-bar{animation:none;background:var(--brand-soft)}}
+</style>
+@endpush
 @endsection

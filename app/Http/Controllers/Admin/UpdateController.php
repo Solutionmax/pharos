@@ -71,19 +71,33 @@ class UpdateController extends Controller
     }
 
     /** A backup on demand: before a manual change, or just because it has been a while. */
-    public function backup()
+    public function backup(Request $request)
     {
+        // The screen asks for JSON so it can show the progress bar; the plain
+        // form post (no JS) still gets the redirect and the flash.
         try {
             $backup = $this->selfUpdater->backupCurrent();
         } catch (\Throwable $e) {
-            return back()->withErrors(['backup' => 'Backup failed: '.$e->getMessage()]);
+            $message = 'Backup failed: '.$e->getMessage();
+
+            return $request->wantsJson()
+                ? response()->json(['ok' => false, 'message' => $message], 422)
+                : back()->withErrors(['backup' => $message]);
         }
 
         $name = basename($backup);
         $size = Number::fileSize($this->selfUpdater->treeSize($backup), precision: 1);
         Audit::record('backup.created', null, ['name' => $name, 'size' => $size]);
 
-        return redirect()->route('admin.updates')->with('status', "Backup made: {$name} ({$size})");
+        return $request->wantsJson()
+            ? response()->json(['ok' => true, 'name' => $name, 'size' => $size])
+            : redirect()->route('admin.updates')->with('status', "Backup made: {$name} ({$size})");
+    }
+
+    /** Polled by the screen while a backup runs. */
+    public function progress()
+    {
+        return response()->json($this->selfUpdater->progress())->header('Cache-Control', 'no-store');
     }
 
     public function download(string $name)
