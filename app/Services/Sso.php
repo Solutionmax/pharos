@@ -39,7 +39,17 @@ class Sso
 
     public function clientSecret(): ?string
     {
-        return Setting::get('sso.client_secret') ?: null;
+        $stored = Setting::get('sso.client_secret') ?: null;
+
+        if ($stored === null) {
+            return null;
+        }
+
+        try {
+            return \Illuminate\Support\Facades\Crypt::decryptString($stored);
+        } catch (\Illuminate\Contracts\Encryption\DecryptException) {
+            return $stored; // saved before secrets were encrypted; re-saving the form fixes it
+        }
     }
 
     /**

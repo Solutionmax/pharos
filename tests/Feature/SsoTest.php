@@ -351,4 +351,20 @@ class SsoTest extends TestCase
         $this->assertGuest();
         Http::assertNotSent(fn ($request) => str_contains($request->url(), '169.254.169.254'));
     }
+
+    /** The form says "stored encrypted"; the database must agree, and an older plain value must keep working. */
+    public function test_the_client_secret_is_stored_encrypted_and_a_plain_legacy_value_still_reads(): void
+    {
+        $this->actingAs($this->user)->put('/admin/sso', [
+            'issuer' => 'https://id.example.net', 'client_id' => 'pharos', 'client_secret' => 'plain-secret-123',
+        ]);
+
+        $stored = \App\Models\Setting::get('sso.client_secret');
+        $this->assertNotSame('plain-secret-123', $stored);
+        $this->assertSame('plain-secret-123', \Illuminate\Support\Facades\Crypt::decryptString($stored));
+        $this->assertSame('plain-secret-123', app(\App\Services\Sso::class)->clientSecret());
+
+        \App\Models\Setting::put('sso.client_secret', 'legacy-plain');
+        $this->assertSame('legacy-plain', app(\App\Services\Sso::class)->clientSecret());
+    }
 }

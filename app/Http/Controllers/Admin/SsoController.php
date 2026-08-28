@@ -111,7 +111,8 @@ class SsoController extends Controller
         // An empty box means "leave it alone", not "wipe it": the secret is never
         // rendered back into the form, so submitting the form would clear it.
         if (filled($data['client_secret'] ?? null)) {
-            Setting::put('sso.client_secret', $data['client_secret']);
+            // Encrypted at rest, like the mail password: a database dump must not hand out the provider secret.
+            Setting::put('sso.client_secret', \Illuminate\Support\Facades\Crypt::encryptString($data['client_secret']));
         }
 
         Cache::forget('sso.discovery.'.md5((string) Setting::get('sso.issuer')));
