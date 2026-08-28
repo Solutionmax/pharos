@@ -88,11 +88,14 @@ class UpdateController extends Controller
 
         $name = basename($backup);
         $size = Number::fileSize($this->selfUpdater->treeSize($backup), precision: 1);
-        Audit::record('backup.created', null, ['name' => $name, 'size' => $size]);
+        $pruned = $this->selfUpdater->pruned();
+        Audit::record('backup.created', null, array_filter(['name' => $name, 'size' => $size, 'removed' => implode(', ', $pruned)]));
+
+        $message = "Backup made: {$name} ({$size})".($pruned ? ' Removed the oldest: '.implode(', ', $pruned).'.' : '');
 
         return $request->wantsJson()
-            ? response()->json(['ok' => true, 'name' => $name, 'size' => $size])
-            : redirect()->route('admin.updates')->with('status', "Backup made: {$name} ({$size})");
+            ? response()->json(['ok' => true, 'name' => $name, 'size' => $size, 'message' => $message])
+            : redirect()->route('admin.updates')->with('status', $message);
     }
 
     /** Polled by the screen while a backup runs. */

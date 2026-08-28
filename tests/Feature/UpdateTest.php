@@ -564,6 +564,20 @@ class UpdateTest extends TestCase
     // ---------- backup management ----------
 
     /** A tiny stand-in for base_path(): backing up the whole repo per test is far too slow. */
+    protected function fakeTree(): string
+    {
+        return $this->fakeSourceTree();
+    }
+
+    protected function fakeBackupsDir(): string
+    {
+        $dir = storage_path('app/testing/backups-'.Str::random(6));
+        File::ensureDirectoryExists($dir);
+        config(['pharos.update.backups_dir' => $dir]);
+
+        return $dir;
+    }
+
     protected function fakeSourceTree(): string
     {
         $src = storage_path('app/testing/src-'.Str::random(6));
@@ -1079,5 +1093,56 @@ class UpdateTest extends TestCase
         $this->assertStringContainsString('signed out', $response->json('message'));
         $this->assertDatabaseHas('audit_log', ['action' => 'backup.restored', 'user_id' => null]);
         $this->assertGuest();
+    }
+
+    /** Backups are ~30 MB each and nothing else ever removes them: keep the newest few. */
+    public function test_only_the_newest_backups_are_kept(): void
+    {
+        config(['pharos.update.keep_backups' => 3]);
+        $src = $this->fakeTree(); $dir = $this->fakeBackupsDir();
+        foreach (['0.9.0-20260101-000000', '0.9.1-20260201-000000', '0.9.2-20260301-000000', '0.9.3-20260401-000000'] as $old) {
+            File::ensureDirectoryExists("$dir/$old"); File::put("$dir/$old/artisan", 'x');
+        }
+
+        $updater = app(SelfUpdater::class);
+        $made = basename($updater->backupCurrent($src));
+
+        $names = array_column($updater->backups(), 'name');
+        $this->assertCount(3, $names);
+        $this->assertSame([$made, '0.9.3-20260401-000000', '0.9.2-20260301-000000'], $names);
+        $this->assertSame(['0.9.1-20260201-000000', '0.9.0-20260101-000000'], $updater->pruned());
+    }
+
+    public function test_pruning_can_be_switched_off(): void
+    {
+        config(['pharos.update.keep_backups' => 0]);
+        $src = $this->fakeTree(); $dir = $this->fakeBackupsDir();
+        foreach (['0.9.0-20260101-000000', '0.9.1-20260201-000000', '0.9.2-20260301-000000'] as $old) {
+            File::ensureDirectoryExists("$dir/$old"); File::put("$dir/$old/artisan", 'x');
+        }
+
+        app(SelfUpdater::class)->backupCurrent($src);
+
+        $this->assertCount(4, app(SelfUpdater::class)->backups());
+    }
+
+    /** The safety copy a rollback makes must never push the backup being restored out of the window. */
+    public function test_a_rollback_never_prunes_its_own_target(): void
+    {
+        config(['pharos.update.keep_backups' => 3]);
+        [$name, $live, $liveDb] = $this->fakeRollbackPair();
+        $dir = dirname(app(SelfUpdater::class)->backupPath($name));
+        foreach (['1.0.1-20260201-000000', '1.0.2-20260301-000000'] as $newer) {
+            File::ensureDirectoryExists("$dir/$newer"); File::put("$dir/$newer/artisan", 'x');
+        }
+        // $name (1.0.0-2026-01-01) is now the oldest of three; the safety copy makes four.
+
+        $result = app(SelfUpdater::class)->rollback($name, $live, $liveDb);
+
+        $this->assertTrue($result['ok'], $result['message']);
+        $this->assertDirectoryExists("$dir/$name");
+        // The target sits outside the window for this one run: four for now, three again after the next backup.
+        $this->assertCount(4, app(SelfUpdater::class)->backups());
+        $this->assertDirectoryExists("$dir/1.0.1-20260201-000000");
     }
 }
