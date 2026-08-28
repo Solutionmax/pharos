@@ -278,21 +278,21 @@ pre .k{color:var(--brand)}
     <a class="nav" href="{{ route('admin.incidents') }}" @if(request()->routeIs('admin.incident*')) aria-current="page" @endif>
       @include('partials.icon', ['name' => 'incidents']) Incidents
     </a>
+    <a class="nav" href="{{ route('admin.status-page') }}" @if(request()->routeIs('admin.status-page*')) aria-current="page" @endif>
+      @include('partials.icon', ['name' => 'sliders']) Status page
+    </a>
 
     <span class="lbl">Configuration</span>
-    <a class="nav" href="{{ route('admin.settings') }}" @if(request()->routeIs('admin.settings')) aria-current="page" @endif>
-      @include('partials.icon', ['name' => 'settings']) Settings
-    </a>
     <a class="nav" href="{{ route('admin.integrations') }}" @if(request()->routeIs('admin.integrations')) aria-current="page" @endif>
       @include('partials.icon', ['name' => 'integrations']) Integrations
     </a>
     {{-- Hidden rather than shown-and-refused: a 403 you did not see coming reads as a fault. --}}
     @if (auth()->user()->isAdmin())
+      <a class="nav" href="{{ route('admin.settings') }}" @if(request()->routeIs('admin.settings')) aria-current="page" @endif>
+        @include('partials.icon', ['name' => 'settings']) Settings
+      </a>
       <a class="nav" href="{{ route('admin.branding') }}" @if(request()->routeIs('admin.branding')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'branding']) Branding
-      </a>
-      <a class="nav" href="{{ route('admin.sso') }}" @if(request()->routeIs('admin.sso')) aria-current="page" @endif>
-        @include('partials.icon', ['name' => 'integrations']) Single sign-on
       </a>
       <a class="nav" href="{{ route('admin.users') }}" @if(request()->routeIs('admin.users')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'users']) Users

@@ -39,7 +39,7 @@ class RolesTest extends TestCase
             'the audit log' => ['/admin/audit'],
             'the update screen' => ['/admin/updates'],
             'branding' => ['/admin/branding'],
-            'single sign-on' => ['/admin/sso'],
+            'settings' => ['/admin/settings'],
         ];
     }
 
@@ -52,6 +52,31 @@ class RolesTest extends TestCase
         // session changes, so the second visit needs a session of its own.
         $this->flushSession();
         $this->actingAs($this->admin)->get($url)->assertOk();
+    }
+
+    public function test_the_old_sso_url_redirects_to_settings(): void
+    {
+        // Single sign-on moved into Settings. Bookmarks and the docs still say
+        // /admin/sso, so that address keeps working instead of turning into a 404.
+        $this->actingAs($this->admin)->get('/admin/sso')
+            ->assertStatus(301)
+            ->assertRedirect('/admin/settings#sso');
+    }
+
+    public function test_a_user_can_shape_the_status_page_but_not_the_installation(): void
+    {
+        // What the page shows is operational; the time zone and sign-in are not.
+        $this->actingAs($this->member)->get('/admin/status-page')->assertOk();
+        $this->actingAs($this->member)->put('/admin/status-page', [
+            'theme' => 'dark',
+            'incident_days' => 7,
+        ])->assertRedirect('/admin/status-page');
+        $this->assertSame('dark', \App\Models\Setting::get('brand.theme'));
+
+        $this->actingAs($this->member)->get('/admin/settings')->assertForbidden();
+        $this->actingAs($this->member)->put('/admin/settings', ['timezone' => 'Europe/Amsterdam'])->assertForbidden();
+        $this->actingAs($this->member)->put('/admin/sso', ['enabled' => '0'])->assertForbidden();
+        $this->assertSame('UTC', \App\Services\Clock::timezone());
     }
 
     public function test_a_user_may_not_touch_api_tokens_or_the_signing_secret(): void

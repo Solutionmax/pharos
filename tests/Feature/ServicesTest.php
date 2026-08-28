@@ -168,12 +168,12 @@ class ServicesTest extends TestCase
         $this->get('/')->assertOk()->assertSee('IMAP')->assertDontSee('Backups');
     }
 
-    public function test_service_visibility_is_saved_from_the_settings_form(): void
+    public function test_service_visibility_is_saved_from_the_status_page_screen(): void
     {
         $a = $this->group('Email', 1);
         $b = $this->group('Shared hosting', 2);
 
-        $this->actingAs($this->user)->put('/admin/settings', [
+        $this->actingAs($this->user)->put('/admin/status-page', [
             'theme' => 'system',
             'incident_days' => 5,
             'modules' => ['page.show_services' => '1'],
@@ -191,7 +191,7 @@ class ServicesTest extends TestCase
         Component::create(['component_group_id' => $a->id, 'name' => 'IMAP']);
         Component::create(['component_group_id' => $b->id, 'name' => 'web-01']);
 
-        $this->actingAs($this->user)->get(route('admin.settings.preview', [
+        $this->actingAs($this->user)->get(route('admin.status-page.preview', [
             'm' => ['page.show_services' => '1'],
             'g' => [$a->id => '1', $b->id => '0'],
         ]))->assertOk()->assertSee('IMAP')->assertDontSee('web-01');
@@ -201,12 +201,12 @@ class ServicesTest extends TestCase
         $this->get('/')->assertSee('web-01');
     }
 
-    public function test_the_settings_page_lists_each_service_as_its_own_switch(): void
+    public function test_the_status_page_screen_lists_each_service_as_its_own_switch(): void
     {
         $this->group('Email', 1);
         $this->group('Shared hosting', 2);
 
-        $this->actingAs($this->user)->get('/admin/settings')
+        $this->actingAs($this->user)->get('/admin/status-page')
             ->assertOk()
             ->assertSee('Email')
             ->assertSee('Shared hosting')
@@ -235,51 +235,51 @@ class ServicesTest extends TestCase
             ->assertSee('value="Email"', false);
     }
 
-    public function test_arriving_from_settings_leaves_a_way_back(): void
+    public function test_arriving_from_the_status_page_screen_leaves_a_way_back(): void
     {
-        // Services is top level from the sidebar, but a detour when Settings sent
+        // Services is top level from the sidebar, but a detour when Status page sent
         // you. Landing there with no way back to the preview is what went wrong.
         $group = $this->group('Email');
 
-        $this->actingAs($this->user)->get('/admin/services?from=settings')
+        $this->actingAs($this->user)->get('/admin/services?from=status-page')
             ->assertOk()
-            ->assertSee('← Settings', false)
-            ->assertSee(route('admin.settings'));
+            ->assertSee('← Status page', false)
+            ->assertSee(route('admin.status-page'));
 
         $this->actingAs($this->user)->get('/admin/services')
             ->assertOk()
-            ->assertDontSee('← Settings', false);
+            ->assertDontSee('← Status page', false);
     }
 
     public function test_the_trail_survives_the_add_and_edit_screens(): void
     {
         $group = $this->group('Email');
 
-        $this->actingAs($this->user)->get('/admin/services?from=settings')
+        $this->actingAs($this->user)->get('/admin/services?from=status-page')
             ->assertOk()
-            ->assertSee('from=settings');
+            ->assertSee('from=status-page');
 
-        $this->actingAs($this->user)->get('/admin/services/create?from=settings')
+        $this->actingAs($this->user)->get('/admin/services/create?from=status-page')
             ->assertOk()
-            ->assertSee('from=settings');
+            ->assertSee('from=status-page');
 
-        $this->actingAs($this->user)->get("/admin/services/{$group->id}/edit?from=settings")
+        $this->actingAs($this->user)->get("/admin/services/{$group->id}/edit?from=status-page")
             ->assertOk()
-            ->assertSee('from=settings');
+            ->assertSee('from=status-page');
     }
 
     public function test_saving_returns_you_along_the_trail_you_came_by(): void
     {
         $group = $this->group('Email');
 
-        $this->actingAs($this->user)->post('/admin/services?from=settings', ['name' => 'Backups', 'visible' => 1])
-            ->assertRedirect(route('admin.groups', ['from' => 'settings']));
+        $this->actingAs($this->user)->post('/admin/services?from=status-page', ['name' => 'Backups', 'visible' => 1])
+            ->assertRedirect(route('admin.groups', ['from' => 'status-page']));
 
-        $this->actingAs($this->user)->put("/admin/services/{$group->id}?from=settings", ['name' => 'Mail', 'visible' => 1])
-            ->assertRedirect(route('admin.groups', ['from' => 'settings']));
+        $this->actingAs($this->user)->put("/admin/services/{$group->id}?from=status-page", ['name' => 'Mail', 'visible' => 1])
+            ->assertRedirect(route('admin.groups', ['from' => 'status-page']));
 
-        $this->actingAs($this->user)->delete("/admin/services/{$group->id}?from=settings")
-            ->assertRedirect(route('admin.groups', ['from' => 'settings']));
+        $this->actingAs($this->user)->delete("/admin/services/{$group->id}?from=status-page")
+            ->assertRedirect(route('admin.groups', ['from' => 'status-page']));
 
         // Without the trail it stays where it always went.
         $other = $this->group('DNS');
@@ -287,13 +287,13 @@ class ServicesTest extends TestCase
             ->assertRedirect(route('admin.groups'));
     }
 
-    public function test_the_settings_page_starts_the_trail(): void
+    public function test_the_status_page_screen_starts_the_trail(): void
     {
         $this->group('Email');
 
-        $this->actingAs($this->user)->get('/admin/settings')
+        $this->actingAs($this->user)->get('/admin/status-page')
             ->assertOk()
-            ->assertSee(route('admin.groups', ['from' => 'settings']));
+            ->assertSee(route('admin.groups', ['from' => 'status-page']));
     }
 
     public function test_the_list_links_to_the_edit_screen_for_each_service(): void

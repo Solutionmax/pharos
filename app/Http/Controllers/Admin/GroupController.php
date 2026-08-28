@@ -14,12 +14,12 @@ class GroupController extends Controller
 {
     /**
      * A screen is only top level when the sidebar sent you. Arriving from
-     * Settings makes it a detour, and a detour needs a way back.
+     * the Status page screen makes it a detour, and a detour needs a way back.
      */
     protected function origin(Request $request): ?array
     {
-        return $request->query('from') === 'settings'
-            ? ['url' => route('admin.settings'), 'label' => 'Settings']
+        return $request->query('from') === 'status-page'
+            ? ['url' => route('admin.status-page'), 'label' => 'Status page']
             : null;
     }
 

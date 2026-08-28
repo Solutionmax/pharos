@@ -250,15 +250,15 @@ class SsoTest extends TestCase
             'password' => Hash::make('correct-horse-battery'), 'role' => \App\Enums\UserRole::User,
         ]);
 
-        $this->actingAs($member)->get('/admin/sso')->assertForbidden();
+        $this->actingAs($member)->get('/admin/settings')->assertForbidden();
 
         $this->flushSession();
-        $this->actingAs($this->user)->get('/admin/sso')->assertOk();
+        $this->actingAs($this->user)->get('/admin/settings')->assertOk();
     }
 
     public function test_the_secret_is_never_rendered_back_into_the_form(): void
     {
-        $this->actingAs($this->user)->get('/admin/sso')->assertOk()->assertDontSee('shhh');
+        $this->actingAs($this->user)->get('/admin/settings')->assertOk()->assertDontSee('shhh');
     }
 
     public function test_an_empty_secret_box_leaves_the_stored_one_alone(): void
@@ -269,7 +269,7 @@ class SsoTest extends TestCase
             'client_id' => 'pharos',
             'client_secret' => '',
             'enabled' => '1',
-        ])->assertRedirect('/admin/sso');
+        ])->assertRedirect('/admin/settings#sso');
 
         $this->assertSame('shhh', Setting::get('sso.client_secret'));
     }
@@ -290,7 +290,7 @@ class SsoTest extends TestCase
         $this->assertFalse((bool) Setting::get('sso.enabled'));
     }
 
-    public function test_the_menu_hides_single_sign_on_from_a_user(): void
+    public function test_the_menu_hides_settings_from_a_user(): void
     {
         $member = User::create([
             'name' => 'Tom', 'email' => 'tom2@example.net',
@@ -299,7 +299,7 @@ class SsoTest extends TestCase
 
         $this->actingAs($member)->get('/admin/components')
             ->assertOk()
-            ->assertDontSee(route('admin.sso'), false);
+            ->assertDontSee(route('admin.settings'), false);
     }
 
     public function test_an_internal_provider_works_once_its_host_is_vouched_for(): void
@@ -309,7 +309,7 @@ class SsoTest extends TestCase
 
         Setting::put('sso.issuer', 'https://192.168.18.163');
         Cache::forget('sso.discovery.'.md5('https://192.168.18.163'));
-        $this->actingAs($this->user)->get('/admin/sso')->assertOk();
+        $this->actingAs($this->user)->get('/admin/settings')->assertOk();
 
         // Not vouched for yet.
         $this->assertFalse(app(SafeHttp::class)->isAllowed('192.168.18.163'));
