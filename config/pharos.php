@@ -29,8 +29,10 @@ return [
         // hosting, which is how the app knows which world it is in.
         'status_file' => storage_path('app/ota/update-status.json'),
         'trigger_file' => storage_path('app/ota/update.trigger'),
-        // Where a self-update parks the version it replaces. Never pruned by the app.
+        // Where a self-update parks the version it replaces.
         'backups_dir' => storage_path('app/backups'),
+        // How many backups to keep; the oldest go when a new one is made. 0 keeps everything.
+        'keep_backups' => (int) env('PHAROS_KEEP_BACKUPS', 3),
         // What "Back up now" copies. Null means the application itself; only the
         // test suite points it at a small stand-in tree.
         'backup_source' => null,

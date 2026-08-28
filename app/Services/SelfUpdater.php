@@ -130,7 +130,43 @@ class SelfUpdater
      * Secrets, storage and uploads are left out: an update never touches them,
      * and storage is where the backups themselves live.
      */
-    public function backupCurrent(?string $from = null, ?string $database = null): string
+    /** Names removed by the last prune, for the flash and the audit line. */
+    protected array $pruned = [];
+
+    public function pruned(): array
+    {
+        return $this->pruned;
+    }
+
+    /**
+     * Keep the newest N backups (config keep_backups; 0 = all). $keep names are
+     * never removed whatever their age — a rollback protects its own target,
+     * otherwise its safety copy could push it out of the window mid-restore.
+     *
+     * @return list<string> what was removed, oldest last
+     */
+    public function prune(array $keep = []): array
+    {
+        $limit = (int) config('pharos.update.keep_backups');
+        $this->pruned = [];
+
+        if ($limit < 1) {
+            return [];
+        }
+
+        $kept = 0;
+        foreach ($this->backups() as $backup) { // newest first
+            if (in_array($backup['name'], $keep, true) || $kept++ < $limit) {
+                continue;
+            }
+            File::deleteDirectory($this->backupsDir().'/'.$backup['name']);
+            $this->pruned[] = $backup['name'];
+        }
+
+        return $this->pruned;
+    }
+
+    public function backupCurrent(?string $from = null, ?string $database = null, array $keep = []): string
     {
         $from ??= config('pharos.update.backup_source') ?? base_path();
         $skip = ['.env', 'storage', 'public/storage', 'node_modules', 'database/database.sqlite'];
@@ -161,6 +197,7 @@ class SelfUpdater
             $stage('finishing');
 
             $this->report([...$sample, 'state' => 'done', 'message' => Number::fileSize($this->treeSize($backup), precision: 1)]);
+            $this->prune($keep);
 
             return $backup;
         } catch (\Throwable $e) {
@@ -271,7 +308,7 @@ class SelfUpdater
 
         try {
             $this->within = 'safety';
-            $safety = basename($this->backupCurrent($target, $database));
+            $safety = basename($this->backupCurrent($target, $database, keep: [$name]));
             $this->within = null;
 
             // One tick per file, plus one for the database step — as in backupCurrent().
