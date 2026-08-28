@@ -95,6 +95,34 @@ class StatusPageTest extends TestCase
         $this->assertSame(ComponentStatus::MajorOutage, $group->fresh()->status());
     }
 
+    public function test_an_open_incident_stays_on_the_page_after_the_history_window(): void
+    {
+        \App\Models\Setting::put('page.incident_days', 2);
+        $component = $this->makeComponent(['status' => ComponentStatus::MajorOutage]);
+
+        $old = Incident::create([
+            'name' => 'Storage array degraded',
+            'status' => IncidentStatus::Investigating,
+            'occurred_at' => now()->subDays(10),
+        ]);
+        $old->components()->attach($component->id, ['status' => ComponentStatus::MajorOutage->value]);
+        IncidentUpdate::create(['incident_id' => $old->id, 'status' => IncidentStatus::Investigating, 'message' => 'Still degraded.']);
+
+        $closed = Incident::create([
+            'name' => 'Old and resolved',
+            'status' => IncidentStatus::Resolved,
+            'occurred_at' => now()->subDays(10),
+            'resolved_at' => now()->subDays(9),
+        ]);
+        IncidentUpdate::create(['incident_id' => $closed->id, 'status' => IncidentStatus::Resolved, 'message' => 'Fixed.']);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Ongoing')
+            ->assertSee('Storage array degraded')
+            ->assertDontSee('Old and resolved');
+    }
+
     public function test_an_ungrouped_outage_still_drives_the_headline(): void
     {
         Component::create(['name' => 'Website', 'status' => ComponentStatus::MajorOutage]);

@@ -263,6 +263,18 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
   @if ($modules['page.show_incidents'])
     <section class="sec">
       <h2>Incidents</h2>
+      @if ($ongoing->isNotEmpty())
+        <div class="day">
+          <div class="day-hd">
+            <h3>Ongoing</h3>
+            <span class="ln"></span>
+            <span class="none">since {{ $ongoing->last()->occurred_at->timezone(\App\Services\Clock::timezone())->format('j F') }}</span>
+          </div>
+          @foreach ($ongoing as $incident)
+            @include('partials.incident', ['incident' => $incident])
+          @endforeach
+        </div>
+      @endif
       @forelse ($days as $date => $incidents)
         @php $carbon = \Illuminate\Support\Carbon::parse($date, \App\Services\Clock::timezone()); @endphp
         <div class="day">
@@ -272,39 +284,13 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
             @if ($incidents->isEmpty())<span class="none">No incidents</span>@endif
           </div>
           @foreach ($incidents as $incident)
-            @php
-              $tone = $incident->status === \App\Enums\IncidentStatus::Resolved
-                  ? 'ok'
-                  : (($incident->components->max('pivot.status') ?? 0) >= 4 ? 'b' : 'p');
-            @endphp
-            <article class="inc {{ $tone }}">
-              <div class="inc-hd">
-                <h4>{{ $incident->name }}</h4>
-                <span class="pill {{ $tone }}">{{ $incident->status->label() }}</span>
-              </div>
-              @if ($incident->components->isNotEmpty())
-                <p class="aff">
-                  {{ $incident->isOpen() ? 'Affects' : 'Affected' }}
-                  <b>{{ $incident->components->pluck('name')->join(', ', ' and ') }}</b>
-                </p>
-              @endif
-              <div class="tl">
-                @foreach ($incident->updates as $update)
-                  <div class="tl-i">
-                    <span class="hd">
-                      <strong>{{ $update->status->label() }}</strong>
-                      <time>{{ $update->created_at->format('H:i') }}</time>
-                      @if ($update->automatic)<span class="auto">automatic</span>@endif
-                    </span>
-                    <div class="md">{!! $update->messageHtml() !!}</div>
-                  </div>
-                @endforeach
-              </div>
-            </article>
+            @include('partials.incident', ['incident' => $incident])
           @endforeach
         </div>
       @empty
-        <div class="day"><div class="day-hd"><h3>No incidents reported</h3><span class="ln"></span></div></div>
+        @if ($ongoing->isEmpty())
+          <div class="day"><div class="day-hd"><h3>No incidents reported</h3><span class="ln"></span></div></div>
+        @endif
       @endforelse
     </section>
   @endif

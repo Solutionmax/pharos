@@ -45,6 +45,6 @@ return [
     'audit_days' => (int) env('PHAROS_AUDIT_DAYS', 180),
 
     // Never hardcode these in views: moving to a real domain must stay a .env edit.
-    'buy_url' => env('PHAROS_BUY_URL', 'https://solutionmax.net/pharos'),
+    'buy_url' => env('PHAROS_BUY_URL', 'https://pharos.solutionmax.net/#pricing'),
     'docs_url' => env('PHAROS_DOCS_URL', 'https://pharos.solutionmax.net/docs'),
 ];
