@@ -254,4 +254,14 @@ class StatusPageTest extends TestCase
             ->assertSee('animation:pulse', false)
             ->assertSee('prefers-reduced-motion:reduce', false);
     }
+
+    /** Ninety slivers are unreadable without a hover that names the day. */
+    public function test_every_uptime_sliver_names_its_day(): void
+    {
+        \App\Models\Component::create(['name' => 'Website']);
+
+        $this->get('/')->assertOk()
+            ->assertSee('title="'.now()->format('j M'), false)
+            ->assertSee(' · ', false);
+    }
 }
