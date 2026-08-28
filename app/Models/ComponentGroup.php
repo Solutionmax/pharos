@@ -25,8 +25,9 @@ class ComponentGroup extends Model
     /** A group is only as healthy as its worst member. */
     public function status(): ComponentStatus
     {
-        $worst = $this->components->where('enabled', true)->max('status') ?? 1;
+        // Compare the enum values, not the enum objects — objects have no order.
+        $worst = $this->components->where('enabled', true)->max(fn ($c) => $c->status->value) ?? 1;
 
-        return ComponentStatus::from($worst instanceof ComponentStatus ? $worst->value : (int) $worst);
+        return ComponentStatus::from((int) $worst);
     }
 }

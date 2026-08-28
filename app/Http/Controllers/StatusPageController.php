@@ -112,10 +112,9 @@ class StatusPageController extends Controller
 
         $overall = $percentages === [] ? 100.0 : round(array_sum($percentages) / count($percentages), 2);
 
-        $worstValue = $all->max('status');
-        $worst = $worstValue instanceof ComponentStatus
-            ? $worstValue
-            : ComponentStatus::from((int) ($worstValue ?? 1));
+        // max('status') compared the enum *objects*, which PHP cannot order, so
+        // the headline followed whichever component happened to come first.
+        $worst = ComponentStatus::from((int) ($all->max(fn (Component $c) => $c->status->value) ?? 1));
 
         return view('status', [
             'groups' => $groups,

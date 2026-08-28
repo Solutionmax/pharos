@@ -75,6 +75,26 @@ class StatusPageTest extends TestCase
         $this->get('/')->assertOk()->assertSee('href="https://example.net/shop"', false);
     }
 
+    public function test_the_headline_follows_the_worst_component_not_the_first(): void
+    {
+        $this->makeComponent(['name' => 'web-01', 'status' => ComponentStatus::Operational]);
+        $this->makeComponent(['name' => 'nas-01', 'status' => ComponentStatus::MajorOutage]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Major outage')
+            ->assertDontSee('All systems operational');
+    }
+
+    public function test_a_service_is_as_red_as_its_worst_component_not_its_first(): void
+    {
+        $group = ComponentGroup::create(['name' => 'Servers', 'position' => 1]);
+        Component::create(['component_group_id' => $group->id, 'name' => 'web-01', 'status' => ComponentStatus::Operational]);
+        Component::create(['component_group_id' => $group->id, 'name' => 'nas-01', 'status' => ComponentStatus::MajorOutage]);
+
+        $this->assertSame(ComponentStatus::MajorOutage, $group->fresh()->status());
+    }
+
     public function test_an_ungrouped_outage_still_drives_the_headline(): void
     {
         Component::create(['name' => 'Website', 'status' => ComponentStatus::MajorOutage]);
