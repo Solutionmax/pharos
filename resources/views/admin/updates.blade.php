@@ -238,6 +238,7 @@ php artisan pharos:update</pre>
 </script>
 @push('head')
 <style>
+.backup-progress[hidden]{display:none}
 .backup-progress{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--bg-tint);font-size:12px;color:var(--ink-3)}
 .backup-progress.bad{color:var(--red-ink)}
 .backup-progress .bar{grid-column:1/-1;width:100%;height:8px;border:0;border-radius:4px;overflow:hidden;background:var(--line);accent-color:var(--brand);-webkit-appearance:none;appearance:none}
