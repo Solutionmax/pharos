@@ -89,6 +89,7 @@ class SubscriberController extends Controller
 
         return response()->streamDownload(function () {
             $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // BOM: Excel then reads the arrows and dashes as UTF-8
             fputcsv($out, ['email', 'subscribed_at']);
 
             Subscriber::active()->chunkById(500, function ($rows) use ($out) {

@@ -20,7 +20,12 @@
           <td class="num">{{ $user->created_at?->format('d M Y') }}</td>
           <td>
             <span class="rowacts">
-              <form method="POST" action="{{ route('admin.users.role', $user) }}">
+              <form method="POST" action="{{ route('admin.users.role', $user) }}"
+                    @if ($user->is(auth()->user()) && $user->isAdmin())
+                      data-confirm-title="Give up your own admin rights?"
+                      data-confirm="You lose the admin screens the moment you save this — another admin has to give them back."
+                      data-confirm-action="Make me a user"
+                    @endif>
                 @csrf @method('PUT')
                 <input type="hidden" name="role" value="{{ $user->isAdmin() ? 'user' : 'admin' }}">
                 <button type="submit">{{ $user->isAdmin() ? 'Make user' : 'Make administrator' }}</button>

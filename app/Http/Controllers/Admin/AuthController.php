@@ -35,8 +35,10 @@ class AuthController extends Controller
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
             throw ValidationException::withMessages([
-                'email' => 'Too many attempts. Try again in '
-                    .RateLimiter::availableIn($key).' seconds.',
+                // Minutes read easier than "293 seconds".
+                'email' => 'Too many attempts. Try again in '.(function ($s) {
+                    return $s >= 60 ? ceil($s / 60).' minute'.(ceil($s / 60) == 1 ? '' : 's') : $s.' seconds';
+                })(RateLimiter::availableIn($key)).'.',
             ]);
         }
 

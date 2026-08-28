@@ -46,12 +46,13 @@ class AuditController extends Controller
 
         return response()->streamDownload(function () use ($filter, $subject) {
             $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // BOM: Excel then reads the arrows and dashes as UTF-8
             fputcsv($out, ['when', 'actor', 'ip', 'action', 'subject', 'changes']);
 
             $this->query($filter, $subject)->chunkById(500, function ($rows) use ($out) {
                 foreach ($rows as $e) {
                     $changes = collect($e->changes ?? [])
-                        ->map(fn ($c, $field) => $field.': '.($c['from'] ?? '—').' → '.($c['to'] ?? '—'))
+                        ->map(fn ($c, $field) => is_array($c) ? $field.': '.($c['from'] ?? '—').' → '.($c['to'] ?? '—') : $field.': '.$c)
                         ->implode('; ');
                     fputcsv($out, [$e->created_at->toIso8601String(), $e->actor, $e->ip, $e->action, $e->subject_label, $changes]);
                 }

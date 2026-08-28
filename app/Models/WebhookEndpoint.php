@@ -43,7 +43,7 @@ class WebhookEndpoint extends Model
     public function maskedUrl(): string
     {
         $parts = parse_url($this->url);
-        $host = $parts['host'] ?? $this->url;
+        $host = ($parts['host'] ?? $this->url).(isset($parts['port']) ? ':'.$parts['port'] : ''); // :8799 is half the address on a LAN
         $path = $parts['path'] ?? '';
 
         return ($parts['scheme'] ?? 'https').'://'.$host.
