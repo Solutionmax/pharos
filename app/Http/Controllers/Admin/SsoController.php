@@ -103,8 +103,35 @@ class SsoController extends Controller
             'internal_hosts' => ['nullable', 'string', 'max:500'],
         ]);
 
+        $issuer = rtrim($data['issuer'] ?? '', '/');
+        $enabling = (bool) ($data['enabled'] ?? false);
+
+        // The reachability test runs before anything else is written: a provider that
+        // cannot be reached must not leave a half-typed issuer, client id and secret
+        // saved behind a switch that stayed off.
+        if ($enabling) {
+            // The one thing that has to be live for the test is the SSRF allowlist —
+            // an internal provider the admin just vouched for would otherwise be
+            // refused by the guard on this very check. It is an explicit allowlist,
+            // harmless to keep, so it is the single field that may outlive a failed try.
+            Setting::put('sso.internal_hosts', $data['internal_hosts'] ?? '');
+            Cache::forget('sso.discovery.'.md5($issuer));
+
+            try {
+                $this->sso->discover($issuer);
+            } catch (\Throwable $e) {
+                // Off, but nothing else written: a broken switch-on leaves neither an
+                // "on" it cannot honour nor a half-typed issuer and secret behind it.
+                Setting::put('sso.enabled', '0');
+
+                // Back to the sso tab by name: back() would drop the ?tab= when the link carried a hash.
+                return redirect()->route('admin.settings', ['tab' => 'sso'])
+                    ->withErrors(['issuer' => $e->getMessage()])->withInput();
+            }
+        }
+
         Setting::put('sso.provider_name', $data['provider_name'] ?? '');
-        Setting::put('sso.issuer', rtrim($data['issuer'] ?? '', '/'));
+        Setting::put('sso.issuer', $issuer);
         Setting::put('sso.client_id', $data['client_id'] ?? '');
         Setting::put('sso.internal_hosts', $data['internal_hosts'] ?? '');
 
@@ -115,29 +142,13 @@ class SsoController extends Controller
             Setting::put('sso.client_secret', \Illuminate\Support\Facades\Crypt::encryptString($data['client_secret']));
         }
 
-        Cache::forget('sso.discovery.'.md5((string) Setting::get('sso.issuer')));
-
-        if (! isset($data['enabled'])) {
-            Setting::put('sso.enabled', '0');
-
-            return redirect()->route('admin.settings', ['tab' => 'sso'])->with('status', 'Single sign-on is off.');
-        }
-
-        // Switching it on without checking would leave a button that only fails.
-        try {
-            $this->sso->discover(Setting::get('sso.issuer'));
-        } catch (\Throwable $e) {
-            Setting::put('sso.enabled', '0');
-
-            // Back to the sso tab by name: back() would drop the ?tab= when the link carried a hash.
-            return redirect()->route('admin.settings', ['tab' => 'sso'])
-                ->withErrors(['issuer' => $e->getMessage()])->withInput();
-        }
-
-        Setting::put('sso.enabled', '1');
+        Cache::forget('sso.discovery.'.md5($issuer));
+        Setting::put('sso.enabled', $enabling ? '1' : '0');
 
         return redirect()->route('admin.settings', ['tab' => 'sso'])
-            ->with('status', 'Single sign-on is on. Try it in a private window before you rely on it.');
+            ->with('status', $enabling
+                ? 'Single sign-on is on. Try it in a private window before you rely on it.'
+                : 'Single sign-on is off.');
     }
 
     protected function refuse(string $reason)

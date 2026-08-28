@@ -21,12 +21,14 @@
       <input id="issuer" name="issuer" type="url" value="{{ old('issuer', $sso->issuer()) }}"
              placeholder="https://id.example.net/application/o/pharos/">
       <span class="help">Where <span class="mono">/.well-known/openid-configuration</span> lives. Must be https.</span>
+      @error('issuer')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
     </div>
     <div class="field">
       <label for="provider_name">Button text</label>
       <input id="provider_name" name="provider_name" type="text"
              value="{{ old('provider_name', \App\Models\Setting::get('sso.provider_name')) }}" placeholder="Authentik">
       <span class="help">Shown as "Sign in with …" on the login screen.</span>
+      @error('provider_name')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
     </div>
   </div>
   <div class="fields">
@@ -34,12 +36,14 @@
       <label for="client_id">Client ID</label>
       <input id="client_id" name="client_id" type="text"
              value="{{ old('client_id', \App\Models\Setting::get('sso.client_id')) }}" autocomplete="off">
+      @error('client_id')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
     </div>
     <div class="field">
       <label for="client_secret">Client secret</label>
       <input id="client_secret" name="client_secret" type="password" autocomplete="new-password"
              placeholder="{{ $sso->clientSecret() ? 'Stored — leave empty to keep it' : '' }}">
       <span class="help">Stored encrypted and never shown again. Empty means unchanged.</span>
+      @error('client_secret')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
     </div>
   </div>
   <div class="field wide">
@@ -53,6 +57,7 @@
       rule this server becomes a way to reach networks you cannot. Naming a host here vouches for
       that one host only — link-local addresses stay blocked whatever you put in this box.
     </span>
+    @error('internal_hosts')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
   </div>
 
   <div class="switchrow">

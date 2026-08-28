@@ -22,9 +22,29 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 /* ---------- chrome ---------- */
 .shell{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
-@media(max-width:900px){.shell{grid-template-columns:1fr}}
 .side{background:var(--card);border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh}
-@media(max-width:900px){.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}}
+/* mobile drawer: on wide screens the topbar, toggle and scrim do not exist */
+.topbar{display:none}
+.navtoggle{display:none}
+.scrim{display:none}
+@media(max-width:900px){
+  /* ponytail: CSS-only drawer (checkbox + :has). No Escape-to-close; a nav tap or the scrim closes it. */
+  .shell{display:block}
+  .topbar{display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40;
+    background:var(--card);border-bottom:1px solid var(--line);padding:9px 14px}
+  .navtoggle{appearance:none;-webkit-appearance:none;margin:0;width:40px;height:40px;flex:none;
+    border:1px solid var(--line);border-radius:10px;display:grid;place-items:center;
+    color:var(--ink-2);background:var(--card)}
+  .navtoggle::before{content:"\2630";font-size:19px;line-height:1}
+  .navtoggle:checked::before{content:"\2715";font-size:17px}
+  .side{position:fixed;top:0;left:0;bottom:0;width:min(82vw,282px);height:100dvh;z-index:50;
+    transform:translateX(-100%);transition:transform .22s var(--ease);overflow-y:auto;
+    border-right:1px solid var(--line);box-shadow:0 0 40px rgba(0,0,0,.25)}
+  .shell:has(.navtoggle:checked) .side{transform:none}
+  .scrim{position:fixed;inset:0;z-index:45;background:rgba(0,0,0,.42)}
+  .shell:has(.navtoggle:checked) .scrim{display:block}
+}
+@media(max-width:900px) and (prefers-reduced-motion:reduce){.side{transition:none}}
 .side .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px;letter-spacing:-.025em;padding:8px 10px 20px}
 .side .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);padding:16px 12px 7px}
 .nav{position:relative;display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;font-size:14px;font-weight:500;color:var(--ink-2);text-decoration:none;transition:background .14s var(--ease),color .14s var(--ease)}
@@ -310,6 +330,11 @@ pre .k{color:var(--brand)}
 <body>
 @auth
 <div class="shell">
+  <div class="topbar">
+    <input type="checkbox" id="navtoggle" class="navtoggle" aria-label="Menu">
+    <span class="brand" style="padding:0;font-size:15px">@include('partials.logo', ['size' => 22])</span>
+  </div>
+  <label class="scrim" for="navtoggle" aria-hidden="true"></label>
   <aside class="side">
     <span class="brand">@include('partials.logo', ['size' => 26])</span>
 
@@ -377,7 +402,8 @@ pre .k{color:var(--brand)}
   <main class="main">
     @include('partials.scheduler-warning')
     @if (session('status'))<div class="flash">{{ session('status') }}</div>@endif
-    @if ($errors->any())<div class="errors"><ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+    {{-- Pages that show every error inline (Settings) opt out of the global list to avoid saying it twice. --}}
+    @if ($errors->any() && ! View::hasSection('own-errors'))<div class="errors"><ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
     @yield('content')
   </main>
 </div>
