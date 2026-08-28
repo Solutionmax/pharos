@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -60,6 +61,49 @@ class SelfUpdater
         usort($backups, fn ($a, $b) => $b['created_at'] <=> $a['created_at']);
 
         return $backups;
+    }
+
+    /**
+     * The version about to be replaced, kept whole so it can be put back as one
+     * piece: code and vendor together, plus a consistent copy of the SQLite
+     * database — the migrations that follow are what make old code unusable.
+     * Secrets, storage and uploads are left out: an update never touches them,
+     * and storage is where the backups themselves live.
+     */
+    public function backupCurrent(?string $from = null, ?string $database = null): string
+    {
+        $backup = $this->backupsDir().'/'.$this->updater->current().'-'.now()->format('Ymd-His');
+        File::ensureDirectoryExists($backup);
+
+        $this->copyTree($from ?? base_path(), $backup, skip: ['.env', 'storage', 'public/storage', 'node_modules', 'database/database.sqlite']);
+        $this->backupDatabase($backup, $database);
+
+        return $backup;
+    }
+
+    /**
+     * SQLite only: VACUUM INTO on a connection of its own writes a self-contained,
+     * consistent file even mid-write (WAL included) — the app's own connection may
+     * sit inside a transaction, where VACUUM is refused. MySQL and Postgres are the
+     * operator's to dump; the screen says so.
+     */
+    protected function backupDatabase(string $backup, ?string $live = null): void
+    {
+        $live ??= DB::getDatabaseName();
+
+        if (DB::getDriverName() !== 'sqlite' || ! is_file($live)) {
+            return;
+        }
+
+        File::ensureDirectoryExists($backup.'/database');
+        $target = $backup.'/database/database.sqlite';
+
+        try {
+            $pdo = new \PDO('sqlite:'.$live);
+            $pdo->exec('VACUUM INTO '.$pdo->quote($target));
+        } catch (\Throwable) {
+            File::copy($live, $target); // last resort: may miss what still sits in the WAL
+        }
     }
 
     /** du-style: the sum of every file underneath, symlinks not followed. */
@@ -141,9 +185,7 @@ class SelfUpdater
                 return ['ok' => false, 'message' => 'That archive does not look like a Pharos release.'];
             }
 
-            $backup = $this->backupsDir().'/'.$this->updater->current().'-'.now()->format('Ymd-His');
-            File::ensureDirectoryExists($backup);
-            $this->copyTree(base_path(), $backup, skip: array_merge(self::KEEP, ['vendor', 'node_modules']));
+            $backup = $this->backupCurrent();
 
             $this->copyTree($root, base_path(), skip: self::KEEP);
 

@@ -93,6 +93,7 @@
         The archive is downloaded, checked against a signature made with our key, and only then
         unpacked. Your <b>.env</b>, database and uploads are left alone, and the version you are
         running now is copied to <span class="mono">storage/app/backups</span> first.
+        @if ($sqlite) Your SQLite database is copied into the backup as well. @else Your database is <b>not</b> in that backup — take a dump before installing, because the update runs migrations. @endif
       </div>
       <form method="POST" action="{{ route('admin.updates.apply') }}"
             data-confirm-title="Install {{ $latest['version'] }}?"
@@ -143,6 +144,7 @@ php artisan pharos:update</pre>
       <p class="note">No backups yet — the first update creates one.</p>
     @endif
     <p class="note">
+      @if ($sqlite)The SQLite database is copied into the backup, so putting a folder back puts the data of that moment back too. @else Your database is not in these backups — dump it before an update; the update runs migrations. @endif
       Each update copies the version it replaces into <span class="mono">storage/app/backups</span>
       before writing anything. Nothing prunes that folder: once the new version has run for a while,
       empty it by hand. Rollback is copying a folder back; there is no button for it yet.
