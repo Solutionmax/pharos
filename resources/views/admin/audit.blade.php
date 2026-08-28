@@ -31,6 +31,10 @@
       @if ($actor !== '' || $subject !== '')
         <a class="btn ghost" href="{{ route('admin.audit') }}">Clear</a>
       @endif
+      @unless ($entries->isEmpty())
+        <a class="btn ghost" style="margin-left:auto" href="{{ route('admin.audit.export', request()->only('actor', 'subject')) }}"
+           title="Every line that matches the filter, as CSV">Download CSV</a>
+      @endunless
     </form>
   </div>
 

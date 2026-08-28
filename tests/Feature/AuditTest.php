@@ -183,4 +183,30 @@ class AuditTest extends TestCase
             ->assertSee('Page 1 of 2')
             ->assertSee('Resolved at');
     }
+
+    public function test_the_log_can_be_downloaded_as_csv_with_the_filter_applied(): void
+    {
+        $user = $this->admin();
+        foreach (['Anita (anita@example.net)', 'API token: deploy'] as $actor) {
+            AuditEntry::create([
+                'actor' => $actor,
+                'action' => 'component.updated',
+                'subject_label' => 'Website',
+                'changes' => ['status' => ['from' => 'Operational', 'to' => 'Major outage']],
+                'ip' => '203.0.113.9',
+                'created_at' => now(),
+            ]);
+        }
+
+        $this->get(route('admin.audit.export'))->assertRedirect(route('admin.login'));
+
+        $response = $this->actingAs($user)->get(route('admin.audit.export', ['actor' => 'deploy']));
+        $response->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $this->assertStringContainsString('attachment; filename=', $response->headers->get('content-disposition'));
+
+        $csv = $response->streamedContent();
+        $this->assertStringStartsWith("when,actor,ip,action,subject,changes\n", $csv);
+        $this->assertStringContainsString('"API token: deploy",203.0.113.9,component.updated,Website,"status: Operational → Major outage"', $csv);
+        $this->assertStringNotContainsString('Anita', $csv, 'the filter applies to the download too');
+    }
 }
