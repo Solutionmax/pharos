@@ -43,8 +43,7 @@
           <div class="field">
             <label for="logo">Logo</label>
             @if ($brand['logo'])
-              <img src="{{ $brand['logo'] }}" alt="Current logo"
-                   style="max-height:44px;max-width:200px;background:var(--bg-tint);border:1px solid var(--line);border-radius:8px;padding:8px">
+              <span class="brand-preview"><img src="{{ $brand['logo'] }}" alt="Current logo"></span>
             @endif
             <input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp">
             <span class="help">PNG, JPG or WebP, up to 512&nbsp;KB and 1200×400. Replaces the lighthouse and the name.</span>
@@ -55,8 +54,7 @@
           <div class="field">
             <label for="logo_dark">Logo for dark mode (optional)</label>
             @if ($brand['logo_dark'])
-              <img src="{{ $brand['logo_dark'] }}" alt="Current dark-mode logo"
-                   style="max-height:44px;max-width:200px;background:#0b1b33;border:1px solid var(--line);border-radius:8px;padding:8px">
+              <span class="brand-preview dark"><img src="{{ $brand['logo_dark'] }}" alt="Current dark-mode logo"></span>
             @endif
             <input id="logo_dark" name="logo_dark" type="file" accept="image/png,image/jpeg,image/webp">
             <span class="help">Shown instead of the logo above when the visitor's theme is dark. Leave empty if your logo already works on both.</span>
@@ -66,8 +64,7 @@
           </div>
           <div class="field">
             <label for="favicon">Favicon</label>
-            <img src="{{ $brand['favicon'] }}" alt="Current favicon"
-                 style="width:32px;height:32px;border:1px solid var(--line);border-radius:8px;padding:2px;background:var(--bg-tint)">
+            <span class="brand-preview icon"><img src="{{ $brand['favicon'] }}" alt="Current favicon"></span>
             <input id="favicon" name="favicon" type="file" accept="image/png,image/webp,image/x-icon">
             <span class="help">PNG, WebP or ICO, up to 128&nbsp;KB and 512×512.</span>
           </div>

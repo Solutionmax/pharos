@@ -233,6 +233,13 @@ dialog.modal .panel{margin:0}
 .callout::before{content:'Good to know';display:block;font:600 10.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--brand);margin-bottom:8px}
 .callout.warn::before{content:'Careful';color:var(--amber)}
 .callout p{margin:0 0 8px}.callout p:last-child{margin-bottom:0}
+/* Brand previews: the padding sits on the frame, never on the image — an <img> with padding under
+   border-box squeezes its own content and stretches a wide logo. The image keeps its ratio. */
+.brand-preview{display:inline-flex;align-items:center;justify-content:center;height:64px;min-width:120px;max-width:260px;padding:8px 12px;background:var(--bg-tint);border:1px solid var(--line);border-radius:10px;margin:2px 0 8px}
+.brand-preview img{display:block;max-height:100%;max-width:100%;width:auto;height:auto;object-fit:contain}
+.brand-preview.dark{background:#0b1b33;border-color:#0b1b33}
+.brand-preview.icon{height:48px;min-width:48px;width:48px;padding:6px}
+
 .pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--ink-2)}
 .pager .sub{color:var(--ink-3)}.pager-links{display:flex;gap:8px}.pager [aria-disabled=true]{opacity:.45;pointer-events:none}
 .callout b{color:var(--ink)}
