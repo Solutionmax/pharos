@@ -108,6 +108,31 @@ class CheckRunnerTest extends TestCase
         $this->assertTrue($incident->updates->first()->automatic);
     }
 
+    /**
+     * The form promises "a built-in check overwrites this on its next run".
+     * A hand-set Degraded must therefore not survive a passing check; only
+     * Under maintenance is deliberate and stays until someone clears it.
+     */
+    public function test_a_passing_check_clears_a_hand_set_degraded_status(): void
+    {
+        $check = $this->makeCheck();
+        $check->component->update(['status' => ComponentStatus::PerformanceIssues]);
+
+        $this->runner(true)->runOne($check->fresh());
+
+        $this->assertSame(ComponentStatus::Operational, $check->component->fresh()->status);
+    }
+
+    public function test_a_passing_check_leaves_maintenance_alone(): void
+    {
+        $check = $this->makeCheck();
+        $check->component->update(['status' => ComponentStatus::UnderMaintenance]);
+
+        $this->runner(true)->runOne($check->fresh());
+
+        $this->assertSame(ComponentStatus::UnderMaintenance, $check->component->fresh()->status);
+    }
+
     public function test_a_check_is_only_due_once_its_interval_has_passed(): void
     {
         $check = $this->makeCheck(['interval_seconds' => 300, 'last_run_at' => now()]);

@@ -131,7 +131,10 @@ class CheckRunner
             return;
         }
 
-        if ($component->status->isDown()) {
+        // A passing check owns the status — including a hand-set "Degraded", which
+        // the form says it will overwrite. Under maintenance is the one deliberate
+        // state a probe cannot judge, so that stays until someone clears it.
+        if (! in_array($component->status, [ComponentStatus::Operational, ComponentStatus::UnderMaintenance], true)) {
             $component->update(['status' => ComponentStatus::Operational]);
         }
 
