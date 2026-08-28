@@ -7,6 +7,7 @@ use App\Mail\SubscribeConfirmMail;
 use App\Models\Subscriber;
 use App\Services\Audit;
 use App\Services\Clock;
+use App\Services\Subscriptions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -30,12 +31,26 @@ class SubscriberController extends Controller
         return view('admin.subscribers', [
             'subscribers' => $subscribers,
             'search' => $search,
+            'enabled' => Subscriptions::enabled(),
             'summary' => [
                 'active' => Subscriber::active()->count(),
                 'pending' => Subscriber::pending()->count(),
                 'unsubscribed' => Subscriber::whereNotNull('unsubscribed_at')->count(),
             ],
         ]);
+    }
+
+    /** The master switch. Operational, like the rest of this screen: pausing mail is not installing. */
+    public function toggle(Request $request)
+    {
+        $data = $request->validate(['enabled' => ['required', 'boolean']]);
+        $enabled = (bool) $data['enabled'];
+
+        Subscriptions::set($enabled);
+
+        return redirect()->route('admin.subscribers')->with('status', $enabled
+            ? 'Subscriptions are on: the button is back on the status page and new updates are mailed.'
+            : 'Subscriptions are off: no button, no new mail. Existing addresses are kept, and unsubscribing still works.');
     }
 
     /** Erasure on request, in one click: the row and its notification history go together. */

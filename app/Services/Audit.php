@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 class Audit
 {
     /** Values never worth storing, and dangerous if they were. */
-    public const REDACTED = ['password', 'remember_token', 'token', 'token_hash', 'url', 'secret'];
+    public const REDACTED = ['password', 'mail.password', 'remember_token', 'token', 'token_hash', 'url', 'secret'];
 
     /** Null when nothing is signed in: cron, queue work, an artisan command. */
     public static function actor(): ?string

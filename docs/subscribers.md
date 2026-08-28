@@ -41,7 +41,11 @@ Internal and authenticated incidents never reach subscribers.
 
 Without it, sign-ups still work and the outbox fills, but nothing goes out.
 
-**Mail settings**, in `.env`:
+**Mail settings**, on **Settings → Mail** in the admin: mailer (SMTP, sendmail,
+or "write to the log" while testing), host, port, encryption, username, password,
+and the From address and name. The password is stored encrypted and never shown
+again; leaving the box empty keeps it. Anything left empty falls back to the
+`MAIL_*` lines in `.env`, so an install configured by file keeps working:
 
 ```
 MAIL_MAILER=smtp
@@ -53,10 +57,19 @@ MAIL_FROM_ADDRESS="status@example.net"
 MAIL_FROM_NAME=
 ```
 
-A blank `MAIL_FROM_NAME` signs mail with the brand name from **Branding**. Set it
-only if the sender should read differently. Prove the settings with
-**Settings → Mail → Send test e-mail**: it mails the signed-in administrator and
-shows the transport's own error text when it fails.
+587 + TLS (STARTTLS) works for most providers; a few want 465 + SSL. A blank From
+name signs mail with the brand name from **Branding**. Set it only if the sender
+should read differently. The "Effective" line under the form shows what a mail
+would go out with right now, database and `.env` combined. Prove it with
+**Send test e-mail**: it mails the signed-in administrator and shows the
+transport's own error text when it fails.
+
+**The switch.** The **Subscribers** screen has a master switch. Off means no
+"Get notified" button, sign-up and confirmation links answer 404, and no new
+mail is queued — but anything queued before the flip still goes out on the next
+`pharos:notify`, unsubscribe links keep working, and every address is kept.
+It is a pause, not a purge; the sidebar shows a small "off" next to Subscribers
+until it is switched back on.
 
 `APP_URL` must be the public address. The links in the mails are built from it,
 because a cron run has no request to read the host from.
@@ -147,7 +160,7 @@ their own after 7 days.
 
 ## Limits
 
-- Mail goes through whatever `MAIL_*` points at; on shared hosting that usually
+- Mail goes through whatever Settings → Mail (or `MAIL_*`) points at; on shared hosting that usually
   means the host's SMTP and its hourly cap. The batch size of 50 per minute is
   deliberately below most of them.
 - The mail text is fixed in this release. Editable templates are the next phase.

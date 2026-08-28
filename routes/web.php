@@ -92,6 +92,7 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         Route::get('subscribers', [SubscriberController::class, 'index'])->name('subscribers');
         // Before {subscriber}: "export" is not an id.
         Route::get('subscribers/export', [SubscriberController::class, 'export'])->name('subscribers.export');
+        Route::post('subscribers/enabled', [SubscriberController::class, 'toggle'])->name('subscribers.toggle');
         Route::post('subscribers/{subscriber}/resend', [SubscriberController::class, 'resend'])->name('subscribers.resend');
         Route::delete('subscribers/{subscriber}', [SubscriberController::class, 'destroy'])->name('subscribers.destroy');
 
@@ -138,6 +139,7 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
 
             Route::get('settings', [SettingsController::class, 'edit'])->name('settings');
             Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+            Route::put('settings/mail', [SettingsController::class, 'updateMail'])->name('settings.mail');
             Route::post('settings/mail-test', [SettingsController::class, 'sendTestMail'])->name('settings.mail-test');
 
             // The single sign-on form lives on the Settings screen now; the old

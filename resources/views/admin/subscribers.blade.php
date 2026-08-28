@@ -13,6 +13,31 @@
   <div class="tile"><span class="k">Unsubscribed</span><span class="v">{{ $summary['unsubscribed'] }}</span><span class="n">kept so they are not mailed again</span></div>
 </div>
 
+<div class="panel" id="switch">
+  <div class="panel-hd">
+    <h3>Subscriptions</h3>
+    <span class="hint">{{ $enabled ? 'On' : 'Off' }}</span>
+  </div>
+  <div class="panel-bd">
+    <form method="POST" action="{{ route('admin.subscribers.toggle') }}">
+      @csrf
+      <input type="hidden" name="enabled" value="{{ $enabled ? '0' : '1' }}">
+      <div class="switchrow">
+        <span class="t">
+          @if ($enabled)
+            <strong><span class="pill ok">On</span> — visitors can subscribe</strong>
+            <span class="s">The "Get notified" button is on the status page and every public incident update is mailed.</span>
+          @else
+            <strong><span class="pill off">Off</span> — no button, no mail, existing addresses kept</strong>
+            <span class="s">Nothing new is queued while this is off; anything queued before still goes out, and unsubscribe links keep working.</span>
+          @endif
+        </span>
+        <button class="btn {{ $enabled ? 'ghost' : '' }}" type="submit" style="margin-left:auto">{{ $enabled ? 'Switch off' : 'Switch on' }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="panel">
   <div class="panel-hd">
     <h3>Addresses</h3>
