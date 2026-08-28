@@ -17,28 +17,56 @@
   'action' => ['url' => route('admin.updates', ['refresh' => 1]), 'label' => 'Check again'],
 ])
 
+@php
+  $state = $check['state'];
+  // "Up to date" is a claim; it is only made when the server was actually asked.
+  $confirmedCurrent = $state === 'ok' && ! $available;
+  $stateText = match ($state) {
+    'no_release' => 'No release published yet',
+    'unreachable' => 'Release server not reachable',
+    'invalid' => 'Manifest refused — not signed by our key',
+    'disabled' => 'Checking is switched off',
+    default => 'No release information',
+  };
+@endphp
+
 <div class="tiles">
-  <div class="tile {{ $available ? 'warn' : 'good' }}">
+  <div class="tile {{ $available ? 'warn' : ($confirmedCurrent ? 'good' : '') }}">
     <span class="k">Installed</span>
     <span class="v">{{ $current }}</span>
-    <span class="n">{{ $available ? 'An update is available' : 'Up to date' }}</span>
+    <span class="n">{{ $available ? 'An update is available' : ($confirmedCurrent ? 'Up to date' : 'No newer release known') }}</span>
   </div>
   <div class="tile">
     <span class="k">Available</span>
-    <span class="v">{{ $latest['version'] ?? '—' }}</span>
-    <span class="n">{{ isset($latest['released_at']) ? 'Released '.$latest['released_at'] : 'No release information' }}</span>
+    <span class="v">{{ $state === 'ok' ? $latest['version'] : '—' }}</span>
+    <span class="n">
+      @if ($state === 'ok')
+        {{ isset($latest['released_at']) ? 'Released '.$latest['released_at'] : 'Release date unknown' }}
+      @else
+        {{ $stateText }}@if ($check['error'])<br><span class="mono" style="font-size:11px">{{ $check['error'] }}</span>@endif
+      @endif
+    </span>
   </div>
   <div class="tile">
     <span class="k">How this install updates</span>
     <span class="v" style="font-size:19px">{{ $managed ? 'From the host' : ($writable ? 'By itself' : 'By hand') }}</span>
-    <span class="n">{{ $managed ? 'Docker image, pulled outside the app' : ($writable ? 'Downloads and replaces its own files' : 'The directory is not writable') }}</span>
+    <span class="n">{{ $managed ? 'Docker image, pulled outside the app' : ($writable ? 'Downloads and replaces its own files' : 'The directory is not writable') }}@if ($state !== 'disabled' && $manifestHost) · Checks {{ $manifestHost }} every hour @endif</span>
   </div>
 </div>
+
+<p class="note" style="margin:-4px 0 16px">
+  @if ($checkedAt)
+    Last checked {{ $checkedAt->gt(now()->subMinute()) ? 'just now' : $checkedAt->diffForHumans() }} · next automatic check in {{ $nextCheckAt->diffForHumans(['parts' => 1, 'syntax' => \Carbon\Carbon::DIFF_ABSOLUTE]) }}
+  @else
+    Never checked yet
+  @endif
+</p>
 
 @if ($available && ($latest['notes'] ?? false))
   <div class="panel">
     <div class="panel-hd"><h3>What is in {{ $latest['version'] }}</h3></div>
-    <div class="panel-bd"><p class="note">{{ $latest['notes'] }}</p></div>
+    {{-- Same rules as an incident update: Markdown in, HTML escaped, no javascript: links. --}}
+    <div class="panel-bd"><div class="md note">{!! Str::markdown($latest['notes'], ['html_input' => 'escape', 'allow_unsafe_links' => false]) !!}</div></div>
   </div>
 @endif
 
@@ -85,14 +113,39 @@ php artisan pharos:update</pre>
   </div>
 </div>
 
+<div class="callout" style="margin-bottom:16px">
+  Every release manifest is signed with the key that also signs licences, with a different purpose
+  field so one can never be replayed as the other. An unsigned or tampered manifest, or an archive
+  whose checksum does not match, is refused before anything is written. A failed check reads as
+  <b>no news</b>, never as an error on your status page.
+</div>
+
 <div class="panel">
-  <div class="panel-hd"><h3>Why an update is safe to take</h3></div>
+  <div class="panel-hd"><h3>Backups kept</h3><span class="hint mono">storage/app/backups</span></div>
+  @if ($backups)
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Version</th><th>Taken</th><th>Size</th></tr></thead>
+        <tbody>
+          @foreach ($backups as $backup)
+            <tr>
+              <td><b>{{ $backup['version'] }}</b> <span class="sub mono">{{ $backup['name'] }}</span></td>
+              <td>{{ $backup['created_at']->format('j M Y H:i') }} <span class="sub">{{ $backup['created_at']->diffForHumans() }}</span></td>
+              <td class="num">{{ Number::fileSize($backup['size'], precision: 1) }}</td>
+            </tr>
+          @endforeach
+        </tbody>
+      </table>
+    </div>
+  @endif
   <div class="panel-bd">
+    @if (! $backups)
+      <p class="note">No backups yet — the first update creates one.</p>
+    @endif
     <p class="note">
-      Every release manifest is signed with the same key that signs licences, with a different
-      purpose field so one can never be replayed as the other. An unsigned manifest, a tampered
-      one, or an archive whose checksum does not match is refused before anything is written.
-      A failed check reads as <b>no news</b>, never as an error on your status page.
+      Each update copies the version it replaces into <span class="mono">storage/app/backups</span>
+      before writing anything. Nothing prunes that folder: once the new version has run for a while,
+      empty it by hand. Rollback is copying a folder back; there is no button for it yet.
     </p>
   </div>
 </div>

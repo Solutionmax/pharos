@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * Two worlds, one check.
@@ -20,6 +21,10 @@ use Illuminate\Support\Facades\Log;
  */
 class Updater
 {
+    public const CACHE_KEY = 'pharos.update.check';
+
+    public const CHECK_INTERVAL_MINUTES = 60;
+
     public function __construct(protected License $license) {}
 
     public function current(): string
@@ -46,27 +51,69 @@ class Updater
     /** @return array{version:string,notes:string,url:string,sha256:string,released_at:string}|null */
     public function latest(bool $fresh = false): ?array
     {
+        return $this->lastCheck($fresh)['manifest'];
+    }
+
+    /**
+     * What the last check found, whatever it found. The whole outcome is cached,
+     * not just a manifest: Cache::remember drops a null result, so a server that
+     * is down or answers 404 used to be asked again on every admin page — and
+     * an install behind a firewall waited the full timeout for each of them.
+     *
+     * @return array{state:'ok'|'no_release'|'unreachable'|'invalid'|'disabled',manifest:array|null,checked_at:string|null,error:string|null}
+     */
+    public function lastCheck(bool $fresh = false): array
+    {
         if (! config('pharos.update.check_enabled') || ! config('pharos.update.manifest_url')) {
-            return null;
+            return ['state' => 'disabled', 'manifest' => null, 'checked_at' => null, 'error' => null];
         }
 
         if ($fresh) {
-            Cache::forget('pharos.update.manifest');
+            Cache::forget(self::CACHE_KEY);
         }
 
-        return Cache::remember('pharos.update.manifest', now()->addHour(), function () {
-            try {
-                $response = Http::timeout(8)->get((string) config('pharos.update.manifest_url'));
-            } catch (\Throwable $e) {
-                // A release server we cannot reach is not an error the operator
-                // needs to see mid-outage; it just means "no news".
-                Log::info('Update check failed', ['error' => $e->getMessage()]);
+        return Cache::remember(self::CACHE_KEY, now()->addMinutes(self::CHECK_INTERVAL_MINUTES), fn () => $this->check());
+    }
 
-                return null;
-            }
+    /** The host the manifest comes from, for telling the operator who is asked. */
+    public function manifestHost(): ?string
+    {
+        return parse_url((string) config('pharos.update.manifest_url'), PHP_URL_HOST) ?: null;
+    }
 
-            return $response->successful() ? $this->verify($response->body()) : null;
-        });
+    protected function check(): array
+    {
+        $outcome = fn (string $state, ?array $manifest = null, ?string $error = null) => [
+            'state' => $state,
+            'manifest' => $manifest,
+            'checked_at' => now()->toIso8601String(),
+            'error' => $error,
+        ];
+
+        try {
+            $response = Http::timeout(8)->get((string) config('pharos.update.manifest_url'));
+        } catch (\Throwable $e) {
+            // A release server we cannot reach is not an error the operator
+            // needs to see mid-outage; it just means "no news".
+            Log::info('Update check failed', ['error' => $e->getMessage()]);
+
+            // cURL appends a link to its error codes; the operator wants the host, not the manual.
+            $error = preg_replace('/\s*\(see https?:\/\/\S+\)/', '', $e->getMessage());
+
+            return $outcome('unreachable', error: Str::limit($error, 100));
+        }
+
+        if ($response->status() === 404) {
+            return $outcome('no_release');
+        }
+
+        if (! $response->successful()) {
+            return $outcome('unreachable', error: 'HTTP '.$response->status());
+        }
+
+        $manifest = $this->verify($response->body());
+
+        return $manifest === null ? $outcome('invalid') : $outcome('ok', $manifest);
     }
 
     /**

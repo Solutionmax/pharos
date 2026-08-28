@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -25,6 +26,55 @@ class SelfUpdater
     public function canWrite(): bool
     {
         return is_writable(base_path()) && is_writable(base_path('app'));
+    }
+
+    public function backupsDir(): string
+    {
+        return rtrim((string) config('pharos.update.backups_dir'), '/');
+    }
+
+    /**
+     * The previous versions still on disk, newest first. Nothing prunes them:
+     * the operator decides when the new version has run long enough.
+     *
+     * @return list<array{name:string,version:string,created_at:Carbon,size:int}>
+     */
+    public function backups(): array
+    {
+        $dir = $this->backupsDir();
+
+        if (! is_dir($dir)) {
+            return [];
+        }
+
+        $backups = array_map(function (string $path) {
+            $name = basename($path);
+            // Folders are named "<version>-<Ymd-His>" by apply(); anything else is
+            // shown as-is rather than hidden.
+            preg_match('/^(.*)-(\d{8}-\d{6})$/', $name, $m);
+            $created = isset($m[2]) ? Carbon::createFromFormat('Ymd-His', $m[2]) : Carbon::createFromTimestamp(filemtime($path));
+
+            return ['name' => $name, 'version' => $m[1] ?? $name, 'created_at' => $created, 'size' => $this->treeSize($path)];
+        }, File::directories($dir));
+
+        usort($backups, fn ($a, $b) => $b['created_at'] <=> $a['created_at']);
+
+        return $backups;
+    }
+
+    /** du-style: the sum of every file underneath, symlinks not followed. */
+    protected function treeSize(string $path): int
+    {
+        $total = 0;
+        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS));
+
+        foreach ($files as $file) {
+            if ($file->isFile() && ! $file->isLink()) {
+                $total += $file->getSize();
+            }
+        }
+
+        return $total;
     }
 
     /**
@@ -91,7 +141,7 @@ class SelfUpdater
                 return ['ok' => false, 'message' => 'That archive does not look like a Pharos release.'];
             }
 
-            $backup = storage_path('app/backups/'.$this->updater->current().'-'.now()->format('Ymd-His'));
+            $backup = $this->backupsDir().'/'.$this->updater->current().'-'.now()->format('Ymd-His');
             File::ensureDirectoryExists($backup);
             $this->copyTree(base_path(), $backup, skip: array_merge(self::KEEP, ['vendor', 'node_modules']));
 

@@ -274,6 +274,7 @@ class UpdateTest extends TestCase
     {
         putenv('PHAROS_VERSION=0.1.0-dev');
         $_ENV['PHAROS_VERSION'] = $_SERVER['PHAROS_VERSION'] = '0.1.0-dev';
+        Http::fake(['releases.example.net/*' => Http::response('', 404)]); // no live DNS lookup from the suite
 
         try {
             $this->assertTrue(app(Updater::class)->versionIsPinned());
@@ -349,5 +350,166 @@ class UpdateTest extends TestCase
         $this->assertFalse($result['ok']);
         $this->assertStringContainsString('pharos/storage', $result['message']);
         $this->assertStringContainsString('symlink', $result['message']);
+    }
+
+    // ---------- the outcome of a check is cached, not just a manifest ----------
+
+    public function test_an_unreachable_server_is_asked_once_an_hour_not_once_a_page(): void
+    {
+        // Cache::remember drops a null result, so before this every admin page
+        // sat through the 8 s timeout whenever the release server was down.
+        Http::fake(['releases.example.net/*' => Http::failedConnection()]);
+
+        $updater = app(Updater::class);
+
+        $this->assertNull($updater->latest());
+        $this->assertNull($updater->latest());
+        $this->assertSame('unreachable', $updater->lastCheck()['state']);
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+            ->assertSee('Release server not reachable')
+            ->assertSee('No newer release known')
+            ->assertDontSee('Up to date');
+        $this->actingAs($this->user)->get('/admin/components')->assertOk();
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_a_missing_manifest_reads_as_no_release_and_is_asked_once(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::response('', 404)]);
+
+        $this->assertNull(app(Updater::class)->latest());
+        $this->assertSame('no_release', app(Updater::class)->lastCheck()['state']);
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+            ->assertSee('No release published yet')
+            ->assertDontSee('Up to date');
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_a_refused_manifest_is_named_as_such(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::response('rubbish')]);
+
+        $this->assertSame('invalid', app(Updater::class)->lastCheck()['state']);
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+            ->assertSee('Manifest refused')
+            ->assertSee('not signed by our key');
+    }
+
+    public function test_switched_off_checking_is_said_out_loud(): void
+    {
+        config(['pharos.update.check_enabled' => false]);
+        Http::fake();
+
+        $this->assertSame('disabled', app(Updater::class)->lastCheck()['state']);
+        $this->assertNull(app(Updater::class)->lastCheck()['checked_at']);
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+            ->assertSee('Checking is switched off')
+            ->assertSee('Never checked yet')
+            ->assertDontSee('every hour');
+    }
+
+    public function test_up_to_date_is_only_claimed_after_a_successful_check(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::response($this->manifest(['version' => '1.0.0']))]);
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+            ->assertSee('Up to date')
+            ->assertSee('Released 2026-09-01')
+            ->assertSee('Checks releases.example.net every hour')
+            ->assertSee('Last checked')
+            ->assertSee('next automatic check in');
+    }
+
+    // ---------- check again ----------
+
+    public function test_check_again_asks_the_server_again_and_says_what_it_found(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::response($this->manifest())]);
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk();
+        Http::assertSentCount(1);
+
+        $this->actingAs($this->user)->get('/admin/updates?refresh=1')
+            ->assertRedirect('/admin/updates')
+            ->assertSessionHas('status', 'Checked just now — 1.1.0 is available.');
+        Http::assertSentCount(2);
+    }
+
+    public function test_check_again_reports_nothing_new(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::response($this->manifest(['version' => '1.0.0']))]);
+
+        $this->actingAs($this->user)->get('/admin/updates?refresh=1')
+            ->assertRedirect('/admin/updates')
+            ->assertSessionHas('status', 'Checked just now — nothing new.');
+    }
+
+    public function test_check_again_reports_an_unreachable_server(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::failedConnection()]);
+
+        $this->actingAs($this->user)->get('/admin/updates?refresh=1')
+            ->assertRedirect('/admin/updates')
+            ->assertSessionHas('status', 'Checked just now — the release server could not be reached.');
+    }
+
+    // ---------- release notes ----------
+
+    public function test_release_notes_render_as_markdown(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::response($this->manifest(['notes' => '**Faster** checks']))]);
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+            ->assertSee('<strong>Faster</strong> checks', false);
+    }
+
+    public function test_release_notes_cannot_smuggle_html(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::response($this->manifest(['notes' => 'Hi <script>alert(1)</script>']))]);
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+            ->assertDontSee('<script>alert(1)</script>', false)
+            ->assertSee('&lt;script&gt;alert(1)&lt;/script&gt;', false);
+    }
+
+    // ---------- backups ----------
+
+    public function test_backups_are_listed_newest_first(): void
+    {
+        config(['pharos.update.backups_dir' => storage_path('app/testing/backups')]);
+        Http::fake(['releases.example.net/*' => Http::response($this->manifest())]);
+
+        foreach (['1.0.0-20260801-030000', '1.0.1-20260815-041500'] as $name) {
+            File::ensureDirectoryExists(storage_path("app/testing/backups/{$name}/app"));
+            File::put(storage_path("app/testing/backups/{$name}/app/x.php"), str_repeat('x', 2048));
+        }
+
+        $backups = app(SelfUpdater::class)->backups();
+
+        $this->assertSame(['1.0.1', '1.0.0'], array_column($backups, 'version'));
+        $this->assertSame('2026-08-15 04:15:00', $backups[0]['created_at']->format('Y-m-d H:i:s'));
+        $this->assertSame(2048, $backups[0]['size']);
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+            ->assertSee('Backups kept')
+            ->assertSeeInOrder(['1.0.1', '1.0.0'])
+            ->assertSee('storage/app/backups');
+    }
+
+    public function test_the_backups_panel_is_honest_when_empty(): void
+    {
+        config(['pharos.update.backups_dir' => storage_path('app/testing/backups')]);
+        Http::fake(['releases.example.net/*' => Http::response($this->manifest())]);
+
+        $this->assertSame([], app(SelfUpdater::class)->backups());
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+            ->assertSee('No backups yet');
     }
 }
