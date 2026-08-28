@@ -4,9 +4,11 @@ namespace App\Services;
 
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Number;
 use Illuminate\Support\Str;
 
 /**
@@ -130,13 +132,74 @@ class SelfUpdater
      */
     public function backupCurrent(?string $from = null, ?string $database = null): string
     {
-        $backup = $this->backupsDir().'/'.$this->updater->current().'-'.now()->format('Ymd-His');
-        File::ensureDirectoryExists($backup);
+        $from ??= config('pharos.update.backup_source') ?? base_path();
+        $skip = ['.env', 'storage', 'public/storage', 'node_modules', 'database/database.sqlite'];
 
-        $this->copyTree($from ?? config('pharos.update.backup_source') ?? base_path(), $backup, skip: ['.env', 'storage', 'public/storage', 'node_modules', 'database/database.sqlite']);
-        $this->backupDatabase($backup, $database);
+        // The first sample replaces whatever the previous backup left behind.
+        $sample = ['state' => 'running', 'stage' => 'counting', 'done' => 0, 'total' => 0, 'name' => null, 'message' => null, 'started_at' => now()->toIso8601String()];
+        $this->report($sample);
 
-        return $backup;
+        try {
+            $backup = $this->backupsDir().'/'.$this->updater->current().'-'.now()->format('Ymd-His');
+            File::ensureDirectoryExists($backup);
+
+            // One tick per file, plus one for the database step: the bar only
+            // fills once the copy is consistent, not once the files are in.
+            $sample = [...$sample, 'name' => basename($backup), 'total' => $this->countTree($from, $skip) + 1];
+            $tick = function () use (&$sample) {
+                if (++$sample['done'] % self::TICK_EVERY === 0) {
+                    $this->report($sample);
+                }
+            };
+            $stage = function (string $stage) use (&$sample) {
+                $sample['stage'] = $stage;
+                $this->report($sample);
+            };
+
+            // vendor/ is most of the files, so it is a stage of its own.
+            $stage('code');
+            $this->copyTree($from, $backup, [...$skip, 'vendor'], $tick);
+            if (is_dir($from.'/vendor')) {
+                $stage('vendor');
+                $this->copyTree($from.'/vendor', $backup.'/vendor', [], $tick);
+            }
+            $stage('database');
+            $this->backupDatabase($backup, $database);
+            $sample['done']++;
+            $stage('finishing');
+
+            $this->report([...$sample, 'state' => 'done', 'message' => Number::fileSize($this->treeSize($backup), precision: 1)]);
+
+            return $backup;
+        } catch (\Throwable $e) {
+            $this->report([...$sample, 'state' => 'failed', 'message' => $e->getMessage()]);
+
+            throw $e;
+        }
+    }
+
+    /** Where the Updates screen reads how far a running backup is. */
+    public const PROGRESS_KEY = 'pharos.backup.progress';
+
+    /** Seconds; outlives any backup that is still going, then the entry can go. */
+    public const PROGRESS_TTL = 600;
+
+    /** Files between two samples: often enough to move, rare enough to be free. */
+    protected const TICK_EVERY = 25;
+
+    /**
+     * The last sample: running, done or failed — or idle when there is none.
+     *
+     * @return array{state:string,stage?:string,done?:int,total?:int,name?:?string,message?:?string,started_at?:string}
+     */
+    public function progress(): array
+    {
+        return Cache::get(self::PROGRESS_KEY) ?? ['state' => 'idle'];
+    }
+
+    protected function report(array $sample): void
+    {
+        Cache::put(self::PROGRESS_KEY, $sample, self::PROGRESS_TTL);
     }
 
     /**
@@ -299,24 +362,62 @@ class SelfUpdater
             : $extracted;
     }
 
-    /** @param string[] $skip paths relative to $from */
-    protected function copyTree(string $from, string $to, array $skip = []): void
+    /**
+     * @param  string[]  $skip  paths relative to $from
+     * @param  ?callable  $tick  called once per file copied
+     */
+    protected function copyTree(string $from, string $to, array $skip = [], ?callable $tick = null): void
+    {
+        File::ensureDirectoryExists($to);
+        foreach ($this->walk($from, $skip) as $path) {
+            if (str_ends_with($path, '/')) {
+                File::ensureDirectoryExists($to.'/'.$path); // empty folders travel too
+
+                continue;
+            }
+            File::copy($from.'/'.$path, $to.'/'.$path);
+            if ($tick) {
+                $tick();
+            }
+        }
+    }
+
+    /** How many files copyTree() would copy: the same walk, so the two never disagree. */
+    protected function countTree(string $from, array $skip = []): int
+    {
+        $count = 0;
+        foreach ($this->walk($from, $skip) as $path) {
+            $count += str_ends_with($path, '/') ? 0 : 1;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Everything under $from that is not skipped, relative to it: each folder
+     * (with a trailing slash) before what is inside it, files after subfolders.
+     *
+     * @param  string[]  $skip
+     * @return \Generator<string>
+     */
+    protected function walk(string $from, array $skip = []): \Generator
     {
         foreach (File::directories($from) as $directory) {
             $name = basename($directory);
             if (in_array($name, $skip, true)) {
                 continue;
             }
-            File::ensureDirectoryExists($to.'/'.$name);
-            $this->copyTree($directory, $to.'/'.$name, $this->descend($skip, $name));
+            yield $name.'/';
+            foreach ($this->walk($directory, $this->descend($skip, $name)) as $path) {
+                yield $name.'/'.$path;
+            }
         }
 
         foreach (File::files($from) as $file) {
             $name = $file->getFilename();
-            if (in_array($name, $skip, true)) {
-                continue;
+            if (! in_array($name, $skip, true)) {
+                yield $name;
             }
-            File::copy($file->getPathname(), $to.'/'.$name);
         }
     }
 

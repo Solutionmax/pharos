@@ -709,4 +709,151 @@ class UpdateTest extends TestCase
         $this->assertDirectoryExists($path);
         $this->assertCount(1, app(SelfUpdater::class)->backups());
     }
+
+    // ---------- backup progress ----------
+
+    /** A tree big enough for the every-25-files tick to fire inside vendor/. */
+    protected function fakeBigSourceTree(int $code = 20, int $vendor = 40): string
+    {
+        $src = storage_path('app/testing/src-'.Str::random(6));
+        for ($i = 0; $i < $code; $i++) {
+            File::ensureDirectoryExists($src.'/app/Sub');
+            File::put($src.'/app/Sub/'.$i.'.php', 'x');
+        }
+        for ($i = 0; $i < $vendor; $i++) {
+            File::ensureDirectoryExists($src.'/vendor/pkg');
+            File::put($src.'/vendor/pkg/'.$i.'.php', 'x');
+        }
+        File::put($src.'/.env', 'secret');
+        File::ensureDirectoryExists($src.'/storage/app');
+        File::put($src.'/storage/app/keep.txt', 'x');
+        config(['pharos.update.backup_source' => $src, 'pharos.update.backups_dir' => storage_path('app/testing/backups')]);
+
+        return $src;
+    }
+
+    /** A SelfUpdater that keeps every progress sample it reports, in order. */
+    protected function observedUpdater(): SelfUpdater
+    {
+        return new class(app(Updater::class)) extends SelfUpdater
+        {
+            public array $samples = [];
+
+            protected function report(array $sample): void
+            {
+                $this->samples[] = $sample;
+                parent::report($sample);
+            }
+        };
+    }
+
+    public function test_a_backup_leaves_a_done_progress_entry_that_counts_every_file(): void
+    {
+        $this->fakeBigSourceTree(20, 40);
+        $live = storage_path('app/testing/live.sqlite');
+        (new \PDO('sqlite:'.$live))->exec('create table settings (k text)');
+
+        $backup = app(SelfUpdater::class)->backupCurrent(database: $live);
+
+        // The rule: one tick per file copied (.env and storage/ are skipped), plus one for the database step.
+        $progress = Cache::get(SelfUpdater::PROGRESS_KEY);
+        $this->assertSame('done', $progress['state']);
+        $this->assertSame(61, $progress['total']);
+        $this->assertSame($progress['total'], $progress['done']);
+        $this->assertSame(basename($backup), $progress['name']);
+        $this->assertMatchesRegularExpression('/\d.*B$/', $progress['message']); // the human size
+        $this->assertNotEmpty($progress['started_at']);
+        $this->assertSame(['state', 'stage', 'done', 'total', 'name', 'message', 'started_at'], array_keys($progress));
+    }
+
+    public function test_progress_is_reported_while_vendor_is_being_copied(): void
+    {
+        $this->fakeBigSourceTree(20, 40);
+        $updater = $this->observedUpdater();
+
+        $updater->backupCurrent();
+
+        $running = array_filter($updater->samples, fn ($s) => $s['state'] === 'running' && $s['stage'] === 'vendor' && $s['done'] < $s['total']);
+        $this->assertNotEmpty($running, 'no mid-run sample from the vendor stage');
+        $this->assertSame('counting', $updater->samples[0]['stage']);
+        $this->assertSame(['code', 'vendor', 'database', 'finishing'], array_values(array_unique(array_column(array_slice($updater->samples, 1), 'stage'))));
+    }
+
+    public function test_the_progress_endpoint_is_idle_until_a_backup_runs(): void
+    {
+        $this->getJson('/admin/updates/backup/progress')->assertUnauthorized();
+
+        $response = $this->actingAs($this->user)->getJson('/admin/updates/backup/progress')
+            ->assertOk()
+            ->assertExactJson(['state' => 'idle']);
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+    }
+
+    public function test_the_progress_endpoint_returns_the_last_sample_to_admins_only(): void
+    {
+        $this->fakeBigSourceTree(5, 5);
+        app(SelfUpdater::class)->backupCurrent();
+
+        $this->actingAs($this->user)->getJson('/admin/updates/backup/progress')
+            ->assertOk()
+            ->assertJson(['state' => 'done', 'stage' => 'finishing', 'done' => 11, 'total' => 11]);
+    }
+
+    public function test_the_progress_endpoint_is_closed_to_members(): void
+    {
+        // Its own test: AuthenticateSession logs a second actor out of the same session.
+        $member = User::create(['name' => 'Tom', 'email' => 'tom@example.com', 'password' => Hash::make('correct-horse-battery')]);
+
+        $this->actingAs($member)->getJson('/admin/updates/backup/progress')->assertForbidden();
+    }
+
+    public function test_the_backup_button_gets_json_when_it_asks_for_it(): void
+    {
+        $this->fakeBigSourceTree(3, 3);
+
+        $response = $this->actingAs($this->user)->postJson('/admin/updates/backup')->assertOk();
+
+        $name = app(SelfUpdater::class)->backups()[0]['name'];
+        $response->assertJson(['ok' => true, 'name' => $name]);
+        $this->assertMatchesRegularExpression('/\d.*B$/', $response->json('size'));
+        $this->assertSame($name, AuditEntry::where('action', 'backup.created')->firstOrFail()->changes['name']);
+    }
+
+    public function test_a_failed_backup_is_reported_as_such_in_the_progress_and_the_json(): void
+    {
+        $this->fakeBigSourceTree(3, 3);
+        $blocked = storage_path('app/testing/not-a-dir');
+        File::put($blocked, 'x');
+        config(['pharos.update.backups_dir' => $blocked]);
+
+        $this->actingAs($this->user)->postJson('/admin/updates/backup')
+            ->assertStatus(422)
+            ->assertJson(['ok' => false])
+            ->assertJsonPath('message', fn ($m) => str_starts_with($m, 'Backup failed: '));
+
+        $progress = Cache::get(SelfUpdater::PROGRESS_KEY);
+        $this->assertSame('failed', $progress['state']);
+        $this->assertNotEmpty($progress['message']);
+        $this->assertSame(0, AuditEntry::where('action', 'backup.created')->count());
+    }
+
+    public function test_the_next_backup_replaces_the_previous_progress_entry(): void
+    {
+        Cache::put(SelfUpdater::PROGRESS_KEY, ['state' => 'failed', 'message' => 'old'], 600);
+        $this->fakeBigSourceTree(2, 2);
+
+        app(SelfUpdater::class)->backupCurrent();
+
+        $this->assertSame('done', Cache::get(SelfUpdater::PROGRESS_KEY)['state']);
+    }
+
+    public function test_the_screen_wires_the_button_to_the_progress_endpoint(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::response('', 404)]);
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+            ->assertSee('id="backup-form"', false)
+            ->assertSee('/admin/updates/backup/progress')
+            ->assertSee('<progress class="bar"', false);
+    }
 }
