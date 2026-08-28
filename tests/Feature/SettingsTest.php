@@ -75,15 +75,20 @@ class SettingsTest extends TestCase
     }
 
     /**
-     * "Get notified" linked to #subscribe, an anchor that was never on the page,
-     * backed by a feature that does not exist. It sat in the corner of every
-     * customer's status page, switched on by default, doing nothing.
+     * "Get notified" once linked to an anchor that was never on the page, backed
+     * by a feature that did not exist. Now that it does, the button must be a
+     * real form — and it must go when the section is switched off.
      */
-    public function test_the_public_page_offers_nothing_it_cannot_do(): void
+    public function test_the_public_page_offers_only_what_it_can_do(): void
     {
         $this->get('/')->assertOk()
-            ->assertDontSee('Get notified')
+            ->assertSee('Get notified')
+            ->assertSee('action="'.route('subscribe').'"', false)
             ->assertDontSee('#subscribe', false);
+
+        Setting::put('page.show_subscribe', '0');
+
+        $this->get('/')->assertOk()->assertDontSee('Get notified');
     }
 
     /** Every in-page link has to land on something that is actually rendered. */

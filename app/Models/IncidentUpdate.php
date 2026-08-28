@@ -6,6 +6,7 @@ use App\Casts\LocalTime;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\LocalTimestamps;
 use App\Enums\IncidentStatus;
+use App\Services\SubscriberNotifier;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
@@ -24,6 +25,14 @@ class IncidentUpdate extends Model
         'created_at' => LocalTime::class,
         'updated_at' => LocalTime::class,
     ];
+
+    protected static function booted(): void
+    {
+        // Queues mail for every active subscriber and returns; sending is
+        // pharos:notify's job, so the request that posts the update never waits
+        // on SMTP. Covers the admin, the API and the automatic checks alike.
+        static::created(fn (self $update) => app(SubscriberNotifier::class)->queue($update));
+    }
 
     public function incident(): BelongsTo
     {

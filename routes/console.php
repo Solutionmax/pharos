@@ -10,3 +10,6 @@ Schedule::command('pharos:check')->everyMinute()->withoutOverlapping();
 Schedule::call(function () {
     \App\Models\AuditEntry::where('created_at', '<', now()->subDays((int) config('pharos.audit_days')))->delete();
 })->dailyAt('03:20')->name('prune-audit-log');
+
+// The subscriber outbox. An incident update only queues rows; this is what sends them.
+Schedule::command('pharos:notify')->everyMinute()->withoutOverlapping();

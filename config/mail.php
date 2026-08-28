@@ -112,7 +112,9 @@ return [
 
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
+        // Blank on purpose: the mailables fall back to the brand name set under
+        // Branding, so an install never signs its mail "Laravel".
+        'name' => env('MAIL_FROM_NAME') ?: null,
     ],
 
 ];

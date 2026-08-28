@@ -28,6 +28,39 @@
   </div>
 </div>
 
+<div class="panel" id="mail">
+  <div class="panel-hd">
+    <h3>Mail</h3>
+    <span class="hint">Used for subscriber notifications</span>
+  </div>
+  <div class="panel-bd">
+    <div class="fields">
+      <div class="field">
+        <label>Mailer</label>
+        <span class="mono" style="font-size:13px">{{ $mail['mailer'] }}@if ($mail['host'] !== '') · {{ $mail['host'] }}@if ($mail['port'] !== ''):{{ $mail['port'] }}@endif @endif</span>
+      </div>
+      <div class="field">
+        <label>From</label>
+        <span class="mono" style="font-size:13px">{{ $mail['from_name'] }} &lt;{{ $mail['from'] }}&gt;</span>
+      </div>
+    </div>
+    <form method="POST" action="{{ route('admin.settings.mail-test') }}">
+      @csrf
+      <div class="actions">
+        <button class="btn" type="submit">Send test e-mail</button>
+        <span class="help" style="align-self:center">Goes to {{ auth()->user()->email }}.</span>
+      </div>
+    </form>
+
+    <x-note id="settings.mail-env">
+      <b>Mail settings live in <span class="mono">.env</span>,</b> not on this screen: the
+      <span class="mono">MAIL_*</span> lines. A blank <span class="mono">MAIL_FROM_NAME</span>
+      means mail is signed with the brand name. Change the file, then press the button above to
+      prove it works.
+    </x-note>
+  </div>
+</div>
+
 {{-- id="sso": the old /admin/sso address lands here. --}}
 <div class="panel" id="sso">
   <div class="panel-hd">

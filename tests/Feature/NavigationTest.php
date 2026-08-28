@@ -64,6 +64,7 @@ class NavigationTest extends TestCase
             'components' => ['/admin/components'],
             'incidents' => ['/admin/incidents'],
             'status page' => ['/admin/status-page'],
+            'subscribers' => ['/admin/subscribers'],
             'settings' => ['/admin/settings'],
             'integrations' => ['/admin/integrations'],
             'branding' => ['/admin/branding'],

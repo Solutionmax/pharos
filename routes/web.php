@@ -12,10 +12,12 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SsoController;
 use App\Http\Controllers\Admin\StatusPageSettingsController;
+use App\Http\Controllers\Admin\SubscriberController;
 use App\Http\Controllers\Admin\TwoFactorController;
 use App\Http\Controllers\Admin\UpdateController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\StatusPageController;
+use App\Http\Controllers\SubscribeController;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\NoStore;
 use App\Models\Incident;
@@ -23,6 +25,15 @@ use App\Services\SelfUpdater;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StatusPageController::class, 'show'])->name('status');
+
+// Subscriptions. The sign-up is rate limited per IP; the links in the mails
+// are signed on their path (signed:relative), so a proxy that speaks http to
+// Laravel cannot break an https link.
+Route::post('subscribe', [SubscribeController::class, 'store'])->middleware('throttle:5,10')->name('subscribe');
+Route::get('subscribe/confirm/{subscriber}', [SubscribeController::class, 'confirm'])->middleware('signed:relative')->name('subscribe.confirm');
+Route::get('unsubscribe/{subscriber}', [SubscribeController::class, 'unsubscribe'])->middleware('signed:relative')->name('unsubscribe');
+// One-click (RFC 8058): the mail client POSTs here with no session, hence no CSRF (see bootstrap/app.php).
+Route::post('unsubscribe/{subscriber}', [SubscribeController::class, 'unsubscribe'])->middleware('signed:relative');
 
 Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(function () {
     // Outside the guest group on purpose: this route guards itself on whether an
@@ -77,6 +88,12 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         Route::get('status-page/preview', [StatusPageController::class, 'preview'])->name('status-page.preview');
         Route::put('status-page', [StatusPageSettingsController::class, 'update'])->name('status-page.update');
 
+        Route::get('subscribers', [SubscriberController::class, 'index'])->name('subscribers');
+        // Before {subscriber}: "export" is not an id.
+        Route::get('subscribers/export', [SubscriberController::class, 'export'])->name('subscribers.export');
+        Route::post('subscribers/{subscriber}/resend', [SubscriberController::class, 'resend'])->name('subscribers.resend');
+        Route::delete('subscribers/{subscriber}', [SubscriberController::class, 'destroy'])->name('subscribers.destroy');
+
         Route::get('integrations', [IntegrationController::class, 'index'])->name('integrations');
         Route::post('integrations/notifications', [IntegrationController::class, 'storeEndpoint'])->name('integrations.endpoints.store');
         Route::post('integrations/notifications/{endpoint}/test', [IntegrationController::class, 'testEndpoint'])->name('integrations.endpoints.test');
@@ -120,6 +137,7 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
 
             Route::get('settings', [SettingsController::class, 'edit'])->name('settings');
             Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+            Route::post('settings/mail-test', [SettingsController::class, 'sendTestMail'])->name('settings.mail-test');
 
             // The single sign-on form lives on the Settings screen now; the old
             // address stays for bookmarks and the docs.
