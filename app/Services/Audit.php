@@ -54,7 +54,7 @@ class Audit
     }
 
     /** Records an action nobody is signed in for, such as a failed login. */
-    public static function recordAs(string $actor, string $action, ?Model $subject = null): AuditEntry
+    public static function recordAs(string $actor, string $action, ?Model $subject = null, array $changes = []): AuditEntry
     {
         return AuditEntry::create([
             'user_id' => null,
@@ -63,6 +63,7 @@ class Audit
             'subject_type' => $subject ? class_basename($subject) : null,
             'subject_id' => $subject?->getKey(),
             'subject_label' => $subject ? self::label($subject) : null,
+            'changes' => $changes ?: null,
             'ip' => request()?->ip(),
             'created_at' => now(),
         ]);

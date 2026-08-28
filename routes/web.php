@@ -113,6 +113,7 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
             // slashes and dots out of it, and the controller checks the path again.
             Route::get('updates/backup/{name}', [UpdateController::class, 'download'])->name('updates.backup.download')->where('name', SelfUpdater::NAME_PATTERN);
             Route::delete('updates/backup/{name}', [UpdateController::class, 'destroy'])->name('updates.backup.destroy')->where('name', SelfUpdater::NAME_PATTERN);
+            Route::post('updates/backup/{name}/rollback', [UpdateController::class, 'rollback'])->name('updates.backup.rollback')->where('name', SelfUpdater::NAME_PATTERN);
 
             Route::get('settings', [SettingsController::class, 'edit'])->name('settings');
             Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');

@@ -124,12 +124,12 @@ php artisan pharos:update</pre>
 <div class="panel">
   <div class="panel-hd">
     <h3>Backups kept</h3><span class="hint mono">storage/app/backups</span>
-    <form method="POST" action="{{ route('admin.updates.backup') }}" id="backup-form" data-progress="{{ route('admin.updates.backup.progress') }}">
+    <form method="POST" action="{{ route('admin.updates.backup') }}" id="backup-form" data-job="backup" data-progress="{{ route('admin.updates.backup.progress') }}">
       @csrf
       <button class="btn" type="submit">Back up now</button>
     </form>
   </div>
-  {{-- Filled by the script below while a backup runs; without JS the form posts as before. --}}
+  {{-- Filled by the script below while a backup or rollback runs; without JS the forms post as before. --}}
   <div class="backup-progress" id="backup-progress" hidden>
     <span class="mono" data-label></span><span class="mono" data-pct></span>
     <progress class="bar"></progress>
@@ -147,6 +147,14 @@ php artisan pharos:update</pre>
               <td>
                 <span class="rowacts">
                   <a href="{{ route('admin.updates.backup.download', $backup['name']) }}">Download</a>
+                  <form method="POST" action="{{ route('admin.updates.backup.rollback', $backup['name']) }}"
+                        data-job="rollback" data-progress="{{ route('admin.updates.backup.progress') }}" data-after="{{ route('admin.login', ['after' => 'rollback']) }}"
+                        data-confirm-title="Roll back to {{ $backup['version'] }}?"
+                        data-confirm="Pharos replaces its own files with the copy taken on {{ $backup['created_at']->format('j M Y H:i') }} and, on SQLite, puts that copy of the database back too — everything entered since then is lost from the app, but not from the safety backup Pharos makes first. The page is briefly unavailable."
+                        data-confirm-action="Roll back">
+                    @csrf
+                    <button type="submit">Roll back</button>
+                  </form>
                   <form method="POST" action="{{ route('admin.updates.backup.destroy', $backup['name']) }}"
                         data-confirm-title="Remove backup {{ $backup['name'] }}?"
                         data-confirm="This is the copy of {{ $backup['version'] }} taken on {{ $backup['created_at']->format('j M Y H:i') }}. Once removed, there is nothing to put back."
@@ -170,30 +178,40 @@ php artisan pharos:update</pre>
       @if ($sqlite)The SQLite database is copied into the backup, so putting a folder back puts the data of that moment back too. @else Your database is not in these backups — dump it before an update; the update runs migrations. @endif
       Each update copies the version it replaces into <span class="mono">storage/app/backups</span>
       before writing anything. Nothing prunes that folder: once the new version has run for a while,
-      empty it by hand. Rollback is copying a folder back; there is no button for it yet.
+      empty it by hand. <b>Roll back</b> puts a folder back — after copying what it replaces into a
+      backup of its own, so a rollback can be undone too.
     </p>
   </div>
 </div>
 
 <script>
 (function () {
-  var form = document.getElementById('backup-form'), box = document.getElementById('backup-progress');
-  if (!form || !window.fetch) return;
-  var bar = box.querySelector('progress'), label = box.querySelector('[data-label]'), pct = box.querySelector('[data-pct]'), btn = form.querySelector('button');
-  var words = {counting: 'Counting files…', code: 'Copying code…', vendor: 'Copying vendor…', database: 'Copying the database…', finishing: 'Finishing…'};
+  var box = document.getElementById('backup-progress');
+  if (!box || !window.fetch) return;
+  var bar = box.querySelector('progress'), label = box.querySelector('[data-label]'), pct = box.querySelector('[data-pct]');
+  var words = {
+    backup: {counting: 'Counting files…', code: 'Copying code…', vendor: 'Copying vendor…', database: 'Copying the database…', finishing: 'Finishing…'},
+    rollback: {safety: 'Keeping a safety copy…', code: 'Restoring code…', vendor: 'Restoring vendor…', database: 'Restoring the database…', finishing: 'Finishing…'}
+  };
   var fmt = function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f'); };
-  function show(s) {
-    if (s.state === 'idle' || s.state === 'failed') return;
-    var text = words[s.stage] || s.stage;
-    if (s.total) { bar.max = s.total; bar.value = s.done; pct.textContent = Math.floor(100 * s.done / s.total) + '%'; text += ' ' + fmt(s.done) + ' / ' + fmt(s.total) + ' files'; }
-    label.textContent = text;
-  }
-  function poll() {
-    return fetch(form.dataset.progress, {credentials: 'same-origin', headers: {Accept: 'application/json'}}).then(function (r) { return r.json(); }).then(show).catch(function () {});
-  }
   function finish(text, bad) { bar.hidden = true; pct.textContent = ''; label.textContent = text; box.classList.toggle('bad', !!bad); }
-  form.addEventListener('submit', function (event) {
+  // Back up now and every Roll back go the same way: POST over fetch, poll the
+  // progress endpoint meanwhile, reload once the server has answered.
+  document.addEventListener('submit', function (event) {
+    var form = event.target.closest('form[data-progress]');
+    // A guarded form first goes through the confirm dialog; it comes back with confirmed=yes.
+    if (!form || (form.dataset.confirm && form.dataset.confirmed !== 'yes')) return;
     event.preventDefault();
+    var job = form.dataset.job || 'backup', btn = form.querySelector('button'), failed = job === 'rollback' ? 'Rollback failed' : 'Backup failed';
+    function show(s) {
+      if (s.state === 'idle' || s.state === 'failed') return;
+      var text = words[job][s.stage] || s.stage;
+      if (s.total) { bar.max = s.total; bar.value = s.done; pct.textContent = Math.floor(100 * s.done / s.total) + '%'; text += ' ' + fmt(s.done) + ' / ' + fmt(s.total) + ' files'; }
+      label.textContent = text;
+    }
+    function poll() {
+      return fetch(form.dataset.progress, {credentials: 'same-origin', headers: {Accept: 'application/json'}}).then(function (r) { return r.json(); }).then(show).catch(function () {});
+    }
     btn.disabled = true; box.hidden = false; box.classList.remove('bad');
     bar.hidden = false; bar.removeAttribute('value'); label.textContent = 'Starting…'; pct.textContent = '';
     // `php artisan serve` is single-threaded, so there the polls queue behind the
@@ -201,18 +219,19 @@ php artisan pharos:update</pre>
     var timer = setInterval(poll, 500);
     fetch(form.action, {method: 'POST', credentials: 'same-origin', headers: {Accept: 'application/json', 'X-CSRF-TOKEN': form.querySelector('[name=_token]').value}})
       .then(function (r) {
-        if (!/json/.test(r.headers.get('content-type') || '')) throw new Error('Backup failed (HTTP ' + r.status + ').');
+        if (!/json/.test(r.headers.get('content-type') || '')) throw new Error(failed + ' (HTTP ' + r.status + ').');
         return r.json();
       })
       .then(function (j) {
         clearInterval(timer);
         return poll().then(function () {
-          if (!j.ok) throw new Error(j.message || 'Backup failed.');
-          finish('Backup made: ' + j.name + ' (' + j.size + ')');
-          setTimeout(function () { location.reload(); }, 1500); // the table and the flash come with the fresh page
+          if (!j.ok) throw new Error(j.message || failed + '.');
+          finish(j.message || 'Backup made: ' + j.name + ' (' + j.size + ')');
+          // The table and the flash come with the fresh page; a rollback gets a moment longer to be read.
+          setTimeout(function () { location.href = form.dataset.after || location.href; }, job === 'rollback' ? 4000 : 1500);
         });
       })
-      .catch(function (err) { clearInterval(timer); finish(err.message || 'Backup failed.', true); btn.disabled = false; });
+      .catch(function (err) { clearInterval(timer); finish(err.message || failed + '.', true); btn.disabled = false; });
   });
 })();
 </script>

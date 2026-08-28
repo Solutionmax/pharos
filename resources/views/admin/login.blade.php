@@ -7,6 +7,10 @@
 </style>
 <div class="main" style="max-width:380px;margin:0 auto">
   @if (session('status'))<div class="flash">{{ session('status') }}</div>@endif
+@if (request('after') === 'rollback')
+  {{-- Not a flash: the rollback replaced the session store, so the message travels in the URL. --}}
+  <div class="flash">Rolled back to a backup. You were signed out because the session store was restored too — sign in with the password you had at the time of that backup.</div>
+@endif
   @if ($errors->any())<div class="errors"><ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
   <div class="head" style="justify-content:center;margin-bottom:26px">
     <h1>{{ \App\Models\Setting::get('brand.name', 'Pharos') }}</h1>

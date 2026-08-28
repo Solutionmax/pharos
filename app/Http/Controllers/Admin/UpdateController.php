@@ -7,6 +7,7 @@ use App\Services\Audit;
 use App\Services\SelfUpdater;
 use App\Services\Updater;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Number;
@@ -108,6 +109,42 @@ class UpdateController extends Controller
         Audit::record('backup.downloaded', null, ['name' => $name]);
 
         return response()->download($zip, "{$name}.zip")->deleteFileAfterSend(true);
+    }
+
+    /** A kept backup put back over the running install; what it replaces is backed up first. */
+    public function rollback(Request $request, string $name)
+    {
+        abort_unless($this->selfUpdater->backupPath($name), 404);
+
+        // Taken before the database is swapped: the account doing this may not
+        // exist in the copy being restored, and a user_id that no longer resolves
+        // would fail the foreign key — after the rollback already happened.
+        $actor = Audit::actor() ?? 'unknown';
+
+        $result = $this->selfUpdater->rollback($name);
+
+        if (! $result['ok']) {
+            return $request->wantsJson()
+                ? response()->json(['ok' => false, 'message' => $result['message']], 422)
+                : back()->withErrors(['rollback' => $result['message']]);
+        }
+
+        Audit::recordAs($actor, 'backup.restored', null, ['name' => $name, 'safety' => $result['safety']]);
+
+        // The session store came back with the database, so this session is gone
+        // either way. Say it, rather than letting the next click land on a login
+        // page with no explanation.
+        $message = $result['message'].' You have been signed out because the session store was restored too — sign in again with the password you had at the time of that backup.';
+        // Not Auth::logout(): that fires the logout event, whose audit line carries a
+        // user_id that may no longer exist in the restored database.
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        Auth::guard()->forgetUser();
+
+        return $request->wantsJson()
+            ? response()->json(['ok' => true, 'message' => $message])
+            // Not a flash: the session store was just replaced, so a flash would not survive.
+            : redirect()->route('admin.login', ['after' => 'rollback']);
     }
 
     public function destroy(string $name)
