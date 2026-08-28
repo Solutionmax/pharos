@@ -306,6 +306,9 @@ pre .k{color:var(--brand)}
       <a class="nav" href="{{ route('admin.branding') }}" @if(request()->routeIs('admin.branding')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'branding']) Branding
       </a>
+      <a class="nav" href="{{ route('admin.mail-templates') }}" @if(request()->routeIs('admin.mail-templates*')) aria-current="page" @endif>
+        @include('partials.icon', ['name' => 'mail']) Mail templates
+      </a>
       <a class="nav" href="{{ route('admin.users') }}" @if(request()->routeIs('admin.users')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'users']) Users
       </a>

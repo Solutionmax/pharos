@@ -3,11 +3,13 @@
 namespace App\Mail\Concerns;
 
 use App\Services\Branding;
+use App\Services\MailTemplates;
 use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Content;
 
 /**
  * What every mail from this install shares: who it is from and how it looks.
- * Phase 2 (customer-editable templates) swaps the view bodies, not this.
+ * The customer-editable templates (MailTemplates) swap the body, not this.
  */
 trait Branded
 {
@@ -26,21 +28,24 @@ trait Branded
     }
 
     /**
-     * The layout's variables. url() rather than the stored path: a mail is read
-     * away from the site, so a relative logo path shows a broken image.
+     * The layout's variables, for the mails that still have a view of their own.
      *
      * @return array<string, mixed>
      */
     protected function brandVars(): array
     {
-        $branding = $this->branding();
-        $logo = $branding->logoUrl();
+        return MailTemplates::frame();
+    }
 
-        return [
-            'brand' => $branding->name(),
-            'accent' => $branding->accent(),
-            'logo' => $logo ? url($logo) : null,
-            'link' => route('status'),
-        ];
+    /**
+     * A rendered template as mail content. "plain", not "text": the text part
+     * is a view, and Laravel hands every mail view a $message of its own, so the
+     * variable names here stay clear of anything Laravel might set.
+     *
+     * @param  array{subject: string, html: string, text: string}  $rendered
+     */
+    protected function templateContent(array $rendered): Content
+    {
+        return new Content(htmlString: $rendered['html'], text: 'mail.text.raw', with: ['plain' => $rendered['text']]);
     }
 }

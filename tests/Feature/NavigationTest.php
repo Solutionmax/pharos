@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\GrantsBrandPack;
 use Tests\TestCase;
 
 /**
@@ -19,7 +20,7 @@ use Tests\TestCase;
  */
 class NavigationTest extends TestCase
 {
-    use RefreshDatabase;
+    use GrantsBrandPack, RefreshDatabase;
 
     protected User $user;
 
@@ -30,6 +31,9 @@ class NavigationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Mail templates only shows its Save/Undo controls to a licensed install.
+        $this->grantBrandPack();
 
         $this->user = User::create([
             'name' => 'Admin',
@@ -68,6 +72,7 @@ class NavigationTest extends TestCase
             'settings' => ['/admin/settings'],
             'integrations' => ['/admin/integrations'],
             'branding' => ['/admin/branding'],
+            'mail templates' => ['/admin/mail-templates'],
             'users' => ['/admin/users'],
         ];
     }
@@ -113,6 +118,7 @@ class NavigationTest extends TestCase
             'settings' => ['/admin/settings'],
             'integrations' => ['/admin/integrations'],
             'branding' => ['/admin/branding'],
+            'mail templates' => ['/admin/mail-templates'],
             'users' => ['/admin/users'],
         ];
     }
