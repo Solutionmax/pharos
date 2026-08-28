@@ -25,8 +25,11 @@
     <form method="POST" action="{{ route('admin.settings.update') }}">
       @csrf @method('PUT')
       <input type="hidden" name="_tab" value="general">
+      {{-- Three small groups under one Save: each is a sentence or two, and a
+           panel per group would be more chrome than content. --}}
+      <h4 class="grouphd">Time zone</h4>
       <div class="fields">
-        <div class="field">
+        <div class="field wide">
           <label for="timezone">Time zone</label>
           @include('partials.timezone-select', ['selected' => $timezone])
           <span class="help"><b>{{ $timezone }} — {{ $offset }} now.</b>
@@ -34,6 +37,32 @@
             Everything is stored in UTC, so you can change it any time.</span>
         </div>
       </div>
+
+      <h4 class="grouphd">Retention</h4>
+      <div class="fields">
+        <div class="field">
+          <label for="audit_days">Audit log kept for</label>
+          <span class="inline-unit"><input id="audit_days" name="audit_days" type="number" min="7" max="3650" required
+                 value="{{ old('audit_days', $general['audit_days']) }}"> days</span>
+          <span class="help">Older lines are removed nightly. 7 to 3650 days.</span>
+          @error('audit_days')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
+        </div>
+        <div class="field">
+          <label for="keep_backups">Backups kept</label>
+          <input id="keep_backups" name="keep_backups" type="number" min="0" max="50" required
+                 value="{{ old('keep_backups', $general['keep_backups']) }}">
+          <span class="help">The newest N copies an update makes of the version it replaces; the oldest go when a new one is made. 0 keeps all.</span>
+          @error('keep_backups')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
+        </div>
+      </div>
+
+      <h4 class="grouphd">Updates</h4>
+      <div class="switchrow">
+        <span class="t"><strong>Check for updates automatically</strong>
+          <span class="s">Once an hour, from {{ $manifestHost ?? 'the release server' }}. Off means the Updates screen only checks when you press Check again.</span></span>
+        <label class="check"><input type="checkbox" name="update_check" value="1" @checked(old('update_check', $general['update_check']))> On</label>
+      </div>
+
       <div class="actions">
         <button class="btn" type="submit">Save settings</button>
         <button class="btn ghost" type="reset">Undo my changes</button>

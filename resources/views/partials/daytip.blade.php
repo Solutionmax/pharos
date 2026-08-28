@@ -28,6 +28,7 @@
   var GAP = 8, EDGE = 8, TOUCH_MS = 1500, hideTimer = null, lastTouch = 0;
 
   // "28 Aug · 99.98%" → date in mono, the value beside it; "no data" fades back.
+  // Anything after the second separator stays in the value: "14:32:05 · failed · Connection refused".
   function fill(text) {
     var parts = text.split(' · ');
     tip.textContent = '';
@@ -35,7 +36,7 @@
       var d = document.createElement('span'); d.className = 'd'; d.textContent = parts[0]; tip.appendChild(d);
     }
     if (parts.length > 1) {
-      var v = document.createElement('span'); v.className = 'v' + (parts[1] === 'no data' ? ' mute' : ''); v.textContent = parts[1];
+      var v = document.createElement('span'); v.className = 'v' + (parts[1] === 'no data' ? ' mute' : ''); v.textContent = parts.slice(1).join(' · ');
       if (parts[0] === '') v.style.marginLeft = '0';
       tip.appendChild(v);
     }

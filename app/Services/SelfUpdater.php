@@ -139,7 +139,7 @@ class SelfUpdater
     }
 
     /**
-     * Keep the newest N backups (config keep_backups; 0 = all). $keep names are
+     * Keep the newest N backups (Settings → General, else PHAROS_KEEP_BACKUPS; 0 = all). $keep names are
      * never removed whatever their age — a rollback protects its own target,
      * otherwise its safety copy could push it out of the window mid-restore.
      *
@@ -147,7 +147,7 @@ class SelfUpdater
      */
     public function prune(array $keep = []): array
     {
-        $limit = (int) config('pharos.update.keep_backups');
+        $limit = InstallSettings::keepBackups();
         $this->pruned = [];
 
         if ($limit < 1) {

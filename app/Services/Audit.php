@@ -53,6 +53,17 @@ class Audit
         ]);
     }
 
+    /**
+     * Drops lines older than the retention window (Settings → General, else
+     * PHAROS_AUDIT_DAYS). Age is the only thing that bounds an append-only table.
+     *
+     * @return int how many lines went
+     */
+    public static function prune(): int
+    {
+        return AuditEntry::where('created_at', '<', now()->subDays(InstallSettings::auditDays()))->delete();
+    }
+
     /** Records an action nobody is signed in for, such as a failed login. */
     public static function recordAs(string $actor, string $action, ?Model $subject = null, array $changes = []): AuditEntry
     {

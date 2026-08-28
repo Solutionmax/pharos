@@ -11,6 +11,7 @@ use App\Models\Component;
 use App\Models\ComponentGroup;
 use App\Models\Incident;
 use App\Models\IncidentUpdate;
+use App\Services\CheckHistory;
 use App\Services\Uptime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +62,8 @@ class ComponentController extends Controller
             'component' => $component->load('check'),
             'groups' => ComponentGroup::orderBy('position')->get(),
             'knownTags' => $this->knownTags(),
+            // Only a component with a check has runs to show; a manual one gets no panel.
+            'recent' => $component->check ? CheckHistory::strip($component) : null,
         ]);
     }
 

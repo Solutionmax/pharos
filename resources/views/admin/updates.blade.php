@@ -180,7 +180,7 @@ php artisan pharos:update</pre>
 <x-note id="updates.backups">
   @if ($sqlite)The SQLite database is copied into the backup, so putting a folder back puts the data of that moment back too. @else Your database is not in these backups — dump it before an update; the update runs migrations. @endif
   Each update copies the version it replaces into <span class="mono">storage/app/backups</span>
-  before writing anything. Pharos keeps the newest {{ config('pharos.update.keep_backups') ?: 'all' }} (<span class="mono">PHAROS_KEEP_BACKUPS</span>); older ones go when a new one is made. <b>Roll back</b> puts a folder back — after copying what it replaces into a
+  before writing anything. Pharos keeps the newest {{ \App\Services\InstallSettings::keepBackups() ?: 'all' }} (set under <a href="{{ route('admin.settings') }}">Settings → General</a>); older ones go when a new one is made. <b>Roll back</b> puts a folder back — after copying what it replaces into a
   backup of its own, so a rollback can be undone too.
 </x-note>
 
