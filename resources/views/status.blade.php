@@ -30,9 +30,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .theme-toggle:hover{color:var(--ink);border-color:var(--ink-3)}
 .hero{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);overflow:hidden}
 .hero-top{display:flex;align-items:center;gap:14px;padding:26px 28px;flex-wrap:wrap}
-.hero-top .dot{width:12px;height:12px;border-radius:50%;flex:none;background:currentColor;animation:pulse 2.2s ease-out infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in oklab,currentColor 55%,transparent)}70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
-@media (prefers-reduced-motion:reduce){.hero-top .dot{animation:none}}
+.hero-top .dot{width:12px;height:12px;border-radius:50%;flex:none;background:currentColor;position:relative}
+/* The dot is alive: a ring in its own colour breathes out and fades. Off for reduced motion. */
+.hero-top .dot::after{content:'';position:absolute;inset:0;border-radius:50%;background:currentColor;opacity:.55;animation:pulse 2.2s ease-out infinite}
+@keyframes pulse{0%{transform:scale(1);opacity:.55}70%,100%{transform:scale(2.6);opacity:0}}
+@media (prefers-reduced-motion:reduce){.hero-top .dot::after{animation:none;opacity:0}}
 .hero-top h1{font-size:24px}
 .hero-top .when{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
 .uptime{padding:4px 28px 26px;display:flex;flex-direction:column;gap:12px}
