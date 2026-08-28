@@ -36,6 +36,7 @@ class UpdateController extends Controller
             'managed' => $this->updater->managed(),
             'managedStatus' => $this->updater->managedStatus(),
             'writable' => $this->selfUpdater->canWrite(),
+            'sqlite' => \Illuminate\Support\Facades\DB::getDriverName() === 'sqlite',
             'versionPinned' => $this->updater->versionIsPinned(),
         ]);
     }

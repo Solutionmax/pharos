@@ -8,6 +8,7 @@ use App\Services\Updater;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -511,5 +512,51 @@ class UpdateTest extends TestCase
 
         $this->actingAs($this->user)->get('/admin/updates')->assertOk()
             ->assertSee('No backups yet');
+    }
+
+    /**
+     * A backup is only worth something if it can be put back whole: code and
+     * vendor together, plus a consistent copy of the SQLite database — the
+     * migrations that follow are what make the old code unusable otherwise.
+     * Secrets and uploads are not in it; an update never touches those.
+     */
+    public function test_a_backup_keeps_code_vendor_and_the_database_but_not_secrets_or_uploads(): void
+    {
+        $src = storage_path('app/testing/src-'.Str::random(6));
+        foreach (['artisan', 'vendor/autoload.php', '.env', 'storage/app/keep.txt', 'public/storage/logo.png', 'node_modules/x/index.js', 'database/database.sqlite'] as $f) {
+            File::ensureDirectoryExists(dirname($src.'/'.$f));
+            File::put($src.'/'.$f, 'x');
+        }
+        $dir = storage_path('app/testing/backups-'.Str::random(6));
+        config(['pharos.update.backups_dir' => $dir]);
+
+        // A file database standing in for the live one (the suite itself runs in memory).
+        $live = $src.'/live.sqlite';
+        (new \PDO('sqlite:'.$live))->exec('create table settings (k text)');
+
+        $backup = app(SelfUpdater::class)->backupCurrent($src, $live);
+
+        $this->assertFileExists($backup.'/artisan');
+        $this->assertFileExists($backup.'/vendor/autoload.php');
+        $this->assertFileDoesNotExist($backup.'/.env');
+        $this->assertDirectoryDoesNotExist($backup.'/storage');
+        $this->assertDirectoryDoesNotExist($backup.'/public/storage');
+        $this->assertDirectoryDoesNotExist($backup.'/node_modules');
+
+        // Not the stale file from the tree: a live, consistent copy of the database in use.
+        $this->assertFileExists($backup.'/database/database.sqlite');
+        $copy = new \PDO('sqlite:'.$backup.'/database/database.sqlite');
+        $this->assertContains('settings', $copy->query("select name from sqlite_master where type='table'")->fetchAll(\PDO::FETCH_COLUMN));
+
+        File::deleteDirectory($src);
+        File::deleteDirectory($dir);
+    }
+
+    public function test_the_screen_says_the_database_is_in_the_backup_on_sqlite(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::response('', 404)]);
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+            ->assertSee('SQLite database is copied into the backup');
     }
 }
