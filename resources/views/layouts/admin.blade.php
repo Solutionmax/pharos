@@ -209,7 +209,12 @@ dialog.modal .panel{margin:0}
 .modules{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
 .locked{border:1px dashed var(--line);background:var(--bg-tint);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px}
 .pro{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--brand);border:1px solid var(--brand);border-radius:6px;padding:2px 8px;white-space:nowrap}
-.callout{border-left:3px solid var(--brand);background:var(--brand-soft);margin-top:18px;padding:16px 20px;border-radius:0 12px 12px 0;font-size:13.5px;line-height:1.7;color:var(--ink-2);max-width:74ch}
+.callout{position:relative;border-left:3px solid var(--brand);background:var(--brand-soft);margin-top:22px;padding:14px 18px 12px;border-radius:0 12px 12px 0;font-size:13px;line-height:1.6;color:var(--ink-2);max-width:68ch}
+.callout::before{content:'Good to know';display:block;font:600 10.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--brand);margin-bottom:8px}
+.callout.warn::before{content:'Careful';color:var(--amber)}
+.callout p{margin:0 0 8px}.callout p:last-child{margin-bottom:0}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--ink-2)}
+.pager .sub{color:var(--ink-3)}.pager-links{display:flex;gap:8px}.pager [aria-disabled=true]{opacity:.45;pointer-events:none}
 .callout b{color:var(--ink)}
 .callout.warn{border-left-color:var(--amber);background:color-mix(in oklab,var(--amber) 12%,transparent)}
 /* A callout of more than one thought reads as a wall unless the thoughts are split. */

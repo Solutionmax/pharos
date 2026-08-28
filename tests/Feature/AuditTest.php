@@ -141,4 +141,46 @@ class AuditTest extends TestCase
 
         $this->actingAs($user)->get(route('admin.audit').'?page=2')->assertOk();
     }
+
+    public function test_a_status_change_is_recorded_as_labels_on_both_sides(): void
+    {
+        $component = Component::create(['name' => 'Website']);
+        $component->status = 4; // raw, as a form or the API hands it over
+
+        $diff = \App\Services\Audit::diff($component);
+
+        $this->assertSame('Operational', $diff['status']['from']);
+        $this->assertSame('Major outage', $diff['status']['to']);
+    }
+
+    public function test_an_incident_update_is_labelled_by_its_incident(): void
+    {
+        $incident = \App\Models\Incident::create(['name' => 'Mail delayed', 'status' => 1, 'impact' => 'minor', 'occurred_at' => now()]);
+        $update = $incident->updates()->create(['status' => 1, 'message' => 'Looking into it']);
+
+        $this->assertSame('Update on "Mail delayed"', \App\Services\Audit::label($update));
+    }
+
+    public function test_the_audit_page_uses_its_own_pager_and_readable_field_names(): void
+    {
+        $user = $this->admin();
+
+        for ($i = 0; $i < 60; $i++) {
+            AuditEntry::create([
+                'actor' => 'Anita (anita@example.net)',
+                'action' => 'incident.updated',
+                'subject_label' => 'Incident '.$i,
+                'changes' => ['resolved_at' => ['from' => null, 'to' => '2026-08-27 22:56:05']],
+                'created_at' => now(),
+            ]);
+        }
+
+        $page = $this->actingAs($user)->get(route('admin.audit'))->assertOk();
+
+        // Laravel's default pager is Tailwind markup; without Tailwind its SVG
+        // arrows render at full size. Pharos ships its own.
+        $page->assertSee('class="pager"', false)->assertDontSee('w-5 h-5', false)
+            ->assertSee('Page 1 of 2')
+            ->assertSee('Resolved at');
+    }
 }

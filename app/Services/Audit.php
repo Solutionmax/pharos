@@ -71,7 +71,11 @@ class Audit
     /** Something a human recognises, because an id alone says nothing. */
     public static function label(Model $subject): string
     {
-        foreach (['name', 'label', 'email', 'key'] as $attribute) {
+        if ($subject instanceof \App\Models\IncidentUpdate) {
+            return 'Update on "'.$subject->incident?->name.'"';
+        }
+
+        foreach (['name', 'title', 'label', 'email', 'key'] as $attribute) {
             if (filled($subject->getAttribute($attribute))) {
                 return (string) $subject->getAttribute($attribute);
             }
@@ -94,7 +98,9 @@ class Audit
 
             $changes[$key] = [
                 'from' => self::scalar($model->getOriginal($key)),
-                'to' => self::scalar($new),
+                // getAttribute() runs the cast, so an enum column records its
+                // label on both sides instead of "Identified → 4".
+                'to' => self::scalar($model->getAttribute($key)),
             ];
         }
 

@@ -63,7 +63,7 @@
             <td class="sub">
               @forelse ($entry->changes ?? [] as $field => $change)
                 <div>
-                  <span class="mono">{{ $field }}</span>:
+                  <span style="color:var(--ink)">{{ ucfirst(str_replace('_', ' ', $field)) }}</span>:
                   <span style="text-decoration:line-through;color:var(--ink-3)">{{ $change['from'] ?? '—' }}</span>
                   &rarr; {{ $change['to'] ?? '—' }}
                 </div>
