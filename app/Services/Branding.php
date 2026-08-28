@@ -65,6 +65,12 @@ class Branding
         return $this->assetUrl('brand.logo_path');
     }
 
+    /** Second logo for the dark theme; the light one is the fallback. */
+    public function logoDarkUrl(): ?string
+    {
+        return $this->assetUrl('brand.logo_dark_path');
+    }
+
     public function faviconUrl(): string
     {
         return $this->assetUrl('brand.favicon_path') ?? asset('brand/pharos-favicon.svg');

@@ -21,6 +21,7 @@ class BrandingController extends Controller
                 'accent' => $this->branding->accent(),
                 'credit_hidden' => $this->branding->creditHidden(),
                 'logo' => $this->branding->logoUrl(),
+                'logo_dark' => $this->branding->logoDarkUrl(),
                 'favicon' => $this->branding->faviconUrl(),
             ],
             'licensed' => $this->license->has(License::FEATURE_BRAND_PACK),
@@ -41,7 +42,9 @@ class BrandingController extends Controller
             // is served to every visitor of the status page.
             'logo' => ['sometimes', 'image', 'mimes:png,jpg,jpeg,webp', 'max:512', 'dimensions:max_width=1200,max_height=400'],
             'favicon' => ['sometimes', 'image', 'mimes:png,ico,webp', 'max:128', 'dimensions:max_width=512,max_height=512'],
+            'logo_dark' => ['sometimes', 'image', 'mimes:png,jpg,jpeg,webp', 'max:512', 'dimensions:max_width=1200,max_height=400'],
             'remove_logo' => ['sometimes', 'boolean'],
+            'remove_logo_dark' => ['sometimes', 'boolean'],
         ]);
 
         Setting::put('brand.name', $data['name']);
@@ -62,6 +65,17 @@ class BrandingController extends Controller
         if ($request->hasFile('logo')) {
             $this->deleteStored('brand.logo_path');
             Setting::put('brand.logo_path', $request->file('logo')->store('brand', 'public'));
+        }
+
+        // A dark logo on its own would leave the light theme with the built-in mark
+        // next to a custom dark one; harmless, so not forbidden.
+        if ($request->boolean('remove_logo_dark')) {
+            $this->deleteStored('brand.logo_dark_path');
+        }
+
+        if ($request->hasFile('logo_dark')) {
+            $this->deleteStored('brand.logo_dark_path');
+            Setting::put('brand.logo_dark_path', $request->file('logo_dark')->store('brand', 'public'));
         }
 
         if ($request->hasFile('favicon')) {

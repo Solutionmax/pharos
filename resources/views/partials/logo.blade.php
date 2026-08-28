@@ -1,5 +1,19 @@
 @if ($branding->logoUrl())
-  <img src="{{ $branding->logoUrl() }}" alt="{{ $branding->name() }}"
+  @if ($branding->logoDarkUrl())
+    {{-- Two files, CSS picks one: the explicit toggle (data-theme) wins over the OS preference. --}}
+    <style>
+      .logo-dark{display:none}
+      [data-theme="dark"] .logo-light{display:none!important}
+      [data-theme="dark"] .logo-dark{display:block}
+      @media (prefers-color-scheme:dark){
+        :root:not([data-theme="light"]) .logo-light{display:none!important}
+        :root:not([data-theme="light"]) .logo-dark{display:block}
+      }
+    </style>
+    <img class="logo-dark" src="{{ $branding->logoDarkUrl() }}" alt="{{ $branding->name() }}"
+         style="max-height:{{ $size ?? 30 }}px;max-width:200px">
+  @endif
+  <img class="logo-light" src="{{ $branding->logoUrl() }}" alt="{{ $branding->name() }}"
        style="max-height:{{ $size ?? 30 }}px;max-width:200px;display:block">
 @else
   <span class="mark" aria-hidden="true" style="color:var(--brand);display:flex">
