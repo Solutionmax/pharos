@@ -92,14 +92,30 @@
 <div class="panel">
   <div class="panel-hd">
     <h3>Licence</h3>
-    @if ($licensed)<span class="hint">Active · {{ $issuedTo }}</span>@else<span class="hint">Not activated</span>@endif
+    @if ($licensed)
+      <span class="hint">Active · {{ $issuedTo }}@if ($expiresAt) · until {{ $expiresAt->format('d M Y') }}@endif</span>
+    @else
+      <span class="hint">Not activated</span>
+    @endif
   </div>
   <div class="panel-bd">
     @if ($licensed)
+      @if ($expiringSoon)
+        <div class="callout warn">
+          <b>{{ $daysLeft === 0 ? 'Runs out today.' : 'Runs out in '.$daysLeft.' '.\Illuminate\Support\Str::plural('day', $daysLeft).'.' }}</b>
+          On {{ $expiresAt->format('d F Y') }} this key stops counting and the brand pack falls back
+          to the free options. Renew before then and paste the new key here; nothing else changes.
+        </div>
+      @endif
+
       <div class="callout">
-        <b>Activated.</b> Licensed to {{ $issuedTo }}. The key is checked on this server, so this
-        keeps working whether or not you can reach us, and whether or not you renew. Renewing buys
-        updates and support, not permission to run.
+        <b>Activated.</b> Licensed to {{ $issuedTo }}.
+        @if ($expiresAt)
+          This key runs until <b>{{ $expiresAt->format('d F Y') }}</b>.
+        @else
+          This key has no end date.
+        @endif
+        It is checked on this server, so it keeps working whether or not you can reach us.
       </div>
     @else
       <form method="POST" action="{{ route('admin.branding.activate') }}" style="display:flex;flex-direction:column;gap:12px">

@@ -51,8 +51,7 @@ class SettingsTest extends TestCase
             ->assertSee('All systems operational')
             ->assertSee('Services')
             ->assertSee('web-01')
-            ->assertSee('Mail queue backed up')
-            ->assertSee('Get notified');
+            ->assertSee('Mail queue backed up');
     }
 
     public function test_each_section_can_be_switched_off_on_its_own(): void
@@ -61,7 +60,6 @@ class SettingsTest extends TestCase
             'page.show_overall' => 'All systems operational',
             'page.show_services' => 'web-01',
             'page.show_incidents' => 'Mail queue backed up',
-            'page.show_subscribe' => 'Get notified',
         ];
 
         foreach ($cases as $key => $text) {
@@ -72,6 +70,34 @@ class SettingsTest extends TestCase
             $this->get('/')->assertDontSee($text);
 
             Setting::put($key, '1');
+        }
+    }
+
+    /**
+     * "Get notified" linked to #subscribe, an anchor that was never on the page,
+     * backed by a feature that does not exist. It sat in the corner of every
+     * customer's status page, switched on by default, doing nothing.
+     */
+    public function test_the_public_page_offers_nothing_it_cannot_do(): void
+    {
+        $this->get('/')->assertOk()
+            ->assertDontSee('Get notified')
+            ->assertDontSee('#subscribe', false);
+    }
+
+    /** Every in-page link has to land on something that is actually rendered. */
+    public function test_no_anchor_on_the_public_page_points_at_nothing(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+
+        preg_match_all('/href="#([^"]+)"/', $html, $links);
+
+        foreach (array_unique($links[1]) as $anchor) {
+            $this->assertMatchesRegularExpression(
+                '/(id|name)="'.preg_quote($anchor, '/').'"/',
+                $html,
+                "The page links to #{$anchor}, which it never renders.",
+            );
         }
     }
 

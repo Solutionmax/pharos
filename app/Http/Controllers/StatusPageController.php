@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ComponentStatus;
+use App\Models\Component;
 use App\Models\ComponentGroup;
 use App\Models\Incident;
 use App\Models\Setting;
+use App\Models\User;
 use App\Services\Branding;
 use App\Services\Uptime;
 use Illuminate\Http\Request;
@@ -17,6 +19,13 @@ class StatusPageController extends Controller
 
     public function show(Request $request)
     {
+        // Nobody has finished installing yet, and the public page carries no link
+        // to the admin — so the domain they just pointed here is the only clue
+        // they have. Once an account exists this never fires again.
+        if (! User::exists()) {
+            return redirect()->route('admin.install');
+        }
+
         return $this->render(
             modules: $this->branding->modules(),
             theme: $this->branding->theme(),
@@ -72,10 +81,18 @@ class StatusPageController extends Controller
             $groups = $groups->reject(fn ($group) => in_array((string) $group->id, $hiddenGroups, true));
         }
 
+        // Components that are in no service at all. They are still published —
+        // "Ungrouped" is the default on the component form, and deleting a
+        // service drops its components here on purpose.
+        $loose = $modules['page.show_services']
+            ? Component::whereNull('component_group_id')->where('enabled', true)
+                ->orderBy('position')->get()
+            : collect();
+
         // Uptime is needed for the headline percentage even when the per-component
-        // bars are switched off, so it comes from every enabled component.
-        $all = ComponentGroup::with(['components' => fn ($q) => $q->where('enabled', true)])
-            ->get()->flatMap->components;
+        // bars are switched off, so it comes from every enabled component —
+        // including the ungrouped ones, which used to be missing from the maths.
+        $all = Component::where('enabled', true)->get();
 
         $bars = [];
         $percentages = [];
@@ -93,6 +110,7 @@ class StatusPageController extends Controller
 
         return view('status', [
             'groups' => $groups,
+            'loose' => $loose,
             'bars' => $bars,
             'percentages' => $percentages,
             'overall' => $overall,

@@ -20,6 +20,7 @@ class UpdateController extends Controller
             'managed' => $this->updater->managed(),
             'managedStatus' => $this->updater->managedStatus(),
             'writable' => $this->selfUpdater->canWrite(),
+            'versionPinned' => $this->updater->versionIsPinned(),
         ]);
     }
 

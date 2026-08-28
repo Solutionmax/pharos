@@ -128,7 +128,7 @@ class ApiTest extends TestCase
                 'message' => 'x',
             ])
             ->assertStatus(422)
-            ->assertJsonPath('error', 'Unknown status. Use investigating, identified, watching or resolved.');
+            ->assertJsonPath('error', 'Unknown status. Use investigating, identified, watching or resolved, or 1-4.');
     }
 
     public function test_adding_an_update_moves_the_incident_forward(): void
@@ -171,5 +171,102 @@ class ApiTest extends TestCase
             ->putJson("/api/v1/components/{$this->component->id}", ['status' => 1]);
 
         $this->assertNotNull($token->fresh()->last_used_at);
+    }
+
+    public function test_a_cachet_script_may_send_the_numeric_status(): void
+    {
+        // Cachet 2.x posts status as 1-4. Our enum uses those very values, so
+        // refusing them breaks the compatibility the routes promise.
+        $this->withToken($this->token)->postJson('/api/v1/incidents', [
+            'name' => 'Packet loss',
+            'message' => 'Looking into it',
+            'status' => 1,
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 1);
+    }
+
+    public function test_a_cachet_script_may_send_the_numeric_status_on_an_update(): void
+    {
+        $incident = Incident::create([
+            'name' => 'Packet loss',
+            'status' => IncidentStatus::Investigating,
+            'occurred_at' => now(),
+        ]);
+
+        $this->withToken($this->token)
+            ->postJson("/api/v1/incidents/{$incident->id}/updates", [
+                'status' => 2,
+                'message' => 'Found it',
+            ])
+            ->assertOk();
+
+        $this->assertSame(IncidentStatus::Identified, $incident->fresh()->status);
+    }
+
+    public function test_a_cachet_script_may_attach_a_component_by_the_flat_fields(): void
+    {
+        // Cachet 2.x has no components map; it takes component_id + component_status.
+        $this->withToken($this->token)->postJson('/api/v1/incidents', [
+            'name' => 'Disk pressure',
+            'message' => 'Cleaning up',
+            'status' => 'investigating',
+            'component_id' => $this->component->id,
+            'component_status' => 3,
+        ])->assertCreated();
+
+        $this->assertSame(ComponentStatus::PartialOutage, $this->component->fresh()->status);
+    }
+
+    public function test_incidents_use_the_same_envelope_as_components(): void
+    {
+        Incident::create([
+            'name' => 'Packet loss',
+            'status' => IncidentStatus::Investigating,
+            'occurred_at' => now(),
+        ]);
+
+        $this->getJson('/api/v1/incidents')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.total', 1);
+    }
+
+    // ---------- limits and ordering ----------
+
+    public function test_writes_are_rate_limited_per_minute(): void
+    {
+        // 60 a minute is far above any sane integration and far below a brute force.
+        for ($i = 0; $i < 60; $i++) {
+            $this->withHeader('Authorization', "Bearer {$this->token}")
+                ->putJson("/api/v1/components/{$this->component->id}", ['status' => 1])
+                ->assertOk();
+        }
+
+        $this->withHeader('Authorization', "Bearer {$this->token}")
+            ->putJson("/api/v1/components/{$this->component->id}", ['status' => 1])
+            ->assertStatus(429);
+    }
+
+    public function test_heartbeats_have_their_own_looser_limit(): void
+    {
+        // A job pings once a minute at most; many jobs behind one NAT add up, so
+        // the bucket is separate from the writes and twice the size.
+        for ($i = 0; $i < 120; $i++) {
+            $this->postJson('/api/v1/heartbeat/no-such-token')->assertNotFound();
+        }
+
+        $this->postJson('/api/v1/heartbeat/no-such-token')->assertStatus(429);
+
+        // The writes still have their own full budget.
+        $this->withHeader('Authorization', "Bearer {$this->token}")
+            ->putJson("/api/v1/components/{$this->component->id}", ['status' => 1])
+            ->assertOk();
+    }
+
+    public function test_a_missing_token_is_refused_before_the_incident_is_looked_up(): void
+    {
+        // Binding ran before the token check, so a 404 told a stranger which ids exist.
+        $this->postJson('/api/v1/incidents/999999/updates', ['status' => 2, 'message' => 'x'])
+            ->assertStatus(401);
     }
 }

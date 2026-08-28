@@ -6,7 +6,7 @@
   <a href="LICENSE"><img alt="Licence: AGPL-3.0" src="https://img.shields.io/badge/licence-AGPL--3.0-0079d2"></a>
   <img alt="PHP 8.3+" src="https://img.shields.io/badge/PHP-8.3%2B-777bb4">
   <img alt="Laravel 12 LTS" src="https://img.shields.io/badge/Laravel-12%20LTS-ff2d20">
-  <img alt="186 tests" src="https://img.shields.io/badge/tests-186%20passing-12b76a">
+  <img alt="355 tests" src="https://img.shields.io/badge/tests-355%20passing-12b76a">
   <img alt="Runs on shared hosting" src="https://img.shields.io/badge/runs%20on-shared%20hosting%20%C2%B7%20Docker-475467">
 </p>
 
@@ -76,11 +76,15 @@ php artisan key:generate
 touch database/database.sqlite
 php artisan migrate --force
 
-# 4. your first administrator
-php artisan pharos:user you@example.com
-
-# 5. point the document root at ~/pharos/public
+# 4. point the document root at ~/pharos/public
 ```
+
+Then open the site in a browser. A fresh install answers every URL with a one-screen setup
+form: name the status page, create your administrator, done. The form disappears the moment
+that account exists.
+
+If you would rather not touch a browser, `php artisan pharos:user you@example.com` still
+creates the first account from the command line.
 
 Then add **one** cron entry. This is the entire scheduler:
 

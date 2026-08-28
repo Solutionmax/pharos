@@ -36,6 +36,18 @@ class LicenseTest extends TestCase
         ]);
     }
 
+    public function test_the_shipped_config_carries_our_public_key(): void
+    {
+        // A customer pastes a key they paid for; if the public half only lives in
+        // .env, verification fails on every fresh install and reads as a bad key.
+        $shipped = require config_path('pharos.php');
+
+        $this->assertNotSame('', $shipped['license_public_key'],
+            'A release must ship the public key, not an empty string.');
+        $this->assertSame(SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES,
+            strlen(sodium_hex2bin($shipped['license_public_key'])));
+    }
+
     protected function sign(array $payload, ?string $secret = null): string
     {
         $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
@@ -158,5 +170,191 @@ class LicenseTest extends TestCase
 
         $this->actingAs($this->user)->get('/admin/branding')
             ->assertOk()->assertDontSee('Buy the brand pack')->assertSee('klant@example.com');
+    }
+
+    // ---------- expiry ----------
+
+    public function test_a_key_without_an_expiry_never_runs_out(): void
+    {
+        // Everything already handed out was signed without the claim; those keys
+        // have to keep working.
+        $this->assertNotNull((new License)->verify($this->validKey()));
+    }
+
+    public function test_an_expired_key_is_refused(): void
+    {
+        $key = $this->sign([
+            'product' => 'pharos',
+            'issued_to' => 'klant@example.com',
+            'features' => [License::FEATURE_BRAND_PACK],
+            'issued_at' => '2025-08-01',
+            'expires_at' => '2026-08-01',
+        ]);
+
+        $this->assertNull((new License)->verify($key));
+    }
+
+    public function test_a_key_that_still_runs_is_accepted(): void
+    {
+        $key = $this->sign([
+            'product' => 'pharos',
+            'issued_to' => 'klant@example.com',
+            'features' => [License::FEATURE_BRAND_PACK],
+            'issued_at' => '2026-08-01',
+            'expires_at' => now()->addMonths(6)->toDateString(),
+        ]);
+
+        $license = new License;
+        $this->assertNotNull($license->verify($key));
+        $this->assertTrue($license->store($key));
+    }
+
+    public function test_an_expired_key_takes_its_features_with_it(): void
+    {
+        Setting::put('license.key', $this->sign([
+            'product' => 'pharos',
+            'issued_to' => 'klant@example.com',
+            'features' => [License::FEATURE_BRAND_PACK],
+            'issued_at' => '2025-08-01',
+            'expires_at' => '2026-08-01',
+        ]));
+        Cache::forget('license.payload');
+
+        $this->assertFalse((new License)->has(License::FEATURE_BRAND_PACK));
+    }
+
+    public function test_it_says_when_a_licence_is_nearly_up(): void
+    {
+        $license = new License;
+
+        Setting::put('license.key', $this->sign([
+            'product' => 'pharos', 'issued_to' => 'k@example.com',
+            'features' => [License::FEATURE_BRAND_PACK],
+            'issued_at' => '2026-08-01', 'expires_at' => now()->addDays(10)->toDateString(),
+        ]));
+        Cache::forget('license.payload');
+
+        $this->assertSame(10, $license->daysLeft());
+        $this->assertTrue($license->expiringSoon());
+    }
+
+    public function test_a_licence_with_room_left_is_not_nearly_up(): void
+    {
+        $license = new License;
+
+        Setting::put('license.key', $this->sign([
+            'product' => 'pharos', 'issued_to' => 'k@example.com',
+            'features' => [License::FEATURE_BRAND_PACK],
+            'issued_at' => '2026-08-01', 'expires_at' => now()->addMonths(6)->toDateString(),
+        ]));
+        Cache::forget('license.payload');
+
+        $this->assertFalse($license->expiringSoon());
+
+        // A perpetual key has nothing to count down.
+        Setting::put('license.key', $this->validKey());
+        Cache::forget('license.payload');
+        $this->assertNull((new License)->daysLeft());
+    }
+
+    public function test_the_signing_command_can_put_a_term_on_a_key(): void
+    {
+        $keyFile = tempnam(sys_get_temp_dir(), 'phk');
+        file_put_contents($keyFile, sodium_bin2hex($this->secret));
+
+        $this->artisan('pharos:license:sign', [
+            'email' => 'klant@example.com',
+            '--key' => $keyFile,
+            '--months' => 12,
+        ])->assertSuccessful();
+
+        unlink($keyFile);
+    }
+
+    public function test_the_branding_screen_shows_when_a_licence_runs_out(): void
+    {
+        Setting::put('license.key', $this->sign([
+            'product' => 'pharos', 'issued_to' => 'klant@example.com',
+            'features' => [License::FEATURE_BRAND_PACK],
+            'issued_at' => '2026-08-01', 'expires_at' => now()->addDays(9)->toDateString(),
+        ]));
+        Cache::forget('license.payload');
+
+        $this->actingAs($this->user)->get('/admin/branding')
+            ->assertOk()
+            ->assertSee('Runs out in 9 days');
+    }
+
+    public function test_a_perpetual_licence_says_so_rather_than_showing_a_date(): void
+    {
+        Setting::put('license.key', $this->validKey());
+        Cache::forget('license.payload');
+
+        $this->actingAs($this->user)->get('/admin/branding')
+            ->assertOk()
+            ->assertSee('no end date')
+            ->assertDontSee('Runs out');
+    }
+
+    public function test_an_empty_env_line_does_not_wipe_the_shipped_public_key(): void
+    {
+        // A `PHAROS_LICENSE_PUBLIC_KEY=` line left behind in .env reads as "" and
+        // an empty value is a value, so env()'s default never applied: every paid
+        // key was refused on such an install.
+        putenv('PHAROS_LICENSE_PUBLIC_KEY=');
+        $_ENV['PHAROS_LICENSE_PUBLIC_KEY'] = $_SERVER['PHAROS_LICENSE_PUBLIC_KEY'] = '';
+
+        try {
+            $shipped = require config_path('pharos.php');
+        } finally {
+            putenv('PHAROS_LICENSE_PUBLIC_KEY');
+            unset($_ENV['PHAROS_LICENSE_PUBLIC_KEY'], $_SERVER['PHAROS_LICENSE_PUBLIC_KEY']);
+        }
+
+        $this->assertSame(SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES,
+            strlen(sodium_hex2bin((string) $shipped['license_public_key'])));
+
+        // The failure mode it guards against: with no public key, nothing verifies.
+        config(['pharos.license_public_key' => '']);
+        $this->assertNull((new License)->verify($this->validKey()));
+    }
+
+    // ---------- reading a key back ----------
+
+    public function test_the_verify_command_shows_what_a_key_says(): void
+    {
+        $this->artisan('pharos:license:verify', ['key' => $this->validKey()])
+            ->expectsOutputToContain('klant@example.com')
+            ->expectsOutputToContain(License::FEATURE_BRAND_PACK)
+            ->expectsOutputToContain('valid')
+            ->assertSuccessful();
+    }
+
+    public function test_the_verify_command_rejects_a_tampered_key(): void
+    {
+        [, $signature] = explode('.', $this->validKey());
+        $forged = rtrim(strtr(base64_encode(json_encode([
+            'product' => 'pharos', 'issued_to' => 'pirate@example.com',
+            'features' => [License::FEATURE_BRAND_PACK],
+        ], JSON_UNESCAPED_SLASHES)), '+/', '-_'), '=');
+
+        $this->artisan('pharos:license:verify', ['key' => $forged.'.'.$signature])
+            ->expectsOutputToContain('invalid')
+            ->assertFailed();
+    }
+
+    public function test_the_verify_command_tells_an_expired_key_from_a_forged_one(): void
+    {
+        // Support needs to see who a lapsed key belonged to, not just "no".
+        $key = $this->sign([
+            'product' => 'pharos', 'issued_to' => 'klant@example.com',
+            'features' => [License::FEATURE_BRAND_PACK],
+            'issued_at' => '2025-08-01', 'expires_at' => '2026-08-01',
+        ]);
+
+        $this->artisan('pharos:license:verify', ['key' => $key])
+            ->expectsOutputToContain('klant@example.com')
+            ->expectsOutputToContain('expired')
+            ->assertFailed();
     }
 }

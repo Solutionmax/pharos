@@ -23,6 +23,7 @@
       </div>
       <div class="field">
         <label for="message">Message</label>
+        @include('partials.editor', ['for' => 'message'])
         <textarea id="message" name="message" rows="4" required></textarea>
       </div>
       <div class="actions">
@@ -43,7 +44,7 @@
           <span class="mono" style="font-size:11px;color:var(--ink-3)">{{ $update->created_at->format('d M H:i') }}</span>
           @if ($update->automatic)<span class="src">automatic</span>@endif
         </div>
-        <p style="font-size:13.5px;color:var(--ink-2);margin-top:2px">{{ $update->message }}</p>
+        <div class="md" style="font-size:13.5px;color:var(--ink-2);margin-top:2px">{!! $update->messageHtml() !!}</div>
       </div>
     @endforeach
   </div>

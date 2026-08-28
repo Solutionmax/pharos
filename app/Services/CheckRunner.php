@@ -118,9 +118,19 @@ class CheckRunner
         // Checked independently of the component status: the first healthy result
         // already flipped the component back, so nesting this inside that branch
         // meant the incident never closed.
-        if ($check->consecutive_successes >= self::RECOVERY_STREAK) {
+        if ($check->consecutive_successes >= $this->recoveryStreak($check)) {
             $this->resolveIncident($check, $now);
         }
+    }
+
+    /**
+     * A heartbeat that calls in has proved it is alive; the streak is hysteresis
+     * against a flapping poll, and applying it here would keep a nightly backup
+     * red for two more days after it demonstrably ran.
+     */
+    protected function recoveryStreak(Check $check): int
+    {
+        return $check->type === \App\Enums\CheckType::Heartbeat ? 1 : self::RECOVERY_STREAK;
     }
 
     protected function openIncident(Check $check, ProbeResult $result, \DateTimeInterface $now): Incident

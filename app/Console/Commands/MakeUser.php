@@ -2,13 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 
 class MakeUser extends Command
 {
-    protected $signature = 'pharos:user {email} {--name=Admin} {--password=}';
+    protected $signature = 'pharos:user {email} {--name=Admin} {--password=} {--role=}';
 
     protected $description = 'Create or update an admin user';
 
@@ -16,12 +17,24 @@ class MakeUser extends Command
     {
         $password = $this->option('password') ?: \Illuminate\Support\Str::random(16);
 
-        $user = User::updateOrCreate(
-            ['email' => $this->argument('email')],
-            ['name' => $this->option('name'), 'password' => Hash::make($password)],
-        );
+        $role = $this->option('role');
 
-        $this->info("User {$user->email} ready.");
+        if ($role !== null && UserRole::tryFrom($role) === null) {
+            $this->error('Unknown role. Use admin or user.');
+
+            return self::FAILURE;
+        }
+
+        // The way back in when the last administrator was demoted or lost.
+        $attributes = ['name' => $this->option('name'), 'password' => Hash::make($password)];
+
+        if ($role !== null) {
+            $attributes['role'] = UserRole::from($role);
+        }
+
+        $user = User::updateOrCreate(['email' => $this->argument('email')], $attributes);
+
+        $this->info("User {$user->email} ready as {$user->role->label()}.");
 
         if (! $this->option('password')) {
             $this->line('');

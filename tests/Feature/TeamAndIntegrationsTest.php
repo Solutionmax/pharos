@@ -9,6 +9,7 @@ use App\Models\Check;
 use App\Models\Component;
 use App\Models\Incident;
 use App\Models\Setting;
+use App\Models\WebhookEndpoint;
 use App\Models\User;
 use App\Services\License;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -83,6 +84,17 @@ class TeamAndIntegrationsTest extends TestCase
         $this->assertSame(2, User::count());
     }
 
+    public function test_changing_your_own_password_asks_for_the_current_one(): void
+    {
+        $this->actingAs($this->user)->put('/admin/profile/password', [
+            'current_password' => 'not-the-right-one',
+            'password' => 'a-brand-new-password',
+            'password_confirmation' => 'a-brand-new-password',
+        ])->assertSessionHasErrors('current_password');
+
+        $this->assertTrue(Hash::check('correct-horse-battery', $this->user->fresh()->password));
+    }
+
     public function test_the_last_account_cannot_be_removed(): void
     {
         // Locking everyone out of a self-hosted install is not recoverable
@@ -99,7 +111,8 @@ class TeamAndIntegrationsTest extends TestCase
 
     public function test_changing_your_own_password_works(): void
     {
-        $this->actingAs($this->user)->put("/admin/users/{$this->user->id}/password", [
+        $this->actingAs($this->user)->put('/admin/profile/password', [
+            'current_password' => 'correct-horse-battery',
             'password' => 'a-brand-new-password',
             'password_confirmation' => 'a-brand-new-password',
         ])->assertRedirect();
@@ -148,20 +161,33 @@ class TeamAndIntegrationsTest extends TestCase
 
     // ---------- outgoing webhook ----------
 
-    public function test_saving_a_webhook_url_generates_a_signing_secret(): void
+    public function test_adding_a_notification_generates_a_signing_secret(): void
     {
-        $this->actingAs($this->user)->put('/admin/integrations/webhook', [
-            'webhook_url' => 'https://hooks.example.net/webhook/pharos',
+        $this->actingAs($this->user)->post('/admin/integrations/notifications', [
+            'label' => 'n8n',
+            'url' => 'https://hooks.example.net/webhook/pharos',
+            'format' => 'generic',
         ])->assertRedirect();
 
-        $this->assertSame('https://hooks.example.net/webhook/pharos', Setting::get('integrations.webhook_url'));
+        $endpoint = WebhookEndpoint::sole();
+        $this->assertSame('https://hooks.example.net/webhook/pharos', $endpoint->url);
+        $this->assertTrue($endpoint->enabled);
         $this->assertSame(32, strlen(Setting::get('integrations.webhook_secret')));
+    }
+
+    public function test_a_notification_url_must_be_http_or_https(): void
+    {
+        $this->actingAs($this->user)->post('/admin/integrations/notifications', [
+            'label' => 'bad', 'url' => 'javascript://x%0aalert(1)', 'format' => 'generic',
+        ])->assertSessionHasErrors('url');
+
+        $this->assertSame(0, WebhookEndpoint::count());
     }
 
     public function test_publishing_an_incident_fires_a_signed_webhook(): void
     {
         Http::fake();
-        Setting::put('integrations.webhook_url', 'https://hooks.example.net/webhook/pharos');
+        WebhookEndpoint::create(['label' => 'n8n', 'url' => 'https://hooks.example.net/webhook/pharos', 'format' => 'generic']);
         Setting::put('integrations.webhook_secret', 'a-secret');
 
         $component = Component::create(['name' => 'web-01']);
@@ -187,6 +213,107 @@ class TeamAndIntegrationsTest extends TestCase
         });
     }
 
+    /**
+     * The whole reason formats exist: Slack answers 400 to anything that is not
+     * its own shape, so a raw payload reaches nobody and fails silently.
+     */
+    public function test_slack_gets_slack_shaped_json_and_no_signature(): void
+    {
+        Http::fake();
+        WebhookEndpoint::create(['label' => '#ops', 'url' => 'https://hooks.slack.com/services/T/B/x', 'format' => 'slack']);
+        Setting::put('integrations.webhook_secret', 'a-secret');
+
+        $component = Component::create(['name' => 'web-01']);
+
+        $this->actingAs($this->user)->post('/admin/incidents', [
+            'name' => 'Mail queue backed up',
+            'message' => 'Looking into it.',
+            'status' => 1,
+            'impact' => 'major',
+            'visibility' => 'public',
+            'components' => [$component->id => 3],
+        ])->assertRedirect();
+
+        Http::assertSent(function ($request) {
+            $payload = json_decode($request->body(), true);
+
+            return $request->url() === 'https://hooks.slack.com/services/T/B/x'
+                && str_contains($payload['text'], 'Mail queue backed up')
+                && $payload['blocks'][0]['type'] === 'section'
+                // Slack drops unknown headers; signing it would only be theatre.
+                && $request->header('X-Pharos-Signature') === [];
+        });
+    }
+
+    public function test_teams_gets_an_adaptive_card_envelope(): void
+    {
+        Http::fake();
+        WebhookEndpoint::create(['label' => 'Ops channel', 'url' => 'https://prod.westeurope.logic.azure.com/workflows/x', 'format' => 'teams']);
+
+        $this->actingAs($this->user)->post('/admin/incidents', [
+            'name' => 'Mail queue backed up',
+            'message' => 'Looking into it.',
+            'status' => 1,
+            'impact' => 'major',
+            'visibility' => 'public',
+        ])->assertRedirect();
+
+        Http::assertSent(function ($request) {
+            $payload = json_decode($request->body(), true);
+
+            return $payload['type'] === 'message'
+                && $payload['attachments'][0]['contentType'] === 'application/vnd.microsoft.card.adaptive'
+                && $payload['attachments'][0]['content']['type'] === 'AdaptiveCard'
+                && str_contains($payload['attachments'][0]['content']['body'][0]['text'], 'Mail queue backed up');
+        });
+    }
+
+    public function test_every_enabled_destination_is_notified(): void
+    {
+        Http::fake();
+        WebhookEndpoint::create(['label' => 'n8n', 'url' => 'https://hooks.example.net/a', 'format' => 'generic']);
+        WebhookEndpoint::create(['label' => '#ops', 'url' => 'https://hooks.slack.com/b', 'format' => 'slack']);
+        WebhookEndpoint::create(['label' => 'old', 'url' => 'https://hooks.example.net/c', 'format' => 'generic', 'enabled' => false]);
+
+        $this->actingAs($this->user)->post('/admin/incidents', [
+            'name' => 'Mail queue backed up', 'message' => 'Looking into it.',
+            'status' => 1, 'impact' => 'minor', 'visibility' => 'public',
+        ])->assertRedirect();
+
+        Http::assertSentCount(2);
+        Http::assertNotSent(fn ($request) => $request->url() === 'https://hooks.example.net/c');
+    }
+
+    public function test_a_test_send_records_what_came_back(): void
+    {
+        Http::fake(['*' => Http::response('ok', 200)]);
+        $endpoint = WebhookEndpoint::create(['label' => '#ops', 'url' => 'https://hooks.slack.com/b', 'format' => 'slack']);
+
+        $this->actingAs($this->user)
+            ->post("/admin/integrations/notifications/{$endpoint->id}/test")
+            ->assertRedirect('/admin/integrations');
+
+        $endpoint->refresh();
+        $this->assertSame(200, $endpoint->last_status);
+        $this->assertNull($endpoint->last_error);
+        $this->assertNotNull($endpoint->last_attempt_at);
+    }
+
+    public function test_a_refused_delivery_is_recorded_on_the_endpoint(): void
+    {
+        Http::fake(['*' => Http::response('invalid_payload', 400)]);
+        $endpoint = WebhookEndpoint::create(['label' => '#ops', 'url' => 'https://hooks.slack.com/b', 'format' => 'slack']);
+
+        $this->actingAs($this->user)->post("/admin/integrations/notifications/{$endpoint->id}/test")->assertRedirect();
+
+        $endpoint->refresh();
+        $this->assertSame(400, $endpoint->last_status);
+        // The status is what diagnoses it; the body is the receiver's, could be
+        // anything, and would be stored and shown in the admin.
+        $this->assertSame('HTTP 400', $endpoint->last_error);
+        $this->assertStringNotContainsString('invalid_payload', $endpoint->last_error);
+    }
+
     public function test_no_webhook_is_sent_when_none_is_configured(): void
     {
         Http::fake();
@@ -207,7 +334,7 @@ class TeamAndIntegrationsTest extends TestCase
     {
         // Mid-outage, a broken receiver must not stop you telling customers.
         Http::fake(fn () => throw new \RuntimeException('connection refused'));
-        Setting::put('integrations.webhook_url', 'https://hooks.example.net/down');
+        WebhookEndpoint::create(['label' => 'down', 'url' => 'https://hooks.example.net/down', 'format' => 'generic']);
 
         $this->actingAs($this->user)->post('/admin/incidents', [
             'name' => 'Mail queue backed up',
@@ -224,7 +351,7 @@ class TeamAndIntegrationsTest extends TestCase
     {
         // This is the headline feature. It used to reach nobody.
         Http::fake();
-        Setting::put('integrations.webhook_url', 'https://hooks.example.net/webhook/pharos');
+        WebhookEndpoint::create(['label' => 'n8n', 'url' => 'https://hooks.example.net/webhook/pharos', 'format' => 'generic']);
         Setting::put('integrations.webhook_secret', 'a-secret');
 
         $component = Component::create(['name' => 'web-06']);
@@ -259,7 +386,7 @@ class TeamAndIntegrationsTest extends TestCase
     public function test_creating_an_incident_over_the_api_fires_the_webhook(): void
     {
         Http::fake();
-        Setting::put('integrations.webhook_url', 'https://hooks.example.net/webhook/pharos');
+        WebhookEndpoint::create(['label' => 'n8n', 'url' => 'https://hooks.example.net/webhook/pharos', 'format' => 'generic']);
         [, $plain] = ApiToken::issue('n8n');
 
         $this->withHeader('Authorization', "Bearer {$plain}")
@@ -430,5 +557,48 @@ class TeamAndIntegrationsTest extends TestCase
         $key = $b64($payload).'.'.$b64(sodium_crypto_sign_detached($payload, sodium_crypto_sign_secretkey($pair)));
 
         app(License::class)->store($key);
+    }
+
+    public function test_a_notification_may_not_point_at_this_machine_or_link_local(): void
+    {
+        // 169.254.169.254 hands out cloud credentials to whoever asks; 127.0.0.1
+        // is this very box. The rest of the LAN stays open — an n8n next door is
+        // the common case.
+        foreach ([
+            'http://169.254.169.254/latest/meta-data',
+            'http://127.0.0.1:8080/x',
+            'http://[::ffff:169.254.169.254]/x',
+            'http://[::1]/x',
+        ] as $url) {
+            $this->actingAs($this->user)->post('/admin/integrations/notifications', [
+                'label' => 'bad', 'url' => $url, 'format' => 'generic',
+            ])->assertSessionHasErrors('url');
+        }
+
+        $this->assertSame(0, WebhookEndpoint::count());
+
+        foreach (['http://192.168.18.161:5678/webhook/pharos', 'https://1.1.1.1/hook'] as $url) {
+            $this->actingAs($this->user)->post('/admin/integrations/notifications', [
+                'label' => 'fine', 'url' => $url, 'format' => 'generic',
+            ])->assertSessionHasNoErrors();
+        }
+
+        $this->assertSame(2, WebhookEndpoint::count());
+    }
+
+    public function test_delivery_to_link_local_is_refused_without_a_request(): void
+    {
+        // Checked again at send time, not only when saved: a name can be
+        // re-pointed at the metadata service in between (DNS rebinding).
+        Http::fake();
+        $endpoint = WebhookEndpoint::create([
+            'label' => 'rebound', 'url' => 'http://169.254.169.254/latest/meta-data', 'format' => 'generic',
+        ]);
+
+        $this->assertFalse(app(\App\Services\OutgoingWebhook::class)->test($endpoint));
+
+        Http::assertNothingSent();
+        $endpoint->refresh();
+        $this->assertStringContainsString('never', $endpoint->last_error);
     }
 }

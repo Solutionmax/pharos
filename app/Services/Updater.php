@@ -27,6 +27,16 @@ class Updater
         return (string) config('pharos.version');
     }
 
+    /**
+     * A version pinned in .env outlives every update, because .env is the one
+     * thing an update must not touch. On a self-updating install that means the
+     * same release keeps being offered after it has already been applied.
+     */
+    public function versionIsPinned(): bool
+    {
+        return ! $this->managed() && filled(env('PHAROS_VERSION'));
+    }
+
     /** True when a host-side updater is in charge of the image. */
     public function managed(): bool
     {

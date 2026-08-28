@@ -4,6 +4,10 @@
 <svg width="{{ $s }}" height="{{ $s }}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
      stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   @switch($name)
+    @case('audit')
+      <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H15l5 5v9.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5Z"/>
+      <path d="M14.5 4v5h5"/><path d="M8 13h6M8 16.5h4"/>
+      @break
     @case('services')
       <rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/>
       <path d="M7 7h.01M7 17h.01"/>

@@ -68,13 +68,20 @@ class SelfUpdater
                 return ['ok' => false, 'message' => 'The download does not match the signed checksum. Nothing was installed.'];
             }
 
-            $extracted = $work.'/files';
-            File::ensureDirectoryExists($extracted);
-
             $zip = new \ZipArchive;
             if ($zip->open($archive) !== true) {
                 return ['ok' => false, 'message' => 'The release archive could not be opened.'];
             }
+
+            if (($problem = $this->unsafeEntry($zip)) !== null) {
+                $zip->close();
+
+                return ['ok' => false, 'message' => "The release archive was refused: {$problem}. Nothing was installed."];
+            }
+
+            $extracted = $work.'/files';
+            File::ensureDirectoryExists($extracted);
+
             $zip->extractTo($extracted);
             $zip->close();
 
@@ -104,6 +111,32 @@ class SelfUpdater
         } finally {
             File::deleteDirectory($work);
         }
+    }
+
+    /**
+     * An entry that would land outside the folder it is unpacked into, or a
+     * symlink, which the copy that follows would walk through. PHP strips ".."
+     * on extraction, but nothing we built carries either, so the whole archive
+     * is refused before a byte of it is written.
+     */
+    protected function unsafeEntry(\ZipArchive $zip): ?string
+    {
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = (string) $zip->getNameIndex($i);
+            $segments = preg_split('#[\\\\/]+#', $name) ?: [];
+
+            if (str_starts_with($name, '/') || in_array('..', $segments, true) || preg_match('/^[a-z]:/i', $name)) {
+                return "{$name} points outside the archive";
+            }
+
+            $zip->getExternalAttributesIndex($i, $opsys, $attributes);
+
+            if ($opsys === \ZipArchive::OPSYS_UNIX && (($attributes >> 16) & 0170000) === 0120000) {
+                return "{$name} is a symlink";
+            }
+        }
+
+        return null;
     }
 
     /** Release archives usually wrap everything in one folder. */

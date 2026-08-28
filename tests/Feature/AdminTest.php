@@ -32,6 +32,21 @@ class AdminTest extends TestCase
         ]);
     }
 
+    public function test_the_window_note_only_appears_when_there_is_a_table(): void
+    {
+        $this->actingAs($this->user)->get('/admin/components')
+            ->assertOk()
+            ->assertDontSee('Bars cover 30 days')
+            ->assertSee('Nothing on the status page yet');
+
+        Component::create(['name' => 'web-01', 'status' => ComponentStatus::Operational]);
+
+        $this->actingAs($this->user)->get('/admin/components')
+            ->assertOk()
+            ->assertSee('Bars cover 30 days')
+            ->assertSee('uptime is measured over 90', false);
+    }
+
     public function test_the_admin_is_closed_to_strangers(): void
     {
         foreach (['/admin/components', '/admin/incidents', '/admin/branding'] as $url) {
@@ -78,32 +93,32 @@ class AdminTest extends TestCase
         $group = ComponentGroup::create(['name' => 'Shared hosting']);
 
         $this->actingAs($this->user)->post('/admin/components', [
-            'name' => 's1121',
-            'description' => 'Availability of s1121',
+            'name' => 'web-01',
+            'description' => 'Availability of web-01',
             'component_group_id' => $group->id,
             'status' => ComponentStatus::Operational->value,
             'source' => 'check',
             'check_type' => 'http',
-            'check_target' => 'https://s1121.example.net/',
+            'check_target' => 'https://web-01.example.net/',
             'check_interval' => 60,
             'enabled' => 1,
             'show_uptime' => 1,
             'tags' => 'shared, cpanel',
         ])->assertRedirect('/admin/components');
 
-        $component = Component::where('name', 's1121')->first();
+        $component = Component::where('name', 'web-01')->first();
         $this->assertNotNull($component);
         $this->assertSame(['shared', 'cpanel'], $component->tagList());
-        $this->assertSame('https://s1121.example.net/', $component->check->target);
+        $this->assertSame('https://web-01.example.net/', $component->check->target);
     }
 
     public function test_switching_a_component_to_manual_removes_its_check(): void
     {
-        $component = Component::create(['name' => 's1121', 'source' => 'check']);
+        $component = Component::create(['name' => 'web-01', 'source' => 'check']);
         Check::create(['component_id' => $component->id, 'type' => 'http', 'target' => 'https://x.example/']);
 
         $this->actingAs($this->user)->put("/admin/components/{$component->id}", [
-            'name' => 's1121',
+            'name' => 'web-01',
             'status' => 1,
             'source' => 'manual',
         ])->assertRedirect();
@@ -125,6 +140,210 @@ class AdminTest extends TestCase
         $this->assertGreaterThanOrEqual(24, strlen($check->target));
     }
 
+    public function test_the_form_offers_tags_that_are_already_in_use(): void
+    {
+        Component::create(['name' => 'web-01', 'tags' => 'shared, cpanel']);
+        Component::create(['name' => 'mail-01', 'tags' => 'mail, shared']);
+
+        $this->actingAs($this->user)->get('/admin/components/create')
+            ->assertOk()
+            ->assertSee('data-drop-tag="cpanel"', false)
+            ->assertSee('data-drop-tag="mail"', false)
+            // Listed once, however many components carry it.
+            ->assertSeeInOrder(['data-drop-tag="cpanel"', 'data-drop-tag="mail"', 'data-drop-tag="shared"'], false);
+    }
+
+    /**
+     * host:port as an HTTP target is the mistake that costs an afternoon: the
+     * probe cannot fetch it, so a service that is up is published as down.
+     */
+    public function test_an_http_check_refuses_a_host_port_target(): void
+    {
+        $this->actingAs($this->user)->post('/admin/components', [
+            'name' => 'Synology',
+            'status' => 1,
+            'source' => 'check',
+            'check_type' => 'http',
+            'check_target' => '192.168.18.8:5000',
+        ])->assertSessionHasErrors('check_target');
+
+        $this->assertSame(0, Component::count());
+    }
+
+    public function test_a_tcp_check_refuses_a_url_target(): void
+    {
+        $this->actingAs($this->user)->post('/admin/components', [
+            'name' => 'IMAP',
+            'status' => 1,
+            'source' => 'check',
+            'check_type' => 'tcp',
+            'check_target' => 'https://mail.example.net',
+        ])->assertSessionHasErrors('check_target');
+
+        $this->assertSame(0, Component::count());
+    }
+
+    public function test_a_built_in_check_without_a_target_is_refused_rather_than_dropped(): void
+    {
+        $this->actingAs($this->user)->post('/admin/components', [
+            'name' => 'Website',
+            'status' => 1,
+            'source' => 'check',
+            'check_type' => 'http',
+            'check_target' => '',
+        ])->assertSessionHasErrors('check_target');
+
+        $this->assertSame(0, Component::count());
+    }
+
+    public function test_the_matching_shapes_are_accepted(): void
+    {
+        $this->actingAs($this->user)->post('/admin/components', [
+            'name' => 'Website', 'status' => 1, 'source' => 'check',
+            'check_type' => 'http', 'check_target' => 'https://example.net/',
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($this->user)->post('/admin/components', [
+            'name' => 'IMAP', 'status' => 1, 'source' => 'check',
+            'check_type' => 'tcp', 'check_target' => 'mail.example.net:993',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(2, Component::count());
+    }
+
+    public function test_a_tag_can_be_removed_from_every_component(): void
+    {
+        $a = Component::create(['name' => 'web-01', 'tags' => 'shared, cpanel']);
+        $b = Component::create(['name' => 'web-02', 'tags' => 'Shared']);
+        $c = Component::create(['name' => 'mail-01', 'tags' => 'mail']);
+
+        $this->actingAs($this->user)
+            ->deleteJson('/admin/components/tags/shared')
+            ->assertOk()
+            ->assertJson(['components' => 2]);
+
+        $this->assertSame(['cpanel'], $a->fresh()->tagList());
+        // Matched case-insensitively, or "Shared" and "shared" live on forever.
+        $this->assertNull($b->fresh()->tags);
+        $this->assertSame(['mail'], $c->fresh()->tagList());
+    }
+
+    public function test_removing_an_unused_tag_touches_nothing(): void
+    {
+        $a = Component::create(['name' => 'web-01', 'tags' => 'shared']);
+
+        $this->actingAs($this->user)
+            ->deleteJson('/admin/components/tags/nosuchtag')
+            ->assertOk()
+            ->assertJson(['components' => 0]);
+
+        $this->assertSame(['shared'], $a->fresh()->tagList());
+    }
+
+    public function test_removing_a_tag_is_closed_to_strangers(): void
+    {
+        $a = Component::create(['name' => 'web-01', 'tags' => 'shared']);
+
+        $this->delete('/admin/components/tags/shared')->assertRedirect('/admin/login');
+
+        $this->assertSame(['shared'], $a->fresh()->tagList());
+    }
+
+    public function test_an_incident_can_be_deleted(): void
+    {
+        $incident = Incident::create([
+            'name' => 'Synology unreachable',
+            'status' => IncidentStatus::Investigating,
+            'occurred_at' => now(),
+        ]);
+        IncidentUpdate::create([
+            'incident_id' => $incident->id,
+            'status' => IncidentStatus::Investigating,
+            'message' => 'Automatic check failed.',
+        ]);
+
+        $this->actingAs($this->user)->delete("/admin/incidents/{$incident->id}")
+            ->assertRedirect('/admin/incidents');
+
+        $this->assertSame(0, Incident::count());
+        $this->assertSame(0, IncidentUpdate::count());
+        $this->get('/')->assertDontSee('Synology unreachable');
+    }
+
+    /**
+     * A check-opened incident resolves itself when the check recovers. Delete
+     * the component and there is nothing left to recover, so without this it
+     * stays "Investigating" on the public page for good.
+     */
+    public function test_deleting_a_component_closes_the_incident_its_check_opened(): void
+    {
+        $component = Component::create(['name' => 'Synology', 'source' => 'check']);
+        $incident = Incident::create([
+            'name' => 'Synology unreachable',
+            'status' => IncidentStatus::Investigating,
+            'source' => 'check',
+            'auto_resolve' => true,
+            'grouping_key' => 'check:'.$component->id,
+            'occurred_at' => now(),
+        ]);
+
+        $this->actingAs($this->user)->delete("/admin/components/{$component->id}")->assertRedirect();
+
+        $incident->refresh();
+        $this->assertSame(IncidentStatus::Resolved, $incident->status);
+        $this->assertNotNull($incident->resolved_at);
+        $this->assertStringContainsString('component was removed', $incident->updates()->latest('id')->first()->message);
+    }
+
+    /**
+     * A forgotten cron line looks exactly like a healthy install, which is the
+     * failure Pharos exists to stop. These three cover the whole signal.
+     */
+    public function test_a_never_run_scheduler_is_called_out(): void
+    {
+        $component = Component::create(['name' => 'web-01', 'source' => 'check']);
+        Check::create(['component_id' => $component->id, 'type' => 'http', 'target' => 'https://example.net/']);
+
+        $this->actingAs($this->user)->get('/admin/components')
+            ->assertOk()
+            ->assertSee('Nothing is being checked')
+            ->assertSee('php artisan schedule:run');
+    }
+
+    public function test_a_stalled_scheduler_is_called_out(): void
+    {
+        $component = Component::create(['name' => 'web-01', 'source' => 'check']);
+        Check::create(['component_id' => $component->id, 'type' => 'http', 'target' => 'https://example.net/']);
+        Setting::put('checks.last_run_at', now()->subHour()->toIso8601String());
+
+        $this->actingAs($this->user)->get('/admin/components')
+            ->assertOk()
+            ->assertSee('Nothing is being checked');
+    }
+
+    public function test_a_running_scheduler_says_nothing_and_neither_does_an_install_without_checks(): void
+    {
+        // Nothing to check yet: the warning would be noise on a fresh install.
+        $this->actingAs($this->user)->get('/admin/components')
+            ->assertOk()->assertDontSee('Nothing is being checked');
+
+        $component = Component::create(['name' => 'web-01', 'source' => 'check']);
+        Check::create(['component_id' => $component->id, 'type' => 'http', 'target' => 'https://example.net/']);
+        Setting::put('checks.last_run_at', now()->toIso8601String());
+
+        $this->actingAs($this->user)->get('/admin/components')
+            ->assertOk()->assertDontSee('Nothing is being checked');
+    }
+
+    public function test_running_the_checks_stamps_that_the_scheduler_was_here(): void
+    {
+        $this->assertNull(Setting::get('checks.last_run_at'));
+
+        $this->artisan('pharos:check')->assertSuccessful();
+
+        $this->assertNotNull(Setting::get('checks.last_run_at'));
+    }
+
     public function test_an_invalid_link_is_refused(): void
     {
         $this->actingAs($this->user)->post('/admin/components', [
@@ -133,6 +352,21 @@ class AdminTest extends TestCase
             'source' => 'manual',
             'link' => 'not-a-url',
         ])->assertSessionHasErrors('link');
+
+        $this->assertSame(0, Component::count());
+    }
+
+    /** The link is rendered as an href on the public page, so the scheme matters. */
+    public function test_a_script_url_is_refused_as_a_link(): void
+    {
+        foreach (['javascript://comment%0aalert(1)', 'data:text/html,<script>alert(1)</script>'] as $hostile) {
+            $this->actingAs($this->user)->post('/admin/components', [
+                'name' => 'x',
+                'status' => 1,
+                'source' => 'manual',
+                'link' => $hostile,
+            ])->assertSessionHasErrors('link');
+        }
 
         $this->assertSame(0, Component::count());
     }

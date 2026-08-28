@@ -28,6 +28,57 @@ class ServicesTest extends TestCase
         ]);
     }
 
+    /** The component form adds services from a dialog and needs the row back. */
+    public function test_a_service_can_be_created_over_json(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->postJson('/admin/services', ['name' => 'Shared hosting', 'visible' => 1, 'collapsed' => 1]);
+
+        $response->assertCreated()->assertJson(['name' => 'Shared hosting']);
+        $this->assertSame(1, ComponentGroup::where('name', 'Shared hosting')->count());
+        $this->assertSame($response->json('id'), ComponentGroup::sole()->id);
+    }
+
+    /**
+     * The page used to carry a note calling "Shared hosting", "Email" and
+     * "Network & DNS" seeded demo data. It rendered unconditionally, so on a
+     * real install it told operators their own services were fake.
+     */
+    public function test_the_services_page_never_calls_real_services_demo_data(): void
+    {
+        $this->group('Shared hosting');
+
+        $this->actingAs($this->user)->get('/admin/services')
+            ->assertOk()
+            ->assertSee('Shared hosting')
+            ->assertDontSee('demo data')
+            ->assertDontSee('Where the demo names came from');
+    }
+
+    public function test_a_service_can_be_deleted_over_json_without_taking_components(): void
+    {
+        $group = $this->group('Shared hosting');
+        $component = Component::create(['component_group_id' => $group->id, 'name' => 'web-01']);
+
+        $this->actingAs($this->user)
+            ->deleteJson("/admin/services/{$group->id}")
+            ->assertOk()
+            ->assertJson(['deleted' => true, 'orphans' => 1]);
+
+        $this->assertSame(0, ComponentGroup::count());
+        $this->assertNull($component->fresh()->component_group_id);
+    }
+
+    public function test_a_nameless_service_over_json_is_refused_with_the_field_named(): void
+    {
+        $this->actingAs($this->user)
+            ->postJson('/admin/services', ['name' => ''])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('name');
+
+        $this->assertSame(0, ComponentGroup::count());
+    }
+
     protected function group(string $name, int $position = 1, bool $visible = true): ComponentGroup
     {
         return ComponentGroup::create(['name' => $name, 'position' => $position, 'visible' => $visible]);

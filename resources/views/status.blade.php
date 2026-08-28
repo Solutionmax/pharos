@@ -106,6 +106,15 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 .foot a{text-decoration:none}
 .foot .cr{margin-left:auto;text-decoration:none;color:inherit}
 .foot .cr:hover{color:var(--accent);text-decoration:underline}
+
+    .md > :first-child{margin-top:0}
+    .md > :last-child{margin-bottom:0}
+    .md p{margin:0 0 8px}
+    .md ul,.md ol{margin:0 0 8px;padding-left:20px}
+    .md li{margin:2px 0}
+    .md a{color:var(--brand)}
+    .md code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;
+      background:rgba(127,127,127,.12);padding:1px 5px;border-radius:4px}
 </style>
 </head>
 <body>
@@ -122,9 +131,6 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
   <header class="top">
     <span class="logo">@include('partials.logo', ['size' => 30])</span>
     <span class="right">
-      @if ($modules['page.show_subscribe'])
-        <a class="sub" href="#subscribe">Get notified</a>
-      @endif
       @include('partials.theme-toggle')
     </span>
   </header>
@@ -166,9 +172,23 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
     </section>
   @endif
 
-  @if ($modules['page.show_services'] && $groups->isNotEmpty())
+  @if ($modules['page.show_services'] && ($groups->isNotEmpty() || $loose->isNotEmpty()))
     <section class="sec">
       <h2>Services</h2>
+
+      {{-- Components that belong to no service still belong on the page. Leaving
+           them out made "Ungrouped" a silent way to publish nothing, and made
+           deleting a service quietly empty the page it was on. --}}
+      @if ($loose->isNotEmpty())
+        <div class="svc">
+          <div class="svc-bd">
+            @foreach ($loose as $component)
+              @include('partials.status-item', ['component' => $component])
+            @endforeach
+          </div>
+        </div>
+      @endif
+
       @foreach ($groups as $group)
         @continue($group->components->isEmpty())
         @php $gs = $group->status(); @endphp
@@ -187,19 +207,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
           </summary>
           <div class="svc-bd">
             @foreach ($group->components as $component)
-              <div class="item">
-                <span>
-                  <span class="nm">{{ $component->name }}</span>
-                  @if ($component->description)<br><span class="desc">{{ $component->description }}</span>@endif
-                </span>
-                @if ($modules['page.show_component_uptime'] && $component->show_uptime)
-                  <span class="bar mini" aria-hidden="true">
-                    @foreach ($bars[$component->id] as $d)<span class="{{ $d['tone'] === 'ok' ? '' : $d['tone'] }}"></span>@endforeach
-                  </span>
-                  <span class="pct">{{ number_format($percentages[$component->id], 2) }}%</span>
-                @endif
-                <span class="pill sm {{ $component->status->tone() }}">{{ $component->status->label() }}</span>
-              </div>
+              @include('partials.status-item', ['component' => $component])
             @endforeach
           </div>
         </details>
@@ -243,7 +251,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
                       <time>{{ $update->created_at->format('H:i') }}</time>
                       @if ($update->automatic)<span class="auto">automatic</span>@endif
                     </span>
-                    <p>{{ $update->message }}</p>
+                    <div class="md">{!! $update->messageHtml() !!}</div>
                   </div>
                 @endforeach
               </div>

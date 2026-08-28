@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use App\Enums\ComponentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ComponentGroup extends Model
 {
+    use Auditable;
+
     protected $guarded = [];
 
     protected $attributes = ['collapsed' => true, 'visible' => true, 'position' => 0];

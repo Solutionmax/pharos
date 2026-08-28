@@ -75,6 +75,13 @@
           <td>
             <span class="rowacts">
               <a href="{{ route('admin.incidents.update-form', $incident) }}">Add update</a>
+              <form method="POST" action="{{ route('admin.incidents.destroy', $incident) }}"
+                    data-confirm-title="Delete {{ $incident->name }}?"
+                    data-confirm="It disappears from the public page along with its {{ $incident->updates->count() }} {{ \Illuminate\Support\Str::plural('update', $incident->updates->count()) }}. Delete a false alarm; <strong>resolve</strong> a real one instead, so customers keep the record."
+                    data-confirm-action="Delete incident">
+                @csrf @method('DELETE')
+                <button type="submit">Delete</button>
+              </form>
             </span>
           </td>
         </tr>

@@ -2,11 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class ApiToken extends Model
 {
+    use Auditable;
+
+    protected $auditName = 'api_token';
+
+    /** Columns the check runner and delivery code touch on their own. */
+    protected $auditIgnore = ['last_used_at'];
+
     protected $guarded = [];
 
     protected $hidden = ['token_hash'];

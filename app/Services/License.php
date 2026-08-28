@@ -46,7 +46,7 @@ class License
      * problem — a malformed key must read as "not licensed", never as an error
      * that takes the page down.
      */
-    public function verify(string $key): ?array
+    public function verify(string $key, bool $ignoreExpiry = false): ?array
     {
         $publicKey = config('pharos.license_public_key');
 
@@ -79,7 +79,54 @@ class License
             return null;
         }
 
+        // A key signed before terms existed carries no expiry and keeps working;
+        // one that names a date stops being a licence the day after it. Support
+        // may still want to read such a key, which is what the flag is for.
+        if (! $ignoreExpiry && $this->hasExpired($data)) {
+            return null;
+        }
+
         return $data;
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function hasExpired(array $payload): bool
+    {
+        return isset($payload['expires_at']) && $this->hasPassed((string) $payload['expires_at']);
+    }
+
+    /** The day the licence runs out, or null when it never does. */
+    public function expiresAt(): ?\Illuminate\Support\Carbon
+    {
+        $date = $this->payload()['expires_at'] ?? null;
+
+        return $date ? \Illuminate\Support\Carbon::parse((string) $date)->endOfDay() : null;
+    }
+
+    /** Whole days left, or null when there is no term to count down. */
+    public function daysLeft(): ?int
+    {
+        $expires = $this->expiresAt();
+
+        return $expires ? (int) now()->startOfDay()->diffInDays($expires->startOfDay()) : null;
+    }
+
+    /** Close enough that somebody should be told before it stops working. */
+    public function expiringSoon(int $withinDays = 30): bool
+    {
+        $days = $this->daysLeft();
+
+        return $days !== null && $days <= $withinDays;
+    }
+
+    protected function hasPassed(string $date): bool
+    {
+        try {
+            return \Illuminate\Support\Carbon::parse($date)->endOfDay()->isPast();
+        } catch (\Throwable) {
+            // An unreadable date is not a licence we can vouch for.
+            return true;
+        }
     }
 
     public function store(string $key): bool

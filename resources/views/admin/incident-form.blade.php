@@ -51,6 +51,7 @@
 
       <div class="field wide">
         <label for="message">Message to customers</label>
+        @include('partials.editor', ['for' => 'message'])
         <textarea id="message" name="message" rows="4" required placeholder="What you know, what you are doing, when you will post again.">{{ old('message') }}</textarea>
       </div>
     </div>

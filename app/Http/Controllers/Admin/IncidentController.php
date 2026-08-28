@@ -156,4 +156,18 @@ class IncidentController extends Controller
 
         return redirect()->route('admin.incidents')->with('status', 'Update posted.');
     }
+
+    /**
+     * A published incident that was never true — a misconfigured check, a false
+     * alarm — has to be removable. Without this the only way off the public page
+     * was editing the database.
+     */
+    public function destroy(Incident $incident)
+    {
+        $name = $incident->name;
+        $incident->delete();
+
+        return redirect()->route('admin.incidents')
+            ->with('status', "Incident \"{$name}\" deleted, along with its updates.");
+    }
 }
