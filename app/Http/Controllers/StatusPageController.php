@@ -123,6 +123,15 @@ class StatusPageController extends Controller
             'percentages' => $percentages,
             'overall' => $overall,
             'worst' => $worst,
+            // An incident that is still open when it falls out of the history window
+            // is pinned above the days: a component can stay red for longer than the
+            // window, and the page must never show a red service without the
+            // incident that explains it. Recent ones simply sit under their day.
+            'ongoing' => $modules['page.show_incidents']
+                ? Incident::public()->whereNull('resolved_at')
+                    ->where('occurred_at', '<', now()->subDays($days))
+                    ->with('updates', 'components')->orderByDesc('occurred_at')->get()
+                : collect(),
             'days' => $modules['page.show_incidents'] ? $this->incidentDays($days, $modules) : [],
             'modules' => $modules,
             'theme' => $theme,
