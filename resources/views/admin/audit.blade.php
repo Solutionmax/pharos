@@ -40,8 +40,12 @@
 
   @if ($entries->isEmpty())
     <div class="empty">
-      Nothing recorded yet. Changes made from here or through the API appear on this page;
-      the automatic checks do not, because nobody made them.
+      @if ($actor !== '' || $subject !== '')
+        No lines match this filter. <a href="{{ route('admin.audit') }}">Clear it</a> to see everything.
+      @else
+        Nothing recorded yet. Changes made from here or through the API appear on this page;
+        the automatic checks do not, because nobody made them.
+      @endif
     </div>
   @else
     <div class="scroll">

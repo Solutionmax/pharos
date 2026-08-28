@@ -1,5 +1,7 @@
 @extends('layouts.admin')
 @section('title', 'Settings')
+{{-- Every field on this screen shows its own error inline; opt out of the global list so it is not said twice. --}}
+@section('own-errors', 'yes')
 @section('content')
 @include('partials.pagehead', [
   'title' => 'Settings',
