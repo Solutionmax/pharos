@@ -109,7 +109,8 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         Route::delete('profile/two-factor', [ProfileController::class, 'disableTwoFactor'])->name('profile.two-factor.disable');
         Route::post('profile/recovery-codes', [ProfileController::class, 'regenerateRecoveryCodes'])->name('profile.recovery-codes');
         // Hiding a "Good to know" note is personal, so it sits with the profile and needs no admin.
-        Route::post('notes/restore', [ProfileController::class, 'restoreNotes'])->name('notes.restore');
+        Route::post('notes/{id}/restore', [ProfileController::class, 'restoreNote'])->where('id', '[a-z0-9.-]+')->name('notes.restore-one');
+            Route::post('notes/restore', [ProfileController::class, 'restoreNotes'])->name('notes.restore');
         Route::post('notes/{id}/dismiss', [ProfileController::class, 'dismissNote'])->name('notes.dismiss')->where('id', '[a-z0-9.-]+');
 
         // Everything that changes the installation itself rather than what it reports on.

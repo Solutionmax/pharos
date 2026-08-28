@@ -240,6 +240,13 @@ dialog.modal .panel{margin:0}
 .brand-preview.dark{background:#0b1b33;border-color:#0b1b33}
 .brand-preview.icon{height:48px;min-width:48px;width:48px;padding:6px}
 
+.notes-hidden{display:grid;gap:12px;margin:10px 0 14px}
+.notes-page b{font-size:13px}.notes-page b a{color:var(--brand);text-decoration:none}.notes-page b a:hover{text-decoration:underline}
+.notes-page ul{list-style:none;margin:4px 0 0;padding:0}
+.notes-page li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid var(--line);font-size:13px;color:var(--ink-2)}
+.notes-page li form{margin:0}.notes-page li button{font:inherit;font-size:12px;color:var(--brand);background:none;border:1px solid var(--line);border-radius:7px;padding:3px 9px;cursor:pointer}
+.notes-page li button:hover{background:var(--bg-tint)}
+
 .pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--ink-2)}
 .pager .sub{color:var(--ink-3)}.pager-links{display:flex;gap:8px}.pager [aria-disabled=true]{opacity:.45;pointer-events:none}
 .callout b{color:var(--ink)}
