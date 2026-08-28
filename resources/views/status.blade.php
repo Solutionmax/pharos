@@ -30,7 +30,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .theme-toggle:hover{color:var(--ink);border-color:var(--ink-3)}
 .hero{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);overflow:hidden}
 .hero-top{display:flex;align-items:center;gap:14px;padding:26px 28px;flex-wrap:wrap}
-.hero-top .dot{width:12px;height:12px;border-radius:50%;flex:none}
+.hero-top .dot{width:12px;height:12px;border-radius:50%;flex:none;background:currentColor;animation:pulse 2.2s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in oklab,currentColor 55%,transparent)}70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.hero-top .dot{animation:none}}
 .hero-top h1{font-size:24px}
 .hero-top .when{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
 .uptime{padding:4px 28px 26px;display:flex;flex-direction:column;gap:12px}
@@ -140,7 +142,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
     <section class="hero">
       @if ($modules['page.show_overall'])
         <div class="hero-top">
-          <span class="dot" style="background:var(--{{ ['ok' => 'green', 'w' => 'amber', 'p' => 'orange', 'b' => 'red', 'm' => 'blue'][$worst->tone()] }})"></span>
+          <span class="dot" style="color:var(--{{ ['ok' => 'green', 'w' => 'amber', 'p' => 'orange', 'b' => 'red', 'm' => 'blue'][$worst->tone()] }})"></span>
           <h1>{{ $worst === \App\Enums\ComponentStatus::Operational ? 'All systems operational' : $worst->label() }}</h1>
           <span class="when">updated {{ \App\Services\Clock::now()->format('H:i') }}</span>
         </div>

@@ -35,7 +35,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .nav[aria-current="page"] svg{opacity:1}
 .nav[aria-current="page"]::before{content:"";position:absolute;left:-12px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--brand)}
 .side .bottom{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:12px;border-top:1px solid var(--line)}
-.dot-new{width:7px;height:7px;border-radius:50%;background:var(--amber);margin-left:auto;flex:none}
+.dot-new{width:7px;height:7px;border-radius:50%;background:currentColor;color:var(--amber);animation:pulse 2.2s ease-out infinite;margin-left:auto;flex:none}
 .whorow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;
   text-decoration:none;color:inherit;transition:background .12s ease}
 .whorow:hover{background:var(--bg-tint);color:var(--ink)}
@@ -69,10 +69,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 /* ---------- status: never colour alone ---------- */
 .state-cell{display:flex;align-items:center;gap:8px;white-space:nowrap}
-.state-dot{width:8px;height:8px;border-radius:50%;flex:none}
-.state-dot.ok{background:var(--green)}.state-dot.w{background:var(--amber)}
-.state-dot.p{background:var(--orange)}.state-dot.b{background:var(--red)}
-.state-dot.m{background:var(--blue)}
+.state-dot{width:8px;height:8px;border-radius:50%;flex:none;background:currentColor;animation:pulse 2.2s ease-out infinite}
+.state-dot.ok{color:var(--green)}.state-dot.w{color:var(--amber)}
+.state-dot.p{color:var(--orange)}.state-dot.b{color:var(--red)}
+.state-dot.m{color:var(--blue)}
+/* The dot is alive: a ring in its own colour breathes out and fades. Off for reduced motion. */
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in oklab,currentColor 55%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.state-dot,.dot-new{animation:none}}
 .state-cell .txt{font-size:13px;font-weight:600}
 
 /* ---------- 30-day strip, read next to its own number ---------- */
