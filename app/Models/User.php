@@ -19,7 +19,7 @@ class User extends Authenticatable
 
     protected $fillable = ['name', 'email', 'password', 'role'];
 
-    protected $auditIgnore = ['totp_secret', 'totp_last_step', 'totp_confirmed_at'];
+    protected $auditIgnore = ['totp_secret', 'totp_last_step', 'totp_confirmed_at', 'dismissed_notes'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -31,6 +31,7 @@ class User extends Authenticatable
             'role' => UserRole::class,
             'totp_secret' => 'encrypted',
             'totp_confirmed_at' => 'datetime',
+            'dismissed_notes' => 'array',
             'created_at' => LocalTime::class,
             'updated_at' => LocalTime::class,
         ];
@@ -53,6 +54,27 @@ class User extends Authenticatable
     public function recoveryCodes(): HasMany
     {
         return $this->hasMany(RecoveryCode::class);
+    }
+
+    // ---------- "Good to know" notes ----------
+
+    public function hasDismissed(string $id): bool
+    {
+        return in_array($id, $this->dismissed_notes ?? [], true);
+    }
+
+    public function dismissNote(string $id): void
+    {
+        if ($this->hasDismissed($id)) {
+            return;
+        }
+
+        $this->forceFill(['dismissed_notes' => [...($this->dismissed_notes ?? []), $id]])->save();
+    }
+
+    public function restoreNotes(): void
+    {
+        $this->forceFill(['dismissed_notes' => null])->save();
     }
 
     /** A secret that was never confirmed with a real code does not count. */

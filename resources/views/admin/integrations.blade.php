@@ -94,10 +94,10 @@
         <div class="copy"><code>{{ url("/api/v1/heartbeat/{$component->check->target}") }}</code></div>
       </div>
     @empty
-      <div class="callout">
+      <x-note id="integrations.no-heartbeats">
         No heartbeat components yet. Add a component with source <b>Heartbeat</b> and its
         push URL appears here.
-      </div>
+      </x-note>
     @endforelse
   </div>
 </div>
@@ -187,12 +187,12 @@
       </div>
     </form>
 
-    <div class="callout">
+    <x-note id="integrations.one-attempt">
       <b>One attempt, no retry.</b> A notification is sent once with a five second limit, because a slow
       receiver must not hold up publishing an outage. If it fails you see it in the table above, and the
       incident is still on the status page — but nobody was told. Where that matters, send to something
       that retries for you, such as n8n, and let it fan out from there.
-    </div>
+    </x-note>
 
     @if ($webhookSecret && auth()->user()->isAdmin())
       <div class="field">

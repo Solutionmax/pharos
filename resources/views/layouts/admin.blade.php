@@ -222,6 +222,14 @@ dialog.modal .panel{margin:0}
 .pager .sub{color:var(--ink-3)}.pager-links{display:flex;gap:8px}.pager [aria-disabled=true]{opacity:.45;pointer-events:none}
 .callout b{color:var(--ink)}
 .callout.warn{border-left-color:var(--amber);background:color-mix(in oklab,var(--amber) 12%,transparent)}
+/* "Got it": the cross sits in the callout's own padding, clear of the eyebrow. */
+.callout:has(.callout-x){padding-right:52px}
+.callout-x{position:absolute;top:7px;right:8px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:18px;line-height:1;color:var(--ink-3);text-decoration:none;transition:.15s var(--ease)}
+.callout-x:hover{color:var(--ink);background:var(--bg-tint)}
+.callout-x:focus-visible{border-radius:50%;outline-offset:1px}
+.callout.gone{opacity:0;transform:translateY(-4px);transition:opacity .18s var(--ease),transform .18s var(--ease)}
+/* A body whose only content was a hidden note must not stay behind as padding. */
+.panel-bd:not(:has(*)){display:none}
 /* A callout of more than one thought reads as a wall unless the thoughts are split. */
 .callout p{margin:0 0 10px}
 .callout p:last-child{margin-bottom:0}
@@ -331,6 +339,20 @@ pre .k{color:var(--brand)}
   </main>
 </div>
 @include('partials.confirm')
+<script>
+// "Got it" on a note: tell the server over fetch and take the box away at once.
+// Without JavaScript the form around the button posts and the page comes back without it.
+document.addEventListener('click', function (event) {
+  var btn = event.target.closest('.callout-x');
+  if (!btn || !window.fetch) return;
+  event.preventDefault();
+  var form = btn.form, box = btn.closest('.callout');
+  fetch(form.action, {method: 'POST', credentials: 'same-origin', headers: {Accept: 'application/json', 'X-CSRF-TOKEN': form.querySelector('[name=_token]').value}}).catch(function () {});
+  var atOnce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  box.classList.add('gone');
+  setTimeout(function () { box.remove(); }, atOnce ? 0 : 180);
+});
+</script>
 @else
 {{-- No wrapper: a signed-out page owns its own canvas, because setup is a
      full-bleed split and a centred column would fight it. --}}

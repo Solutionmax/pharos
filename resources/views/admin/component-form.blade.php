@@ -139,10 +139,10 @@
       </div>
 
       @if ($check && $check->type === \App\Enums\CheckType::Heartbeat)
-        <div class="callout">
+        <x-note id="component.heartbeat-url">
           <b>Heartbeat URL.</b> Have the job call this when it finishes. Silence for two intervals is the alarm.
           <div class="mono" style="margin-top:8px;word-break:break-all">{{ url("/api/v1/heartbeat/{$check->target}") }}</div>
-        </div>
+        </x-note>
       @endif
 
       <div class="switchrow">

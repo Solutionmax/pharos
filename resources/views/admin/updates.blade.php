@@ -3,12 +3,12 @@
 @section('content')
 
 @if ($versionPinned)
-  <div class="callout warn">
+  <x-note id="updates.pinned" warn>
     <b>The version is pinned in .env.</b> <span class="mono">PHAROS_VERSION</span> is set there, and
     an update never replaces <span class="mono">.env</span> — so after installing a release this
     screen would keep reporting the old version and offer the same update again. Remove that line;
     the version then comes from the code, which is what an update actually replaces.
-  </div>
+  </x-note>
 @endif
 
 @include('partials.pagehead', [
@@ -76,10 +76,10 @@
     @if (! $available)
       <p class="note">Nothing to do. Pharos checks once an hour, and you can force it with <b>Check again</b>.</p>
     @elseif ($managed)
-      <div class="callout">
+      <x-note id="updates.managed">
         <b>This install is managed from outside.</b> The Docker image belongs to the host, so the
         app cannot replace itself. Pressing the button asks the host updater to pull and restart.
-      </div>
+      </x-note>
       @if ($managedStatus)
         <p class="note mono" style="font-size:12.5px">Host reported: {{ json_encode($managedStatus) }}</p>
       @endif
@@ -89,12 +89,12 @@
       </form>
       <p class="note">Or, on the host: <span class="mono">docker compose pull &amp;&amp; docker compose up -d</span></p>
     @elseif ($writable)
-      <div class="callout">
+      <x-note id="updates.how-it-installs">
         The archive is downloaded, checked against a signature made with our key, and only then
         unpacked. Your <b>.env</b>, database and uploads are left alone, and the version you are
         running now is copied to <span class="mono">storage/app/backups</span> first.
         @if ($sqlite) Your SQLite database is copied into the backup as well. @else Your database is <b>not</b> in that backup — take a dump before installing, because the update runs migrations. @endif
-      </div>
+      </x-note>
       <form method="POST" action="{{ route('admin.updates.apply') }}"
             data-confirm-title="Install {{ $latest['version'] }}?"
             data-confirm="Pharos replaces its own files and is <strong>briefly unavailable</strong> while it does. Your settings, uploads and database are kept, and the current version is backed up first."
@@ -104,22 +104,22 @@
         <button class="btn" type="submit">Install {{ $latest['version'] }}</button>
       </form>
     @else
-      <div class="callout">
+      <x-note id="updates.not-writable">
         <b>The application directory is not writable</b>, so Pharos cannot update itself. Either give
         the web user write access, or update over SSH:
-      </div>
+      </x-note>
 <pre>cd {{ base_path() }}
 php artisan pharos:update</pre>
     @endif
   </div>
 </div>
 
-<div class="callout" style="margin-bottom:16px">
+<x-note id="updates.safe" style="margin-bottom:16px">
   Every release manifest is signed with the key that also signs licences, with a different purpose
   field so one can never be replayed as the other. An unsigned or tampered manifest, or an archive
   whose checksum does not match, is refused before anything is written. A failed check reads as
   <b>no news</b>, never as an error on your status page.
-</div>
+</x-note>
 
 <div class="panel">
   <div class="panel-hd">
@@ -170,19 +170,20 @@ php artisan pharos:update</pre>
       </table>
     </div>
   @endif
-  <div class="panel-bd">
-    @if (! $backups)
+  @if (! $backups)
+    <div class="panel-bd">
       <p class="note">No backups yet — the first update creates one, or press <b>Back up now</b>.</p>
-    @endif
-    <p class="note">
-      @if ($sqlite)The SQLite database is copied into the backup, so putting a folder back puts the data of that moment back too. @else Your database is not in these backups — dump it before an update; the update runs migrations. @endif
-      Each update copies the version it replaces into <span class="mono">storage/app/backups</span>
-      before writing anything. Nothing prunes that folder: once the new version has run for a while,
-      empty it by hand. <b>Roll back</b> puts a folder back — after copying what it replaces into a
-      backup of its own, so a rollback can be undone too.
-    </p>
-  </div>
+    </div>
+  @endif
 </div>
+
+<x-note id="updates.backups">
+  @if ($sqlite)The SQLite database is copied into the backup, so putting a folder back puts the data of that moment back too. @else Your database is not in these backups — dump it before an update; the update runs migrations. @endif
+  Each update copies the version it replaces into <span class="mono">storage/app/backups</span>
+  before writing anything. Nothing prunes that folder: once the new version has run for a while,
+  empty it by hand. <b>Roll back</b> puts a folder back — after copying what it replaces into a
+  backup of its own, so a rollback can be undone too.
+</x-note>
 
 <script>
 (function () {

@@ -73,10 +73,10 @@
               </span>
             </label>
           @empty
-            <div class="callout">
+            <x-note id="status-page.no-services">
               No services yet. <a href="{{ route('admin.groups', ['from' => 'status-page']) }}">Add one</a> and it appears here
               as its own switch.
-            </div>
+            </x-note>
           @endforelse
         </div>
       </div>
