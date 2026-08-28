@@ -162,4 +162,23 @@ class NotesTest extends TestCase
 
         $this->assertDatabaseMissing('audit_log', ['action' => 'user.updated']);
     }
+
+    /** The profile says where each hidden note lives, and one can come back on its own. */
+    public function test_the_profile_lists_hidden_notes_by_page_and_restores_one(): void
+    {
+        $user = $this->admin;
+        $user->dismissNote('updates.safe');
+        $user->dismissNote('subscribers.how');
+        $user->dismissNote('some.unknown-note');
+
+        $page = $this->actingAs($user)->get('/admin/profile')->assertOk();
+        $page->assertSee('Updates')->assertSee('Why an update is safe to take')
+            ->assertSee('Subscribers')->assertSee('How subscriptions work')
+            ->assertSee('Elsewhere')->assertSee('some.unknown-note')
+            ->assertSee(route('admin.updates'), false);
+
+        $this->actingAs($user)->post('/admin/notes/updates.safe/restore')->assertRedirect();
+        $this->assertSame(['subscribers.how', 'some.unknown-note'], $user->fresh()->dismissed_notes);
+        $this->actingAs($user)->get('/admin/profile')->assertDontSee('Why an update is safe to take');
+    }
 }

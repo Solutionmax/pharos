@@ -143,6 +143,21 @@
   <div class="panel-bd">
     @if ($hiddenNotes)
       <p class="sub" style="font-size:13.5px;color:var(--ink-2)">You have hidden {{ $hiddenNotes }} Good to know {{ \Illuminate\Support\Str::plural('note', $hiddenNotes) }}.</p>
+      <div class="notes-hidden">
+        @foreach ($hiddenByPage as $page => $group)
+          <div class="notes-page">
+            <b>@if ($group['url'])<a href="{{ $group['url'] }}">{{ $page }}</a>@else{{ $page }}@endif</b>
+            <ul>
+              @foreach ($group['notes'] as $note)
+                <li>
+                  <span>{{ $note['title'] }}</span>
+                  <form method="POST" action="{{ route('admin.notes.restore-one', $note['id']) }}">@csrf<button type="submit">Show again</button></form>
+                </li>
+              @endforeach
+            </ul>
+          </div>
+        @endforeach
+      </div>
       <form method="POST" action="{{ route('admin.notes.restore') }}">
         @csrf
         <div class="actions"><button class="btn ghost" type="submit">Show all notes again</button></div>

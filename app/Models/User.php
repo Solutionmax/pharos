@@ -72,6 +72,12 @@ class User extends Authenticatable
         $this->forceFill(['dismissed_notes' => [...($this->dismissed_notes ?? []), $id]])->save();
     }
 
+    public function restoreNote(string $id): void
+    {
+        $left = array_values(array_filter($this->dismissed_notes ?? [], fn ($n) => $n !== $id));
+        $this->forceFill(['dismissed_notes' => $left ?: null])->save();
+    }
+
     public function restoreNotes(): void
     {
         $this->forceFill(['dismissed_notes' => null])->save();

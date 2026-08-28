@@ -33,6 +33,7 @@ class ProfileController extends Controller
                 : null,
             'recoveryLeft' => $user->hasTwoFactor() ? $user->recoveryCodes()->whereNull('used_at')->count() : 0,
             'hiddenNotes' => count($user->dismissed_notes ?? []),
+            'hiddenByPage' => \App\Services\Notes::hiddenByPage($user->dismissed_notes ?? []),
         ]);
     }
 
@@ -42,6 +43,13 @@ class ProfileController extends Controller
         $request->user()->dismissNote($id);
 
         return $request->expectsJson() ? response()->noContent() : back();
+    }
+
+    public function restoreNote(Request $request, string $id)
+    {
+        $request->user()->restoreNote($id);
+
+        return back()->with('status', 'That note is back.');
     }
 
     public function restoreNotes(Request $request)
