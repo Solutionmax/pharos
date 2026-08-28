@@ -11,7 +11,9 @@
 .viewport-bar .dots{display:flex;gap:5px}
 .viewport-bar .dots i{width:9px;height:9px;border-radius:50%;background:var(--line);display:block}
 .viewport-bar .live{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3)}
-.viewport-bar .live .dot{width:7px;height:7px;border-radius:50%;background:var(--green);transition:opacity .2s}
+.viewport-bar .live .dot{width:7px;height:7px;border-radius:50%;background:currentColor;color:var(--green);position:relative;transition:opacity .2s}
+.viewport-bar .live .dot::after{content:"";position:absolute;inset:0;border-radius:50%;background:currentColor;opacity:.55;animation:pulse 2.2s ease-out infinite}
+@media (prefers-reduced-motion:reduce){.viewport-bar .live .dot::after{animation:none;opacity:0}}
 .viewport-bar .live.busy .dot{opacity:.25}
 .widths{margin-left:auto;display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--card)}
 .widths button{padding:5px 11px;font-size:11.5px;font-weight:600;color:var(--ink-3);border-right:1px solid var(--line)}
