@@ -21,7 +21,7 @@ class Branding
         'page.show_incidents' => ['label' => 'Incident history', 'help' => 'Incidents grouped per day.', 'default' => true],
         'page.show_empty_days' => ['label' => 'Days without incidents', 'help' => 'Shows "No incidents" rather than skipping the day.', 'default' => true],
         'page.show_api_link' => ['label' => 'API link in the footer', 'help' => 'Points at the public JSON feed.', 'default' => true],
-        'page.show_subscribe' => ['label' => '"Get notified" button', 'help' => 'Lets visitors subscribe to incident e-mails. Needs MAIL_* in .env.', 'default' => true],
+        'page.show_subscribe' => ['label' => '"Get notified" button', 'help' => 'Lets visitors subscribe to incident e-mails. Needs mail settings (Settings → Mail) and the switch on the Subscribers screen.', 'default' => true],
     ];
 
     public function module(string $key): bool

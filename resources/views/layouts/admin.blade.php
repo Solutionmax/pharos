@@ -33,6 +33,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .nav:hover svg{opacity:1}
 .nav[aria-current="page"]{background:var(--brand-soft);color:var(--brand);font-weight:600}
 .nav[aria-current="page"] svg{opacity:1}
+/* "off" next to Subscribers: the switch is on that screen, so the item stays. */
+.nav .navhint{margin-left:auto;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);background:var(--bg-tint);padding:2px 7px;border-radius:999px}
 .nav[aria-current="page"]::before{content:"";position:absolute;left:-12px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--brand)}
 .side .bottom{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:12px;border-top:1px solid var(--line)}
 .dot-new{width:7px;height:7px;border-radius:50%;background:currentColor;color:var(--amber);position:relative;margin-left:auto;flex:none}
@@ -292,6 +294,7 @@ pre .k{color:var(--brand)}
     </a>
     <a class="nav" href="{{ route('admin.subscribers') }}" @if(request()->routeIs('admin.subscribers*')) aria-current="page" @endif>
       @include('partials.icon', ['name' => 'mail']) Subscribers
+      @unless (\App\Services\Subscriptions::enabled())<span class="navhint">off</span>@endunless
     </a>
 
     <span class="lbl">Configuration</span>

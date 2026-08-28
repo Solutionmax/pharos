@@ -281,6 +281,114 @@ class SubscribersTest extends TestCase
         $this->get('/')->assertOk()->assertDontSee('Get notified')->assertDontSee('/subscribe', false);
     }
 
+    // ---------- the master switch ----------
+
+    protected function flip(string $enabled)
+    {
+        return $this->actingAs($this->user)->post('/admin/subscribers/enabled', ['enabled' => $enabled]);
+    }
+
+    public function test_switching_off_removes_the_button_and_closes_the_doors_but_not_the_exit(): void
+    {
+        $active = $this->active();
+        $pending = $this->pending();
+
+        $this->flip('0')
+            ->assertRedirect('/admin/subscribers')
+            ->assertSessionHas('status');
+
+        $this->assertSame('0', Setting::get('subscribers.enabled'));
+        $this->assertSame(1, AuditEntry::where('action', 'subscribers.disabled')->count());
+
+        // page.show_subscribe is still on; the master switch wins.
+        $this->get('/')->assertOk()->assertDontSee('Get notified')->assertDontSee('action="'.route('subscribe').'"', false);
+
+        $this->post('/subscribe', ['email' => 'new@example.net'])->assertNotFound();
+        $this->assertNull(Subscriber::where('email', 'new@example.net')->first());
+        Mail::assertNothingSent();
+
+        $this->get($pending->confirmUrl())->assertNotFound();
+        $this->assertNull($pending->fresh()->verified_at);
+
+        // Leaving must always work: the mails already sent carry these links.
+        $this->get($active->unsubscribeUrl())->assertOk()->assertSee('Unsubscribed');
+        $this->assertNotNull($active->fresh()->unsubscribed_at);
+        $this->post($this->active('one-click@example.net')->unsubscribeUrl(), ['List-Unsubscribe' => 'One-Click'])->assertOk();
+
+        // Existing addresses are kept, not wiped.
+        $this->assertSame(3, Subscriber::count());
+    }
+
+    public function test_nothing_is_queued_while_off_but_the_outbox_still_drains(): void
+    {
+        $this->active('ann@example.net');
+        $incident = Incident::create(['name' => 'Mail down', 'status' => IncidentStatus::Investigating, 'occurred_at' => now()]);
+        IncidentUpdate::create(['incident_id' => $incident->id, 'status' => IncidentStatus::Investigating, 'message' => 'Looking.']);
+        $this->assertSame(1, SubscriberNotification::count());
+
+        $this->flip('0');
+
+        // Switched off mid-incident: the next update queues nothing new...
+        IncidentUpdate::create(['incident_id' => $incident->id, 'status' => IncidentStatus::Resolved, 'message' => 'Fixed.']);
+        $this->assertSame(1, SubscriberNotification::count());
+
+        // ...but the row queued before the flip is still delivered, not stranded.
+        $this->artisan('pharos:notify')->assertSuccessful()->expectsOutputToContain('Sent 1, failed 0');
+        Mail::assertSent(\App\Mail\IncidentNoticeMail::class, 1);
+        $this->assertNotNull(SubscriberNotification::first()->sent_at);
+    }
+
+    public function test_the_screen_and_the_sidebar_show_the_state_and_the_way_back_on(): void
+    {
+        $this->actingAs($this->user)->get('/admin/subscribers')->assertOk()
+            ->assertSee('Subscriptions')
+            ->assertSee('visitors can subscribe')
+            ->assertSee('Switch off')
+            ->assertDontSee('<span class="navhint">off</span>', false);
+
+        $this->flip('0');
+
+        $this->actingAs($this->user)->get('/admin/subscribers')->assertOk()
+            ->assertSee('no button, no mail, existing addresses kept')
+            ->assertSee('Switch on')
+            ->assertSee('<span class="navhint">off</span>', false)
+            // The tiles stay: the numbers are still true.
+            ->assertSee('Pending confirmation');
+
+        // The hint follows the sidebar onto every screen, not just this one.
+        $this->actingAs($this->user)->get('/admin/incidents')->assertOk()
+            ->assertSee('<span class="navhint">off</span>', false);
+
+        $this->flip('1')->assertRedirect('/admin/subscribers');
+
+        $this->assertSame('1', Setting::get('subscribers.enabled'));
+        $this->assertSame(1, AuditEntry::where('action', 'subscribers.enabled')->count());
+        $this->get('/')->assertOk()->assertSee('Get notified');
+        $this->post('/subscribe', ['email' => 'back@example.net'])->assertRedirect('/');
+        $this->assertNotNull(Subscriber::where('email', 'back@example.net')->first());
+        $this->actingAs($this->user)->get('/admin/incidents')->assertOk()
+            ->assertDontSee('<span class="navhint">off</span>', false);
+    }
+
+    public function test_the_switch_is_operational_so_a_plain_user_may_flip_it(): void
+    {
+        $member = User::create([
+            'name' => 'Tom', 'email' => 'tom@example.net',
+            'password' => Hash::make('correct-horse-battery'), 'role' => \App\Enums\UserRole::User,
+        ]);
+
+        $this->actingAs($member)->post('/admin/subscribers/enabled', ['enabled' => '0'])
+            ->assertRedirect('/admin/subscribers');
+
+        $this->assertSame('0', Setting::get('subscribers.enabled'));
+    }
+
+    public function test_the_switch_wants_a_plain_yes_or_no(): void
+    {
+        $this->actingAs($this->user)->postJson('/admin/subscribers/enabled', ['enabled' => 'maybe'])
+            ->assertStatus(422)->assertJsonValidationErrors('enabled');
+    }
+
     // ---------- the admin screen ----------
 
     public function test_the_subscribers_screen_shows_tiles_and_the_table(): void

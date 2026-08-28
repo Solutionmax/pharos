@@ -8,32 +8,77 @@ use App\Models\Setting;
 use App\Services\Audit;
 use App\Services\Branding;
 use App\Services\Clock;
+use App\Services\MailConfig;
 use App\Services\Sso;
+use App\Services\Subscriptions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
 /**
- * How this installation behaves: the time zone and single sign-on. Admin only.
- * What the public page shows lives on the Status page screen instead.
+ * How this installation behaves: the time zone, mail and single sign-on. Admin
+ * only. What the public page shows lives on the Status page screen instead.
  */
 class SettingsController extends Controller
 {
-    public function edit(Sso $sso)
+    public function edit(Sso $sso, MailConfig $mailConfig)
     {
         return view('admin.settings', [
             'timezone' => Clock::timezone(),
             'offset' => Clock::offsetLabel(),
             'sso' => $sso,
             'callbackUrl' => route('admin.sso.callback'),
-            'mail' => $this->mailSummary(),
+            'mail' => $mailConfig->effective(),
+            'mailForm' => $mailConfig->stored(),
+            'mailHasPassword' => $mailConfig->hasPassword(),
+            'brandName' => app(Branding::class)->name(),
+            'subscriptionsOn' => Subscriptions::enabled(),
         ]);
     }
 
     /**
-     * Proves MAIL_* end to end by mailing the person who pressed the button.
-     * The exception text is shown as-is: "Connection refused" is the answer
-     * they came for.
+     * Stores the mail settings. The password is the one value never shown
+     * again, so an empty box keeps what is there (MailConfig::save).
+     */
+    public function updateMail(Request $request, MailConfig $mailConfig)
+    {
+        $data = $request->validate([
+            'mailer' => ['required', Rule::in(MailConfig::MAILERS)],
+            'host' => ['nullable', 'string', 'max:255', 'required_if:mailer,smtp'],
+            'port' => ['nullable', 'integer', 'between:1,65535', 'required_if:mailer,smtp'],
+            'encryption' => ['nullable', Rule::in(MailConfig::ENCRYPTIONS)],
+            'username' => ['nullable', 'string', 'max:255'],
+            'password' => ['nullable', 'string', 'max:255'],
+            'from_address' => ['nullable', 'email:rfc', 'max:254'],
+            'from_name' => ['nullable', 'string', 'max:120'],
+        ], [
+            'host.required_if' => 'SMTP needs a host.',
+            'port.required_if' => 'SMTP needs a port.',
+        ]);
+
+        $before = $mailConfig->stored();
+        $mailConfig->save($data);
+        $after = $mailConfig->stored();
+
+        // What changed, minus the password: the diff only says *that* it changed.
+        $changes = collect($after)
+            ->filter(fn ($value, $field) => $value !== $before[$field])
+            ->map(fn ($value, $field) => ['from' => $before[$field], 'to' => $value])
+            ->all();
+
+        if (filled($data['password'] ?? null)) {
+            $changes['password'] = ['from' => '••••', 'to' => '••••'];
+        }
+
+        Audit::record('mail.settings_saved', null, $changes);
+
+        return redirect()->to(route('admin.settings').'#mail')->with('status', 'Mail settings saved.');
+    }
+
+    /**
+     * Proves the mail settings end to end by mailing the person who pressed the
+     * button. The exception text is shown as-is: "Connection refused" is the
+     * answer they came for.
      */
     public function sendTestMail(Request $request)
     {
@@ -49,26 +94,6 @@ class SettingsController extends Controller
         Audit::record('mail.test', $user);
 
         return redirect()->route('admin.settings')->with('status', "Test e-mail sent to {$user->email}.");
-    }
-
-    /**
-     * What the install would send with, read from config so the screen never
-     * disagrees with .env. No password: this page is read by every admin.
-     *
-     * @return array<string, string>
-     */
-    protected function mailSummary(): array
-    {
-        $mailer = (string) config('mail.default');
-        $transport = config("mail.mailers.{$mailer}", []);
-
-        return [
-            'mailer' => $mailer,
-            'host' => (string) ($transport['host'] ?? ''),
-            'port' => (string) ($transport['port'] ?? ''),
-            'from' => (string) config('mail.from.address'),
-            'from_name' => (string) (config('mail.from.name') ?: app(Branding::class)->name()),
-        ];
     }
 
     public function update(Request $request)

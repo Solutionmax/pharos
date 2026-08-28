@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\SubscribeConfirmMail;
 use App\Models\Subscriber;
+use App\Services\Subscriptions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -18,6 +19,10 @@ class SubscribeController extends Controller
 
     public function store(Request $request)
     {
+        // Switched off in the admin: the form is not on the page, so a POST here
+        // is a stale tab or a script. 404, like the confirm link below.
+        abort_unless(Subscriptions::enabled(), 404);
+
         // A bot fills every field; a person never sees this one.
         if ($request->filled('website')) {
             return $this->reply();
@@ -49,6 +54,7 @@ class SubscribeController extends Controller
 
     public function confirm(Request $request, Subscriber $subscriber)
     {
+        abort_unless(Subscriptions::enabled(), 404);
         $this->guardToken($request, $subscriber);
 
         // Idempotent: mail scanners open links before the reader does, and a
@@ -63,7 +69,11 @@ class SubscribeController extends Controller
         return $this->page('subscribed', $subscriber);
     }
 
-    /** GET from the mail footer, POST from a mail client's own one-click button. */
+    /**
+     * GET from the mail footer, POST from a mail client's own one-click button.
+     * Not behind the master switch: the mails already sent carry this link, and
+     * leaving must work whatever the admin has done since.
+     */
     public function unsubscribe(Request $request, Subscriber $subscriber)
     {
         $this->guardToken($request, $subscriber);

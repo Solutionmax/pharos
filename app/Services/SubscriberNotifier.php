@@ -34,6 +34,12 @@ class SubscriberNotifier
             return 0;
         }
 
+        // Master switch off: queue nothing new. sendPending() is deliberately
+        // not guarded, so rows queued before the flip still go out.
+        if (! Subscriptions::enabled()) {
+            return 0;
+        }
+
         $queued = 0;
         $now = now();
 
