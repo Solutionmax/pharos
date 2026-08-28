@@ -74,7 +74,7 @@ own two-factor off; that is the user's decision, not the login flow's.
 
 ## What an administrator configures
 
-Under **Admin → Settings → Single sign-on** (`/admin/settings#sso`; the old
+Under **Admin → Settings → Single sign-on** (`/admin/settings?tab=sso`; the old
 `/admin/sso` address redirects there): `sso.enabled`, `sso.provider_name` (the button text), `sso.issuer`,
 `sso.client_id`, `sso.client_secret`. The secret is stored encrypted and never
 rendered back into the form.

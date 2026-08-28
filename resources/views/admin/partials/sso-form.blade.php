@@ -14,6 +14,7 @@
 
 <form method="POST" action="{{ route('admin.sso.update') }}" style="display:flex;flex-direction:column;gap:16px">
   @csrf @method('PUT')
+  <input type="hidden" name="_tab" value="sso">
   <div class="fields">
     <div class="field">
       <label for="issuer">Issuer URL</label>

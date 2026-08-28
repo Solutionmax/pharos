@@ -19,7 +19,6 @@
 .stage{background:var(--bg-tint);padding:14px;display:flex;justify-content:center}
 .stage iframe{width:100%;height:640px;border:0;border-radius:10px;background:#f2f6fb;box-shadow:0 1px 3px #10182818}
 .hint-row{padding:12px 16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-3);line-height:1.6}
-.tabs{margin-bottom:16px;flex-wrap:wrap}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
 .chip{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg-tint);color:var(--ink-2);cursor:pointer;line-height:1.4}
 .chip:hover:not(:disabled){border-color:var(--brand);color:var(--brand)}

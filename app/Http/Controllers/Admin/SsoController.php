@@ -120,7 +120,7 @@ class SsoController extends Controller
         if (! isset($data['enabled'])) {
             Setting::put('sso.enabled', '0');
 
-            return redirect()->to(route('admin.settings').'#sso')->with('status', 'Single sign-on is off.');
+            return redirect()->route('admin.settings', ['tab' => 'sso'])->with('status', 'Single sign-on is off.');
         }
 
         // Switching it on without checking would leave a button that only fails.
@@ -129,12 +129,14 @@ class SsoController extends Controller
         } catch (\Throwable $e) {
             Setting::put('sso.enabled', '0');
 
-            return back()->withErrors(['issuer' => $e->getMessage()]);
+            // Back to the sso tab by name: back() would drop the ?tab= when the link carried a hash.
+            return redirect()->route('admin.settings', ['tab' => 'sso'])
+                ->withErrors(['issuer' => $e->getMessage()])->withInput();
         }
 
         Setting::put('sso.enabled', '1');
 
-        return redirect()->to(route('admin.settings').'#sso')
+        return redirect()->route('admin.settings', ['tab' => 'sso'])
             ->with('status', 'Single sign-on is on. Try it in a private window before you rely on it.');
     }
 

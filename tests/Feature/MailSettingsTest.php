@@ -64,7 +64,7 @@ class MailSettingsTest extends TestCase
             'mail.from.name' => null,
         ]);
 
-        $this->actingAs($this->admin)->get('/admin/settings')->assertOk()
+        $this->actingAs($this->admin)->get('/admin/settings?tab=mail')->assertOk()
             ->assertSee('Mail')
             ->assertSee('smtp.example.net')
             ->assertSee('status@example.net')
@@ -78,14 +78,14 @@ class MailSettingsTest extends TestCase
         config(['mail.from.name' => null]);
         Setting::put('brand.name', 'Acme Cloud');
 
-        $this->actingAs($this->admin)->get('/admin/settings')->assertOk()
+        $this->actingAs($this->admin)->get('/admin/settings?tab=mail')->assertOk()
             ->assertSee('Acme Cloud &lt;', false);
     }
 
     public function test_the_test_mail_goes_to_the_signed_in_admin(): void
     {
         $this->actingAs($this->admin)->post('/admin/settings/mail-test')
-            ->assertRedirect('/admin/settings')
+            ->assertRedirect('/admin/settings?tab=mail')
             ->assertSessionHas('status', 'Test e-mail sent to raymon@example.net.');
 
         Mail::assertSent(TestMail::class, fn (TestMail $m) => $m->hasTo('raymon@example.net')
@@ -99,7 +99,7 @@ class MailSettingsTest extends TestCase
         Mail::shouldReceive('to')->andThrow(new \RuntimeException('Connection refused [smtp.example.net:587]'));
 
         $this->actingAs($this->admin)->post('/admin/settings/mail-test')
-            ->assertRedirect('/admin/settings')
+            ->assertRedirect('/admin/settings?tab=mail')
             ->assertSessionHasErrors(['mail' => 'Test e-mail failed: Connection refused [smtp.example.net:587]']);
 
         $this->assertSame(0, AuditEntry::where('action', 'mail.test')->count());
@@ -121,7 +121,7 @@ class MailSettingsTest extends TestCase
     public function test_saving_stores_the_settings_and_encrypts_the_password(): void
     {
         $this->save()
-            ->assertRedirect('/admin/settings#mail')
+            ->assertRedirect('/admin/settings?tab=mail')
             ->assertSessionHas('status', 'Mail settings saved.');
 
         $this->assertSame('smtp', Setting::get('mail.mailer'));
@@ -143,7 +143,7 @@ class MailSettingsTest extends TestCase
     {
         $this->save();
 
-        $this->actingAs($this->admin)->get('/admin/settings')->assertOk()
+        $this->actingAs($this->admin)->get('/admin/settings?tab=mail')->assertOk()
             ->assertSee('Stored — leave empty to keep')
             ->assertSee('smtp.example.net')
             ->assertDontSee('hunter2-secret')
@@ -183,7 +183,7 @@ class MailSettingsTest extends TestCase
 
         // "log" needs neither: nothing is connected to.
         $this->actingAs($this->admin)->put('/admin/settings/mail', $this->form(['mailer' => 'log', 'host' => '', 'port' => '']))
-            ->assertRedirect('/admin/settings#mail');
+            ->assertRedirect('/admin/settings?tab=mail');
 
         $this->assertSame('log', Setting::get('mail.mailer'));
     }
@@ -307,7 +307,7 @@ class MailSettingsTest extends TestCase
 
         $this->save();
 
-        $this->actingAs($this->admin)->get('/admin/settings')->assertOk()
+        $this->actingAs($this->admin)->get('/admin/settings?tab=mail')->assertOk()
             ->assertSee('smtp via smtp.example.net:587 as Acme Status &lt;status@example.net&gt;', false)
             ->assertDontSee('env.example.net');
     }
@@ -323,7 +323,7 @@ class MailSettingsTest extends TestCase
         $this->save(['host' => '127.0.0.1', 'port' => 1, 'encryption' => 'none']);
 
         $errors = $this->actingAs($this->admin)->post('/admin/settings/mail-test')
-            ->assertRedirect('/admin/settings')
+            ->assertRedirect('/admin/settings?tab=mail')
             ->assertSessionHasErrors('mail')
             ->baseResponse->getSession()->get('errors')->get('mail');
 
@@ -334,13 +334,13 @@ class MailSettingsTest extends TestCase
 
     public function test_the_mail_panel_shows_whether_subscriptions_are_on(): void
     {
-        $this->actingAs($this->admin)->get('/admin/settings')->assertOk()
+        $this->actingAs($this->admin)->get('/admin/settings?tab=mail')->assertOk()
             ->assertSee('Subscriptions are on')
             ->assertSee(route('admin.subscribers'));
 
         Setting::put('subscribers.enabled', '0');
 
-        $this->actingAs($this->admin)->get('/admin/settings')->assertOk()
+        $this->actingAs($this->admin)->get('/admin/settings?tab=mail')->assertOk()
             ->assertSee('Subscriptions are off');
     }
 }

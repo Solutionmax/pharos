@@ -47,6 +47,19 @@ class AdminTest extends TestCase
             ->assertSee('uptime is measured over 90', false);
     }
 
+    /** The 30-day strip names its day the same way the public bar does, through the shared tip. */
+    public function test_the_thirty_day_strip_names_its_day(): void
+    {
+        Component::create(['name' => 'web-01', 'status' => ComponentStatus::Operational]);
+
+        $this->actingAs($this->user)->get('/admin/components')
+            ->assertOk()
+            ->assertSee('data-tip="'.now()->format('j M'), false)
+            ->assertDontSee('title="'.now()->format('j M'), false)
+            ->assertSee('class="strip" role="img" tabindex="0" aria-label="web-01, last 30 days:', false)
+            ->assertSee('class="daytip" role="tooltip"', false);
+    }
+
     public function test_the_admin_is_closed_to_strangers(): void
     {
         foreach (['/admin/components', '/admin/incidents', '/admin/branding'] as $url) {

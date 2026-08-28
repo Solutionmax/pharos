@@ -61,7 +61,7 @@ class RolesTest extends TestCase
         // /admin/sso, so that address keeps working instead of turning into a 404.
         $this->actingAs($this->admin)->get('/admin/sso')
             ->assertStatus(301)
-            ->assertRedirect('/admin/settings#sso');
+            ->assertRedirect('/admin/settings?tab=sso');
     }
 
     public function test_a_user_can_shape_the_status_page_but_not_the_installation(): void
