@@ -37,12 +37,12 @@
   <div class="panel-bd">
     @include('admin.partials.sso-form')
 
-    <div class="callout" style="margin-top:16px">
+    <x-note id="sso.what-still-applies" style="margin-top:16px">
       <b>What still applies.</b> Anyone who switched two-factor on keeps it, whatever door they
       came through. If your provider already enforces MFA and you would rather not be asked twice,
       switch your own two-factor off on your profile — that stays your decision, not the login
       screen's.
-    </div>
+    </x-note>
   </div>
 </div>
 @endsection

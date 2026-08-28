@@ -10,10 +10,10 @@
   <div class="panel">
     <div class="panel-hd"><h3>Recovery codes</h3><span class="hint">Shown once</span></div>
     <div class="panel-bd">
-      <div class="callout">
+      <x-note id="profile.recovery-codes">
         <b>Save these now.</b> Each one signs you in once when your authenticator app is not to hand.
         They are stored hashed, so this screen is the only place they exist in full.
-      </div>
+      </x-note>
       <div class="fields" style="margin-top:14px">
         @foreach (session('recovery_codes') as $code)
           <div class="copy"><code>{{ $code }}</code></div>
@@ -77,10 +77,10 @@
         <div class="actions"><button class="btn ghost" type="submit">Switch off two-factor</button></div>
       </form>
     @elseif ($pendingSecret)
-      <div class="callout">
+      <x-note id="profile.two-factor">
         <b>Almost there.</b> Add the key below to your authenticator app, then enter a code to switch it on.
         Nothing changes about signing in until you do.
-      </div>
+      </x-note>
       <div class="field" style="margin-top:14px">
         <label>Setup key</label>
         <div class="copy"><code>{{ trim(chunk_split($pendingSecret, 4, ' ')) }}</code></div>
@@ -135,6 +135,21 @@
       </div>
       <div class="actions"><button class="btn ghost" type="submit">Change password</button></div>
     </form>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-hd"><h3>Notes</h3><span class="hint">The "Good to know" boxes around the admin</span></div>
+  <div class="panel-bd">
+    @if ($hiddenNotes)
+      <p class="sub" style="font-size:13.5px;color:var(--ink-2)">You have hidden {{ $hiddenNotes }} Good to know {{ \Illuminate\Support\Str::plural('note', $hiddenNotes) }}.</p>
+      <form method="POST" action="{{ route('admin.notes.restore') }}">
+        @csrf
+        <div class="actions"><button class="btn ghost" type="submit">Show all notes again</button></div>
+      </form>
+    @else
+      <p class="sub" style="font-size:13.5px;color:var(--ink-2)">All Good to know notes are showing.</p>
+    @endif
   </div>
 </div>
 @endsection

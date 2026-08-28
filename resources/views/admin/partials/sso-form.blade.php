@@ -1,11 +1,11 @@
 {{-- The OpenID Connect form, on its own so the Settings screen stays readable.
      Expects $sso (App\Services\Sso) and $callbackUrl. Posts to admin.sso.update. --}}
-<div class="callout">
+<x-note id="sso.no-provisioning">
   <b>People sign in, they do not appear.</b> Someone who signs in through your provider
   needs an account here already, matched on their verified email address. An address nobody
   here uses is refused rather than turned into a new account. Signing in with a password
   keeps working, so a provider that is down never locks you out.
-</div>
+</x-note>
 
 <div class="field" style="margin-top:16px">
   <label>Redirect URI to register at your provider</label>

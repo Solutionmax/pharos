@@ -32,7 +32,23 @@ class ProfileController extends Controller
                 ? $this->totp->uri($user->totp_secret, $user->email, config('app.name'))
                 : null,
             'recoveryLeft' => $user->hasTwoFactor() ? $user->recoveryCodes()->whereNull('used_at')->count() : 0,
+            'hiddenNotes' => count($user->dismissed_notes ?? []),
         ]);
+    }
+
+    /** "Got it" on a note. The script answers with fetch; without it the form posts and comes back. */
+    public function dismissNote(Request $request, string $id)
+    {
+        $request->user()->dismissNote($id);
+
+        return $request->expectsJson() ? response()->noContent() : back();
+    }
+
+    public function restoreNotes(Request $request)
+    {
+        $request->user()->restoreNotes();
+
+        return back()->with('status', 'All notes are back.');
     }
 
     public function update(Request $request)

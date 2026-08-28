@@ -113,14 +113,14 @@
   <div class="panel-bd">
     @if ($licensed)
       @if ($expiringSoon)
-        <div class="callout warn">
+        <x-note id="branding.expiring" warn>
           <b>{{ $daysLeft === 0 ? 'Runs out today.' : 'Runs out in '.$daysLeft.' '.\Illuminate\Support\Str::plural('day', $daysLeft).'.' }}</b>
           On {{ $expiresAt->format('d F Y') }} this key stops counting and the brand pack falls back
           to the free options. Renew before then and paste the new key here; nothing else changes.
-        </div>
+        </x-note>
       @endif
 
-      <div class="callout">
+      <x-note id="branding.activated">
         <b>Activated.</b> Licensed to {{ $issuedTo }}.
         @if ($expiresAt)
           This key runs until <b>{{ $expiresAt->format('d F Y') }}</b>.
@@ -128,7 +128,7 @@
           This key has no end date.
         @endif
         It is checked on this server, so it keeps working whether or not you can reach us.
-      </div>
+      </x-note>
     @else
       <form method="POST" action="{{ route('admin.branding.activate') }}" style="display:flex;flex-direction:column;gap:12px">
         @csrf
