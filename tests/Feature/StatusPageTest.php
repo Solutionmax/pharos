@@ -247,4 +247,11 @@ class StatusPageTest extends TestCase
         // The tag is shown as text, not run. That is html_input=escape doing its job.
         $response->assertDontSee('<script>alert(1)</script>', false);
     }
+
+    public function test_status_dots_pulse_unless_motion_is_reduced(): void
+    {
+        $this->get('/')->assertOk()
+            ->assertSee('animation:pulse', false)
+            ->assertSee('prefers-reduced-motion:reduce', false);
+    }
 }
