@@ -44,6 +44,27 @@ class ApiTest extends TestCase
             ->assertJsonPath('data.0.status_name', 'Operational');
     }
 
+    public function test_the_public_feed_hides_what_the_page_hides(): void
+    {
+        $hiddenGroup = ComponentGroup::create(['name' => 'Internal', 'visible' => false]);
+        Component::create(['component_group_id' => $hiddenGroup->id, 'name' => 'backup-host', 'status' => ComponentStatus::Operational]);
+        $disabled = Component::create(['name' => 'retired-box', 'status' => ComponentStatus::Operational, 'enabled' => false]);
+
+        $this->getJson('/api/v1/components')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.total', 1)
+            ->assertJsonMissing(['name' => 'backup-host'])
+            ->assertJsonMissing(['name' => 'retired-box']);
+
+        $this->getJson('/api/v1/components/'.$disabled->id)->assertNotFound();
+
+        // Writes by id still reach a hidden component: a Cachet script may keep
+        // updating something the page no longer shows.
+        $this->withToken($this->token)
+            ->postJson('/api/v1/components/'.$disabled->id, ['status' => 4])
+            ->assertOk();
+    }
+
     public function test_writing_requires_a_token(): void
     {
         $this->putJson("/api/v1/components/{$this->component->id}", ['status' => 4])
