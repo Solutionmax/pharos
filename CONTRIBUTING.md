@@ -13,8 +13,8 @@ something that does not fit, and me reviewing something I have to turn down.
 - **Tests.** Anything that can break has a test. Run `php artisan test` before opening a
   pull request — 186 of them pass today and that number should only go up.
 - **Small files.** If a class is past ~400 lines, it is probably two classes.
-- **No new dependencies** without saying why in the issue. This has to install on shared
-  hosting where people cannot compile things.
+- **No new dependencies** without saying why in the issue. This has to install on a plain
+  cPanel, DirectAdmin or Plesk account where people cannot compile things.
 - **Honest documentation.** If something is half-finished, the docs say so. There is a
   "Not implemented yet" section in the README and it is there on purpose.
 
