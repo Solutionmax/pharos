@@ -144,7 +144,7 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
 
             // The single sign-on form lives on the Settings screen now; the old
             // address stays for bookmarks and the docs.
-            Route::get('sso', fn () => redirect()->to(route('admin.settings').'#sso', 301))->name('sso');
+            Route::get('sso', fn () => redirect()->route('admin.settings', ['tab' => 'sso'], 301))->name('sso');
             Route::put('sso', [SsoController::class, 'update'])->name('sso.update');
 
             Route::get('branding', [BrandingController::class, 'edit'])->name('branding');

@@ -6,11 +6,25 @@
   'sub' => 'How this installation behaves',
 ])
 
-<div class="panel">
+{{-- Three unrelated things on one screen read better as three tabs. The server
+     renders one at a time (?tab=), so a save or a validation error can send
+     you straight back to the tab you were on. --}}
+<nav class="seg tabs" aria-label="Settings">
+  @foreach ($tabs as $tabKey => $hint)
+    <a href="{{ route('admin.settings', ['tab' => $tabKey]) }}" @if ($tabKey === $tab) aria-current="page" @endif>
+      {{ ['general' => 'General', 'mail' => 'Mail', 'sso' => 'Single sign-on'][$tabKey] }}
+      @if ($hint !== '')<span class="tabhint">{{ $hint }}</span>@endif
+    </a>
+  @endforeach
+</nav>
+
+@if ($tab === 'general')
+<div class="panel" id="general">
   <div class="panel-hd"><h3>General</h3></div>
   <div class="panel-bd">
     <form method="POST" action="{{ route('admin.settings.update') }}">
       @csrf @method('PUT')
+      <input type="hidden" name="_tab" value="general">
       <div class="fields">
         <div class="field">
           <label for="timezone">Time zone</label>
@@ -27,7 +41,9 @@
     </form>
   </div>
 </div>
+@endif
 
+@if ($tab === 'mail')
 <div class="panel" id="mail">
   <div class="panel-hd">
     <h3>Mail</h3>
@@ -36,6 +52,7 @@
   <div class="panel-bd">
     <form method="POST" action="{{ route('admin.settings.mail') }}" style="display:flex;flex-direction:column;gap:16px">
       @csrf @method('PUT')
+      <input type="hidden" name="_tab" value="mail">
       <div class="fields">
         <div class="field">
           <label for="mailer">Mailer</label>
@@ -133,8 +150,9 @@
     </div>
   </div>
 </div>
+@endif
 
-{{-- id="sso": the old /admin/sso address lands here. --}}
+@if ($tab === 'sso')
 <div class="panel" id="sso">
   <div class="panel-hd">
     <h3>Single sign-on</h3>
@@ -151,4 +169,17 @@
     </x-note>
   </div>
 </div>
+@endif
+
+<script>
+// Old links say /admin/settings#mail and #sso. The hash never reaches the server,
+// so when it names a tab that is not the one shown, ask for that tab instead.
+(function () {
+  var wanted = location.hash.replace('#', '');
+  var here = @json($tab);
+  if ((wanted === 'mail' || wanted === 'sso' || wanted === 'general') && wanted !== here) {
+    location.replace(@json(route('admin.settings'), JSON_UNESCAPED_SLASHES) + '?tab=' + wanted + '#' + wanted);
+  }
+})();
+</script>
 @endsection

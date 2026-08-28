@@ -230,4 +230,94 @@ class SettingsTest extends TestCase
             ->assertSee('Europe/Amsterdam — UTC'.now()->setTimezone('Europe/Amsterdam')->format('P').' now')
             ->assertSee('Everything is stored in UTC');
     }
+
+    // ---------- tabs ----------
+
+    public function test_settings_opens_on_general_and_keeps_the_other_tabs_out_of_the_way(): void
+    {
+        $this->actingAs($this->user)->get('/admin/settings')->assertOk()
+            ->assertSee('name="timezone"', false)
+            ->assertDontSee('name="mailer"', false)
+            ->assertDontSee('name="issuer"', false)
+            ->assertSee('/admin/settings?tab=mail', false)
+            ->assertSee('/admin/settings?tab=sso', false);
+    }
+
+    public function test_each_tab_shows_only_its_own_panel_and_notes(): void
+    {
+        $this->actingAs($this->user)->get('/admin/settings?tab=mail')->assertOk()
+            ->assertSee('name="mailer"', false)
+            ->assertSee('MAIL_*')
+            ->assertDontSee('name="timezone"', false)
+            ->assertDontSee('name="issuer"', false)
+            ->assertDontSee('What still applies');
+
+        $this->actingAs($this->user)->get('/admin/settings?tab=sso')->assertOk()
+            ->assertSee('name="issuer"', false)
+            ->assertSee('What still applies')
+            ->assertSee('Redirect URI to register')
+            ->assertDontSee('name="mailer"', false)
+            ->assertDontSee('name="timezone"', false);
+    }
+
+    public function test_an_unknown_tab_falls_back_to_general(): void
+    {
+        $this->actingAs($this->user)->get('/admin/settings?tab=nope')->assertOk()
+            ->assertSee('name="timezone"', false)
+            ->assertDontSee('name="mailer"', false);
+    }
+
+    public function test_the_tab_headers_say_their_state(): void
+    {
+        Setting::put('app.timezone', 'Europe/Amsterdam');
+        config(['mail.default' => 'log']);
+
+        $this->actingAs($this->user)->get('/admin/settings')->assertOk()
+            ->assertSee('<span class="tabhint">Europe/Amsterdam</span>', false)
+            ->assertSee('<span class="tabhint">log</span>', false)
+            ->assertSee('<span class="tabhint">Off</span>', false);
+
+        config(['mail.default' => 'smtp', 'mail.mailers.smtp.host' => 'smtp.example.net']);
+        Setting::put('sso.enabled', '1');
+        Setting::put('sso.issuer', 'https://id.example.net');
+        Setting::put('sso.client_id', 'pharos');
+        Setting::put('sso.client_secret', \Illuminate\Support\Facades\Crypt::encryptString('shhh'));
+
+        $this->actingAs($this->user)->get('/admin/settings')->assertOk()
+            ->assertSee('<span class="tabhint">smtp via smtp.example.net</span>', false)
+            ->assertSee('<span class="tabhint">On</span>', false);
+    }
+
+    public function test_a_failed_save_lands_on_the_tab_it_came_from(): void
+    {
+        $bad = ['mailer' => 'smtp', 'host' => '', 'port' => '', '_tab' => 'mail'];
+
+        // The query names the tab, so the redirect back keeps it.
+        $this->actingAs($this->user)->from('/admin/settings?tab=mail')
+            ->put('/admin/settings/mail', $bad)
+            ->assertRedirect('/admin/settings?tab=mail')
+            ->assertSessionHasErrors('host');
+
+        // An old #mail link has no query to keep; the form's own _tab picks the tab instead.
+        $this->actingAs($this->user)->from('/admin/settings')
+            ->put('/admin/settings/mail', $bad)
+            ->assertRedirect('/admin/settings');
+        $this->get('/admin/settings')->assertOk()
+            ->assertSee('name="mailer"', false)
+            ->assertSee('SMTP needs a host')
+            ->assertDontSee('name="timezone"', false);
+    }
+
+    public function test_old_hash_links_are_honoured(): void
+    {
+        // /admin/sso used to land on #sso; now it names the tab. The hash itself
+        // never reaches the server, so the page also switches tab for one.
+        $this->actingAs($this->user)->get('/admin/sso')
+            ->assertStatus(301)
+            ->assertRedirect('/admin/settings?tab=sso');
+
+        $this->actingAs($this->user)->get('/admin/settings')->assertOk()
+            ->assertSee('location.hash', false)
+            ->assertSee("'?tab=' + wanted", false);
+    }
 }

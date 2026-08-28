@@ -21,19 +21,42 @@ use Illuminate\Validation\Rule;
  */
 class SettingsController extends Controller
 {
-    public function edit(Sso $sso, MailConfig $mailConfig)
+    /** The tabs, in order. ?tab= picks one; anything else is General. */
+    public const TABS = ['general', 'mail', 'sso'];
+
+    public function edit(Request $request, Sso $sso, MailConfig $mailConfig)
     {
+        $mail = $mailConfig->effective();
+
         return view('admin.settings', [
+            'tab' => $this->tab($request),
+            // The word beside each tab: its state, so you know before you open it.
+            'tabs' => [
+                'general' => Clock::timezone(),
+                'mail' => $mail['mailer'].($mail['mailer'] === 'smtp' && $mail['host'] !== '' ? ' via '.$mail['host'] : ''),
+                'sso' => $sso->enabled() ? 'On' : 'Off',
+            ],
             'timezone' => Clock::timezone(),
             'offset' => Clock::offsetLabel(),
             'sso' => $sso,
             'callbackUrl' => route('admin.sso.callback'),
-            'mail' => $mailConfig->effective(),
+            'mail' => $mail,
             'mailForm' => $mailConfig->stored(),
             'mailHasPassword' => $mailConfig->hasPassword(),
             'brandName' => app(Branding::class)->name(),
             'subscriptionsOn' => Subscriptions::enabled(),
         ]);
+    }
+
+    /**
+     * Which tab to show: the query wins, then the _tab a form carried when its
+     * validation failed — a redirect back drops the query but keeps old input.
+     */
+    protected function tab(Request $request): string
+    {
+        $tab = $request->query('tab') ?? $request->old('_tab');
+
+        return in_array($tab, self::TABS, true) ? $tab : 'general';
     }
 
     /**
@@ -72,7 +95,7 @@ class SettingsController extends Controller
 
         Audit::record('mail.settings_saved', null, $changes);
 
-        return redirect()->to(route('admin.settings').'#mail')->with('status', 'Mail settings saved.');
+        return redirect()->route('admin.settings', ['tab' => 'mail'])->with('status', 'Mail settings saved.');
     }
 
     /**
@@ -87,13 +110,13 @@ class SettingsController extends Controller
         try {
             Mail::to($user->email)->send(new TestMail($user));
         } catch (\Throwable $e) {
-            return redirect()->route('admin.settings')
+            return redirect()->route('admin.settings', ['tab' => 'mail'])
                 ->withErrors(['mail' => 'Test e-mail failed: '.$e->getMessage()]);
         }
 
         Audit::record('mail.test', $user);
 
-        return redirect()->route('admin.settings')->with('status', "Test e-mail sent to {$user->email}.");
+        return redirect()->route('admin.settings', ['tab' => 'mail'])->with('status', "Test e-mail sent to {$user->email}.");
     }
 
     public function update(Request $request)

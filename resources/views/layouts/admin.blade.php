@@ -241,6 +241,13 @@ dialog.modal .panel{margin:0}
 .seg a{padding:8px 14px;font-size:12.5px;font-weight:600;color:var(--ink-3);text-decoration:none;border-right:1px solid var(--line)}
 .seg a:last-child{border-right:0}
 .seg a[aria-current="page"]{background:var(--brand-soft);color:var(--brand)}
+/* A .seg used as the page's tabs (Mail templates, Settings). The hint is the
+   tab's state in a word — "log", "On" — so you know before you open it. */
+.tabs{margin-bottom:16px;flex-wrap:wrap}
+.tabs a{display:inline-flex;align-items:center;gap:8px}
+.tabhint{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.04em;color:var(--ink-3);
+  background:var(--bg-tint);border-radius:999px;padding:1px 7px;max-width:22ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tabs a[aria-current="page"] .tabhint{background:var(--card);color:var(--brand)}
 .empty{padding:52px 24px;display:flex;flex-direction:column;align-items:center;gap:9px;color:var(--ink-3);font-size:13.5px;text-align:center}
 .empty svg{color:var(--ink-3);opacity:.5;margin-bottom:2px}
 .empty b{color:var(--ink);font-weight:600;font-size:14.5px}
@@ -348,6 +355,7 @@ pre .k{color:var(--brand)}
   </main>
 </div>
 @include('partials.confirm')
+@include('partials.daytip')
 <script>
 // "Got it" on a note: tell the server over fetch and take the box away at once.
 // Without JavaScript the form around the button posts and the page comes back without it.

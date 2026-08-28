@@ -261,7 +261,25 @@ class StatusPageTest extends TestCase
         \App\Models\Component::create(['name' => 'Website']);
 
         $this->get('/')->assertOk()
-            ->assertSee('title="'.now()->format('j M'), false)
-            ->assertSee(' · ', false);
+            ->assertSee('data-tip="'.now()->format('j M'), false)
+            ->assertDontSee('title="'.now()->format('j M'), false)
+            ->assertSee(' · ', false)
+            // One styled tip for all of them, drawn by the page rather than the browser.
+            ->assertSee('class="daytip" role="tooltip"', false);
+    }
+
+    /** Ninety tab stops would be absurd: the bar is the stop, and it speaks the summary. */
+    public function test_the_uptime_bar_is_one_tab_stop_with_a_summary(): void
+    {
+        \App\Models\Component::create(['name' => 'Website']);
+
+        $body = $this->get('/')->assertOk()
+            ->assertSee('class="bar" role="img" tabindex="0"', false)
+            ->assertSee('% uptime, no disruptions', false)
+            ->assertSee('class="bar mini" role="img" tabindex="0" aria-label="Website:', false)
+            ->getContent();
+
+        $this->assertStringNotContainsString('<span class="" tabindex', $body);
+        $this->assertStringNotContainsString('data-tip="'.now()->format('j M').' · all operational" tabindex', $body);
     }
 }

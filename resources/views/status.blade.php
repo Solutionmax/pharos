@@ -204,9 +204,12 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
                     : (in_array('w', $tones, true) ? 'w'
                     : (count(array_filter($tones, fn ($t) => $t !== 'unknown')) ? '' : 'unknown')));
             }
+            $badDays = count(array_filter($overallBar, fn ($t) => in_array($t, ['b', 'p', 'w'], true)));
           @endphp
-          <div class="bar" aria-label="Daily availability over the last {{ \App\Services\Uptime::WINDOW_DAYS }} days">
-            @foreach ($overallBar as $i => $tone)<span class="{{ $tone }}" title="{{ $overallDays[$i] ? \Carbon\Carbon::parse($overallDays[$i])->format('j M') : '' }}{{ ['b' => ' · major outage', 'p' => ' · partial outage', 'w' => ' · degraded', 'unknown' => ' · no data'][$tone] ?? ' · all operational' }}"></span>@endforeach
+          {{-- One tab stop for the whole bar with the summary spoken, not ninety for the slivers. --}}
+          <div class="bar" role="img" tabindex="0"
+               aria-label="Daily availability over the last {{ \App\Services\Uptime::WINDOW_DAYS }} days: {{ number_format($overall, 2) }}% uptime, {{ $badDays ? $badDays.' '.\Illuminate\Support\Str::plural('day', $badDays).' with a disruption' : 'no disruptions' }}">
+            @foreach ($overallBar as $i => $tone)<span class="{{ $tone }}" data-tip="{{ $overallDays[$i] ? \Carbon\Carbon::parse($overallDays[$i])->format('j M') : '' }}{{ ['b' => ' · major outage', 'p' => ' · partial outage', 'w' => ' · degraded', 'unknown' => ' · no data'][$tone] ?? ' · all operational' }}"></span>@endforeach
           </div>
           <div class="scale"><span>{{ \App\Services\Uptime::WINDOW_DAYS }} days ago</span><span>today</span></div>
         </div>
@@ -311,5 +314,6 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
     @unless ($branding->creditHidden())<a class="cr" href="https://pharos.solutionmax.net" rel="noopener">Powered by Pharos</a>@endunless
   </footer>
 </div>
+@include('partials.daytip')
 </body>
 </html>

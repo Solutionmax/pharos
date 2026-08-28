@@ -258,7 +258,7 @@ class SsoTest extends TestCase
 
     public function test_the_secret_is_never_rendered_back_into_the_form(): void
     {
-        $this->actingAs($this->user)->get('/admin/settings')->assertOk()->assertDontSee('shhh');
+        $this->actingAs($this->user)->get('/admin/settings?tab=sso')->assertOk()->assertDontSee('shhh');
     }
 
     public function test_an_empty_secret_box_leaves_the_stored_one_alone(): void
@@ -269,7 +269,7 @@ class SsoTest extends TestCase
             'client_id' => 'pharos',
             'client_secret' => '',
             'enabled' => '1',
-        ])->assertRedirect('/admin/settings#sso');
+        ])->assertRedirect('/admin/settings?tab=sso');
 
         $this->assertSame('shhh', Setting::get('sso.client_secret'));
     }

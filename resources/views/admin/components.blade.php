@@ -64,8 +64,9 @@
             @endif
           </td>
           <td>
-            <span class="strip">
-              @foreach ($strips[$component->id] as $d)<span class="{{ $d['tone'] === 'ok' ? '' : $d['tone'] }}" title="{{ \Carbon\Carbon::parse($d['day'])->format('j M') }}{{ $d['known'] ? ' · '.number_format($d['pct'], 2).'%' : ' · no data' }}"></span>@endforeach
+            @php $badDays = collect($strips[$component->id])->whereIn('tone', ['b', 'p', 'w'])->count(); @endphp
+            <span class="strip" role="img" tabindex="0" aria-label="{{ $component->name }}, last 30 days: {{ $badDays ? $badDays.' '.\Illuminate\Support\Str::plural('day', $badDays).' with a disruption' : 'no disruptions' }}">
+              @foreach ($strips[$component->id] as $d)<span class="{{ $d['tone'] === 'ok' ? '' : $d['tone'] }}" data-tip="{{ \Carbon\Carbon::parse($d['day'])->format('j M') }}{{ $d['known'] ? ' · '.number_format($d['pct'], 2).'%' : ' · no data' }}"></span>@endforeach
             </span>
           </td>
           <td class="num">{{ number_format($uptime[$component->id], 2) }}%</td>
