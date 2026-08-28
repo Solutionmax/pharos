@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditEntry;
 use App\Models\User;
 use App\Services\SelfUpdater;
 use App\Services\Updater;
@@ -558,5 +559,154 @@ class UpdateTest extends TestCase
 
         $this->actingAs($this->user)->get('/admin/updates')->assertOk()
             ->assertSee('SQLite database is copied into the backup');
+    }
+
+    // ---------- backup management ----------
+
+    /** A tiny stand-in for base_path(): backing up the whole repo per test is far too slow. */
+    protected function fakeSourceTree(): string
+    {
+        $src = storage_path('app/testing/src-'.Str::random(6));
+        foreach (['artisan', 'vendor/x.php', '.env'] as $f) {
+            File::ensureDirectoryExists(dirname($src.'/'.$f));
+            File::put($src.'/'.$f, 'x');
+        }
+        config(['pharos.update.backup_source' => $src]);
+
+        return $src;
+    }
+
+    protected function fakeBackup(string $name = '1.0.0-20260801-030000'): string
+    {
+        $dir = storage_path('app/testing/backups');
+        config(['pharos.update.backups_dir' => $dir]);
+        File::ensureDirectoryExists("{$dir}/{$name}/vendor");
+        File::put("{$dir}/{$name}/artisan", 'x');
+        File::put("{$dir}/{$name}/vendor/x.php", str_repeat('x', 1024));
+
+        return "{$dir}/{$name}";
+    }
+
+    public function test_an_admin_can_make_a_backup_from_the_screen(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::response('', 404)]);
+        $this->fakeSourceTree();
+        config(['pharos.update.backups_dir' => storage_path('app/testing/backups')]);
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()->assertSee('Back up now');
+
+        $response = $this->actingAs($this->user)->post('/admin/updates/backup')
+            ->assertRedirect('/admin/updates');
+
+        $backups = app(SelfUpdater::class)->backups();
+        $this->assertCount(1, $backups);
+        $this->assertSame('1.0.0', $backups[0]['version']);
+        $this->assertFileExists(storage_path("app/testing/backups/{$backups[0]['name']}/vendor/x.php"));
+        $this->assertFileDoesNotExist(storage_path("app/testing/backups/{$backups[0]['name']}/.env"));
+
+        $response->assertSessionHas('status', fn ($status) => str_starts_with($status, "Backup made: {$backups[0]['name']} ("));
+
+        $entry = AuditEntry::where('action', 'backup.created')->firstOrFail();
+        $this->assertSame($backups[0]['name'], $entry->changes['name']);
+    }
+
+    public function test_a_failed_backup_is_reported_not_swallowed(): void
+    {
+        $this->fakeSourceTree();
+        // A file where the backups folder should be: nothing can be created underneath it.
+        $blocked = storage_path('app/testing/not-a-dir');
+        File::ensureDirectoryExists(dirname($blocked));
+        File::put($blocked, 'x');
+        config(['pharos.update.backups_dir' => $blocked]);
+
+        $this->actingAs($this->user)->from('/admin/updates')->post('/admin/updates/backup')
+            ->assertRedirect('/admin/updates')
+            ->assertSessionHasErrors('backup');
+        $this->assertSame(0, AuditEntry::where('action', 'backup.created')->count());
+    }
+
+    public function test_a_backup_can_be_downloaded_as_a_zip(): void
+    {
+        $name = '1.0.0-20260801-030000';
+        $this->fakeBackup($name);
+
+        $response = $this->actingAs($this->user)->get("/admin/updates/backup/{$name}")->assertOk();
+        $this->assertStringContainsString("{$name}.zip", $response->headers->get('content-disposition'));
+
+        $file = storage_path('app/testing/downloaded.zip');
+        // BinaryFileResponse streams: ob_start() catches what sendContent() writes.
+        ob_start();
+        $response->sendContent();
+        File::put($file, ob_get_clean());
+
+        $zip = new \ZipArchive;
+        $this->assertTrue($zip->open($file));
+        $this->assertNotFalse($zip->locateName("{$name}/artisan"));
+        $this->assertNotFalse($zip->locateName("{$name}/vendor/x.php"));
+        $zip->close();
+
+        // The temporary archive does not linger in storage/app.
+        $this->assertSame([], File::glob(storage_path('app/update-dl-*.zip')));
+        $this->assertSame(1, AuditEntry::where('action', 'backup.downloaded')->count());
+    }
+
+    public function test_a_backup_can_be_removed(): void
+    {
+        $name = '1.0.0-20260801-030000';
+        $path = $this->fakeBackup($name);
+
+        $this->actingAs($this->user)->from('/admin/updates')->delete("/admin/updates/backup/{$name}")
+            ->assertRedirect('/admin/updates')
+            ->assertSessionHas('status', "Backup {$name} removed.");
+
+        $this->assertDirectoryDoesNotExist($path);
+        $entry = AuditEntry::where('action', 'backup.deleted')->firstOrFail();
+        $this->assertSame($name, $entry->changes['name']);
+    }
+
+    public function test_the_backup_row_offers_download_and_a_guarded_delete(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::response('', 404)]);
+        $name = '1.0.0-20260801-030000';
+        $this->fakeBackup($name);
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+            ->assertSee("/admin/updates/backup/{$name}")
+            ->assertSee("Remove backup {$name}?")
+            ->assertSee('data-confirm-action="Remove backup"', false)
+            ->assertDontSee('data-confirm-safe', false)
+            ->assertSee('Download');
+    }
+
+    public function test_backup_names_are_never_paths(): void
+    {
+        $name = '1.0.0-20260801-030000';
+        $path = $this->fakeBackup($name);
+        // Something a traversal would reach if the name were used as-is.
+        File::put(storage_path('app/testing/outside.txt'), 'x');
+
+        foreach (['../outside.txt', '%2e%2e/outside.txt', '/etc/passwd', '..%2Foutside.txt', '9.9.9-20260101-000000'] as $bad) {
+            $this->actingAs($this->user)->get("/admin/updates/backup/{$bad}")->assertNotFound();
+            $this->actingAs($this->user)->delete("/admin/updates/backup/{$bad}")->assertNotFound();
+        }
+
+        $this->assertFileExists(storage_path('app/testing/outside.txt'));
+        $this->assertDirectoryExists($path);
+        $this->assertSame(0, AuditEntry::whereIn('action', ['backup.downloaded', 'backup.deleted'])->count());
+    }
+
+    public function test_backup_management_is_admin_only(): void
+    {
+        $name = '1.0.0-20260801-030000';
+        $path = $this->fakeBackup($name);
+        $this->fakeSourceTree();
+        $member = User::create(['name' => 'Tom', 'email' => 'tom@example.com', 'password' => Hash::make('correct-horse-battery')]);
+
+        $this->actingAs($member)->post('/admin/updates/backup')->assertForbidden();
+        $this->actingAs($member)->get("/admin/updates/backup/{$name}")->assertForbidden();
+        $this->actingAs($member)->delete("/admin/updates/backup/{$name}")->assertForbidden();
+
+        $this->assertDirectoryExists($path);
+        $this->assertCount(1, app(SelfUpdater::class)->backups());
     }
 }

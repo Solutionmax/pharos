@@ -122,17 +122,35 @@ php artisan pharos:update</pre>
 </div>
 
 <div class="panel">
-  <div class="panel-hd"><h3>Backups kept</h3><span class="hint mono">storage/app/backups</span></div>
+  <div class="panel-hd">
+    <h3>Backups kept</h3><span class="hint mono">storage/app/backups</span>
+    <form method="POST" action="{{ route('admin.updates.backup') }}">
+      @csrf
+      <button class="btn" type="submit">Back up now</button>
+    </form>
+  </div>
   @if ($backups)
     <div class="scroll">
       <table>
-        <thead><tr><th>Version</th><th>Taken</th><th>Size</th></tr></thead>
+        <thead><tr><th>Version</th><th>Taken</th><th>Size</th><th></th></tr></thead>
         <tbody>
           @foreach ($backups as $backup)
             <tr>
               <td><b>{{ $backup['version'] }}</b> <span class="sub mono">{{ $backup['name'] }}</span></td>
               <td>{{ $backup['created_at']->format('j M Y H:i') }} <span class="sub">{{ $backup['created_at']->diffForHumans() }}</span></td>
               <td class="num">{{ Number::fileSize($backup['size'], precision: 1) }}</td>
+              <td>
+                <span class="rowacts">
+                  <a href="{{ route('admin.updates.backup.download', $backup['name']) }}">Download</a>
+                  <form method="POST" action="{{ route('admin.updates.backup.destroy', $backup['name']) }}"
+                        data-confirm-title="Remove backup {{ $backup['name'] }}?"
+                        data-confirm="This is the copy of {{ $backup['version'] }} taken on {{ $backup['created_at']->format('j M Y H:i') }}. Once removed, there is nothing to put back."
+                        data-confirm-action="Remove backup">
+                    @csrf @method('DELETE')
+                    <button type="submit">Delete</button>
+                  </form>
+                </span>
+              </td>
             </tr>
           @endforeach
         </tbody>
@@ -141,7 +159,7 @@ php artisan pharos:update</pre>
   @endif
   <div class="panel-bd">
     @if (! $backups)
-      <p class="note">No backups yet — the first update creates one.</p>
+      <p class="note">No backups yet — the first update creates one, or press <b>Back up now</b>.</p>
     @endif
     <p class="note">
       @if ($sqlite)The SQLite database is copied into the backup, so putting a folder back puts the data of that moment back too. @else Your database is not in these backups — dump it before an update; the update runs migrations. @endif

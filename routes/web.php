@@ -19,6 +19,7 @@ use App\Http\Controllers\StatusPageController;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\NoStore;
 use App\Models\Incident;
+use App\Services\SelfUpdater;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StatusPageController::class, 'show'])->name('status');
@@ -105,6 +106,11 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
 
             Route::get('updates', [UpdateController::class, 'index'])->name('updates');
             Route::post('updates', [UpdateController::class, 'apply'])->name('updates.apply');
+            Route::post('updates/backup', [UpdateController::class, 'backup'])->name('updates.backup');
+            // The name is a folder under storage/app/backups; the pattern keeps
+            // slashes and dots out of it, and the controller checks the path again.
+            Route::get('updates/backup/{name}', [UpdateController::class, 'download'])->name('updates.backup.download')->where('name', SelfUpdater::NAME_PATTERN);
+            Route::delete('updates/backup/{name}', [UpdateController::class, 'destroy'])->name('updates.backup.destroy')->where('name', SelfUpdater::NAME_PATTERN);
 
             Route::get('settings', [SettingsController::class, 'edit'])->name('settings');
             Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
