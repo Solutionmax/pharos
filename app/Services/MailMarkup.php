@@ -6,8 +6,10 @@ namespace App\Services;
 class MailMarkup
 {
     /** Mail clients ignore stylesheets, so every tag carries its own style. */
-    public static function style(string $html, string $accent): string
+    /** $line colours the quote rule; the status page colours an incident by its state, and the mail follows. */
+    public static function style(string $html, string $accent, ?string $line = null): string
     {
+        $line ??= $accent;
         // A paragraph that is nothing but a link becomes a button — the one
         // thing Markdown has no word for.
         $html = preg_replace(
@@ -23,7 +25,7 @@ class MailMarkup
             'p' => 'margin:0 0 14px',
             'ul' => 'margin:0 0 14px;padding-left:22px',
             'ol' => 'margin:0 0 14px;padding-left:22px',
-            'blockquote' => 'margin:0 0 14px;padding:14px 16px;border-left:3px solid '.$accent.';background:#f2f6fb;border-radius:0 10px 10px 0',
+            'blockquote' => 'margin:0 0 14px;padding:14px 16px;border-left:3px solid '.$line.';background:#f2f6fb;border-radius:0 10px 10px 0',
             'a' => 'color:'.$accent,
             'code' => 'font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:#f2f6fb;padding:1px 5px;border-radius:5px',
             'hr' => 'border:0;border-top:1px solid #e8edf4;margin:18px 0',
