@@ -58,13 +58,21 @@ class StatusPageController extends Controller
         $groupFlags = is_array($groupFlags) ? $groupFlags : [];
         $hidden = array_keys(array_filter($groupFlags, fn ($on) => $on !== '1'));
 
-        return $this->render(
+        $page = $this->render(
             modules: $modules,
             theme: in_array($theme, ['system', 'light', 'dark'], true) ? $theme : 'system',
             days: max(1, min(30, (int) $request->query('days', 5))),
             chrome: false,
             hiddenGroups: array_map('strval', $hidden),
         );
+
+        // Every other page refuses to be framed (SecurityHeaders). This one is
+        // built to sit in the settings page's iframe, so it alone allows its own
+        // origin; the middleware leaves headers that are already set untouched.
+        return response($page)->withHeaders([
+            'X-Frame-Options' => 'SAMEORIGIN',
+            'Content-Security-Policy' => "frame-ancestors 'self'",
+        ]);
     }
 
     protected function render(array $modules, string $theme, int $days, bool $chrome, ?array $hiddenGroups = null)
