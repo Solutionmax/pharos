@@ -89,6 +89,14 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .strip span.unknown{background:var(--unknown)}
 @media(max-width:900px){.strip{display:none}}
 
+/* ---------- recent checks: one sliver per run, oldest left ---------- */
+.beats{display:flex;gap:3px;height:26px;align-items:stretch;max-width:100%}
+.beats .beat{flex:1;min-width:3px;border-radius:2px;background:var(--green);opacity:.85}
+.beats .beat.w{background:var(--amber)}.beats .beat.b{background:var(--red)}
+.beats .beat.unknown{background:var(--unknown);opacity:.6}
+.beats .beat:hover,.beats .beat:focus-visible{opacity:1;outline:none;transform:scaleY(1.12)}
+.beats-sum{font-size:12.5px;color:var(--ink-3);margin-top:8px}
+
 /* ---------- pieces ---------- */
 .btn{background:var(--brand);color:var(--brand-ink);font-weight:600;font-size:13.5px;padding:9px 18px;border-radius:10px;display:inline-block;text-decoration:none;border:1px solid transparent;white-space:nowrap;box-shadow:var(--shadow-sm);transition:.15s var(--ease)}
 .btn:hover{filter:brightness(1.07);transform:translateY(-1px)}
@@ -136,6 +144,11 @@ td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--ink
 .field.wide{grid-column:1/-1}
 .field label{font-size:12.5px;font-weight:600;color:var(--ink-2)}
 .field .help{font-size:12px;color:var(--ink-3)}
+/* A group heading inside a panel: quieter than the panel's own title. */
+.grouphd{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:20px 0 10px}
+.grouphd:first-child{margin-top:0}
+.inline-unit{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)}
+.inline-unit input{width:110px}
 input[type=text],input[type=email],input[type=password],input[type=url],input[type=color],input[type=number],input[type=datetime-local],input[type=file],select,textarea{
   font:inherit;font-size:14px;padding:10px 13px;border-radius:10px;border:1px solid var(--line);background:var(--bg-tint);color:var(--ink);width:100%}
 input[type=color]{height:40px;padding:3px;cursor:pointer}

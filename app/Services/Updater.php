@@ -64,7 +64,7 @@ class Updater
      */
     public function lastCheck(bool $fresh = false): array
     {
-        if (! config('pharos.update.check_enabled') || ! config('pharos.update.manifest_url')) {
+        if (! InstallSettings::updateCheckEnabled() || ! config('pharos.update.manifest_url')) {
             return ['state' => 'disabled', 'manifest' => null, 'checked_at' => null, 'error' => null];
         }
 

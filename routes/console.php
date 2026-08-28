@@ -7,9 +7,7 @@ use Illuminate\Support\Facades\Schedule;
 Schedule::command('pharos:check')->everyMinute()->withoutOverlapping();
 
 // The audit trail is append-only, so age is the only thing that bounds it.
-Schedule::call(function () {
-    \App\Models\AuditEntry::where('created_at', '<', now()->subDays((int) config('pharos.audit_days')))->delete();
-})->dailyAt('03:20')->name('prune-audit-log');
+Schedule::call(fn () => \App\Services\Audit::prune())->dailyAt('03:20')->name('prune-audit-log');
 
 // The subscriber outbox. An incident update only queues rows; this is what sends them.
 Schedule::command('pharos:notify')->everyMinute()->withoutOverlapping();

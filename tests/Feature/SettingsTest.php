@@ -7,12 +7,21 @@ use App\Models\Component;
 use App\Models\ComponentGroup;
 use App\Models\Incident;
 use App\Models\IncidentUpdate;
+use App\Enums\UserRole;
+use App\Models\AuditEntry;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\Audit;
 use App\Services\Branding;
 use App\Services\Clock;
+use App\Services\InstallSettings;
+use App\Services\SelfUpdater;
+use App\Services\Updater;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class SettingsTest extends TestCase
@@ -203,9 +212,8 @@ class SettingsTest extends TestCase
     public function test_the_display_time_zone_can_be_chosen(): void
     {
         // Settings is installation-level: the first account is an admin, so this passes the gate.
-        $this->actingAs($this->user)->put('/admin/settings', [
-            'timezone' => 'Europe/Amsterdam',
-        ])->assertRedirect('/admin/settings');
+        $this->actingAs($this->user)->put('/admin/settings', $this->general(['timezone' => 'Europe/Amsterdam']))
+            ->assertRedirect('/admin/settings');
 
         $this->assertSame('Europe/Amsterdam', Setting::get('app.timezone'));
         $this->assertSame('Europe/Amsterdam', Clock::timezone());
@@ -319,5 +327,150 @@ class SettingsTest extends TestCase
         $this->actingAs($this->user)->get('/admin/settings')->assertOk()
             ->assertSee('location.hash', false)
             ->assertSee("'?tab=' + wanted", false);
+    }
+
+    // ---------- general: time zone, retention, updates ----------
+
+    /** A full General form, as the browser sends it; override what a test is about. */
+    protected function general(array $with = []): array
+    {
+        return $with + ['timezone' => 'UTC', 'audit_days' => 180, 'keep_backups' => 3, 'update_check' => '1'];
+    }
+
+    public function test_the_general_tab_shows_its_three_groups_with_the_current_values(): void
+    {
+        Setting::put('app.timezone', 'Europe/Amsterdam');
+        Setting::put('audit.days', '90');
+        Setting::put('update.keep_backups', '5');
+        Setting::put('update.check_enabled', '0');
+        config(['pharos.update.manifest_url' => 'https://releases.example.net/latest.json']);
+
+        $this->actingAs($this->user)->get('/admin/settings')->assertOk()
+            ->assertSeeInOrder(['Time zone', 'Retention', 'Updates'])
+            ->assertSee('<option value="Europe/Amsterdam" selected', false)
+            ->assertSee('name="audit_days"', false)
+            ->assertSee('value="90"', false)
+            ->assertSee('name="keep_backups"', false)
+            ->assertSee('value="5"', false)
+            ->assertSee('Check for updates automatically')
+            ->assertSee('Once an hour, from releases.example.net')
+            ->assertDontSee('name="update_check" value="1" checked', false)
+            ->assertSee('Save settings')
+            ->assertSee('Undo my changes');
+
+        Setting::put('update.check_enabled', '1');
+        $this->actingAs($this->user)->get('/admin/settings')->assertOk()
+            ->assertSee('name="update_check" value="1" checked', false);
+    }
+
+    /** With nothing saved the form shows what .env would do, so a fresh install reads true. */
+    public function test_the_general_tab_falls_back_to_the_config_values(): void
+    {
+        config(['pharos.audit_days' => 365, 'pharos.update.keep_backups' => 7, 'pharos.update.check_enabled' => false]);
+
+        $this->actingAs($this->user)->get('/admin/settings')->assertOk()
+            ->assertSee('value="365"', false)
+            ->assertSee('value="7"', false)
+            ->assertDontSee('name="update_check" value="1" checked', false);
+
+        $this->assertSame(365, InstallSettings::auditDays());
+        $this->assertSame(7, InstallSettings::keepBackups());
+        $this->assertFalse(InstallSettings::updateCheckEnabled());
+    }
+
+    public function test_saving_the_general_tab_persists_all_three_groups_and_is_audited(): void
+    {
+        $this->actingAs($this->user)->put('/admin/settings', [
+            'timezone' => 'Europe/Amsterdam', 'audit_days' => 30, 'keep_backups' => 0,
+            // No update_check: an unticked box is absent from the request.
+        ])->assertRedirect('/admin/settings')->assertSessionHas('status', 'Settings saved.');
+
+        $this->assertSame('Europe/Amsterdam', Clock::timezone());
+        $this->assertSame(30, InstallSettings::auditDays());
+        $this->assertSame(0, InstallSettings::keepBackups());
+        $this->assertFalse(InstallSettings::updateCheckEnabled());
+
+        $entry = AuditEntry::where('action', 'settings.saved')->latest('id')->first();
+        $this->assertNotNull($entry);
+        $this->assertSame(['app.timezone', 'audit.days', 'update.keep_backups', 'update.check_enabled'], array_keys($entry->changes));
+        $this->assertSame(['from' => 180, 'to' => 30], $entry->changes['audit.days']);
+
+        // Saving the same values again changes nothing, so nothing is recorded.
+        $this->actingAs($this->user)->put('/admin/settings', ['timezone' => 'Europe/Amsterdam', 'audit_days' => 30, 'keep_backups' => 0])
+            ->assertRedirect();
+        $this->assertSame(1, AuditEntry::where('action', 'settings.saved')->count());
+    }
+
+    public function test_retention_limits_are_enforced_with_a_message(): void
+    {
+        foreach ([['audit_days' => 6], ['audit_days' => 3651], ['audit_days' => 'many'], ['keep_backups' => -1], ['keep_backups' => 51]] as $bad) {
+            $this->actingAs($this->user)->putJson('/admin/settings', $this->general($bad))
+                ->assertStatus(422)->assertJsonValidationErrors(array_key_first($bad));
+        }
+
+        $this->actingAs($this->user)->from('/admin/settings')->put('/admin/settings', $this->general(['audit_days' => 3]))
+            ->assertRedirect('/admin/settings');
+        $this->get('/admin/settings')->assertOk()->assertSee('between 7 and 3650 days');
+
+        $this->assertNull(Setting::get('audit.days'));
+        $this->assertNull(Setting::get('update.keep_backups'));
+    }
+
+    public function test_backup_pruning_honours_the_saved_setting_over_config(): void
+    {
+        config(['pharos.update.keep_backups' => 3]);
+        $dir = storage_path('app/testing/backups-'.Str::random(6));
+        config(['pharos.update.backups_dir' => $dir]);
+        foreach (['0.9.0-20260101-000000', '0.9.1-20260201-000000', '0.9.2-20260301-000000'] as $old) {
+            File::ensureDirectoryExists("$dir/$old");
+        }
+
+        Setting::put('update.keep_backups', '1');
+        $this->assertSame(['0.9.1-20260201-000000', '0.9.0-20260101-000000'], app(SelfUpdater::class)->prune());
+        $this->assertSame(['0.9.2-20260301-000000'], array_column(app(SelfUpdater::class)->backups(), 'name'));
+
+        File::deleteDirectory($dir);
+    }
+
+    public function test_audit_pruning_honours_the_saved_setting_over_config(): void
+    {
+        config(['pharos.audit_days' => 180]);
+        $old = Audit::recordAs('cron', 'component.checked');
+        $old->forceFill(['created_at' => now()->subDays(20)])->save();
+        $fresh = Audit::recordAs('cron', 'component.checked');
+
+        $this->assertSame(0, Audit::prune());
+        $this->assertDatabaseHas('audit_log', ['id' => $old->id]);
+
+        Setting::put('audit.days', '7');
+        $this->assertSame(1, Audit::prune());
+        $this->assertDatabaseMissing('audit_log', ['id' => $old->id]);
+        $this->assertDatabaseHas('audit_log', ['id' => $fresh->id]);
+    }
+
+    public function test_the_update_check_honours_the_saved_setting_over_config(): void
+    {
+        config(['pharos.update.check_enabled' => true, 'pharos.update.manifest_url' => 'https://releases.example.net/latest.json']);
+        Http::fake(['releases.example.net/*' => Http::response('', 404)]);
+
+        Setting::put('update.check_enabled', '0');
+        $this->assertSame('disabled', app(Updater::class)->lastCheck(fresh: true)['state']);
+        Http::assertNothingSent();
+
+        Setting::put('update.check_enabled', '1');
+        config(['pharos.update.check_enabled' => false]);
+        $this->assertSame('no_release', app(Updater::class)->lastCheck(fresh: true)['state']);
+    }
+
+    public function test_the_general_tab_stays_closed_to_members(): void
+    {
+        $member = User::create([
+            'name' => 'Member', 'email' => 'member@example.com',
+            'password' => Hash::make('correct-horse-battery'), 'role' => UserRole::User,
+        ]);
+
+        $this->actingAs($member)->get('/admin/settings')->assertForbidden();
+        $this->actingAs($member)->put('/admin/settings', $this->general(['audit_days' => 30]))->assertForbidden();
+        $this->assertNull(Setting::get('audit.days'));
     }
 }

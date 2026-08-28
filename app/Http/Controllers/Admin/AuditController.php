@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\InstallSettings;
 use App\Models\AuditEntry;
 use App\Services\Clock;
 use Illuminate\Http\Request;
@@ -28,7 +29,7 @@ class AuditController extends Controller
                 ->pluck('action')
                 ->map(fn ($a) => explode('.', $a)[0])
                 ->unique()->sort()->values(),
-            'retentionDays' => (int) config('pharos.audit_days'),
+            'retentionDays' => InstallSettings::auditDays(),
         ]);
     }
 

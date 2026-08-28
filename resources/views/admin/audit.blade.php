@@ -86,8 +86,8 @@
 
 <x-note id="audit.record">
   <p><b>This page is the record, not a backup.</b> Nothing here is edited or deleted from the
-  interface. Lines are pruned once they pass {{ $retentionDays }} days — set
-  <span class="mono">PHAROS_AUDIT_DAYS</span> to keep them longer.</p>
+  interface. Lines are pruned once they pass {{ $retentionDays }} days — change that under
+  <a href="{{ route('admin.settings') }}">Settings → General</a>.</p>
 
   <p>Anyone who can sign in can read it, so treat it as what it is: a list of your components,
   your integrations, and your colleagues' addresses.</p>

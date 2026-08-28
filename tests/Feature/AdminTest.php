@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Enums\ComponentStatus;
 use App\Enums\IncidentStatus;
+use App\Enums\CheckType;
 use App\Models\Check;
+use App\Models\CheckResult;
 use App\Models\Component;
 use App\Models\ComponentGroup;
 use App\Models\Incident;
@@ -13,6 +15,7 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AdminTest extends TestCase
@@ -473,5 +476,98 @@ class AdminTest extends TestCase
     {
         $this->actingAs($this->user)->put('/admin/branding', ['name' => 'x', 'accent' => 'red'])
             ->assertSessionHasErrors('accent');
+    }
+
+    // ---------- recent checks ----------
+
+    protected function checkedComponent(string $source = 'check'): Component
+    {
+        $component = Component::create(['name' => 'web-01', 'source' => $source]);
+
+        if ($source !== 'manual') {
+            Check::create(['component_id' => $component->id, 'type' => CheckType::Http, 'target' => 'https://example.net/']);
+        }
+
+        return $component;
+    }
+
+    /** @return list<string> the data-tip of every sliver that has one, in page order */
+    protected function beatTips(string $html): array
+    {
+        preg_match_all('/<span class="beat[^"]*" data-tip="([^"]*)"/', $html, $m);
+
+        return $m[1];
+    }
+
+    public function test_the_component_screen_shows_the_last_forty_runs_newest_last(): void
+    {
+        $component = $this->checkedComponent();
+        $base = now()->startOfMinute()->subMinutes(60);
+        $error = 'Connection refused by the far end after a very long and detailed explanation';
+
+        // 45 runs a minute apart: the five oldest (777 ms) must fall off the strip.
+        for ($i = 0; $i < 45; $i++) {
+            $failed = in_array($i, [10, 20, 30], true);
+            CheckResult::create([
+                'component_id' => $component->id,
+                'ok' => ! $failed,
+                'latency_ms' => $i < 5 ? 777 : ($i === 40 ? 5000 : ($failed ? null : 90)),
+                'message' => $failed ? $error : null,
+                'checked_at' => $base->copy()->addMinutes($i),
+            ]);
+        }
+
+        $html = $this->actingAs($this->user)->get("/admin/components/{$component->id}/edit")
+            ->assertOk()
+            ->assertSee('Recent checks')
+            ->assertDontSee('777 ms')
+            ->assertDontSee('No runs yet')
+            ->getContent();
+
+        $tips = $this->beatTips($html);
+        $this->assertCount(40, $tips);
+        $this->assertSame($base->copy()->addMinutes(5)->format('H:i:s').' · 90 ms', $tips[0]);
+        $this->assertSame($base->copy()->addMinutes(44)->format('H:i:s').' · 90 ms', $tips[39]);
+
+        // A failed run is red and names its error, cut short; the slow one is amber.
+        $failedTip = $base->copy()->addMinutes(10)->format('H:i:s').' · failed · '.Str::limit($error, 60);
+        $this->assertStringContainsString('<span class="beat b" data-tip="'.$failedTip.'"', $html);
+        $this->assertStringContainsString('<span class="beat w" data-tip="'.$base->copy()->addMinutes(40)->format('H:i:s').' · 5,000 ms"', $html);
+        $this->assertStringNotContainsString('class="beat unknown"', $html);
+
+        $this->assertStringContainsString('Last run 16 minutes ago · 3 failed · median 90 ms', $html);
+    }
+
+    public function test_a_short_history_is_padded_with_placeholders(): void
+    {
+        $component = $this->checkedComponent();
+        foreach ([3, 2, 1] as $ago) {
+            CheckResult::create(['component_id' => $component->id, 'ok' => true, 'latency_ms' => 88, 'checked_at' => now()->subMinutes($ago)]);
+        }
+
+        $html = $this->actingAs($this->user)->get("/admin/components/{$component->id}/edit")->assertOk()->getContent();
+
+        $this->assertCount(3, $this->beatTips($html));
+        $this->assertSame(37, substr_count($html, 'class="beat unknown"'));
+        $this->assertStringContainsString('Last run 1 minute ago · 3/3 ok · median 88 ms', $html);
+    }
+
+    public function test_a_check_that_has_never_run_says_so(): void
+    {
+        $component = $this->checkedComponent();
+
+        $this->actingAs($this->user)->get("/admin/components/{$component->id}/edit")->assertOk()
+            ->assertSee('Recent checks')
+            ->assertSee('No runs yet — the first one lands within a minute once the cron line is in place.');
+    }
+
+    public function test_a_manual_component_has_no_recent_checks_panel(): void
+    {
+        $component = $this->checkedComponent('manual');
+        CheckResult::create(['component_id' => $component->id, 'ok' => true, 'latency_ms' => 88, 'checked_at' => now()]);
+
+        $this->actingAs($this->user)->get("/admin/components/{$component->id}/edit")->assertOk()
+            ->assertDontSee('Recent checks')
+            ->assertDontSee('class="beat', false);
     }
 }

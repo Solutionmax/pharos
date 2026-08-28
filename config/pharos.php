@@ -24,6 +24,7 @@ return [
     'update' => [
         // Where the signed manifest lives. Empty switches update checking off.
         'manifest_url' => env('PHAROS_UPDATE_URL', 'https://pharos.solutionmax.net/releases/latest.json'),
+        // Settings → General overrides this and the two below once saved (InstallSettings).
         'check_enabled' => env('PHAROS_UPDATE_CHECK', true),
         // Written by a host-side updater on a Docker install; absent on shared
         // hosting, which is how the app knows which world it is in.

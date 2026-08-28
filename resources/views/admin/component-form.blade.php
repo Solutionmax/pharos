@@ -162,6 +162,24 @@
   </div>
 </form>
 
+@if ($component->exists && ($recent ?? null) !== null)
+  {{-- Under the check settings, outside the form: nothing here is posted. --}}
+  <div class="panel" id="recent-checks">
+    <div class="panel-hd"><h3>Recent checks</h3><span class="hint">Last {{ $recent['limit'] }} runs, oldest left</span></div>
+    <div class="panel-bd">
+      @if ($recent['count'] === 0)
+        <span class="help">No runs yet — the first one lands within a minute once the cron line is in place.</span>
+      @else
+        <span class="beats" role="img" aria-label="{{ $component->name }}, last {{ $recent['count'] }} runs: {{ $recent['failed'] ? $recent['failed'].' failed' : 'all ok' }}">
+          @foreach ($recent['beats'] as $beat)<span class="beat{{ $beat['tone'] !== 'ok' ? ' '.$beat['tone'] : '' }}" data-tip="{{ $beat['tip'] }}" tabindex="0"></span>@endforeach
+          @for ($i = $recent['count']; $i < $recent['limit']; $i++)<span class="beat unknown" aria-hidden="true"></span>@endfor
+        </span>
+        <div class="beats-sum">{{ $recent['summary'] }}</div>
+      @endif
+    </div>
+  </div>
+@endif
+
 {{-- Outside the component form on purpose: a <form> inside a <form> is invalid
      HTML, and the browser drops one of them. --}}
 <dialog class="modal" id="service-dialog" aria-labelledby="service-dialog-title">
