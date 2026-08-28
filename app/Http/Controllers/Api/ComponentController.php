@@ -12,7 +12,12 @@ class ComponentController extends Controller
     /** Cachet 2.x response envelope, so existing clients can read us unchanged. */
     public function index()
     {
-        $components = Component::with('group')->orderBy('position')->get();
+        // The feed shows exactly what the public page shows: no disabled
+        // components, nothing from a service the operator switched off.
+        $components = Component::with('group')->where('enabled', true)
+            ->where(fn ($q) => $q->whereNull('component_group_id')
+                ->orWhereHas('group', fn ($g) => $g->where('visible', true)))
+            ->orderBy('position')->get();
 
         return response()->json([
             'meta' => ['pagination' => [
@@ -28,6 +33,8 @@ class ComponentController extends Controller
 
     public function show(Component $component)
     {
+        abort_unless($component->enabled && ($component->group === null || $component->group->visible), 404);
+
         return response()->json(['data' => $this->present($component)]);
     }
 
