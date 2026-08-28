@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\Audit;
 use App\Services\SelfUpdater;
 use App\Services\Updater;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Number;
 
 class UpdateController extends Controller
 {
@@ -65,5 +68,42 @@ class UpdateController extends Controller
         return $result['ok']
             ? redirect()->route('admin.updates')->with('status', $result['message'])
             : back()->withErrors(['update' => $result['message']]);
+    }
+
+    /** A backup on demand: before a manual change, or just because it has been a while. */
+    public function backup()
+    {
+        try {
+            $backup = $this->selfUpdater->backupCurrent();
+        } catch (\Throwable $e) {
+            return back()->withErrors(['backup' => 'Backup failed: '.$e->getMessage()]);
+        }
+
+        $name = basename($backup);
+        $size = Number::fileSize($this->selfUpdater->treeSize($backup), precision: 1);
+        Audit::record('backup.created', null, ['name' => $name, 'size' => $size]);
+
+        return redirect()->route('admin.updates')->with('status', "Backup made: {$name} ({$size})");
+    }
+
+    public function download(string $name)
+    {
+        abort_unless($this->selfUpdater->backupPath($name), 404);
+
+        $zip = $this->selfUpdater->zipBackup($name);
+        Audit::record('backup.downloaded', null, ['name' => $name]);
+
+        return response()->download($zip, "{$name}.zip")->deleteFileAfterSend(true);
+    }
+
+    public function destroy(string $name)
+    {
+        $path = $this->selfUpdater->backupPath($name);
+        abort_unless($path, 404);
+
+        File::deleteDirectory($path);
+        Audit::record('backup.deleted', null, ['name' => $name]);
+
+        return redirect()->route('admin.updates')->with('status', "Backup {$name} removed.");
     }
 }

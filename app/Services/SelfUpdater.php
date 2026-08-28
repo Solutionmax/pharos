@@ -34,6 +34,64 @@ class SelfUpdater
         return rtrim((string) config('pharos.update.backups_dir'), '/');
     }
 
+    /** Backup folders are named "<version>-<Ymd-His>" and nothing else. */
+    public const NAME_PATTERN = '[A-Za-z0-9._-]+-\d{8}-\d{6}';
+
+    /**
+     * The folder for a backup name that came in over HTTP, or null. The name is
+     * checked against the pattern *and* the resolved path is checked to sit
+     * inside the backups folder: the second guard holds even if the first is
+     * ever loosened.
+     */
+    public function backupPath(string $name): ?string
+    {
+        if (! preg_match('/^'.self::NAME_PATTERN.'$/', $name)) {
+            return null;
+        }
+
+        $dir = realpath($this->backupsDir());
+        $path = realpath($this->backupsDir().'/'.$name);
+
+        if ($dir === false || $path === false || ! is_dir($path) || ! str_starts_with($path, $dir.DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return $path;
+    }
+
+    /**
+     * One backup as a zip in storage/app, for the operator to take off the
+     * server. The caller deletes it once sent. Everything under the folder goes
+     * in as "<name>/…": the backup was already filtered when it was taken.
+     */
+    public function zipBackup(string $name): string
+    {
+        $path = $this->backupPath($name);
+
+        if ($path === null) {
+            throw new \RuntimeException("No backup named {$name}.");
+        }
+
+        $archive = storage_path('app/update-dl-'.Str::random(8).'.zip');
+        $zip = new \ZipArchive;
+
+        if ($zip->open($archive, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            throw new \RuntimeException('Could not create the archive.');
+        }
+
+        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS));
+
+        foreach ($files as $file) {
+            if ($file->isFile() && ! $file->isLink()) {
+                $zip->addFile($file->getPathname(), $name.'/'.Str::after($file->getPathname(), $path.DIRECTORY_SEPARATOR));
+            }
+        }
+
+        $zip->close();
+
+        return $archive;
+    }
+
     /**
      * The previous versions still on disk, newest first. Nothing prunes them:
      * the operator decides when the new version has run long enough.
@@ -75,7 +133,7 @@ class SelfUpdater
         $backup = $this->backupsDir().'/'.$this->updater->current().'-'.now()->format('Ymd-His');
         File::ensureDirectoryExists($backup);
 
-        $this->copyTree($from ?? base_path(), $backup, skip: ['.env', 'storage', 'public/storage', 'node_modules', 'database/database.sqlite']);
+        $this->copyTree($from ?? config('pharos.update.backup_source') ?? base_path(), $backup, skip: ['.env', 'storage', 'public/storage', 'node_modules', 'database/database.sqlite']);
         $this->backupDatabase($backup, $database);
 
         return $backup;
@@ -107,7 +165,7 @@ class SelfUpdater
     }
 
     /** du-style: the sum of every file underneath, symlinks not followed. */
-    protected function treeSize(string $path): int
+    public function treeSize(string $path): int
     {
         $total = 0;
         $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS));

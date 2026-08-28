@@ -31,6 +31,9 @@ return [
         'trigger_file' => storage_path('app/ota/update.trigger'),
         // Where a self-update parks the version it replaces. Never pruned by the app.
         'backups_dir' => storage_path('app/backups'),
+        // What "Back up now" copies. Null means the application itself; only the
+        // test suite points it at a small stand-in tree.
+        'backup_source' => null,
     ],
 
     // How long the audit trail keeps a line. Long enough to answer "who
