@@ -160,7 +160,7 @@ their own after 7 days.
 
 ## Limits
 
-- Mail goes through whatever Settings → Mail (or `MAIL_*`) points at; on shared hosting that usually
+- Mail goes through whatever Settings → Mail (or `MAIL_*`) points at; on a cPanel, DirectAdmin or Plesk account that usually
   means the host's SMTP and its hourly cap. The batch size of 50 per minute is
   deliberately below most of them.
 - The mail text is fixed in this release. Editable templates are the next phase.

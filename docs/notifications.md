@@ -151,7 +151,7 @@ resolved. Resolved messages carry a green check instead of the red light, so a
 channel reads as a timeline rather than a pile of alarms.
 
 ⚠️ **One attempt, no retry, five second limit.** A slow receiver must never hold
-up publishing an outage, and Pharos has to survive on shared hosting with a
+up publishing an outage, and Pharos has to survive on a plain PHP host with a
 single cron line — there is no queue to retry from. A failed delivery is
 recorded on the endpoint and visible in the admin, but nobody was told. Where
 that genuinely matters, point Pharos at something that retries for you, such as
