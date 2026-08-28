@@ -44,6 +44,10 @@ class CheckRunner
         $now ??= now();
         $result = $this->probe->run($check);
 
+        // Read before this run's own result is written: it is the reference for how
+        // much wall time this evaluation stands for.
+        $previousRun = CheckResult::where('component_id', $check->component_id)->max('checked_at');
+
         CheckResult::create([
             'component_id' => $check->component_id,
             'ok' => $result->ok,
@@ -65,28 +69,42 @@ class CheckRunner
         }
         $check->save();
 
-        $this->recordUptime($check, $result, $now);
+        $this->recordUptime($check, $result, $now, $previousRun);
         $this->applyStatus($check, $result, $now);
 
         return $result;
     }
 
-    protected function recordUptime(Check $check, ProbeResult $result, \DateTimeInterface $now): void
+    protected function recordUptime(Check $check, ProbeResult $result, \DateTimeInterface $now, ?string $previousRun): void
     {
+        $now = \Illuminate\Support\Carbon::instance(
+            $now instanceof \DateTimeImmutable ? \DateTime::createFromImmutable($now) : $now
+        );
+        $dayStart = $now->copy()->startOfDay();
+
         $day = UptimeDay::firstOrCreate(
             [
                 'component_id' => $check->component_id,
                 // Carbon, not a string: the date cast stores "Y-m-d 00:00:00",
                 // so a bare "Y-m-d" never matches the row that is already there.
-                'day' => \Illuminate\Support\Carbon::instance(
-                    $now instanceof \DateTimeImmutable ? \DateTime::createFromImmutable($now) : $now
-                )->startOfDay(),
+                'day' => $dayStart,
             ],
             ['up_seconds' => 0, 'down_seconds' => 0, 'worst_status' => ComponentStatus::Operational->value],
         );
 
+        // Credit the wall time since the previous evaluation, not the configured
+        // interval: a due heartbeat is re-evaluated on every scheduler tick, and
+        // 86400 s per tick gave one day 101,952,000 "up" seconds. Capped at one
+        // interval so a stalled scheduler cannot back-fill hours it did not observe,
+        // and at midnight so the seconds land in the row they belong to.
+        $since = $previousRun
+            ? \Illuminate\Support\Carbon::parse($previousRun)
+            : $now->copy()->subSeconds($check->interval_seconds);
+        $since = $since->max($dayStart);
+        $seconds = (int) min(max(0, $since->diffInSeconds($now)), $check->interval_seconds);
+
         $column = $result->ok ? 'up_seconds' : 'down_seconds';
-        $day->increment($column, $check->interval_seconds);
+        $day->increment($column, $seconds);
 
         if (! $result->ok) {
             $day->worst_status = ComponentStatus::MajorOutage;
