@@ -232,7 +232,7 @@ dialog.modal .panel{margin:0}
 .empty .btn{margin-top:8px}
 .actions{display:flex;gap:9px;flex-wrap:wrap}
 .rowacts{display:flex;gap:7px;justify-content:flex-end}
-.rowacts a,.rowacts button{font-size:12.5px;font-weight:600;color:var(--ink-2);border:1px solid var(--line);border-radius:8px;padding:5px 11px;text-decoration:none;transition:.13s var(--ease)}
+.rowacts a,.rowacts button{font-size:12.5px;font-weight:600;color:var(--ink-2);border:1px solid var(--line);border-radius:8px;padding:5px 11px;text-decoration:none;transition:.13s var(--ease);white-space:nowrap}
 .rowacts a:hover{background:var(--bg-tint);color:var(--ink)}
 .rowacts button:hover{color:var(--red-ink);border-color:var(--red)}
 .copy{display:flex;gap:8px;align-items:center}

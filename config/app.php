@@ -65,7 +65,8 @@ return [
     |
     */
 
-    // Times on the status page and in the admin are shown in this zone. Data is stored in UTC regardless.
+    // Times are shown and stored in this zone. Pick it before the first incident: changing
+    // it later makes every existing timestamp read as if it were in the new zone.
     'timezone' => env('APP_TIMEZONE', 'UTC'),
 
     /*
