@@ -18,6 +18,9 @@ use Illuminate\Support\Str;
 class MailTemplates
 {
     /** Same rules as IncidentUpdate::messageHtml(): tags are shown, never run. */
+    /** The status page's incident colours (partials/tokens), so a mail reads like the page it points to. */
+    public const TONES = ['ok' => '#12b76a', 'w' => '#f79009', 'p' => '#e86b1c', 'b' => '#f04438'];
+
     public const MARKDOWN = [
         'html_input' => 'escape',
         'allow_unsafe_links' => false,
@@ -163,6 +166,10 @@ class MailTemplates
         $vars = array_map(fn ($v) => str_replace("\r\n", "\n", (string) $v), $vars);
         $frame = self::frame($vars['unsubscribe'] ?? null);
 
+        // Not a tag: the state colour is the frame's business, never something to type.
+        $line = self::TONES[$vars['tone'] ?? ''] ?? null;
+        unset($vars['tone']);
+
         $subject = strtr($subject ?? $this->subject($key), self::pairs($vars, escape: false));
         $markdown = self::substitute(str_replace("\r\n", "\n", $body ?? $this->body($key)), $vars);
         $html = Str::markdown($markdown, self::MARKDOWN);
@@ -173,7 +180,7 @@ class MailTemplates
         return [
             // A newline in a subject is a header injection; the line is folded instead.
             'subject' => trim(preg_replace('/\s*\n\s*/', ' ', $subject)),
-            'html' => view('mail.template', $frame + ['body' => MailMarkup::style($html, $frame['accent'])])->render(),
+            'html' => view('mail.template', $frame + ['tone' => $line, 'body' => MailMarkup::style($html, $frame['accent'], $line)])->render(),
             'text' => MailMarkup::text($html).$footer,
         ];
     }
@@ -233,6 +240,7 @@ class MailTemplates
             'unsubscribe' => url('/unsubscribe/preview'),
             'when' => \App\Services\Clock::now()->format('j F Y, H:i'), // the customer's zone, like a real notice
             'name' => $name,
+            'tone' => $key === 'incident_resolved' ? 'ok' : 'p',
         ];
     }
 

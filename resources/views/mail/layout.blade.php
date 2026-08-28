@@ -11,7 +11,7 @@
 <body style="margin:0;padding:0;background:#f2f6fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0e1726">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f2f6fb;padding:28px 12px">
   <tr><td align="center">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #e8edf4;border-radius:14px">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #e8edf4;{{ ($tone ?? null) ? 'border-left:4px solid '.$tone.';' : '' }}border-radius:14px">
       <tr><td style="padding:22px 28px 6px">
         @if ($logo)
           <img src="{{ $logo }}" alt="{{ $brand }}" style="max-height:32px;max-width:200px;display:block">

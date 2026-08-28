@@ -195,4 +195,18 @@ class NotifyTest extends TestCase
         $this->assertCount(1, $events);
         $this->assertSame('* * * * *', $events->first()->expression);
     }
+
+    /** The status page colours an incident by its state; the mail about it must not say blue. */
+    public function test_the_mail_rule_follows_the_incident_state(): void
+    {
+        $render = fn (string $key, string $tone) => app(\App\Services\MailTemplates::class)->render($key, [
+            'brand' => 'B', 'incident' => 'I', 'status' => 'S', 'message' => 'm', 'components' => 'c',
+            'link' => 'https://x.test', 'unsubscribe' => 'https://x.test/u', 'when' => 'now', 'name' => 'n', 'tone' => $tone,
+        ])['html'];
+
+        $this->assertStringContainsString('border-left:3px solid #12b76a', $render('incident_resolved', 'ok'));
+        $this->assertStringContainsString('border-left:3px solid #f04438', $render('incident_updated', 'b'));
+        $this->assertStringContainsString('border-left:4px solid #e86b1c', $render('incident_opened', 'p'));
+        $this->assertStringNotContainsString('{tone}', $render('incident_opened', 'p'));
+    }
 }
