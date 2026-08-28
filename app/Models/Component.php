@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Casts\LocalTime;
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\LocalTimestamps;
 use App\Enums\ComponentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Component extends Model
 {
-    use Auditable;
+    use Auditable, LocalTimestamps;
 
     protected $guarded = [];
 
@@ -28,6 +30,8 @@ class Component extends Model
         'status' => ComponentStatus::class,
         'enabled' => 'boolean',
         'show_uptime' => 'boolean',
+        'created_at' => LocalTime::class,
+        'updated_at' => LocalTime::class,
     ];
 
     public function group(): BelongsTo

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 /**
@@ -43,6 +44,7 @@ class InstallController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(12)],
+            'timezone' => ['nullable', Rule::in(\DateTimeZone::listIdentifiers())],
         ]);
 
         $user = User::create([
@@ -52,6 +54,7 @@ class InstallController extends Controller
         ]);
 
         Setting::put('brand.name', $data['site']);
+        Setting::put('app.timezone', $data['timezone'] ?? 'UTC');
 
         $this->linkStorage();
 

@@ -80,6 +80,8 @@ class CheckRunner
         $now = \Illuminate\Support\Carbon::instance(
             $now instanceof \DateTimeImmutable ? \DateTime::createFromImmutable($now) : $now
         );
+        // UTC days on purpose: the roll-up is a storage concept, and the bar's
+        // "today" is the UTC day even when the page displays another zone.
         $dayStart = $now->copy()->startOfDay();
 
         $day = UptimeDay::firstOrCreate(

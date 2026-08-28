@@ -8,6 +8,7 @@ use App\Models\Component;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class AuditTest extends TestCase
@@ -208,5 +209,27 @@ class AuditTest extends TestCase
         $this->assertStringStartsWith("when,actor,ip,action,subject,changes\n", $csv);
         $this->assertStringContainsString('"API token: deploy",203.0.113.9,component.updated,Website,"status: Operational → Major outage"', $csv);
         $this->assertStringNotContainsString('Anita', $csv, 'the filter applies to the download too');
+    }
+
+
+    public function test_the_csv_carries_the_chosen_zone_as_an_offset(): void
+    {
+        $user = $this->admin();
+        Setting::put('app.timezone', 'Europe/Amsterdam');
+        AuditEntry::create([
+            'actor' => 'Anita (anita@example.net)',
+            'action' => 'component.updated',
+            'subject_label' => 'Website',
+            'changes' => [],
+            'ip' => '203.0.113.9',
+            'created_at' => Carbon::parse('2026-08-28 08:24:00', 'UTC'),
+        ]);
+
+        $csv = $this->actingAs($user)->get(route('admin.audit.export'))->streamedContent();
+
+        // Stored as 08:24 UTC; exported as the local wall time plus the offset,
+        // so a spreadsheet reads it right and a script can still do the maths.
+        $this->assertStringContainsString('2026-08-28T10:24:00+02:00,', $csv);
+        $this->assertDatabaseHas('audit_log', ['created_at' => '2026-08-28 08:24:00']);
     }
 }

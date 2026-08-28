@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Casts\LocalTime;
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\LocalTimestamps;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class ApiToken extends Model
 {
-    use Auditable;
+    use Auditable, LocalTimestamps;
 
     protected $auditName = 'api_token';
 
@@ -19,7 +21,11 @@ class ApiToken extends Model
 
     protected $hidden = ['token_hash'];
 
-    protected $casts = ['last_used_at' => 'datetime'];
+    protected $casts = [
+        'last_used_at' => LocalTime::class,
+        'created_at' => LocalTime::class,
+        'updated_at' => LocalTime::class,
+    ];
 
     /** Returns [model, plaintext]. The plaintext is shown once and never stored. */
     public static function issue(string $name): array

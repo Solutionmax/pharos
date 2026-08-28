@@ -10,6 +10,7 @@ use App\Models\IncidentUpdate;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Branding;
+use App\Services\Clock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -191,5 +192,40 @@ class SettingsTest extends TestCase
 
         $this->assertNull(app(Branding::class)->logoUrl());
         $this->get('/')->assertOk()->assertDontSee('brand/gone.png');
+    }
+
+
+    public function test_the_display_time_zone_can_be_chosen(): void
+    {
+        $this->actingAs($this->user)->put('/admin/settings', [
+            'theme' => 'system',
+            'incident_days' => 5,
+            'timezone' => 'Europe/Amsterdam',
+        ])->assertRedirect();
+
+        $this->assertSame('Europe/Amsterdam', Setting::get('app.timezone'));
+        $this->assertSame('Europe/Amsterdam', Clock::timezone());
+    }
+
+    public function test_an_unknown_time_zone_is_refused(): void
+    {
+        $this->actingAs($this->user)->putJson('/admin/settings', [
+            'theme' => 'system',
+            'incident_days' => 5,
+            'timezone' => 'Not/AZone',
+        ])->assertStatus(422)->assertJsonValidationErrors('timezone');
+
+        $this->assertSame('UTC', Clock::timezone());
+    }
+
+    public function test_the_settings_page_shows_the_chosen_zone_selected_with_its_offset(): void
+    {
+        Setting::put('app.timezone', 'Europe/Amsterdam');
+
+        $this->actingAs($this->user)->get('/admin/settings')->assertOk()
+            ->assertSee('<optgroup label="Europe">', false)
+            ->assertSee('<option value="Europe/Amsterdam" selected', false)
+            ->assertSee('Europe/Amsterdam — UTC'.now()->setTimezone('Europe/Amsterdam')->format('P').' now')
+            ->assertSee('Everything is stored in UTC');
     }
 }

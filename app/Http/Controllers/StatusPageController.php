@@ -9,6 +9,7 @@ use App\Models\Incident;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Branding;
+use App\Services\Clock;
 use App\Services\Uptime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -142,7 +143,8 @@ class StatusPageController extends Controller
 
         $days = [];
         for ($i = 0; $i < $span; $i++) {
-            $key = Carbon::today()->subDays($i)->format('Y-m-d');
+            // Days are the customer's days: occurred_at is read in their zone above.
+            $key = Carbon::today(Clock::timezone())->subDays($i)->format('Y-m-d');
             $day = $incidents->get($key, collect());
 
             // With empty days switched off, a quiet week collapses instead of

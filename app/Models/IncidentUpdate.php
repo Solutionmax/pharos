@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Casts\LocalTime;
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\LocalTimestamps;
 use App\Enums\IncidentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,13 +12,18 @@ use Illuminate\Support\Str;
 
 class IncidentUpdate extends Model
 {
-    use Auditable;
+    use Auditable, LocalTimestamps;
 
     protected $auditName = 'incident_update';
 
     protected $guarded = [];
 
-    protected $casts = ['status' => IncidentStatus::class, 'automatic' => 'boolean'];
+    protected $casts = [
+        'status' => IncidentStatus::class,
+        'automatic' => 'boolean',
+        'created_at' => LocalTime::class,
+        'updated_at' => LocalTime::class,
+    ];
 
     public function incident(): BelongsTo
     {

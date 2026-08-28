@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\LocalTime;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -17,7 +18,7 @@ class AuditEntry extends Model
 
     protected $guarded = [];
 
-    protected $casts = ['changes' => 'array', 'created_at' => 'datetime'];
+    protected $casts = ['changes' => 'array', 'created_at' => LocalTime::class];
 
     public function user(): BelongsTo
     {

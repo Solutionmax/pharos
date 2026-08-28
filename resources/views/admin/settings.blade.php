@@ -97,6 +97,13 @@
               <input id="incident_days" name="incident_days" type="number" min="1" max="30" value="{{ $incidentDays }}">
               <span class="help">How far back the page lists days. Older incidents stay in the archive.</span>
             </div>
+            <div class="field">
+              <label for="timezone">Time zone</label>
+              @include('partials.timezone-select', ['selected' => $timezone])
+              <span class="help"><b>{{ $timezone }} — {{ $offset }} now.</b>
+                Times on the status page, in e-mails and in the admin are shown in this zone.
+                Everything is stored in UTC, so you can change it any time.</span>
+            </div>
           </div>
           <div class="actions">
             <button class="btn" type="submit">Save settings</button>

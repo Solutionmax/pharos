@@ -97,4 +97,31 @@ class InstallTest extends TestCase
 
         $this->get('/')->assertOk()->assertSee('Acme Hosting');
     }
+
+
+    public function test_the_wizard_takes_a_time_zone_and_defaults_to_utc(): void
+    {
+        $this->get('/admin/install')->assertOk()
+            ->assertSee('<option value="UTC" selected', false)
+            ->assertSee('Europe/Amsterdam');
+
+        $this->post('/admin/install', $this->valid);
+        $this->assertSame('UTC', Setting::get('app.timezone'));
+    }
+
+    public function test_the_wizard_stores_the_chosen_time_zone(): void
+    {
+        $this->post('/admin/install', [...$this->valid, 'timezone' => 'Europe/Amsterdam'])
+            ->assertRedirect(route('admin.components'));
+
+        $this->assertSame('Europe/Amsterdam', Setting::get('app.timezone'));
+    }
+
+    public function test_the_wizard_refuses_an_unknown_time_zone(): void
+    {
+        $this->post('/admin/install', [...$this->valid, 'timezone' => 'Not/AZone'])
+            ->assertSessionHasErrors('timezone');
+
+        $this->assertSame(0, User::count());
+    }
 }
