@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditEntry;
+use App\Services\Clock;
 use Illuminate\Http\Request;
 
 class AuditController extends Controller
@@ -40,7 +41,7 @@ class AuditController extends Controller
     {
         $filter = $request->string('actor')->toString();
         $subject = $request->string('subject')->toString();
-        $name = 'pharos-audit-'.now()->format('Ymd-Hi').'.csv';
+        $name = 'pharos-audit-'.Clock::now()->format('Ymd-Hi').'.csv';
 
         return response()->streamDownload(function () use ($filter, $subject) {
             $out = fopen('php://output', 'w');

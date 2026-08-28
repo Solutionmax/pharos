@@ -142,7 +142,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
         <div class="hero-top">
           <span class="dot" style="background:var(--{{ ['ok' => 'green', 'w' => 'amber', 'p' => 'orange', 'b' => 'red', 'm' => 'blue'][$worst->tone()] }})"></span>
           <h1>{{ $worst === \App\Enums\ComponentStatus::Operational ? 'All systems operational' : $worst->label() }}</h1>
-          <span class="when">updated {{ now()->format('H:i') }}</span>
+          <span class="when">updated {{ \App\Services\Clock::now()->format('H:i') }}</span>
         </div>
       @endif
 
@@ -219,7 +219,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
     <section class="sec">
       <h2>Incidents</h2>
       @forelse ($days as $date => $incidents)
-        @php $carbon = \Illuminate\Support\Carbon::parse($date); @endphp
+        @php $carbon = \Illuminate\Support\Carbon::parse($date, \App\Services\Clock::timezone()); @endphp
         <div class="day">
           <div class="day-hd">
             <h3>{{ $carbon->isToday() ? 'Today · '.$carbon->format('j F') : $carbon->format('j F') }}</h3>

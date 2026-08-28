@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ComponentGroup;
 use App\Models\Setting;
 use App\Services\Branding;
+use App\Services\Clock;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -20,6 +21,8 @@ class SettingsController extends Controller
             'enabled' => $this->branding->modules(),
             'theme' => $this->branding->theme(),
             'incidentDays' => (int) Setting::get('page.incident_days', 5),
+            'timezone' => Clock::timezone(),
+            'offset' => Clock::offsetLabel(),
             'groups' => ComponentGroup::withCount('components')->orderBy('position')->get(),
         ]);
     }
@@ -29,12 +32,17 @@ class SettingsController extends Controller
         $data = $request->validate([
             'theme' => ['required', Rule::in(['system', 'light', 'dark'])],
             'incident_days' => ['required', 'integer', 'min:1', 'max:30'],
+            'timezone' => ['sometimes', 'required', Rule::in(\DateTimeZone::listIdentifiers())],
             'modules' => ['sometimes', 'array'],
             'groups' => ['sometimes', 'array'],
         ]);
 
         Setting::put('brand.theme', $data['theme']);
         Setting::put('page.incident_days', (string) $data['incident_days']);
+        // Absent means "leave it": only the form sends it, and it always does.
+        if (isset($data['timezone'])) {
+            Setting::put('app.timezone', $data['timezone']);
+        }
 
         // Unchecked boxes are absent from the request, so iterate over the known
         // module list rather than over what was submitted.

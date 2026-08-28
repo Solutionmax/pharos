@@ -80,7 +80,7 @@
 .setup-form .field input{background:var(--card);transition:border-color .15s var(--ease)}
 /* Border colour is the affordance; the focus ring itself stays the layout's
    :focus-visible outline, so keyboard users keep what they had. */
-.setup-form .field input:focus{border-color:var(--brand)}
+.setup-form .field input:focus,.setup-form .field select:focus{border-color:var(--brand)}
 .setup-form .field input[aria-invalid=true]{border-color:var(--red)}
 .setup-form .err{font-size:12px;color:var(--red-ink);font-weight:500}
 .setup-form .help{font-size:12px;color:var(--ink-3)}
@@ -149,6 +149,12 @@
                  required autofocus placeholder="Acme Hosting"
                  @error('site') aria-invalid="true" @enderror>
           @error('site')<span class="err">{{ $message }}</span>@enderror
+        </div>
+
+        <div class="field">
+          <label for="timezone">Time zone</label>
+          @include('partials.timezone-select', ['selected' => old('timezone', 'UTC')])
+          @error('timezone')<span class="err">{{ $message }}</span>@else<span class="help">How times are shown. Stored in UTC, so you can change it later.</span>@enderror
         </div>
 
         <div class="field">

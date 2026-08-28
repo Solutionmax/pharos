@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Casts\LocalTime;
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\LocalTimestamps;
 use App\Enums\CheckType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Check extends Model
 {
-    use Auditable;
+    use Auditable, LocalTimestamps;
 
     /** Columns the check runner and delivery code touch on their own. */
     protected $auditIgnore = ['last_run_at', 'consecutive_failures', 'consecutive_successes', 'last_status', 'last_error', 'next_run_at'];
@@ -28,7 +30,9 @@ class Check extends Model
     protected $casts = [
         'type' => CheckType::class,
         'enabled' => 'boolean',
-        'last_run_at' => 'datetime',
+        'last_run_at' => LocalTime::class,
+        'created_at' => LocalTime::class,
+        'updated_at' => LocalTime::class,
     ];
 
     public function component(): BelongsTo

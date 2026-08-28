@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\LocalTime;
 use Illuminate\Database\Eloquent\Model;
 
 class CheckResult extends Model
@@ -10,5 +11,5 @@ class CheckResult extends Model
 
     protected $guarded = [];
 
-    protected $casts = ['ok' => 'boolean', 'checked_at' => 'datetime'];
+    protected $casts = ['ok' => 'boolean', 'checked_at' => LocalTime::class];
 }

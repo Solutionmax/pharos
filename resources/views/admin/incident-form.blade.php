@@ -44,7 +44,7 @@
         </div>
         <div class="field">
           <label for="occurred_at">Occurred at</label>
-          <input id="occurred_at" name="occurred_at" type="datetime-local" value="{{ old('occurred_at', now()->format('Y-m-d\TH:i')) }}">
+          <input id="occurred_at" name="occurred_at" type="datetime-local" value="{{ old('occurred_at', \App\Services\Clock::now()->format('Y-m-d\TH:i')) }}">
           <span class="help">Backdate an incident you are logging afterwards.</span>
         </div>
       </div>

@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Casts\LocalTime;
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\LocalTimestamps;
 use Illuminate\Database\Eloquent\Model;
 
 class WebhookEndpoint extends Model
 {
-    use Auditable;
+    use Auditable, LocalTimestamps;
 
     protected $auditName = 'notification';
 
@@ -20,7 +22,9 @@ class WebhookEndpoint extends Model
     {
         return [
             'enabled' => 'boolean',
-            'last_attempt_at' => 'datetime',
+            'last_attempt_at' => LocalTime::class,
+            'created_at' => LocalTime::class,
+            'updated_at' => LocalTime::class,
         ];
     }
 

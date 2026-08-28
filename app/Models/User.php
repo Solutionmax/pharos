@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Casts\LocalTime;
 use App\Enums\UserRole;
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\LocalTimestamps;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -11,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    use Auditable;
+    use Auditable, LocalTimestamps;
 
     use HasFactory, Notifiable;
 
@@ -29,6 +31,8 @@ class User extends Authenticatable
             'role' => UserRole::class,
             'totp_secret' => 'encrypted',
             'totp_confirmed_at' => 'datetime',
+            'created_at' => LocalTime::class,
+            'updated_at' => LocalTime::class,
         ];
     }
 
