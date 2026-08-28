@@ -34,7 +34,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 /* The dot is alive: a ring in its own colour breathes out and fades. Off for reduced motion. */
 .hero-top .dot::after{content:'';position:absolute;inset:0;border-radius:50%;background:currentColor;opacity:.55;animation:pulse 2.2s ease-out infinite}
 @keyframes pulse{0%{transform:scale(1);opacity:.55}70%,100%{transform:scale(2.6);opacity:0}}
-@media (prefers-reduced-motion:reduce){.hero-top .dot::after{animation:none;opacity:0}}
+@media (prefers-reduced-motion:reduce){.hero-top .dot::after,.inc .tl-i::after{animation:none;opacity:0}}
 .hero-top h1{font-size:24px}
 .hero-top .when{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
 .uptime{padding:4px 28px 26px;display:flex;flex-direction:column;gap:12px}
@@ -101,6 +101,8 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 .tl-i{position:relative}
 .tl-i::before{content:"";position:absolute;left:-24px;top:6px;width:9px;height:9px;border-radius:50%;background:var(--card);border:2px solid var(--line)}
 .tl-i:first-child::before{background:var(--brand);border-color:var(--brand)}
+/* The newest update of an open incident is the live one: same breathing ring as the hero dot. Resolved stays still. */
+.inc:not(.ok) .tl-i:first-child::after{content:"";position:absolute;left:-24px;top:6px;width:9px;height:9px;border-radius:50%;background:var(--brand);opacity:.55;animation:pulse 2.2s ease-out infinite}
 .tl-i .hd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .tl-i strong{font-size:13px}
 .tl-i time{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
