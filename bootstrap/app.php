@@ -23,6 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: SecurityHeaders::class);
 
+        // One-click unsubscribe is a POST from a mail provider's server, with
+        // no session and no form. The signed URL is its credential.
+        $middleware->validateCsrfTokens(except: ['unsubscribe/*']);
+
         // The token check has to run before route-model binding, or a request
         // without a token gets a 404 that tells a stranger which ids exist.
         $middleware->prependToPriorityList(SubstituteBindings::class, ApiTokenAuth::class);

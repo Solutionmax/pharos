@@ -26,6 +26,19 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:-.025em}
 .top .right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .sub{font-size:13.5px;font-weight:600;color:var(--brand);background:var(--brand-soft);padding:7px 15px;border-radius:999px;text-decoration:none}
+/* The subscribe button: a <details> so the form opens without a line of JavaScript. */
+.subscribe{position:relative}
+.subscribe>summary.sub{display:inline-block;cursor:pointer}
+.subscribe>summary::-webkit-details-marker{display:none}
+.subscribe-box{position:absolute;right:0;top:calc(100% + 10px);z-index:20;width:min(340px,calc(100vw - 44px));background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-md);padding:18px 20px;display:flex;flex-direction:column;gap:10px;text-align:left}
+.subscribe-box p{font-size:13.5px;color:var(--ink-2)}
+.subscribe-box label{font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.subscribe-box input[type=email]{font:inherit;font-size:14px;padding:10px 13px;border-radius:10px;border:1px solid var(--line);background:var(--bg-tint);color:var(--ink);width:100%}
+.subscribe-box .go{background:var(--brand);color:var(--brand-ink);font-weight:600;font-size:13.5px;padding:9px 16px;border-radius:10px;align-self:flex-start}
+.subscribe-box .err{font-size:12.5px;color:var(--red-ink)}
+.subscribe-box .fine{font-size:12px;color:var(--ink-3)}
+/* The honeypot: off-screen, not display:none, so a bot that skips hidden fields still fills it. */
+.subscribe-box .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .theme-toggle{display:grid;place-items:center;width:34px;height:34px;border-radius:999px;border:1px solid var(--line);color:var(--ink-3);transition:.15s var(--ease)}
 .theme-toggle:hover{color:var(--ink);border-color:var(--ink-3)}
 .hero{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);overflow:hidden}
@@ -137,6 +150,27 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
   <header class="top">
     <span class="logo">@include('partials.logo', ['size' => 30])</span>
     <span class="right">
+      @if ($modules['page.show_subscribe'])
+        <details class="subscribe" @if (session('subscribed') || $errors->has('email')) open @endif>
+          <summary class="sub">Get notified</summary>
+          <div class="subscribe-box">
+            @if (session('subscribed'))
+              <p>{{ session('subscribed') }}</p>
+            @else
+              <form method="POST" action="{{ route('subscribe') }}">
+                @csrf
+                <p>Get an e-mail when an incident is reported, and when it is resolved.</p>
+                <label for="sub-email" style="display:block;margin-top:8px">E-mail address</label>
+                <input id="sub-email" name="email" type="email" value="{{ old('email') }}" required autocomplete="email" style="margin-top:6px">
+                <input class="hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+                @error('email')<span class="err" style="display:block;margin-top:6px">{{ $message }}</span>@enderror
+                <button class="go" type="submit" style="margin-top:10px">Subscribe</button>
+                <span class="fine" style="display:block;margin-top:8px">A confirmation link comes first. Every mail carries an unsubscribe link.</span>
+              </form>
+            @endif
+          </div>
+        </details>
+      @endif
       @include('partials.theme-toggle')
     </span>
   </header>

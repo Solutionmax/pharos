@@ -152,6 +152,8 @@ curl -X POST https://status.example.com/api/v1/incidents \
 - **n8n** — both directions, with an HMAC-signed outgoing webhook on every incident
 - **Zabbix and Grafana** — through the same API, no plugin needed
 - **Anything else** — a token and a POST is the whole contract
+- **Your visitors** — a "Get notified" button on the status page; confirmed addresses get an
+  e-mail per incident update, with one-click unsubscribe. See [docs/subscribers.md](docs/subscribers.md)
 
 ---
 
@@ -172,7 +174,6 @@ reached, that reads as *no update available* — never as an error.
 
 Stated plainly rather than described as if it were finished:
 
-- **Subscriber email notifications.** The setting exists, the sending flow does not.
 - **External probe locations.** Everything is checked from wherever Pharos runs, which is why
   you should host it away from what it is watching.
 - **Cachet importer.** Moving from an existing Cachet install is manual for now.

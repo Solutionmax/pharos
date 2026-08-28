@@ -290,6 +290,9 @@ pre .k{color:var(--brand)}
     <a class="nav" href="{{ route('admin.status-page') }}" @if(request()->routeIs('admin.status-page*')) aria-current="page" @endif>
       @include('partials.icon', ['name' => 'sliders']) Status page
     </a>
+    <a class="nav" href="{{ route('admin.subscribers') }}" @if(request()->routeIs('admin.subscribers*')) aria-current="page" @endif>
+      @include('partials.icon', ['name' => 'mail']) Subscribers
+    </a>
 
     <span class="lbl">Configuration</span>
     <a class="nav" href="{{ route('admin.integrations') }}" @if(request()->routeIs('admin.integrations')) aria-current="page" @endif>
