@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\GroupController;
 use App\Http\Controllers\Admin\IncidentController;
 use App\Http\Controllers\Admin\InstallController;
 use App\Http\Controllers\Admin\IntegrationController;
+use App\Http\Controllers\Admin\MailTemplateController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SsoController;
@@ -147,6 +148,14 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
             Route::get('branding', [BrandingController::class, 'edit'])->name('branding');
             Route::put('branding', [BrandingController::class, 'update'])->name('branding.update');
             Route::post('branding/activate', [BrandingController::class, 'activate'])->name('branding.activate');
+
+            // Mail templates: the screen and the preview are for every admin; the
+            // three writes are checked against the brand pack in the controller.
+            Route::get('mail-templates', [MailTemplateController::class, 'edit'])->name('mail-templates');
+            Route::match(['get', 'post'], 'mail-templates/preview', [MailTemplateController::class, 'preview'])->name('mail-templates.preview');
+            Route::put('mail-templates', [MailTemplateController::class, 'update'])->name('mail-templates.update');
+            Route::post('mail-templates/reset', [MailTemplateController::class, 'reset'])->name('mail-templates.reset');
+            Route::post('mail-templates/test', [MailTemplateController::class, 'sendTest'])->name('mail-templates.test');
         });
     });
 });

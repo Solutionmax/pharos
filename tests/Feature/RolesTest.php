@@ -39,6 +39,7 @@ class RolesTest extends TestCase
             'the audit log' => ['/admin/audit'],
             'the update screen' => ['/admin/updates'],
             'branding' => ['/admin/branding'],
+            'mail templates' => ['/admin/mail-templates'],
             'settings' => ['/admin/settings'],
         ];
     }

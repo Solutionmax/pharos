@@ -63,11 +63,57 @@ because a cron run has no request to read the host from.
 
 ## The mail
 
-Subject `[Brand] Incident name — Status`. Body: the status label, the update
+By default (see **Templates** below) the subject is `[Brand] Incident name — Status` and the body is: the status label, the update
 text (Markdown rendered with the same escaping as the status page — anything that
 looks like a tag is shown, never run), the affected components, the time in the
 install's time zone, a button to the status page and an unsubscribe link. A
 plain-text alternative goes with it.
+
+## Templates
+
+Admin → Configuration → **Mail templates**. Four templates, one per screen tab:
+
+| Template | Sent when | Tags |
+|---|---|---|
+| Subscribe confirmation | someone signs up | `{brand}` `{link}` `{hours}` `{name}` |
+| Incident opened | the first update of an incident | `{brand}` `{incident}` `{status}` `{message}` `{components}` `{link}` `{unsubscribe}` `{when}` `{name}` |
+| Incident updated | any later update that is not Resolved | same as above |
+| Incident resolved | an update with status Resolved | same as above |
+
+Tag meanings: `{brand}` the name from Branding · `{link}` the confirmation link on the
+confirmation mail, the status page on the incident mails · `{hours}` how long the
+confirmation link is good for · `{name}` the part of the subscriber's address before
+the `@` · `{incident}` the incident's name · `{status}` Investigating, Identified,
+Watching or Resolved · `{message}` the update text · `{components}` the affected
+components, comma-separated · `{unsubscribe}` the subscriber's signed unsubscribe link ·
+`{when}` the update's time in the install's time zone.
+
+**Subject and body are Markdown** (`**bold**`, `*italic*`, `# heading`, `- list`,
+`> quote`, `[text](url)`). A link on a line of its own becomes a button. Tag values
+are printed exactly as typed — a `*` in an incident name stays a `*` — with one
+exception: `{message}` is the operator's own Markdown and is rendered as such, with
+the same escaping as the status page, so anything that looks like an HTML tag is
+shown, never run. `> {message}` quotes the whole message, not just its first line.
+A line whose only tag is empty is left out, so `Affects {components}` disappears
+when no component is affected. A tag that does not exist stays as typed.
+
+**Body, not frame.** The logo, the accent colour, the link to the status page and —
+on every incident mail — the unsubscribe link sit in the frame around the body and
+are always there. A template therefore cannot lose the unsubscribe link, and
+`{unsubscribe}` in the body is optional. The plain-text part is derived from the
+same Markdown with the links written out raw.
+
+The screen shows a live preview with a sample incident, rendered from the unsaved
+wording on the left. **Send test to me** mails that rendering to the signed-in
+admin through the configured mailer. Templates are stored as
+`mail.template.<key>.subject` and `.body` in the settings table; a missing row
+means the default. Saving and resetting are logged as `mail_template.saved` and
+`mail_template.reset`.
+
+**Brand pack.** Every install sees the screen, the defaults and the preview; saving,
+resetting and sending a test need the brand pack licence (checked on the server,
+not just in the form). Subjects are limited to 200 characters, bodies to 20 000,
+and neither may contain `<script`.
 
 ## Unsubscribing
 

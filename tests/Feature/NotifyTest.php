@@ -177,9 +177,12 @@ class NotifyTest extends TestCase
         $subscriber = $this->subscriber();
         $update = $this->update('Working on it.');
 
-        $text = view('mail.text.incident-notice', (new IncidentNoticeMail($update, $subscriber))->content()->with)->render();
+        $mail = new IncidentNoticeMail($update, $subscriber);
+        $mail->render();
+        $text = (string) view($mail->textView, $mail->buildViewData());
 
-        $this->assertStringContainsString('Investigating: Mail queue backed up', $text);
+        $this->assertStringContainsString("Investigating\n\nMail queue backed up", $text);
+        $this->assertStringNotContainsString('<', $text);
         $this->assertStringContainsString('Working on it.', $text);
         $this->assertStringContainsString('/unsubscribe/'.$subscriber->id, $text);
     }
