@@ -92,6 +92,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .btn:hover{filter:brightness(1.07);transform:translateY(-1px)}
 .btn:active{transform:none}
 @media (prefers-reduced-motion:reduce){.btn:hover{transform:none}}
+.btn:disabled,.btn[aria-disabled=true]{opacity:.55;cursor:wait;box-shadow:none}
 .btn.ghost{background:none;color:var(--ink-2);border-color:var(--line)}
 .btn.ghost:hover{background:var(--bg-tint);color:var(--ink)}
 .flash{background:var(--green-soft);color:var(--green-ink);border-radius:12px;padding:12px 16px;margin-bottom:18px;font-size:13.5px;font-weight:600}
