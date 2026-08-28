@@ -62,6 +62,17 @@ class SettingsPreviewTest extends TestCase
         $this->get(route('admin.settings.preview'))->assertRedirect('/admin/login');
     }
 
+    public function test_the_preview_may_be_framed_by_the_settings_page(): void
+    {
+        // Every other page carries frame-ancestors 'none'. The settings page
+        // embeds this one in an iframe, so it alone must allow its own origin,
+        // otherwise the live preview is a blank box in every browser.
+        $this->preview(['page.show_overall' => true])
+            ->assertOk()
+            ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
+            ->assertHeader('Content-Security-Policy', "frame-ancestors 'self'");
+    }
+
     public function test_it_renders_the_sections_that_are_ticked(): void
     {
         $this->preview([
