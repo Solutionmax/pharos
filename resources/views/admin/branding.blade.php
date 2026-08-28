@@ -53,6 +53,18 @@
             @endif
           </div>
           <div class="field">
+            <label for="logo_dark">Logo for dark mode (optional)</label>
+            @if ($brand['logo_dark'])
+              <img src="{{ $brand['logo_dark'] }}" alt="Current dark-mode logo"
+                   style="max-height:44px;max-width:200px;background:#0b1b33;border:1px solid var(--line);border-radius:8px;padding:8px">
+            @endif
+            <input id="logo_dark" name="logo_dark" type="file" accept="image/png,image/jpeg,image/webp">
+            <span class="help">Shown instead of the logo above when the visitor's theme is dark. Leave empty if your logo already works on both.</span>
+            @if ($brand['logo_dark'])
+              <label class="check"><input type="checkbox" name="remove_logo_dark" value="1"> Remove the dark-mode logo</label>
+            @endif
+          </div>
+          <div class="field">
             <label for="favicon">Favicon</label>
             <img src="{{ $brand['favicon'] }}" alt="Current favicon"
                  style="width:32px;height:32px;border:1px solid var(--line);border-radius:8px;padding:2px;background:var(--bg-tint)">

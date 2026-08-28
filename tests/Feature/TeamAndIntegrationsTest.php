@@ -495,6 +495,42 @@ class TeamAndIntegrationsTest extends TestCase
         $this->get('/')->assertOk()->assertSee($logo);
     }
 
+    /**
+     * A navy logo on a transparent PNG vanishes on the dark theme. The paid half
+     * therefore takes an optional second logo for dark mode; the light one stays
+     * the fallback so nobody is forced to upload two.
+     */
+    public function test_a_licensed_install_can_add_a_logo_for_dark_mode(): void
+    {
+        Storage::fake('public');
+        $this->licence();
+
+        $this->actingAs($this->user)->put('/admin/branding', [
+            'name' => 'Northwind',
+            'accent' => '#b8532f',
+            'logo' => UploadedFile::fake()->image('logo.png', 400, 120),
+            'logo_dark' => UploadedFile::fake()->image('logo-dark.png', 400, 120),
+        ])->assertRedirect();
+
+        $dark = Setting::get('brand.logo_dark_path');
+        $this->assertNotNull($dark);
+        Storage::disk('public')->assertExists($dark);
+
+        // Both are in the page: CSS picks one per theme.
+        $this->get('/')->assertOk()
+            ->assertSee(Setting::get('brand.logo_path'))
+            ->assertSee($dark)
+            ->assertSee('logo-dark', false);
+
+        $this->actingAs($this->user)->put('/admin/branding', [
+            'name' => 'Northwind', 'accent' => '#b8532f', 'remove_logo_dark' => '1',
+        ])->assertRedirect();
+
+        $this->assertNull(Setting::get('brand.logo_dark_path'));
+        Storage::disk('public')->assertMissing($dark);
+        $this->get('/')->assertOk()->assertDontSee('logo-dark', false);
+    }
+
     public function test_replacing_a_logo_deletes_the_old_file(): void
     {
         Storage::fake('public');
