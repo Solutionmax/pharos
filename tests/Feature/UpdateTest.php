@@ -732,7 +732,7 @@ class UpdateTest extends TestCase
         return $src;
     }
 
-    /** A SelfUpdater that keeps every progress sample it reports, in order. */
+    /** A SelfUpdater that keeps every progress sample as the screen would read it, in order. */
     protected function observedUpdater(): SelfUpdater
     {
         return new class(app(Updater::class)) extends SelfUpdater
@@ -741,8 +741,8 @@ class UpdateTest extends TestCase
 
             protected function report(array $sample): void
             {
-                $this->samples[] = $sample;
                 parent::report($sample);
+                $this->samples[] = Cache::get(SelfUpdater::PROGRESS_KEY);
             }
         };
     }
@@ -855,5 +855,229 @@ class UpdateTest extends TestCase
             ->assertSee('id="backup-form"', false)
             ->assertSee('/admin/updates/backup/progress')
             ->assertSee('<progress class="bar"', false);
+    }
+
+    // ---------- rollback ----------
+
+    /**
+     * A live tree and a backup that disagree on every file, so a restore is
+     * visible: v1 everywhere live, v2 everywhere in the backup.
+     *
+     * @return array{0:string,1:string,2:string} backup name, live tree, live database
+     */
+    protected function fakeRollbackPair(bool $withDatabase = true): array
+    {
+        $live = storage_path('app/testing/live-'.Str::random(6));
+        foreach (['artisan', 'vendor/x.php'] as $f) {
+            File::ensureDirectoryExists(dirname($live.'/'.$f));
+            File::put($live.'/'.$f, 'v1');
+        }
+        File::put($live.'/.env', 'secret');
+        $liveDb = $live.'/live.sqlite';
+        $this->sqliteWith($liveDb, 'v1');
+        config(['pharos.update.backup_source' => $live, 'pharos.update.backups_dir' => storage_path('app/testing/backups')]);
+
+        $name = '1.0.0-20260101-000000';
+        $backup = storage_path("app/testing/backups/{$name}");
+        File::ensureDirectoryExists($backup.'/vendor');
+        File::put($backup.'/artisan', 'v2');
+        File::put($backup.'/vendor/x.php', 'v2');
+        if ($withDatabase) {
+            File::ensureDirectoryExists($backup.'/database');
+            $this->sqliteWith($backup.'/database/database.sqlite', 'v2');
+        }
+
+        return [$name, $live, $liveDb];
+    }
+
+    protected function sqliteWith(string $path, string $row): void
+    {
+        $pdo = new \PDO('sqlite:'.$path);
+        $pdo->exec('create table settings (k text)');
+        $pdo->exec("insert into settings values ('{$row}')");
+    }
+
+    protected function sqliteRow(string $path): string
+    {
+        return (string) (new \PDO('sqlite:'.$path))->query('select k from settings')->fetchColumn();
+    }
+
+    public function test_a_rollback_puts_code_vendor_and_the_database_back(): void
+    {
+        [$name, $live, $liveDb] = $this->fakeRollbackPair();
+
+        $result = app(SelfUpdater::class)->rollback($name, $live, $liveDb);
+
+        $this->assertTrue($result['ok'], $result['message']);
+        $this->assertSame('v2', File::get($live.'/artisan'));
+        $this->assertSame('v2', File::get($live.'/vendor/x.php'));
+        $this->assertSame('v2', $this->sqliteRow($liveDb));
+        $this->assertSame('secret', File::get($live.'/.env'));
+
+        // What was replaced is a backup of its own now: a rollback can be undone.
+        $this->assertNotSame($name, $result['safety']);
+        $safety = storage_path('app/testing/backups/'.$result['safety']);
+        $this->assertSame('v1', File::get($safety.'/artisan'));
+        $this->assertSame('v1', File::get($safety.'/vendor/x.php'));
+        $this->assertSame('v1', $this->sqliteRow($safety.'/database/database.sqlite'));
+        $this->assertStringContainsString('Rolled back to 1.0.0', $result['message']);
+        $this->assertStringContainsString($result['safety'], $result['message']);
+
+        $progress = Cache::get(SelfUpdater::PROGRESS_KEY);
+        $this->assertSame('done', $progress['state']);
+        $this->assertSame('finishing', $progress['stage']);
+        $this->assertSame($name, $progress['name']);
+        $this->assertSame($progress['total'], $progress['done']);
+        $this->assertSame(['state', 'stage', 'done', 'total', 'name', 'message', 'started_at'], array_keys($progress));
+    }
+
+    public function test_a_rollback_reports_the_safety_copy_as_a_stage_of_its_own(): void
+    {
+        [$name, $live, $liveDb] = $this->fakeRollbackPair();
+        $updater = $this->observedUpdater();
+
+        $updater->rollback($name, $live, $liveDb);
+
+        // Never a "done" from the safety copy: to the screen it is one stage of the rollback.
+        $this->assertSame('done', end($updater->samples)['state']);
+        $this->assertCount(1, array_filter($updater->samples, fn ($s) => $s['state'] === 'done'));
+        $this->assertSame(['safety', 'code', 'vendor', 'database', 'finishing'], array_values(array_unique(array_column($updater->samples, 'stage'))));
+    }
+
+    public function test_a_rollback_without_a_database_copy_says_so(): void
+    {
+        [$name, $live, $liveDb] = $this->fakeRollbackPair(withDatabase: false);
+
+        $result = app(SelfUpdater::class)->rollback($name, $live, $liveDb);
+
+        $this->assertTrue($result['ok'], $result['message']);
+        $this->assertSame('v2', File::get($live.'/artisan'));
+        $this->assertSame('v1', $this->sqliteRow($liveDb));
+        $this->assertStringContainsString('the database was not in this backup', $result['message']);
+        $this->assertStringContainsString($result['safety'], $result['message']);
+    }
+
+    public function test_a_rollback_refuses_a_folder_that_is_not_a_backup(): void
+    {
+        $src = $this->fakeSourceTree();
+        $dir = storage_path('app/testing/backups');
+        config(['pharos.update.backups_dir' => $dir]);
+        // Right name, wrong contents: no artisan, so nothing to put back.
+        File::ensureDirectoryExists("{$dir}/notes-20260101-000000");
+        File::put("{$dir}/notes-20260101-000000/readme.txt", 'x');
+
+        $result = app(SelfUpdater::class)->rollback('notes-20260101-000000');
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('No such backup.', $result['message']);
+        $this->assertSame('x', File::get($src.'/artisan'));
+        $this->assertCount(1, app(SelfUpdater::class)->backups()); // no safety copy taken either
+
+        $this->assertSame(['ok' => false, 'message' => 'No such backup.'], app(SelfUpdater::class)->rollback('9.9.9-20260101-000000'));
+    }
+
+    public function test_rollback_is_admin_only_and_names_are_never_paths(): void
+    {
+        $name = '1.0.0-20260801-030000';
+        $this->fakeBackup($name);
+        $src = $this->fakeSourceTree();
+        $member = User::create(['name' => 'Tom', 'email' => 'tom@example.com', 'password' => Hash::make('correct-horse-battery')]);
+
+        $this->actingAs($member)->post("/admin/updates/backup/{$name}/rollback")->assertForbidden();
+
+        // AuthenticateSession ties the session to one account; a fresh one for the next.
+        $this->flushSession();
+        foreach (['../x', '%2e%2e/x', '9.9.9-20260101-000000'] as $bad) {
+            $this->actingAs($this->user)->post("/admin/updates/backup/{$bad}/rollback")->assertNotFound();
+        }
+
+        $this->assertSame('x', File::get($src.'/artisan'));
+        $this->assertCount(1, app(SelfUpdater::class)->backups());
+        $this->assertSame(0, AuditEntry::where('action', 'backup.restored')->count());
+    }
+
+    public function test_the_rollback_button_asks_first(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::response('', 404)]);
+        $name = '1.0.0-20260801-030000';
+        $this->fakeBackup($name);
+
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+            ->assertSee("/admin/updates/backup/{$name}/rollback")
+            ->assertSee('Roll back to 1.0.0?')
+            ->assertSee('copy taken on 1 Aug 2026 03:00')
+            ->assertSee('data-confirm-action="Roll back"', false)
+            ->assertSee('data-job="rollback"', false)
+            ->assertDontSee('data-confirm-safe', false)
+            ->assertDontSee('no button for it yet');
+    }
+
+    public function test_the_rollback_endpoint_returns_json_and_audits(): void
+    {
+        [$name, $live] = $this->fakeRollbackPair();
+
+        $response = $this->actingAs($this->user)
+            ->post("/admin/updates/backup/{$name}/rollback", [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJson(['ok' => true])
+            ->assertJsonPath('message', fn ($m) => str_starts_with($m, 'Rolled back to 1.0.0'));
+
+        $this->assertSame('v2', File::get($live.'/artisan'));
+
+        $entry = AuditEntry::where('action', 'backup.restored')->firstOrFail();
+        $this->assertSame($name, $entry->changes['name']);
+        $this->assertStringContainsString($entry->changes['safety'], $response->json('message'));
+        $this->assertDirectoryExists(storage_path('app/testing/backups/'.$entry->changes['safety']));
+
+        // A folder that is not a backup: refused, said so, not audited.
+        File::ensureDirectoryExists(storage_path('app/testing/backups/notes-20260101-000000'));
+        $this->actingAs($this->user)
+            ->post('/admin/updates/backup/notes-20260101-000000/rollback', [], ['Accept' => 'application/json'])
+            ->assertStatus(422)
+            ->assertJson(['ok' => false, 'message' => 'No such backup.']);
+        $this->assertSame(1, AuditEntry::where('action', 'backup.restored')->count());
+    }
+
+    public function test_a_rollback_from_the_plain_form_redirects_with_the_message(): void
+    {
+        [$name] = $this->fakeRollbackPair();
+
+        // Signed out on purpose: the session store came back with the database.
+        $this->actingAs($this->user)->post("/admin/updates/backup/{$name}/rollback")
+            ->assertRedirect('/admin/login?after=rollback');
+        $this->assertGuest();
+        $this->get('/admin/login?after=rollback')->assertOk()->assertSee('password you had at the time of that backup');
+
+        File::ensureDirectoryExists(storage_path('app/testing/backups/notes-20260101-000000'));
+        $this->actingAs($this->user)->from('/admin/updates')->post('/admin/updates/backup/notes-20260101-000000/rollback')
+            ->assertRedirect('/admin/updates')
+            ->assertSessionHasErrors('rollback');
+    }
+
+    /**
+     * Restoring the database also restores the session store and, possibly, a
+     * users table without the account that pressed the button. Both must end in a
+     * clean sign-out with the audit line written, never in a 500 after the fact.
+     */
+    public function test_a_rollback_signs_the_operator_out_and_still_audits_when_their_account_is_gone(): void
+    {
+        $user = $this->user;
+        $this->mock(SelfUpdater::class, function ($mock) use ($user) {
+            $mock->shouldReceive('backupPath')->andReturn('/tmp/x');
+            $mock->shouldReceive('rollback')->andReturnUsing(function () use ($user) {
+                // The account was created after the backup: gone from the restored
+                // database without any model event, exactly like a file swap.
+                \Illuminate\Support\Facades\DB::table('users')->where('id', $user->id)->delete();
+
+                return ['ok' => true, 'message' => 'Rolled back to 1.0.0.', 'safety' => '1.0.1-20260828-120000'];
+            });
+        });
+
+        $response = $this->actingAs($user)->postJson('/admin/updates/backup/1.0.0-20260101-000000/rollback');
+
+        $response->assertOk()->assertJsonPath('ok', true);
+        $this->assertStringContainsString('signed out', $response->json('message'));
+        $this->assertDatabaseHas('audit_log', ['action' => 'backup.restored', 'user_id' => null]);
+        $this->assertGuest();
     }
 }
