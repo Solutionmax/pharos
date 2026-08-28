@@ -29,6 +29,8 @@ return [
         // hosting, which is how the app knows which world it is in.
         'status_file' => storage_path('app/ota/update-status.json'),
         'trigger_file' => storage_path('app/ota/update.trigger'),
+        // Where a self-update parks the version it replaces. Never pruned by the app.
+        'backups_dir' => storage_path('app/backups'),
     ],
 
     // How long the audit trail keeps a line. Long enough to answer "who
