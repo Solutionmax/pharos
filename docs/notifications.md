@@ -26,7 +26,7 @@ two systems in this chain each want a different one:
 
 | System | Wants | Why |
 |--------|-------|-----|
-| Pharos | An **Incoming Webhook URL** | A URL is the whole credential — nothing to store, nothing to refresh. Fits a product that must run on shared hosting. |
+| Pharos | An **Incoming Webhook URL** | A URL is the whole credential — nothing to store, nothing to refresh. Fits a product that must run on a plain PHP host. |
 | Zabbix | A **bot token** (`xoxb-…`) | Zabbix's Slack media type resolves channel names and edits messages on recovery, which a webhook URL cannot do. |
 
 Both come out of the same app, so create it once.
