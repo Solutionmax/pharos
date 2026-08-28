@@ -22,7 +22,7 @@
         </div>
         <div class="field">
           <span class="lblrow"><label for="status">Status</label>
-            @include('partials.tip', ['text' => 'The status shown right now. A built-in check overwrites this on its next run; with Manual only it stays exactly as you set it.'])</span>
+            @include('partials.tip', ['text' => 'The status shown right now. A built-in check overwrites this on its next run — except Under maintenance, which stays until you clear it. With Manual only it stays exactly as you set it.'])</span>
           <select id="status" name="status">
             @foreach (\App\Enums\ComponentStatus::cases() as $case)
               <option value="{{ $case->value }}" @selected(old('status', $component->status?->value ?? 1) == $case->value)>{{ $case->label() }}</option>
