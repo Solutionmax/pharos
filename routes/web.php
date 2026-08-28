@@ -100,6 +100,7 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
             Route::post('integrations/webhook/rotate', [IntegrationController::class, 'rotateSecret'])->name('integrations.webhook.rotate');
 
             Route::get('audit', [AuditController::class, 'index'])->name('audit');
+            Route::get('audit/export', [AuditController::class, 'export'])->name('audit.export');
 
             Route::get('updates', [UpdateController::class, 'index'])->name('updates');
             Route::post('updates', [UpdateController::class, 'apply'])->name('updates.apply');
