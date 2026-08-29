@@ -101,7 +101,16 @@ class StatusPageController extends Controller
         // Uptime is needed for the headline percentage even when the per-component
         // bars are switched off, so it comes from every enabled component —
         // including the ungrouped ones, which used to be missing from the maths.
-        $all = Component::where('enabled', true)->get();
+        // Only what the visitor can see: a red component in a hidden service
+        // must not turn the headline red without anything on the page to explain it.
+        $all = Component::where('enabled', true)
+            ->where(fn ($q) => $q->whereNull('component_group_id')
+                ->orWhereHas('group', fn ($g) => $g->where('visible', true)))
+            ->get();
+
+        if ($hiddenGroups !== null) {
+            $all = $all->reject(fn ($c) => in_array((string) $c->component_group_id, $hiddenGroups, true));
+        }
 
         $bars = [];
         $percentages = [];
