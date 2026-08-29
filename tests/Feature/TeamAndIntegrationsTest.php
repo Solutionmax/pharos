@@ -4,14 +4,19 @@ namespace Tests\Feature;
 
 use App\Enums\CheckType;
 use App\Enums\ComponentStatus;
+use App\Enums\IncidentStatus;
 use App\Models\ApiToken;
 use App\Models\Check;
 use App\Models\Component;
 use App\Models\Incident;
 use App\Models\Setting;
-use App\Models\WebhookEndpoint;
 use App\Models\User;
+use App\Models\WebhookEndpoint;
+use App\Services\CheckRunner;
 use App\Services\License;
+use App\Services\OutgoingWebhook;
+use App\Services\Probe;
+use App\Services\ProbeResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
@@ -362,15 +367,15 @@ class TeamAndIntegrationsTest extends TestCase
             'retries' => 1,
         ]);
 
-        $runner = new \App\Services\CheckRunner(
-            new class extends \App\Services\Probe
+        $runner = new CheckRunner(
+            new class extends Probe
             {
-                public function run(Check $check): \App\Services\ProbeResult
+                public function run(Check $check): ProbeResult
                 {
-                    return new \App\Services\ProbeResult(false, 12, 'No response');
+                    return new ProbeResult(false, 12, 'No response');
                 }
             },
-            app(\App\Services\OutgoingWebhook::class),
+            app(OutgoingWebhook::class),
         );
         $runner->runOne($check);
 
@@ -405,9 +410,9 @@ class TeamAndIntegrationsTest extends TestCase
         $component = Component::create(['name' => 'web-06', 'status' => ComponentStatus::MajorOutage]);
         [, $plain] = ApiToken::issue('n8n');
 
-        $incident = \App\Models\Incident::create([
+        $incident = Incident::create([
             'name' => 'web-06 unreachable',
-            'status' => \App\Enums\IncidentStatus::Investigating,
+            'status' => IncidentStatus::Investigating,
             'occurred_at' => now(),
         ]);
         $incident->components()->attach($component->id, ['status' => ComponentStatus::MajorOutage->value]);
@@ -426,9 +431,9 @@ class TeamAndIntegrationsTest extends TestCase
         $component = Component::create(['name' => 'web-06', 'status' => ComponentStatus::MajorOutage]);
         [, $plain] = ApiToken::issue('n8n');
 
-        $incident = \App\Models\Incident::create([
+        $incident = Incident::create([
             'name' => 'web-06 unreachable',
-            'status' => \App\Enums\IncidentStatus::Investigating,
+            'status' => IncidentStatus::Investigating,
             'occurred_at' => now(),
         ]);
         $incident->components()->attach($component->id, ['status' => ComponentStatus::MajorOutage->value]);
@@ -631,7 +636,7 @@ class TeamAndIntegrationsTest extends TestCase
             'label' => 'rebound', 'url' => 'http://169.254.169.254/latest/meta-data', 'format' => 'generic',
         ]);
 
-        $this->assertFalse(app(\App\Services\OutgoingWebhook::class)->test($endpoint));
+        $this->assertFalse(app(OutgoingWebhook::class)->test($endpoint));
 
         Http::assertNothingSent();
         $endpoint->refresh();
@@ -640,7 +645,7 @@ class TeamAndIntegrationsTest extends TestCase
 
     public function test_a_masked_url_keeps_its_port(): void
     {
-        $e = new \App\Models\WebhookEndpoint(['url' => 'http://192.168.18.162:8799/hook/very-long-path']);
+        $e = new WebhookEndpoint(['url' => 'http://192.168.18.162:8799/hook/very-long-path']);
         $this->assertSame('http://192.168.18.162:8799/hook/ve…', $e->maskedUrl());
     }
 }

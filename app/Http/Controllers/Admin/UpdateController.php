@@ -7,8 +7,9 @@ use App\Services\Audit;
 use App\Services\SelfUpdater;
 use App\Services\Updater;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Number;
 
@@ -40,7 +41,7 @@ class UpdateController extends Controller
             'managed' => $this->updater->managed(),
             'managedStatus' => $this->updater->managedStatus(),
             'writable' => $this->selfUpdater->canWrite(),
-            'sqlite' => \Illuminate\Support\Facades\DB::getDriverName() === 'sqlite',
+            'sqlite' => DB::getDriverName() === 'sqlite',
             'versionPinned' => $this->updater->versionIsPinned(),
         ]);
     }
@@ -106,7 +107,7 @@ class UpdateController extends Controller
 
     public function download(string $name)
     {
-        abort_unless($this->selfUpdater->backupPath($name), 404);
+        abort_if($this->selfUpdater->backupPath($name) === null, 404);
 
         $zip = $this->selfUpdater->zipBackup($name);
         Audit::record('backup.downloaded', null, ['name' => $name]);
@@ -117,7 +118,7 @@ class UpdateController extends Controller
     /** A kept backup put back over the running install; what it replaces is backed up first. */
     public function rollback(Request $request, string $name)
     {
-        abort_unless($this->selfUpdater->backupPath($name), 404);
+        abort_if($this->selfUpdater->backupPath($name) === null, 404);
 
         // Taken before the database is swapped: the account doing this may not
         // exist in the copy being restored, and a user_id that no longer resolves
@@ -153,7 +154,7 @@ class UpdateController extends Controller
     public function destroy(string $name)
     {
         $path = $this->selfUpdater->backupPath($name);
-        abort_unless($path, 404);
+        abort_if($path === null, 404);
 
         File::deleteDirectory($path);
         Audit::record('backup.deleted', null, ['name' => $name]);

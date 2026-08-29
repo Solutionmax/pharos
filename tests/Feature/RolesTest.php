@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\Setting;
 use App\Models\User;
+use App\Services\Clock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Illuminate\Support\Facades\Hash;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class RolesTest extends TestCase
@@ -72,12 +74,12 @@ class RolesTest extends TestCase
             'theme' => 'dark',
             'incident_days' => 7,
         ])->assertRedirect('/admin/status-page');
-        $this->assertSame('dark', \App\Models\Setting::get('brand.theme'));
+        $this->assertSame('dark', Setting::get('brand.theme'));
 
         $this->actingAs($this->member)->get('/admin/settings')->assertForbidden();
         $this->actingAs($this->member)->put('/admin/settings', ['timezone' => 'Europe/Amsterdam'])->assertForbidden();
         $this->actingAs($this->member)->put('/admin/sso', ['enabled' => '0'])->assertForbidden();
-        $this->assertSame('UTC', \App\Services\Clock::timezone());
+        $this->assertSame('UTC', Clock::timezone());
     }
 
     public function test_a_user_may_not_touch_api_tokens_or_the_signing_secret(): void

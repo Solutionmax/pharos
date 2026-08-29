@@ -2,15 +2,21 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
+use App\Models\AuditEntry;
 use App\Models\RecoveryCode;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\SafeHttp;
+use App\Services\Sso;
 use App\Services\Totp;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class SsoTest extends TestCase
@@ -41,7 +47,7 @@ class SsoTest extends TestCase
         // into this flow is covered by the private-issuer test below.
         $this->swap(SafeHttp::class, new class extends SafeHttp
         {
-            public function to(string $url): \Illuminate\Http\Client\PendingRequest
+            public function to(string $url): PendingRequest
             {
                 return Http::timeout(6)->withoutRedirecting();
             }
@@ -93,7 +99,7 @@ class SsoTest extends TestCase
         $this->get('/admin/sso/redirect')->assertRedirect();
     }
 
-    protected function returnFromProvider(array $claims = [], ?string $state = null): \Illuminate\Testing\TestResponse
+    protected function returnFromProvider(array $claims = [], ?string $state = null): TestResponse
     {
         // Read now: the controller pulls the nonce out of the session before it
         // exchanges the code, so the stub can no longer find it by then.
@@ -218,12 +224,12 @@ class SsoTest extends TestCase
     {
         $this->begin();
         $this->returnFromProvider();
-        $this->assertSame(1, \App\Models\AuditEntry::where('action', 'sso.login')->count());
+        $this->assertSame(1, AuditEntry::where('action', 'sso.login')->count());
 
         $this->post('/admin/logout');
         $this->begin();
         $this->returnFromProvider(['email' => 'stranger@example.net']);
-        $this->assertSame(1, \App\Models\AuditEntry::where('action', 'sso.rejected')->count());
+        $this->assertSame(1, AuditEntry::where('action', 'sso.rejected')->count());
     }
 
     public function test_an_issuer_on_our_own_network_never_gets_fetched(): void
@@ -247,7 +253,7 @@ class SsoTest extends TestCase
     {
         $member = User::create([
             'name' => 'Tom', 'email' => 'tom@example.net',
-            'password' => Hash::make('correct-horse-battery'), 'role' => \App\Enums\UserRole::User,
+            'password' => Hash::make('correct-horse-battery'), 'role' => UserRole::User,
         ]);
 
         $this->actingAs($member)->get('/admin/settings')->assertForbidden();
@@ -294,7 +300,7 @@ class SsoTest extends TestCase
     {
         $member = User::create([
             'name' => 'Tom', 'email' => 'tom2@example.net',
-            'password' => Hash::make('correct-horse-battery'), 'role' => \App\Enums\UserRole::User,
+            'password' => Hash::make('correct-horse-battery'), 'role' => UserRole::User,
         ]);
 
         $this->actingAs($member)->get('/admin/components')
@@ -359,12 +365,12 @@ class SsoTest extends TestCase
             'issuer' => 'https://id.example.net', 'client_id' => 'pharos', 'client_secret' => 'plain-secret-123',
         ]);
 
-        $stored = \App\Models\Setting::get('sso.client_secret');
+        $stored = Setting::get('sso.client_secret');
         $this->assertNotSame('plain-secret-123', $stored);
-        $this->assertSame('plain-secret-123', \Illuminate\Support\Facades\Crypt::decryptString($stored));
-        $this->assertSame('plain-secret-123', app(\App\Services\Sso::class)->clientSecret());
+        $this->assertSame('plain-secret-123', Crypt::decryptString($stored));
+        $this->assertSame('plain-secret-123', app(Sso::class)->clientSecret());
 
-        \App\Models\Setting::put('sso.client_secret', 'legacy-plain');
-        $this->assertSame('legacy-plain', app(\App\Services\Sso::class)->clientSecret());
+        Setting::put('sso.client_secret', 'legacy-plain');
+        $this->assertSame('legacy-plain', app(Sso::class)->clientSecret());
     }
 }

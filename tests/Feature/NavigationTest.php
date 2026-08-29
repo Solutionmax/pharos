@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\IncidentStatus;
 use App\Models\Component;
 use App\Models\ComponentGroup;
 use App\Models\Incident;
-use App\Enums\IncidentStatus;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;

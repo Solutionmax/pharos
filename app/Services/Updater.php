@@ -39,7 +39,7 @@ class Updater
      */
     public function versionIsPinned(): bool
     {
-        return ! $this->managed() && filled(env('PHAROS_VERSION'));
+        return ! $this->managed() && (bool) config('pharos.version_pinned');
     }
 
     /** True when a host-side updater is in charge of the image. */

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Services\InstallSettings;
 use App\Models\AuditEntry;
 use App\Services\Clock;
+use App\Services\InstallSettings;
 use Illuminate\Http\Request;
 
 class AuditController extends Controller

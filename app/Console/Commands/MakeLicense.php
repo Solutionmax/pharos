@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\License;
 use Illuminate\Console\Command;
 
 /**
@@ -21,7 +22,7 @@ class MakeLicense extends Command
 
     public function handle(): int
     {
-        $path = $this->option('key') ?: env('PHAROS_LICENSE_SECRET_FILE');
+        $path = $this->option('key') ?: config('pharos.license_secret_file');
 
         if (! $path || ! is_readable($path)) {
             $this->error('No readable secret key. Pass --key=/path/to/key or set PHAROS_LICENSE_SECRET_FILE.');
@@ -41,7 +42,7 @@ class MakeLicense extends Command
         // A yearly subscription needs a key that stops; a perpetual one must not
         // carry the claim at all, so leaving the option off means forever.
         if ($domain = trim((string) $this->option('domain'))) {
-            $claims['issued_for'] = \App\Services\License::normaliseHost($domain);
+            $claims['issued_for'] = License::normaliseHost($domain);
         }
 
         if ($months = (int) $this->option('months')) {

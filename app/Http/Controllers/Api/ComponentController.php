@@ -33,7 +33,8 @@ class ComponentController extends Controller
 
     public function show(Component $component)
     {
-        abort_unless($component->enabled && ($component->group === null || $component->group->visible), 404);
+        // getAttribute: Eloquent has a protected $visible of its own, the column must not be confused with it.
+        abort_unless($component->enabled && ($component->group === null || $component->group->getAttribute('visible')), 404);
 
         return response()->json(['data' => $this->present($component)]);
     }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ApiToken;
 use App\Models\AuditEntry;
+use App\Models\IncidentUpdate;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -27,7 +28,7 @@ class Audit
             return trim($user->name.' ('.$user->email.')');
         }
 
-        $token = request()?->attributes?->get('api_token');
+        $token = request()->attributes->get('api_token');
 
         return $token instanceof ApiToken ? 'API token: '.$token->name : null;
     }
@@ -48,7 +49,7 @@ class Audit
             'subject_id' => $subject?->getKey(),
             'subject_label' => $subject ? self::label($subject) : null,
             'changes' => $changes ?: null,
-            'ip' => request()?->ip(),
+            'ip' => request()->ip(),
             'created_at' => now(),
         ]);
     }
@@ -75,7 +76,7 @@ class Audit
             'subject_id' => $subject?->getKey(),
             'subject_label' => $subject ? self::label($subject) : null,
             'changes' => $changes ?: null,
-            'ip' => request()?->ip(),
+            'ip' => request()->ip(),
             'created_at' => now(),
         ]);
     }
@@ -83,7 +84,7 @@ class Audit
     /** Something a human recognises, because an id alone says nothing. */
     public static function label(Model $subject): string
     {
-        if ($subject instanceof \App\Models\IncidentUpdate) {
+        if ($subject instanceof IncidentUpdate) {
             return 'Update on "'.$subject->incident?->name.'"';
         }
 

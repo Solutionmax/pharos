@@ -21,11 +21,13 @@ class SubscriberNotification extends Model
         'updated_at' => LocalTime::class,
     ];
 
+    /** @return BelongsTo<Subscriber, $this> */
     public function subscriber(): BelongsTo
     {
         return $this->belongsTo(Subscriber::class);
     }
 
+    /** @return BelongsTo<IncidentUpdate, $this> */
     public function incidentUpdate(): BelongsTo
     {
         return $this->belongsTo(IncidentUpdate::class, 'incident_update_id');

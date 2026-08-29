@@ -23,6 +23,7 @@ use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\NoStore;
 use App\Models\Incident;
 use App\Services\SelfUpdater;
+use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StatusPageController::class, 'show'])->name('status');
@@ -53,7 +54,7 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
 
     // AuthenticateSession is what makes a password change actually kick the other
     // sessions out; logoutOtherDevices does nothing without it.
-    Route::middleware(['auth', \Illuminate\Session\Middleware\AuthenticateSession::class])->group(function () {
+    Route::middleware(['auth', AuthenticateSession::class])->group(function () {
         Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
         Route::get('/', fn () => redirect()->route('admin.components'));
@@ -111,7 +112,7 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         Route::post('profile/recovery-codes', [ProfileController::class, 'regenerateRecoveryCodes'])->name('profile.recovery-codes');
         // Hiding a "Good to know" note is personal, so it sits with the profile and needs no admin.
         Route::post('notes/{id}/restore', [ProfileController::class, 'restoreNote'])->where('id', '[a-z0-9.-]+')->name('notes.restore-one');
-            Route::post('notes/restore', [ProfileController::class, 'restoreNotes'])->name('notes.restore');
+        Route::post('notes/restore', [ProfileController::class, 'restoreNotes'])->name('notes.restore');
         Route::post('notes/{id}/dismiss', [ProfileController::class, 'dismissNote'])->name('notes.dismiss')->where('id', '[a-z0-9.-]+');
 
         // Everything that changes the installation itself rather than what it reports on.

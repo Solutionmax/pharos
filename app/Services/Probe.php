@@ -36,12 +36,13 @@ class Probe
         $body = @file_get_contents($check->target, false, $ctx);
         $ms = (int) round((microtime(true) - $start) * 1000);
 
-        if ($body === false && ! isset($http_response_header)) {
+        // PHP fills $http_response_header after file_get_contents; static analysis cannot see that.
+        if ($body === false && ! isset($http_response_header)) { // @phpstan-ignore booleanAnd.alwaysFalse, isset.variable
             return new ProbeResult(false, $ms, 'No response');
         }
 
         $code = 0;
-        foreach ($http_response_header ?? [] as $line) {
+        foreach ($http_response_header ?? [] as $line) { // @phpstan-ignore nullCoalesce.variable
             if (preg_match('#^HTTP/\S+\s+(\d{3})#', $line, $m)) {
                 $code = (int) $m[1];
             }

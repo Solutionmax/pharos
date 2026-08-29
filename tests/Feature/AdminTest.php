@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\CheckType;
 use App\Enums\ComponentStatus;
 use App\Enums\IncidentStatus;
-use App\Enums\CheckType;
 use App\Models\Check;
 use App\Models\CheckResult;
 use App\Models\Component;

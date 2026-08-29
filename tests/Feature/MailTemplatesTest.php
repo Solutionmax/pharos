@@ -6,6 +6,7 @@ use App\Enums\IncidentStatus;
 use App\Enums\UserRole;
 use App\Mail\IncidentNoticeMail;
 use App\Mail\SubscribeConfirmMail;
+use App\Mail\TemplatePreviewMail;
 use App\Models\AuditEntry;
 use App\Models\Component;
 use App\Models\Incident;
@@ -13,6 +14,7 @@ use App\Models\IncidentUpdate;
 use App\Models\Setting;
 use App\Models\Subscriber;
 use App\Models\User;
+use App\Services\License;
 use App\Services\MailTemplates;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -142,7 +144,7 @@ class MailTemplatesTest extends TestCase
     public function test_a_saved_template_changes_the_sent_mail(): void
     {
         // Custom wording is Brand pack; the mail is rendered under a licence.
-        $this->mock(\App\Services\License::class)->shouldReceive('has')->andReturn(true);
+        $this->mock(License::class)->shouldReceive('has')->andReturn(true);
         $templates = app(MailTemplates::class);
         $templates->save('incident_opened', 'Heads up: {incident}', "Dear {name},\n\n{incident} is now **{status}**.");
         $subscriber = $this->subscriber();
@@ -230,7 +232,7 @@ class MailTemplatesTest extends TestCase
         $this->assertStringNotContainsString('&amp;', $text);
         $this->assertStringContainsString("Title\n\nBold and a list:\n\n- one\n- two", $text);
         $this->assertStringContainsString('View status page: https://s.example.net/', $text);
-        $this->assertStringContainsString("Unsubscribe: https://s.example.net/unsubscribe/1?token=x&signature=y", $text);
+        $this->assertStringContainsString('Unsubscribe: https://s.example.net/unsubscribe/1?token=x&signature=y', $text);
     }
 
     public function test_reset_restores_the_default(): void
@@ -365,7 +367,7 @@ class MailTemplatesTest extends TestCase
             ->assertRedirect('/admin/mail-templates?template=incident_opened')
             ->assertSessionHas('status', 'Test e-mail sent to raymon@example.net.');
 
-        Mail::assertSent(\App\Mail\TemplatePreviewMail::class, function ($mail) {
+        Mail::assertSent(TemplatePreviewMail::class, function ($mail) {
             return $mail->hasTo('raymon@example.net')
                 && $mail->envelope()->subject === 'Trial Outbound e-mail delayed'
                 && str_contains($mail->render(), 'Hello raymon');

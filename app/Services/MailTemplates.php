@@ -246,7 +246,7 @@ class MailTemplates
             'components' => 'Mail, Outbound queue',
             'link' => route('status'),
             'unsubscribe' => url('/unsubscribe/preview'),
-            'when' => \App\Services\Clock::now()->format('j F Y, H:i'), // the customer's zone, like a real notice
+            'when' => Clock::now()->format('j F Y, H:i'), // the customer's zone, like a real notice
             'name' => $name,
             'tone' => $key === 'incident_resolved' ? 'ok' : 'p',
         ];

@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Enums\IncidentStatus;
+use App\Enums\UserRole;
 use App\Http\Controllers\SubscribeController;
+use App\Mail\IncidentNoticeMail;
 use App\Mail\SubscribeConfirmMail;
 use App\Models\AuditEntry;
-use App\Models\IncidentUpdate;
 use App\Models\Incident;
-use App\Enums\IncidentStatus;
+use App\Models\IncidentUpdate;
 use App\Models\Setting;
 use App\Models\Subscriber;
 use App\Models\SubscriberNotification;
@@ -15,7 +17,6 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class SubscribersTest extends TestCase
@@ -334,7 +335,7 @@ class SubscribersTest extends TestCase
 
         // ...but the row queued before the flip is still delivered, not stranded.
         $this->artisan('pharos:notify')->assertSuccessful()->expectsOutputToContain('Sent 1, failed 0');
-        Mail::assertSent(\App\Mail\IncidentNoticeMail::class, 1);
+        Mail::assertSent(IncidentNoticeMail::class, 1);
         $this->assertNotNull(SubscriberNotification::first()->sent_at);
     }
 
@@ -374,7 +375,7 @@ class SubscribersTest extends TestCase
     {
         $member = User::create([
             'name' => 'Tom', 'email' => 'tom@example.net',
-            'password' => Hash::make('correct-horse-battery'), 'role' => \App\Enums\UserRole::User,
+            'password' => Hash::make('correct-horse-battery'), 'role' => UserRole::User,
         ]);
 
         $this->actingAs($member)->post('/admin/subscribers/enabled', ['enabled' => '0'])
@@ -484,7 +485,7 @@ class SubscribersTest extends TestCase
     {
         $member = User::create([
             'name' => 'Tom', 'email' => 'tom@example.net',
-            'password' => Hash::make('correct-horse-battery'), 'role' => \App\Enums\UserRole::User,
+            'password' => Hash::make('correct-horse-battery'), 'role' => UserRole::User,
         ]);
 
         $this->actingAs($member)->get('/admin/subscribers')->assertOk();
@@ -496,7 +497,7 @@ class SubscribersTest extends TestCase
         Mail::fake();
         $this->post('/subscribe', ['email' => 'text@example.net']);
 
-        Mail::assertSent(\App\Mail\SubscribeConfirmMail::class, function ($mail) {
+        Mail::assertSent(SubscribeConfirmMail::class, function ($mail) {
             $rendered = $mail->render();           // html part
             $text = (string) view($mail->textView, $mail->buildViewData());
             $this->assertStringContainsString('&token=', $text);

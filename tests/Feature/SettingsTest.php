@@ -3,12 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\IncidentStatus;
+use App\Enums\UserRole;
+use App\Models\AuditEntry;
 use App\Models\Component;
 use App\Models\ComponentGroup;
 use App\Models\Incident;
 use App\Models\IncidentUpdate;
-use App\Enums\UserRole;
-use App\Models\AuditEntry;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Audit;
@@ -18,6 +18,7 @@ use App\Services\InstallSettings;
 use App\Services\SelfUpdater;
 use App\Services\Updater;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -208,7 +209,6 @@ class SettingsTest extends TestCase
         $this->get('/')->assertOk()->assertDontSee('brand/gone.png');
     }
 
-
     public function test_the_display_time_zone_can_be_chosen(): void
     {
         // Settings is installation-level: the first account is an admin, so this passes the gate.
@@ -289,7 +289,7 @@ class SettingsTest extends TestCase
         Setting::put('sso.enabled', '1');
         Setting::put('sso.issuer', 'https://id.example.net');
         Setting::put('sso.client_id', 'pharos');
-        Setting::put('sso.client_secret', \Illuminate\Support\Facades\Crypt::encryptString('shhh'));
+        Setting::put('sso.client_secret', Crypt::encryptString('shhh'));
 
         $this->actingAs($this->user)->get('/admin/settings')->assertOk()
             ->assertSee('<span class="tabhint">smtp via smtp.example.net</span>', false)

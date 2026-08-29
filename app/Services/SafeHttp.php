@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Setting;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
@@ -30,10 +31,10 @@ class SafeHttp
     ];
 
     /**
-     * @param  array<int, string>|null  $allowedHosts hosts an administrator vouched
-     *                                  for; null reads the setting at the moment of
-     *                                  the lookup, so saving the screen takes effect
-     *                                  on that same request instead of the next one.
+     * @param  array<int, string>|null  $allowedHosts  hosts an administrator vouched
+     *                                                 for; null reads the setting at the moment of
+     *                                                 the lookup, so saving the screen takes effect
+     *                                                 on that same request instead of the next one.
      */
     public function __construct(protected int $timeout = 6, protected ?array $allowedHosts = null) {}
 
@@ -44,7 +45,7 @@ class SafeHttp
      */
     public static function configuredHosts(): array
     {
-        $raw = (string) \App\Models\Setting::get('sso.internal_hosts', '');
+        $raw = (string) Setting::get('sso.internal_hosts', '');
 
         return array_values(array_filter(array_map(
             'trim',

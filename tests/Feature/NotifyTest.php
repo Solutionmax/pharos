@@ -11,7 +11,9 @@ use App\Models\Setting;
 use App\Models\Subscriber;
 use App\Models\SubscriberNotification;
 use App\Models\User;
+use App\Services\MailTemplates;
 use App\Services\SubscriberNotifier;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -189,7 +191,7 @@ class NotifyTest extends TestCase
 
     public function test_the_command_runs_every_minute_from_the_scheduler(): void
     {
-        $events = collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())
+        $events = collect(app(Schedule::class)->events())
             ->filter(fn ($e) => str_contains($e->command ?? '', 'pharos:notify'));
 
         $this->assertCount(1, $events);
@@ -199,7 +201,7 @@ class NotifyTest extends TestCase
     /** The status page colours an incident by its state; the mail about it must not say blue. */
     public function test_the_mail_rule_follows_the_incident_state(): void
     {
-        $render = fn (string $key, string $tone) => app(\App\Services\MailTemplates::class)->render($key, [
+        $render = fn (string $key, string $tone) => app(MailTemplates::class)->render($key, [
             'brand' => 'B', 'incident' => 'I', 'status' => 'S', 'message' => 'm', 'components' => 'c',
             'link' => 'https://x.test', 'unsubscribe' => 'https://x.test/u', 'when' => 'now', 'name' => 'n', 'tone' => $tone,
         ])['html'];

@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class MakeUser extends Command
 {
@@ -15,7 +16,7 @@ class MakeUser extends Command
 
     public function handle(): int
     {
-        $password = $this->option('password') ?: \Illuminate\Support\Str::random(16);
+        $password = $this->option('password') ?: Str::random(16);
 
         $role = $this->option('role');
 

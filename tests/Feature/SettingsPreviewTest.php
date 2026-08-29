@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\Branding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class SettingsPreviewTest extends TestCase
@@ -46,7 +47,7 @@ class SettingsPreviewTest extends TestCase
     }
 
     /** @param array<string,bool> $on */
-    protected function preview(array $on, array $extra = []): \Illuminate\Testing\TestResponse
+    protected function preview(array $on, array $extra = []): TestResponse
     {
         $m = [];
         foreach (array_keys(Branding::MODULES) as $key) {

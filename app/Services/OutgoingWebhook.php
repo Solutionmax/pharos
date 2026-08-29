@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Enums\IncidentStatus;
 use App\Models\Incident;
 use App\Models\Setting;
 use App\Models\WebhookEndpoint;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * Fires on every incident change, to as many places as are configured.
@@ -37,7 +39,7 @@ class OutgoingWebhook
     {
         $incident = new Incident([
             'name' => 'Test notification from Pharos',
-            'status' => \App\Enums\IncidentStatus::Investigating,
+            'status' => IncidentStatus::Investigating,
             'impact' => 'minor',
             'occurred_at' => now(),
         ]);
@@ -191,7 +193,7 @@ class OutgoingWebhook
 
             $endpoint->forceFill([
                 'last_status' => null,
-                'last_error' => \Illuminate\Support\Str::limit($e->getMessage(), 180),
+                'last_error' => Str::limit($e->getMessage(), 180),
                 'last_attempt_at' => now(),
             ])->save();
 

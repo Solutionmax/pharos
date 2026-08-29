@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\Branding;
 use App\Services\MailConfig;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -22,8 +23,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \Illuminate\Pagination\Paginator::defaultView('pagination::pharos');
-        \Illuminate\Pagination\Paginator::defaultSimpleView('pagination::pharos');
+        Paginator::defaultView('pagination::pharos');
+        Paginator::defaultSimpleView('pagination::pharos');
         // Shared with every view: the layout, the child view and the partials all
         // need it, and a child does not inherit variables defined in its layout.
         View::share('branding', $this->app->make(Branding::class));

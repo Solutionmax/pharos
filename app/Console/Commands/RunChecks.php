@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Check;
 use App\Models\Setting;
 use App\Services\CheckRunner;
 use Illuminate\Console\Command;
@@ -43,7 +44,7 @@ class RunChecks extends Command
         Setting::put('checks.last_run_at', now()->toIso8601String());
 
         if ($this->option('force')) {
-            $checks = \App\Models\Check::with('component')->where('enabled', true)->get();
+            $checks = Check::with('component')->where('enabled', true)->get();
             foreach ($checks as $check) {
                 $result = $runner->runOne($check);
                 $this->line(sprintf(

@@ -16,7 +16,7 @@ class Uptime
 
     /**
      * @return array<int, array{day: string, tone: string, pct: float, known: bool}>
-     *         Oldest first, always exactly WINDOW_DAYS entries.
+     *                                                                               Oldest first, always exactly WINDOW_DAYS entries.
      */
     public function bar(Component $component, ?Carbon $today = null): array
     {

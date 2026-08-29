@@ -11,10 +11,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+/**
+ * @property UserRole $role
+ * @property array<int, string>|null $dismissed_notes
+ */
 class User extends Authenticatable
 {
     use Auditable, LocalTimestamps;
-
     use HasFactory, Notifiable;
 
     protected $fillable = ['name', 'email', 'password', 'role'];
@@ -51,6 +54,7 @@ class User extends Authenticatable
         return $this->role === UserRole::Admin;
     }
 
+    /** @return HasMany<RecoveryCode, $this> */
     public function recoveryCodes(): HasMany
     {
         return $this->hasMany(RecoveryCode::class);

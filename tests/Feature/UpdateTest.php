@@ -8,10 +8,11 @@ use App\Services\SelfUpdater;
 use App\Services\Updater;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class UpdateTest extends TestCase
@@ -1081,7 +1082,7 @@ class UpdateTest extends TestCase
             $mock->shouldReceive('rollback')->andReturnUsing(function () use ($user) {
                 // The account was created after the backup: gone from the restored
                 // database without any model event, exactly like a file swap.
-                \Illuminate\Support\Facades\DB::table('users')->where('id', $user->id)->delete();
+                DB::table('users')->where('id', $user->id)->delete();
 
                 return ['ok' => true, 'message' => 'Rolled back to 1.0.0.', 'safety' => '1.0.1-20260828-120000'];
             });
@@ -1099,9 +1100,11 @@ class UpdateTest extends TestCase
     public function test_only_the_newest_backups_are_kept(): void
     {
         config(['pharos.update.keep_backups' => 3]);
-        $src = $this->fakeTree(); $dir = $this->fakeBackupsDir();
+        $src = $this->fakeTree();
+        $dir = $this->fakeBackupsDir();
         foreach (['0.9.0-20260101-000000', '0.9.1-20260201-000000', '0.9.2-20260301-000000', '0.9.3-20260401-000000'] as $old) {
-            File::ensureDirectoryExists("$dir/$old"); File::put("$dir/$old/artisan", 'x');
+            File::ensureDirectoryExists("$dir/$old");
+            File::put("$dir/$old/artisan", 'x');
         }
 
         $updater = app(SelfUpdater::class);
@@ -1116,9 +1119,11 @@ class UpdateTest extends TestCase
     public function test_pruning_can_be_switched_off(): void
     {
         config(['pharos.update.keep_backups' => 0]);
-        $src = $this->fakeTree(); $dir = $this->fakeBackupsDir();
+        $src = $this->fakeTree();
+        $dir = $this->fakeBackupsDir();
         foreach (['0.9.0-20260101-000000', '0.9.1-20260201-000000', '0.9.2-20260301-000000'] as $old) {
-            File::ensureDirectoryExists("$dir/$old"); File::put("$dir/$old/artisan", 'x');
+            File::ensureDirectoryExists("$dir/$old");
+            File::put("$dir/$old/artisan", 'x');
         }
 
         app(SelfUpdater::class)->backupCurrent($src);
@@ -1133,7 +1138,8 @@ class UpdateTest extends TestCase
         [$name, $live, $liveDb] = $this->fakeRollbackPair();
         $dir = dirname(app(SelfUpdater::class)->backupPath($name));
         foreach (['1.0.1-20260201-000000', '1.0.2-20260301-000000'] as $newer) {
-            File::ensureDirectoryExists("$dir/$newer"); File::put("$dir/$newer/artisan", 'x');
+            File::ensureDirectoryExists("$dir/$newer");
+            File::put("$dir/$newer/artisan", 'x');
         }
         // $name (1.0.0-2026-01-01) is now the oldest of three; the safety copy makes four.
 

@@ -6,6 +6,7 @@ use App\Enums\CheckType;
 use App\Enums\ComponentStatus;
 use App\Enums\IncidentStatus;
 use App\Models\Check;
+use App\Models\CheckResult;
 use App\Models\Component;
 use App\Models\Incident;
 use App\Models\UptimeDay;
@@ -15,6 +16,7 @@ use App\Services\Probe;
 use App\Services\ProbeResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /** Probe stub: the runner is what we are testing, not the network. */
@@ -348,12 +350,12 @@ class CheckRunnerTest extends TestCase
     {
         $check = $this->makeCheck(['retries' => 0]);
 
-        $lock = \Illuminate\Support\Facades\Cache::lock('pharos:checks', 300);
+        $lock = Cache::lock('pharos:checks', 300);
         $this->assertTrue($lock->get());
 
         $this->artisan('pharos:check --force')->assertSuccessful();
 
-        $this->assertSame(0, \App\Models\CheckResult::count());
+        $this->assertSame(0, CheckResult::count());
 
         $lock->release();
     }

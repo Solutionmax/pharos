@@ -36,6 +36,7 @@ class Subscriber extends Model
         'updated_at' => LocalTime::class,
     ];
 
+    /** @return HasMany<SubscriberNotification, $this> */
     public function notifications(): HasMany
     {
         return $this->hasMany(SubscriberNotification::class);
