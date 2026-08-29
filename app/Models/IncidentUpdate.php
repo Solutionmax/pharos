@@ -3,9 +3,9 @@
 namespace App\Models;
 
 use App\Casts\LocalTime;
+use App\Enums\IncidentStatus;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\LocalTimestamps;
-use App\Enums\IncidentStatus;
 use App\Services\SubscriberNotifier;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,6 +34,7 @@ class IncidentUpdate extends Model
         static::created(fn (self $update) => app(SubscriberNotifier::class)->queue($update));
     }
 
+    /** @return BelongsTo<Incident, $this> */
     public function incident(): BelongsTo
     {
         return $this->belongsTo(Incident::class);

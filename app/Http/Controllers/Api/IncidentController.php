@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Enums\ComponentStatus;
 use App\Enums\IncidentStatus;
 use App\Http\Controllers\Controller;
-use App\Models\Component;
 use App\Models\ApiToken;
+use App\Models\Component;
 use App\Models\Incident;
 use App\Models\IncidentTemplate;
 use App\Models\IncidentUpdate;
@@ -243,7 +243,7 @@ class IncidentController extends Controller
             'components' => $i->components->map(fn ($c) => [
                 'id' => $c->id,
                 'name' => $c->name,
-                'status' => (int) $c->pivot->status,
+                'status' => (int) $c->pivot?->getAttribute('status'),
             ])->all(),
             'updates' => $i->updates->map(fn ($u) => [
                 'status' => $u->status->value,

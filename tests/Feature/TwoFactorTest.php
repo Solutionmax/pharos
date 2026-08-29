@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditEntry;
 use App\Models\RecoveryCode;
 use App\Models\User;
 use App\Services\Totp;
@@ -206,7 +207,7 @@ class TwoFactorTest extends TestCase
     {
         $this->enrol();
 
-        $this->assertSame(0, \App\Models\AuditEntry::whereRaw(
+        $this->assertSame(0, AuditEntry::whereRaw(
             'LOWER(COALESCE(changes, "")) LIKE ?', ['%totp_secret%']
         )->count());
     }

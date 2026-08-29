@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 
 /**
@@ -46,8 +48,8 @@ class Sso
         }
 
         try {
-            return \Illuminate\Support\Facades\Crypt::decryptString($stored);
-        } catch (\Illuminate\Contracts\Encryption\DecryptException) {
+            return Crypt::decryptString($stored);
+        } catch (DecryptException) {
             return $stored; // saved before secrets were encrypted; re-saving the form fixes it
         }
     }

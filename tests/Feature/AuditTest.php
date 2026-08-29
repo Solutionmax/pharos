@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Models\ApiToken;
 use App\Models\AuditEntry;
 use App\Models\Component;
+use App\Models\Incident;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\Audit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -148,7 +150,7 @@ class AuditTest extends TestCase
         $component = Component::create(['name' => 'Website']);
         $component->status = 4; // raw, as a form or the API hands it over
 
-        $diff = \App\Services\Audit::diff($component);
+        $diff = Audit::diff($component);
 
         $this->assertSame('Operational', $diff['status']['from']);
         $this->assertSame('Major outage', $diff['status']['to']);
@@ -156,10 +158,10 @@ class AuditTest extends TestCase
 
     public function test_an_incident_update_is_labelled_by_its_incident(): void
     {
-        $incident = \App\Models\Incident::create(['name' => 'Mail delayed', 'status' => 1, 'impact' => 'minor', 'occurred_at' => now()]);
+        $incident = Incident::create(['name' => 'Mail delayed', 'status' => 1, 'impact' => 'minor', 'occurred_at' => now()]);
         $update = $incident->updates()->create(['status' => 1, 'message' => 'Looking into it']);
 
-        $this->assertSame('Update on "Mail delayed"', \App\Services\Audit::label($update));
+        $this->assertSame('Update on "Mail delayed"', Audit::label($update));
     }
 
     public function test_the_audit_page_uses_its_own_pager_and_readable_field_names(): void
@@ -210,7 +212,6 @@ class AuditTest extends TestCase
         $this->assertStringContainsString('"API token: deploy",203.0.113.9,component.updated,Website,"status: Operational → Major outage"', $csv);
         $this->assertStringNotContainsString('Anita', $csv, 'the filter applies to the download too');
     }
-
 
     public function test_the_csv_carries_the_chosen_zone_as_an_offset(): void
     {

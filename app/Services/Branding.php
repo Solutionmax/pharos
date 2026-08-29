@@ -28,7 +28,8 @@ class Branding
     {
         $default = self::MODULES[$key]['default'] ?? true;
 
-        return Setting::get($key, $default ? '1' : '0') === '1';
+        // Every default happens to be "on" today; the table is still the source of truth.
+        return Setting::get($key, $default ? '1' : '0') === '1'; // @phpstan-ignore ternary.alwaysTrue
     }
 
     /** @return array<string, bool> */

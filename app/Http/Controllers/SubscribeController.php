@@ -44,7 +44,7 @@ class SubscribeController extends Controller
         // A new token voids the link in any earlier confirmation mail.
         $subscriber = Subscriber::updateOrCreate(['email' => $email], [
             'token' => Subscriber::freshToken(),
-            'created_ip' => $subscriber?->created_ip ?? $request->ip(),
+            'created_ip' => $subscriber->created_ip ?? $request->ip(),
         ]);
 
         Mail::to($subscriber->email)->send(new SubscribeConfirmMail($subscriber));

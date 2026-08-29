@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -25,7 +26,7 @@ class License
         return Setting::get('license.key');
     }
 
-    /** @return array{product?:string,features?:array,issued_to?:string,issued_at?:string}|null */
+    /** @return array{product?:string,features?:array<int,string>,issued_to?:string,issued_at?:string,expires_at?:string,issued_for?:string}|null */
     public function payload(): ?array
     {
         $key = $this->key();
@@ -218,11 +219,11 @@ class License
     }
 
     /** The day the licence runs out, or null when it never does. */
-    public function expiresAt(): ?\Illuminate\Support\Carbon
+    public function expiresAt(): ?Carbon
     {
         $date = $this->payload()['expires_at'] ?? null;
 
-        return $date ? \Illuminate\Support\Carbon::parse((string) $date)->endOfDay() : null;
+        return $date ? Carbon::parse((string) $date)->endOfDay() : null;
     }
 
     /** Whole days left, or null when there is no term to count down. */
@@ -244,7 +245,7 @@ class License
     protected function hasPassed(string $date): bool
     {
         try {
-            return \Illuminate\Support\Carbon::parse($date)->endOfDay()->isPast();
+            return Carbon::parse($date)->endOfDay()->isPast();
         } catch (\Throwable) {
             // An unreadable date is not a licence we can vouch for.
             return true;

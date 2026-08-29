@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\CheckType;
 use App\Enums\ComponentStatus;
 use App\Enums\IncidentStatus;
 use App\Models\Check;
@@ -9,6 +10,7 @@ use App\Models\CheckResult;
 use App\Models\Incident;
 use App\Models\IncidentUpdate;
 use App\Models\UptimeDay;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -64,7 +66,7 @@ class CheckRunner
             $check->consecutive_successes = 0;
         }
         // A heartbeat's last_run_at is owned by whoever pings in, not by the runner.
-        if ($check->type !== \App\Enums\CheckType::Heartbeat) {
+        if ($check->type !== CheckType::Heartbeat) {
             $check->last_run_at = $now;
         }
         $check->save();
@@ -77,7 +79,7 @@ class CheckRunner
 
     protected function recordUptime(Check $check, ProbeResult $result, \DateTimeInterface $now, ?string $previousRun): void
     {
-        $now = \Illuminate\Support\Carbon::instance(
+        $now = Carbon::instance(
             $now instanceof \DateTimeImmutable ? \DateTime::createFromImmutable($now) : $now
         );
         // UTC days on purpose: the roll-up is a storage concept, and the bar's
@@ -100,7 +102,7 @@ class CheckRunner
         // interval so a stalled scheduler cannot back-fill hours it did not observe,
         // and at midnight so the seconds land in the row they belong to.
         $since = $previousRun
-            ? \Illuminate\Support\Carbon::parse($previousRun)
+            ? Carbon::parse($previousRun)
             : $now->copy()->subSeconds($check->interval_seconds);
         $since = $since->max($dayStart);
         $seconds = (int) min(max(0, $since->diffInSeconds($now)), $check->interval_seconds);
@@ -153,7 +155,7 @@ class CheckRunner
      */
     protected function recoveryStreak(Check $check): int
     {
-        return $check->type === \App\Enums\CheckType::Heartbeat ? 1 : self::RECOVERY_STREAK;
+        return $check->type === CheckType::Heartbeat ? 1 : self::RECOVERY_STREAK;
     }
 
     protected function openIncident(Check $check, ProbeResult $result, \DateTimeInterface $now): Incident

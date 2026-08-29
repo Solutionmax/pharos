@@ -3,9 +3,9 @@
 namespace App\Models;
 
 use App\Casts\LocalTime;
+use App\Enums\CheckType;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\LocalTimestamps;
-use App\Enums\CheckType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -35,6 +35,7 @@ class Check extends Model
         'updated_at' => LocalTime::class,
     ];
 
+    /** @return BelongsTo<Component, $this> */
     public function component(): BelongsTo
     {
         return $this->belongsTo(Component::class);

@@ -8,6 +8,8 @@ return [
     // be offered for ever. The override exists for Docker, where the host owns the
     // image and the app never updates itself.
     'version' => env('PHAROS_VERSION', '0.1.0-dev'),
+    // Whether the version was pinned by the host (Docker image) rather than defaulted.
+    'version_pinned' => filled(env('PHAROS_VERSION')),
 
     // Ed25519 public key, hex. Signs both licence keys and update manifests,
     // with a different purpose field so one can never be replayed as the other.
@@ -45,6 +47,9 @@ return [
     'audit_days' => (int) env('PHAROS_AUDIT_DAYS', 180),
 
     // Never hardcode these in views: moving to a real domain must stay a .env edit.
+    // Vendor side only: where the Ed25519 secret lives for pharos:license:sign / release:sign.
+    'license_secret_file' => env('PHAROS_LICENSE_SECRET_FILE'),
+
     'buy_url' => env('PHAROS_BUY_URL', 'https://pharos.solutionmax.net/#pricing'),
     'docs_url' => env('PHAROS_DOCS_URL', 'https://pharos.solutionmax.net/docs'),
 ];

@@ -13,6 +13,7 @@ use App\Services\Clock;
 use App\Services\Uptime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class StatusPageController extends Controller
 {
@@ -148,7 +149,7 @@ class StatusPageController extends Controller
         ]);
     }
 
-    /** @return array<string, \Illuminate\Support\Collection> */
+    /** @return array<string, Collection> */
     protected function incidentDays(int $span, array $modules): array
     {
         $incidents = Incident::public()

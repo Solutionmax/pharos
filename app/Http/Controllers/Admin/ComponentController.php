@@ -258,7 +258,7 @@ class ComponentController extends Controller
             IncidentUpdate::create([
                 'incident_id' => $incident->id,
                 'status' => IncidentStatus::Resolved,
-                'message' => "Closed because the component was removed. This incident could not resolve itself any more.",
+                'message' => 'Closed because the component was removed. This incident could not resolve itself any more.',
                 'automatic' => true,
             ]);
         }

@@ -32,7 +32,7 @@ class UpdateCommand extends Command
             return self::SUCCESS;
         }
 
-        if ($latest['notes'] ?? false) {
+        if ($latest['notes'] !== '') {
             $this->line('');
             $this->line($latest['notes']);
             $this->line('');

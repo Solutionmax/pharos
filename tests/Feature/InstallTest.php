@@ -98,7 +98,6 @@ class InstallTest extends TestCase
         $this->get('/')->assertOk()->assertSee('Acme Hosting');
     }
 
-
     public function test_the_wizard_takes_a_time_zone_and_defaults_to_utc(): void
     {
         $this->get('/admin/install')->assertOk()

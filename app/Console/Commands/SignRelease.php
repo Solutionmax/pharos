@@ -20,7 +20,7 @@ class SignRelease extends Command
 
     public function handle(): int
     {
-        $path = $this->option('key') ?: env('PHAROS_LICENSE_SECRET_FILE');
+        $path = $this->option('key') ?: config('pharos.license_secret_file');
 
         if (! $path || ! is_readable($path)) {
             $this->error('No readable secret key. Pass --key=/path/to/key or set PHAROS_LICENSE_SECRET_FILE.');

@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\License;
+use App\Services\MailTemplates;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class LicenseTest extends TestCase
@@ -156,8 +158,8 @@ class LicenseTest extends TestCase
 
     public function test_paid_branding_falls_back_the_moment_the_key_is_gone(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
-        \Illuminate\Support\Facades\Storage::disk('public')->put('brand/logo.png', 'png');
+        Storage::fake('public');
+        Storage::disk('public')->put('brand/logo.png', 'png');
         $license = app(License::class);
         $this->assertTrue($license->store($this->validKey()));
 
@@ -166,13 +168,13 @@ class LicenseTest extends TestCase
         Setting::put('mail.template.incident_opened.subject', 'Custom subject');
 
         $this->get('/')->assertDontSee('Powered by Pharos')->assertSee('brand/logo.png');
-        $this->assertSame('Custom subject', app(\App\Services\MailTemplates::class)->subject('incident_opened'));
+        $this->assertSame('Custom subject', app(MailTemplates::class)->subject('incident_opened'));
 
         // Key removed: the paid parts stop showing, the uploads are kept for when it comes back.
         $license->forget();
 
         $this->get('/')->assertSee('Powered by Pharos')->assertDontSee('brand/logo.png');
-        $this->assertNotSame('Custom subject', app(\App\Services\MailTemplates::class)->subject('incident_opened'));
+        $this->assertNotSame('Custom subject', app(MailTemplates::class)->subject('incident_opened'));
         $this->assertSame('brand/logo.png', Setting::get('brand.logo_path'));
 
         $license->store($this->validKey());
@@ -222,8 +224,8 @@ class LicenseTest extends TestCase
 
     public function test_the_sign_in_page_is_white_label_under_a_brand_pack(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
-        \Illuminate\Support\Facades\Storage::disk('public')->put('brand/acme.png', 'png');
+        Storage::fake('public');
+        Storage::disk('public')->put('brand/acme.png', 'png');
         Setting::put('brand.name', 'Acme Hosting');
         Setting::put('brand.logo_path', 'brand/acme.png');
         Setting::put('brand.credit_hidden', '1');

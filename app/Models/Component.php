@@ -3,15 +3,19 @@
 namespace App\Models;
 
 use App\Casts\LocalTime;
+use App\Enums\ComponentStatus;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\LocalTimestamps;
-use App\Enums\ComponentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
+/**
+ * @property-read Pivot|null $pivot
+ */
 class Component extends Model
 {
     use Auditable, LocalTimestamps;
@@ -34,26 +38,31 @@ class Component extends Model
         'updated_at' => LocalTime::class,
     ];
 
+    /** @return BelongsTo<ComponentGroup, $this> */
     public function group(): BelongsTo
     {
         return $this->belongsTo(ComponentGroup::class, 'component_group_id');
     }
 
+    /** @return HasOne<Check, $this> */
     public function check(): HasOne
     {
         return $this->hasOne(Check::class);
     }
 
+    /** @return HasMany<CheckResult, $this> */
     public function results(): HasMany
     {
         return $this->hasMany(CheckResult::class);
     }
 
+    /** @return HasMany<UptimeDay, $this> */
     public function uptimeDays(): HasMany
     {
         return $this->hasMany(UptimeDay::class);
     }
 
+    /** @return BelongsToMany<Incident, $this> */
     public function incidents(): BelongsToMany
     {
         return $this->belongsToMany(Incident::class)->withPivot('status');

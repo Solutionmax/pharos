@@ -171,7 +171,7 @@ class DemoSeeder extends Seeder
         }
 
         [$token, $plain] = ApiToken::issue('demo');
-        $this->command?->info("Demo API token: {$plain}");
+        $this->command->info("Demo API token: {$plain}");
     }
 
     /** Fills 90 days of roll-up data so the bars have something to show. */

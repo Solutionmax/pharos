@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\Audit;
-use App\Models\Setting;
 use App\Services\Sso;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 
 /**
  * The trip to the identity provider and back. Nothing here creates accounts:
@@ -139,7 +140,7 @@ class SsoController extends Controller
         // rendered back into the form, so submitting the form would clear it.
         if (filled($data['client_secret'] ?? null)) {
             // Encrypted at rest, like the mail password: a database dump must not hand out the provider secret.
-            Setting::put('sso.client_secret', \Illuminate\Support\Facades\Crypt::encryptString($data['client_secret']));
+            Setting::put('sso.client_secret', Crypt::encryptString($data['client_secret']));
         }
 
         Cache::forget('sso.discovery.'.md5($issuer));

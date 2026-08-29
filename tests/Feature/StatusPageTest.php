@@ -3,13 +3,15 @@
 namespace Tests\Feature;
 
 use App\Enums\ComponentStatus;
+use App\Enums\IncidentStatus;
 use App\Models\Component;
 use App\Models\ComponentGroup;
 use App\Models\Incident;
 use App\Models\IncidentUpdate;
-use App\Enums\IncidentStatus;
+use App\Models\Setting;
 use App\Models\UptimeDay;
 use App\Models\User;
+use App\Services\License;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -97,7 +99,7 @@ class StatusPageTest extends TestCase
 
     public function test_an_open_incident_stays_on_the_page_after_the_history_window(): void
     {
-        \App\Models\Setting::put('page.incident_days', 2);
+        Setting::put('page.incident_days', 2);
         $component = $this->makeComponent(['status' => ComponentStatus::MajorOutage]);
 
         $old = Incident::create([
@@ -269,8 +271,8 @@ class StatusPageTest extends TestCase
         $payload = json_encode(['product' => 'pharos', 'issued_to' => 'k@example.com', 'features' => ['brand_pack'], 'issued_at' => '2026-08-01'], JSON_UNESCAPED_SLASHES);
         $b64 = fn (string $bin) => rtrim(strtr(base64_encode($bin), '+/', '-_'), '=');
         $key = $b64($payload).'.'.$b64(sodium_crypto_sign_detached($payload, sodium_crypto_sign_secretkey($pair)));
-        $this->assertTrue(app(\App\Services\License::class)->store($key));
-        \App\Models\Setting::put('brand.credit_hidden', '1');
+        $this->assertTrue(app(License::class)->store($key));
+        Setting::put('brand.credit_hidden', '1');
 
         $this->get('/')->assertDontSee('Powered by Pharos');
     }
@@ -326,7 +328,7 @@ class StatusPageTest extends TestCase
     /** Ninety slivers are unreadable without a hover that names the day. */
     public function test_every_uptime_sliver_names_its_day(): void
     {
-        \App\Models\Component::create(['name' => 'Website']);
+        Component::create(['name' => 'Website']);
 
         $this->get('/')->assertOk()
             ->assertSee('data-tip="'.now()->format('j M'), false)
@@ -339,7 +341,7 @@ class StatusPageTest extends TestCase
     /** Ninety tab stops would be absurd: the bar is the stop, and it speaks the summary. */
     public function test_the_uptime_bar_is_one_tab_stop_with_a_summary(): void
     {
-        \App\Models\Component::create(['name' => 'Website']);
+        Component::create(['name' => 'Website']);
 
         $body = $this->get('/')->assertOk()
             ->assertSee('class="bar" role="img" tabindex="0"', false)

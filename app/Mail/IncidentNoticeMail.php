@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Enums\IncidentStatus;
 use App\Mail\Concerns\Branded;
 use App\Models\IncidentUpdate;
 use App\Models\Subscriber;
@@ -59,7 +60,7 @@ class IncidentNoticeMail extends Mailable
             'when' => $this->update->created_at->format('j F Y, H:i'),
             'name' => MailTemplates::nameFor($this->subscriber->email),
             // Same rule as the status page: resolved is green, a major outage red, anything else open is orange.
-            'tone' => $this->update->status === \App\Enums\IncidentStatus::Resolved ? 'ok'
+            'tone' => $this->update->status === IncidentStatus::Resolved ? 'ok'
                 : ((int) ($incident->components->max('pivot.status') ?? 0) >= 4 ? 'b' : 'p'),
         ]);
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\RecoveryCode;
 use App\Services\Audit;
+use App\Services\Notes;
 use App\Services\Totp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -33,7 +34,7 @@ class ProfileController extends Controller
                 : null,
             'recoveryLeft' => $user->hasTwoFactor() ? $user->recoveryCodes()->whereNull('used_at')->count() : 0,
             'hiddenNotes' => count($user->dismissed_notes ?? []),
-            'hiddenByPage' => \App\Services\Notes::hiddenByPage($user->dismissed_notes ?? []),
+            'hiddenByPage' => Notes::hiddenByPage($user->dismissed_notes ?? []),
         ]);
     }
 

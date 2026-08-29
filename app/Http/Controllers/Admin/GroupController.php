@@ -98,7 +98,7 @@ class GroupController extends Controller
         return redirect()->to($this->back($request))->with(
             'status',
             $orphans > 0
-                ? "Service \"{$name}\" deleted. {$orphans} ".str('component')->plural($orphans)." kept, now ungrouped."
+                ? "Service \"{$name}\" deleted. {$orphans} ".str('component')->plural($orphans).' kept, now ungrouped.'
                 : "Service \"{$name}\" deleted.",
         );
     }

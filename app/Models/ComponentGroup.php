@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\Auditable;
 use App\Enums\ComponentStatus;
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -17,6 +17,7 @@ class ComponentGroup extends Model
 
     protected $casts = ['collapsed' => 'boolean', 'visible' => 'boolean'];
 
+    /** @return HasMany<Component, $this> */
     public function components(): HasMany
     {
         return $this->hasMany(Component::class)->orderBy('position');

@@ -20,6 +20,7 @@ class AuditEntry extends Model
 
     protected $casts = ['changes' => 'array', 'created_at' => LocalTime::class];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
