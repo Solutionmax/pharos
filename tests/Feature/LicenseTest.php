@@ -154,6 +154,31 @@ class LicenseTest extends TestCase
         $this->get('/')->assertDontSee('Powered by Pharos');
     }
 
+    public function test_paid_branding_falls_back_the_moment_the_key_is_gone(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Storage::disk('public')->put('brand/logo.png', 'png');
+        $license = app(License::class);
+        $this->assertTrue($license->store($this->validKey()));
+
+        Setting::put('brand.credit_hidden', '1');
+        Setting::put('brand.logo_path', 'brand/logo.png');
+        Setting::put('mail.template.incident_opened.subject', 'Custom subject');
+
+        $this->get('/')->assertDontSee('Powered by Pharos')->assertSee('brand/logo.png');
+        $this->assertSame('Custom subject', app(\App\Services\MailTemplates::class)->subject('incident_opened'));
+
+        // Key removed: the paid parts stop showing, the uploads are kept for when it comes back.
+        $license->forget();
+
+        $this->get('/')->assertSee('Powered by Pharos')->assertDontSee('brand/logo.png');
+        $this->assertNotSame('Custom subject', app(\App\Services\MailTemplates::class)->subject('incident_opened'));
+        $this->assertSame('brand/logo.png', Setting::get('brand.logo_path'));
+
+        $license->store($this->validKey());
+        $this->get('/')->assertDontSee('Powered by Pharos')->assertSee('brand/logo.png');
+    }
+
     public function test_activating_an_invalid_key_shows_an_error(): void
     {
         $this->actingAs($this->user)

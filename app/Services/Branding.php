@@ -55,26 +55,38 @@ class Branding
         return in_array($theme, ['system', 'light', 'dark'], true) ? $theme : 'system';
     }
 
+    public function __construct(protected License $license) {}
+
+    /**
+     * The paid half is checked when it is *shown*, not only when it is saved:
+     * otherwise a key that is removed, shared or lapsed would leave the branding
+     * behind for good. Uploads stay on disk so a returning key restores them.
+     */
+    public function licensed(): bool
+    {
+        return $this->license->has(License::FEATURE_BRAND_PACK);
+    }
+
     public function creditHidden(): bool
     {
-        return Setting::get('brand.credit_hidden', '0') === '1';
+        return $this->licensed() && Setting::get('brand.credit_hidden', '0') === '1';
     }
 
     /** Uploaded logo, or null to fall back to the built-in mark. */
     public function logoUrl(): ?string
     {
-        return $this->assetUrl('brand.logo_path');
+        return $this->licensed() ? $this->assetUrl('brand.logo_path') : null;
     }
 
     /** Second logo for the dark theme; the light one is the fallback. */
     public function logoDarkUrl(): ?string
     {
-        return $this->assetUrl('brand.logo_dark_path');
+        return $this->licensed() ? $this->assetUrl('brand.logo_dark_path') : null;
     }
 
     public function faviconUrl(): string
     {
-        return $this->assetUrl('brand.favicon_path') ?? asset('brand/pharos-favicon.svg');
+        return ($this->licensed() ? $this->assetUrl('brand.favicon_path') : null) ?? asset('brand/pharos-favicon.svg');
     }
 
     protected function assetUrl(string $key): ?string

@@ -262,6 +262,14 @@ class StatusPageTest extends TestCase
         $this->makeComponent();
         $this->get('/')->assertSee('Powered by Pharos');
 
+        // Hiding the credit is part of the Brand pack, checked when the page renders:
+        // a real signed key from a throwaway keypair, no mocks.
+        $pair = sodium_crypto_sign_keypair();
+        config(['pharos.license_public_key' => sodium_bin2hex(sodium_crypto_sign_publickey($pair))]);
+        $payload = json_encode(['product' => 'pharos', 'issued_to' => 'k@example.com', 'features' => ['brand_pack'], 'issued_at' => '2026-08-01'], JSON_UNESCAPED_SLASHES);
+        $b64 = fn (string $bin) => rtrim(strtr(base64_encode($bin), '+/', '-_'), '=');
+        $key = $b64($payload).'.'.$b64(sodium_crypto_sign_detached($payload, sodium_crypto_sign_secretkey($pair)));
+        $this->assertTrue(app(\App\Services\License::class)->store($key));
         \App\Models\Setting::put('brand.credit_hidden', '1');
 
         $this->get('/')->assertDontSee('Powered by Pharos');
