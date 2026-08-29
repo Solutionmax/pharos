@@ -1,55 +1,69 @@
 @extends('layouts.admin')
 {{--
-  The signed-out shell: a lighthouse panel beside the form. The panel is Pharos'
-  own identity (navy, the lamp, a sweep of light over a bar of days) and stays
-  navy in both themes; the card follows the theme tokens. The customer's logo,
-  when they have a Brand pack, sits on the card — the lighthouse is ours.
+  The signed-out shell. Everything on the panel is built from the operator's own
+  brand: the accent colour is the light, their logo sits under the sweep, and
+  with the credit hidden (Brand pack) nothing on the page names Pharos. Without
+  a Brand pack the Pharos mark stands in and the credit shows — the lighthouse
+  is ours, the page is theirs.
 --}}
+@php
+  $ownLogo = $branding->logoDarkUrl() ?? $branding->logoUrl();
+  $whiteLabel = $branding->creditHidden();
+@endphp
 @section('content')
 <style>
   .auth{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
   @media (max-width:860px){.auth{grid-template-columns:1fr;grid-template-rows:200px auto}}
 
-  /* ---------- the lighthouse panel ---------- */
-  .lh{position:relative;overflow:hidden;background:var(--navy);color:#dbe7f5;isolation:isolate;
+  /* ---------- the panel: the operator's colour, dark ---------- */
+  .lh{position:relative;overflow:hidden;isolation:isolate;color:#dbe7f5;
+      --deep:color-mix(in srgb,var(--brand) 22%,#070f1c);
+      --deeper:color-mix(in srgb,var(--brand) 10%,#05090f);
+      --light:color-mix(in srgb,var(--brand) 60%,#ffffff);
+      background:var(--deeper);
       display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(24px,4vw,48px)}
   .lh::before{content:"";position:absolute;inset:0;
-      background:radial-gradient(70% 60% at 50% 42%,#12305a 0%,#0a1729 55%,#070f1c 100%)}
-  /* faint ruling, the same paper the site is printed on */
+      background:radial-gradient(70% 60% at 50% 42%,var(--deep) 0%,var(--deeper) 60%,#04070c 100%)}
   .lh::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;
       background-image:repeating-linear-gradient(to right,#ffffff0a 0 1px,transparent 1px 12.5%)}
   .lh-sky{position:absolute;inset:0;overflow:hidden}
-  /* the beam: a cone of light pinned to the lamp, turning */
-  .beam{position:absolute;left:50%;top:38%;width:220vmax;height:220vmax;margin:-110vmax 0 0 -110vmax;
-      background:conic-gradient(from -22deg at 50% 50%,transparent 0deg,#f5a62300 6deg,#f5a62333 16deg,#f5a62355 22deg,#f5a62333 28deg,#f5a62300 38deg,transparent 44deg);
+  /* the sweep: a cone of the brand's light, turning around the logo */
+  .beam{position:absolute;left:50%;top:40%;width:220vmax;height:220vmax;margin:-110vmax 0 0 -110vmax;
+      background:conic-gradient(from -22deg at 50% 50%,transparent 0deg,transparent 6deg,
+        color-mix(in srgb,var(--light) 22%,transparent) 16deg,
+        color-mix(in srgb,var(--light) 36%,transparent) 22deg,
+        color-mix(in srgb,var(--light) 22%,transparent) 28deg,transparent 38deg,transparent 44deg);
       animation:sweep 9s linear infinite;mix-blend-mode:screen;will-change:transform}
   .beam.b2{opacity:.55;animation-delay:-4.5s}
   @keyframes sweep{to{transform:rotate(360deg)}}
-  .lamp{position:absolute;left:50%;top:38%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;
-      background:#ffd27a;box-shadow:0 0 18px 6px #f5a623aa,0 0 80px 30px #f5a62344;animation:glow 3s var(--ease) infinite}
-  @keyframes glow{0%,100%{box-shadow:0 0 18px 6px #f5a623aa,0 0 80px 30px #f5a62344}50%{box-shadow:0 0 24px 10px #f5a623cc,0 0 120px 44px #f5a62355}}
-  .lh-mark{position:absolute;left:50%;top:38%;transform:translate(-50%,-18%);width:min(38vmin,260px);color:#eaf2fb;filter:drop-shadow(0 20px 40px #00000066)}
+  /* a soft halo behind whatever sits in the middle */
+  .halo{position:absolute;left:50%;top:40%;width:34vmin;height:34vmin;transform:translate(-50%,-50%);border-radius:50%;
+      background:radial-gradient(circle,color-mix(in srgb,var(--light) 28%,transparent) 0%,transparent 70%);animation:glow 3.2s var(--ease) infinite}
+  @keyframes glow{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}}
+  .lh-mark{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);width:min(40vmin,280px);color:#eaf2fb;
+      filter:drop-shadow(0 20px 40px #00000066);display:flex;justify-content:center}
   .lh-mark svg{width:100%;height:auto;display:block}
-  .lh-mark svg path[fill="#F5A623"]{fill:#ffd27a}
+  .lh-mark img{max-width:100%;max-height:min(26vmin,160px);width:auto;height:auto;display:block}
 
-  /* ninety days under the light: they wake up as the beam passes */
+  /* ninety days under the light: they wake as the sweep passes */
   .days{position:relative;display:flex;gap:3px;height:34px;align-items:flex-end;margin-bottom:14px}
   .days i{flex:1;height:100%;border-radius:2px;background:#12b76a;opacity:.22;animation:wake 9s linear infinite;animation-delay:calc(var(--i) * -.1s)}
-  .days i.w{background:#f79009}.days i.b{background:#f04438}
+  .days i.w{background:#f79009}
   .days i.blip{animation:blip 9s linear infinite;animation-delay:calc(var(--i) * -.1s)}
   @keyframes wake{0%,72%{opacity:.22}80%{opacity:1}88%,100%{opacity:.22}}
   @keyframes blip{0%,72%{opacity:.22;background:#12b76a}78%{opacity:1;background:#f04438}84%{opacity:1;background:#f79009}88%{opacity:1;background:#12b76a}100%{opacity:.22;background:#12b76a}}
-  .lh-cap{position:relative;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#7e9ab5}
+  .lh-cap{position:relative;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#9fb3c8}
   .lh-cap b{width:7px;height:7px;border-radius:50%;background:#12b76a;box-shadow:0 0 0 0 #12b76a66;animation:beat 2.4s var(--ease) infinite}
   @keyframes beat{0%{box-shadow:0 0 0 0 #12b76a66}70%{box-shadow:0 0 0 9px #12b76a00}100%{box-shadow:0 0 0 0 #12b76a00}}
-  .lh-cap .r{margin-left:auto;color:#5d7794;letter-spacing:.08em;text-transform:none}
-  .lh-line{position:relative;font-family:var(--sans);font-weight:800;letter-spacing:-.03em;line-height:1.05;font-size:clamp(22px,2.6vw,34px);color:#fff;margin:0 0 18px;max-width:18ch}
-  .lh-line em{font-style:normal;color:#ffd27a}
+  .lh-cap .r{margin-left:auto;color:#7d8fa3;letter-spacing:.08em;text-transform:none}
+  .lh-line{position:relative;font-family:var(--sans);font-weight:800;letter-spacing:-.03em;line-height:1.05;font-size:clamp(22px,2.6vw,34px);color:#fff;margin:0 0 18px;max-width:20ch}
+  .lh-line em{font-style:normal;color:var(--light)}
   @media (max-width:860px){
     .lh{padding:18px 22px;justify-content:center}
     .lh-line,.days{display:none}
-    .lh-mark{width:150px;top:50%;transform:translate(-50%,-52%)}
-    .beam{top:50%}.lamp{top:50%}
+    .lh-mark{width:150px;top:50%}
+    .lh-mark img{max-height:80px}
+    .beam,.halo{top:50%}
     .lh-cap{position:absolute;left:22px;right:22px;bottom:14px}
   }
 
@@ -57,8 +71,7 @@
   .au{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:clamp(24px,5vw,64px) clamp(18px,4vw,48px);background:var(--bg)}
   .au-card{width:100%;max-width:420px;animation:rise .7s var(--ease) both}
   @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-  .au-brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}
-  .au-brand .nm{font-weight:800;font-size:19px;letter-spacing:-.025em;color:var(--ink)}
+  .au-brand{display:flex;align-items:center;gap:12px;margin-bottom:28px;font-weight:800;font-size:19px;letter-spacing:-.025em;color:var(--ink)}
   .au h1{margin:0 0 6px;font-size:28px;font-weight:800;letter-spacing:-.035em;line-height:1.1}
   .au .lede{margin:0 0 26px;color:var(--ink-2);font-size:14.5px}
   .au .field input{background:var(--card);border-color:var(--line);transition:border-color .15s,box-shadow .15s}
@@ -73,7 +86,7 @@
 
   @media (prefers-reduced-motion:reduce){
     .beam,.beam.b2{animation:none;transform:rotate(-30deg)}
-    .days i,.days i.blip,.lamp,.lh-cap b,.au-card{animation:none}
+    .days i,.days i.blip,.halo,.lh-cap b,.au-card{animation:none}
     .days i{opacity:.55}
   }
 </style>
@@ -82,12 +95,16 @@
   <aside class="lh" aria-hidden="true">
     <div class="lh-sky">
       <div class="beam"></div><div class="beam b2"></div>
-      <div class="lamp"></div>
+      <div class="halo"></div>
     </div>
     <div class="lh-mark">
-      @include('partials.mark')
+      @if ($ownLogo)
+        <img src="{{ $ownLogo }}" alt="">
+      @else
+        @include('partials.mark')
+      @endif
     </div>
-    <p class="lh-line">The light is on. <em>Nothing slips past it.</em></p>
+    <p class="lh-line">Every check runs. <em>Every minute.</em></p>
     <div class="days">
       @for ($i = 0; $i < 90; $i++)
         <i style="--i:{{ $i }}" class="{{ $i === 61 ? 'blip' : ($i === 23 ? 'w' : '') }}"></i>
@@ -103,9 +120,11 @@
       </div>
       @yield('card')
       <div class="au-foot">
-        <span>Pharos</span>
-        <a href="{{ config('pharos.docs_url') }}" target="_blank" rel="noopener">Documentation</a>
         <a href="{{ url('/') }}">Status page</a>
+        @unless ($whiteLabel)
+          <a href="{{ config('pharos.docs_url') }}" target="_blank" rel="noopener">Documentation</a>
+          <span>Powered by Pharos</span>
+        @endunless
       </div>
     </div>
   </main>

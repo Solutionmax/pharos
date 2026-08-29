@@ -220,6 +220,25 @@ class LicenseTest extends TestCase
         $this->assertFalse(app(License::class)->has(License::FEATURE_BRAND_PACK));
     }
 
+    public function test_the_sign_in_page_is_white_label_under_a_brand_pack(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Storage::disk('public')->put('brand/acme.png', 'png');
+        Setting::put('brand.name', 'Acme Hosting');
+        Setting::put('brand.logo_path', 'brand/acme.png');
+        Setting::put('brand.credit_hidden', '1');
+
+        // Free: the page carries Pharos and shows the Pharos mark.
+        $this->get('/admin/login')->assertOk()->assertSee('Powered by Pharos')->assertDontSee('brand/acme.png');
+
+        // Brand pack with the credit hidden: their logo, their name, no Pharos anywhere.
+        app(License::class)->store($this->validKey());
+        $page = $this->get('/admin/login')->assertOk()->assertSee('brand/acme.png')->assertSee('Acme Hosting');
+        // Visible text only: scripts and styles may keep their internal names.
+        $visible = strip_tags(preg_replace('~<(script|style)\b[^>]*>.*?</\1>~si', '', $page->getContent()));
+        $this->assertStringNotContainsStringIgnoringCase('pharos', $visible, 'a white-label page must not name Pharos');
+    }
+
     public function test_activating_an_invalid_key_shows_an_error(): void
     {
         $this->actingAs($this->user)
