@@ -39,7 +39,11 @@ class Updater
      */
     public function versionIsPinned(): bool
     {
-        return ! $this->managed() && (bool) config('pharos.version_pinned');
+        // The process environment, on purpose: a pin set by the host (Docker, SetEnv)
+        // must be seen even when the config is cached, and .env is never the place for it.
+        $pinned = getenv('PHAROS_VERSION');
+
+        return ! $this->managed() && $pinned !== false && $pinned !== '';
     }
 
     /** True when a host-side updater is in charge of the image. */
