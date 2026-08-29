@@ -258,7 +258,8 @@ is in the free version; the only gated part is the branding (logo, favicon, mail
 credit). What you are paying for is your own branding, support, and not having to publish
 your own changes. Prices are on [pharos.solutionmax.net](https://pharos.solutionmax.net/#pricing).
 
-Licences are verified locally with an Ed25519 signature. Pharos never phones home to ask
+Licences are verified locally with an Ed25519 signature and tied to the status page domain
+given at checkout. Pharos never phones home to ask
 whether you are allowed to run it.
 
 ---
