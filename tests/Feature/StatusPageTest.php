@@ -123,6 +123,18 @@ class StatusPageTest extends TestCase
             ->assertDontSee('Old and resolved');
     }
 
+    public function test_a_hidden_service_does_not_drive_the_public_headline(): void
+    {
+        $this->makeComponent(['name' => 'web-01', 'status' => ComponentStatus::Operational]);
+        $hidden = ComponentGroup::create(['name' => 'Internal', 'position' => 2, 'visible' => false]);
+        Component::create(['component_group_id' => $hidden->id, 'name' => 'vault', 'status' => ComponentStatus::MajorOutage]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('All systems operational')
+            ->assertDontSee('Major outage');
+    }
+
     public function test_an_ungrouped_outage_still_drives_the_headline(): void
     {
         Component::create(['name' => 'Website', 'status' => ComponentStatus::MajorOutage]);
