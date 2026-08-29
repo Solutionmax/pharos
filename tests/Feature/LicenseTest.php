@@ -179,6 +179,47 @@ class LicenseTest extends TestCase
         $this->get('/')->assertDontSee('Powered by Pharos')->assertSee('brand/logo.png');
     }
 
+    public function test_a_key_bound_to_another_domain_is_refused_here(): void
+    {
+        config(['app.url' => 'https://status.other.example']);
+        $key = $this->sign(['product' => 'pharos', 'issued_to' => 'k@example.com', 'features' => [License::FEATURE_BRAND_PACK], 'issued_at' => '2026-08-01', 'issued_for' => 'status.example.com']);
+
+        $license = new License;
+        $this->assertNull($license->verify($key));
+        $this->assertFalse($license->store($key));
+        $this->assertStringContainsString('status.example.com', (string) $license->whyNot($key));
+        $this->assertStringContainsString('status.other.example', (string) $license->whyNot($key));
+    }
+
+    public function test_a_key_bound_to_this_domain_is_accepted_with_or_without_www(): void
+    {
+        $key = $this->sign(['product' => 'pharos', 'issued_to' => 'k@example.com', 'features' => [License::FEATURE_BRAND_PACK], 'issued_at' => '2026-08-01', 'issued_for' => 'Status.Example.com']);
+
+        config(['app.url' => 'https://status.example.com']);
+        $this->assertNotNull((new License)->verify($key));
+
+        config(['app.url' => 'http://www.status.example.com/']);
+        $this->assertNotNull((new License)->verify($key));
+    }
+
+    public function test_a_key_without_a_domain_works_anywhere(): void
+    {
+        config(['app.url' => 'https://anything.example']);
+        $this->assertNotNull((new License)->verify($this->validKey()));
+        $this->assertNull((new License)->whyNot($this->validKey()));
+    }
+
+    public function test_the_key_can_be_removed_from_the_branding_screen(): void
+    {
+        app(License::class)->store($this->validKey());
+        $this->assertTrue(app(License::class)->has(License::FEATURE_BRAND_PACK));
+
+        $this->actingAs($this->user)->post('/admin/branding/deactivate')->assertRedirect('/admin/branding');
+
+        $this->assertNull(Setting::get('license.key'));
+        $this->assertFalse(app(License::class)->has(License::FEATURE_BRAND_PACK));
+    }
+
     public function test_activating_an_invalid_key_shows_an_error(): void
     {
         $this->actingAs($this->user)

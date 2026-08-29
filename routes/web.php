@@ -152,6 +152,7 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
             Route::get('branding', [BrandingController::class, 'edit'])->name('branding');
             Route::put('branding', [BrandingController::class, 'update'])->name('branding.update');
             Route::post('branding/activate', [BrandingController::class, 'activate'])->name('branding.activate');
+            Route::post('branding/deactivate', [BrandingController::class, 'deactivate'])->name('branding.deactivate');
 
             // Mail templates: the screen and the preview are for every admin; the
             // three writes are checked against the brand pack in the controller.
