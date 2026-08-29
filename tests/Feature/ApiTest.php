@@ -65,6 +65,21 @@ class ApiTest extends TestCase
             ->assertOk();
     }
 
+    public function test_a_token_holder_sees_internal_incidents_in_the_feed(): void
+    {
+        // Integrations that open internal incidents (a monitor for a hidden
+        // service) must be able to find them again to resolve them.
+        Incident::create(['name' => 'Hidden box down', 'status' => IncidentStatus::Investigating, 'visibility' => 'internal', 'occurred_at' => now()]);
+
+        $this->getJson('/api/v1/incidents')->assertOk()->assertJsonMissing(['name' => 'Hidden box down']);
+
+        $this->withToken($this->token)->getJson('/api/v1/incidents')
+            ->assertOk()->assertJsonFragment(['name' => 'Hidden box down']);
+
+        $this->withToken('not-a-real-token')->getJson('/api/v1/incidents')
+            ->assertOk()->assertJsonMissing(['name' => 'Hidden box down']);
+    }
+
     public function test_writing_requires_a_token(): void
     {
         $this->putJson("/api/v1/components/{$this->component->id}", ['status' => 4])

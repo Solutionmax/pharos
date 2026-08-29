@@ -6,6 +6,7 @@ use App\Enums\ComponentStatus;
 use App\Enums\IncidentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Component;
+use App\Models\ApiToken;
 use App\Models\Incident;
 use App\Models\IncidentTemplate;
 use App\Models\IncidentUpdate;
@@ -18,9 +19,15 @@ class IncidentController extends Controller
 {
     public function __construct(protected OutgoingWebhook $webhook) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        $incidents = Incident::public()->with('updates', 'components')
+        // A valid token also sees internal incidents: an integration that opened
+        // one for a hidden service has to be able to find it again to resolve it.
+        $plain = $request->bearerToken() ?: $request->header('X-Cachet-Token');
+        $trusted = $plain && ApiToken::findByPlaintext($plain) !== null;
+
+        $incidents = Incident::query()->when(! $trusted, fn ($q) => $q->public())
+            ->with('updates', 'components')
             ->latest('occurred_at')->limit(50)->get();
 
         return response()->json([
