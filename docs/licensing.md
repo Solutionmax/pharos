@@ -96,6 +96,14 @@ A key may carry `expires_at`. Sign one with a term:
 php artisan pharos:license:sign klant@example.net --features=brand_pack --months=12
 ```
 
+A key may carry `issued_for`, the status page hostname it was sold for; Pharos refuses it on any
+other host (case-insensitive, a leading `www.` is ignored). The portal fills it from the domain
+typed at checkout. Sign one by hand with:
+
+```bash
+php artisan pharos:license:sign klant@example.net --features=brand_pack --domain=status.klant.nl
+```
+
 Leave `--months` off and the claim is absent, which means the key never expires —
 that is what every key signed before this existed does, and they keep working.
 
