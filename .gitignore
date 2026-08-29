@@ -31,3 +31,4 @@ Thumbs.db
 /secrets
 /.env.docker
 dist/
+storage/framework/phpstan/
