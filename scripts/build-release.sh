@@ -76,7 +76,9 @@ php artisan tinker --execute="\$m = app(\App\Services\Updater::class)->verify(fi
 
 if [ "$UPLOAD" = 1 ]; then
   echo "== 6/6 upload → ${BASE_URL}/"
-  rsync -a "$DIST/pharos-${VERSION}.zip" "$DIST/pharos-${VERSION}.zip.sha256" "$DIST/latest.json" "$REMOTE/"
+  # the same signed manifest under the version's own name, so an installer can be pinned to it
+  cp "$DIST/latest.json" "$DIST/pharos-${VERSION}.json"
+  rsync -a "$DIST/pharos-${VERSION}.zip" "$DIST/pharos-${VERSION}.zip.sha256" "$DIST/pharos-${VERSION}.json" "$DIST/latest.json" "$REMOTE/"
   curl -fsS "${BASE_URL}/latest.json" | cmp -s - "$DIST/latest.json" && echo "latest.json live"
   # the human-readable side: /releases/ rendered from CHANGELOG.md + releases.json (sizes, checksums)
   curl -fsS "${BASE_URL}/releases.json" -o "$DIST/releases.json" 2>/dev/null || echo '[]' > "$DIST/releases.json"
