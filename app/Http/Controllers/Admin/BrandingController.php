@@ -29,6 +29,7 @@ class BrandingController extends Controller
             'expiresAt' => $this->license->expiresAt(),
             'daysLeft' => $this->license->daysLeft(),
             'expiringSoon' => $this->license->expiringSoon(),
+            'boundTo' => $this->license->payload() ? $this->license->boundTo($this->license->payload()) : null,
         ]);
     }
 
@@ -91,11 +92,19 @@ class BrandingController extends Controller
         $data = $request->validate(['key' => ['required', 'string']]);
 
         if (! $this->license->store($data['key'])) {
-            return back()->withErrors(['key' => 'That key is not valid for this product.']);
+            return back()->withErrors(['key' => $this->license->whyNot($data['key']) ?? 'That key is not valid for this product.']);
         }
 
         return redirect()->route('admin.branding')
             ->with('status', 'Brand pack activated for '.$this->license->issuedTo().'.');
+    }
+
+    /** Takes the key out; uploads stay on disk so pasting it back restores everything. */
+    public function deactivate()
+    {
+        $this->license->forget();
+
+        return redirect()->route('admin.branding')->with('status', 'Key removed. Branding is back to the free defaults; paste the key again to restore it.');
     }
 
     /** Replacing an upload must not leave the old file behind on disk. */

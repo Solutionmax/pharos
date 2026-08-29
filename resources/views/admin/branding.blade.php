@@ -125,7 +125,16 @@
           This key has no end date.
         @endif
         It is checked on this server, so it keeps working whether or not you can reach us.
+        @if ($boundTo)
+          Tied to <b>{{ $boundTo }}</b>.
+        @endif
       </x-note>
+
+      <form method="POST" action="{{ route('admin.branding.deactivate') }}" style="margin-top:10px"
+            onsubmit="return confirm('Remove the key? Your logo, favicon and mail wording stay saved; they show again the moment you paste a key.')">
+        @csrf
+        <button class="btn btn-plain btn-sm" type="submit">Remove key</button>
+      </form>
     @else
       <form method="POST" action="{{ route('admin.branding.activate') }}" style="display:flex;flex-direction:column;gap:12px">
         @csrf

@@ -14,7 +14,8 @@ class MakeLicense extends Command
         {email : Who the licence is for}
         {--features=brand_pack : Comma separated}
         {--key= : Path to the Ed25519 secret key (hex), defaults to PHAROS_LICENSE_SECRET_FILE}
-        {--months= : Term in months; leave off for a key that never expires}';
+        {--months= : Term in months; leave off for a key that never expires}
+        {--domain= : Status page domain the key is tied to; leave off for a key that works anywhere}';
 
     protected $description = 'Sign a licence key (vendor side)';
 
@@ -39,6 +40,10 @@ class MakeLicense extends Command
 
         // A yearly subscription needs a key that stops; a perpetual one must not
         // carry the claim at all, so leaving the option off means forever.
+        if ($domain = trim((string) $this->option('domain'))) {
+            $claims['issued_for'] = \App\Services\License::normaliseHost($domain);
+        }
+
         if ($months = (int) $this->option('months')) {
             $claims['expires_at'] = now()->addMonths($months)->toDateString();
         }

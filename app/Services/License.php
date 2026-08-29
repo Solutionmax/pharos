@@ -101,6 +101,12 @@ class License
             return null;
         }
 
+        // A key sold for one status page must not unlock another. Keys without the
+        // claim (everything issued before it existed) keep working anywhere.
+        if (! $this->boundToThisHost($data)) {
+            return null;
+        }
+
         // A key signed before terms existed carries no expiry and keeps working;
         // one that names a date stops being a licence the day after it. Support
         // may still want to read such a key, which is what the flag is for.
@@ -109,6 +115,100 @@ class License
         }
 
         return $data;
+    }
+
+    /** The domain a key was sold for, or null for one that works anywhere. */
+    public function boundTo(array $payload): ?string
+    {
+        $host = $payload['issued_for'] ?? null;
+
+        return is_string($host) && $host !== '' ? self::normaliseHost($host) : null;
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function boundToThisHost(array $payload): bool
+    {
+        $bound = $this->boundTo($payload);
+
+        return $bound === null || $bound === self::thisHost();
+    }
+
+    /** The host this installation answers on, from APP_URL. */
+    public static function thisHost(): ?string
+    {
+        $host = parse_url((string) config('app.url'), PHP_URL_HOST);
+
+        return $host ? self::normaliseHost($host) : null;
+    }
+
+    /** Case and a leading "www." are not what a customer means by "my domain". */
+    public static function normaliseHost(string $host): string
+    {
+        $host = strtolower(trim($host));
+        $host = preg_replace('~^[a-z]+://~', '', $host);   // pasted with a scheme
+        $host = explode('/', $host)[0];                    // pasted with a path
+        $host = explode(':', $host)[0];                    // pasted with a port
+
+        return preg_replace('/^www\./', '', $host);
+    }
+
+    /**
+     * Why a pasted key is refused, in the customer's words — or null when it is
+     * fine. Verification itself stays a plain yes/no; this is for the form.
+     */
+    public function whyNot(string $key): ?string
+    {
+        $data = $this->verify($key, ignoreExpiry: true);
+
+        if ($data === null) {
+            // Either forged/mangled, or bound elsewhere: tell the two apart.
+            $raw = $this->decodeWithoutHostCheck($key);
+
+            if ($raw !== null && ! $this->boundToThisHost($raw)) {
+                return 'This key was issued for '.$this->boundTo($raw).', and this status page runs on '
+                    .(self::thisHost() ?? 'an unknown host').'. Keys are tied to the domain given at checkout.';
+            }
+
+            return 'That key is not valid for this product.';
+        }
+
+        $keeps = array_intersect($data['features'] ?? [], self::PERPETUAL) !== [];
+
+        if ($this->hasExpired($data) && ! $keeps) {
+            return 'That key ran out on '.$data['expires_at'].'. Renew to get a new one.';
+        }
+
+        return null;
+    }
+
+    /** The signed payload with the host check skipped, for a precise error message. */
+    protected function decodeWithoutHostCheck(string $key): ?array
+    {
+        $publicKey = config('pharos.license_public_key');
+
+        if (! $publicKey || ! str_contains($key, '.')) {
+            return null;
+        }
+
+        [$payloadPart, $signaturePart] = explode('.', trim($key), 2);
+        $payload = $this->b64decode($payloadPart);
+        $signature = $this->b64decode($signaturePart);
+
+        if ($payload === false || $signature === false || strlen($signature) !== SODIUM_CRYPTO_SIGN_BYTES) {
+            return null;
+        }
+
+        try {
+            if (! sodium_crypto_sign_verify_detached($signature, $payload, sodium_hex2bin($publicKey))) {
+                return null;
+            }
+        } catch (\SodiumException) {
+            return null;
+        }
+
+        $data = json_decode($payload, true);
+
+        return is_array($data) && ($data['product'] ?? null) === 'pharos' ? $data : null;
     }
 
     /** @param array<string, mixed> $payload */
