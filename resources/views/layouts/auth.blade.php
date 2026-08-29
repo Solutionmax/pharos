@@ -45,7 +45,9 @@
   .net .core-ring{fill:var(--deeper);stroke:color-mix(in srgb,var(--light) 45%,transparent);stroke-width:1.5}
   .core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(11vmin,64px);display:flex;justify-content:center;color:#eaf2fb;
       filter:drop-shadow(0 6px 18px #00000088)}
-  .core svg{width:100%;height:auto}.core img{max-width:100%;max-height:min(8vmin,48px);width:auto;height:auto}
+  .core img{max-width:100%;max-height:min(8vmin,48px);width:auto;height:auto}
+  .core-dot{width:18px;height:18px;border-radius:50%;background:#12b76a;box-shadow:0 0 0 0 #12b76a66,0 0 22px 4px #12b76a55;animation:corebeat 2.4s var(--ease) infinite}
+  @keyframes corebeat{0%{box-shadow:0 0 0 0 #12b76a66,0 0 22px 4px #12b76a55}70%{box-shadow:0 0 0 14px #12b76a00,0 0 26px 6px #12b76a66}100%{box-shadow:0 0 0 0 #12b76a00,0 0 22px 4px #12b76a55}}
   .stage-in{position:relative;width:min(92%,640px);aspect-ratio:1;max-height:100%;display:flex;align-items:center;justify-content:center}
   .stage-in .net{position:absolute;inset:0;width:100%;height:100%}
 
@@ -122,7 +124,8 @@
           @if ($ownLogo)
             <img src="{{ $ownLogo }}" alt="">
           @else
-            @include('partials.mark')
+            {{-- no logo: the installation is a node like the others, only bigger and alive --}}
+            <span class="core-dot"></span>
           @endif
         </div>
       </div>
@@ -140,7 +143,11 @@
   <main class="au">
     <div class="au-card">
       <div class="au-brand">
-        @include('partials.logo', ['size' => 34])
+        @if ($branding->logoUrl())
+          @include('partials.logo', ['size' => 34])
+        @else
+          <span>{{ $branding->name() }}</span>
+        @endif
       </div>
       @yield('card')
       <div class="au-foot">
