@@ -78,12 +78,22 @@ if [ "$UPLOAD" = 1 ]; then
   echo "== 6/6 upload → ${BASE_URL}/"
   rsync -a "$DIST/pharos-${VERSION}.zip" "$DIST/pharos-${VERSION}.zip.sha256" "$DIST/latest.json" "$REMOTE/"
   curl -fsS "${BASE_URL}/latest.json" | cmp -s - "$DIST/latest.json" && echo "latest.json live"
+  # the human-readable side: /releases/ rendered from CHANGELOG.md
+  python3 scripts/release-page.py CHANGELOG.md "$DIST/latest.json" > "$DIST/index.html"
+  rsync -a "$DIST/index.html" "$REMOTE/index.html" && echo "release page live: ${BASE_URL}/"
 else
   echo "== 6/6 upload skipped"
 fi
 
 if [ "$TAG" = 1 ]; then
   git tag -a "v${VERSION}" -m "Pharos ${VERSION}" 2>/dev/null && echo "tagged v${VERSION}" || echo "tag v${VERSION} already exists"
+  git push -q origin "v${VERSION}" 2>/dev/null || true
+  # GitHub Release carries the same artefacts as a mirror (assets are token-only while the repo is private)
+  if command -v gh >/dev/null 2>&1; then
+    awk -v v="$VERSION" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md > "$DIST/notes-${VERSION}.md"
+    gh release view "v${VERSION}" >/dev/null 2>&1 || gh release create "v${VERSION}" --title "Pharos ${VERSION}" --notes-file "$DIST/notes-${VERSION}.md" \
+      "$DIST/pharos-${VERSION}.zip" "$DIST/pharos-${VERSION}.zip.sha256" >/dev/null && echo "GitHub release v${VERSION} created"
+  fi
 fi
 
 rm -rf "$(dirname "$STAGE")"
