@@ -30,3 +30,4 @@ Thumbs.db
 /storage/logs/*.log
 /secrets
 /.env.docker
+dist/
