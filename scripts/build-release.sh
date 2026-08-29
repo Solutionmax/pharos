@@ -78,9 +78,16 @@ if [ "$UPLOAD" = 1 ]; then
   echo "== 6/6 upload → ${BASE_URL}/"
   rsync -a "$DIST/pharos-${VERSION}.zip" "$DIST/pharos-${VERSION}.zip.sha256" "$DIST/latest.json" "$REMOTE/"
   curl -fsS "${BASE_URL}/latest.json" | cmp -s - "$DIST/latest.json" && echo "latest.json live"
-  # the human-readable side: /releases/ rendered from CHANGELOG.md
-  python3 scripts/release-page.py CHANGELOG.md "$DIST/latest.json" > "$DIST/index.html"
-  rsync -a "$DIST/index.html" "$REMOTE/index.html" && echo "release page live: ${BASE_URL}/"
+  # the human-readable side: /releases/ rendered from CHANGELOG.md + releases.json (sizes, checksums)
+  curl -fsS "${BASE_URL}/releases.json" -o "$DIST/releases.json" 2>/dev/null || echo '[]' > "$DIST/releases.json"
+  python3 - "$VERSION" "$DIST" <<'PY'
+import json,os,sys,datetime
+v,d=sys.argv[1],sys.argv[2]; rows=[r for r in json.load(open(f"{d}/releases.json")) if r["version"]!=v]
+rows.insert(0,{"version":v,"date":datetime.date.today().isoformat(),"size":os.path.getsize(f"{d}/pharos-{v}.zip"),"sha256":open(f"{d}/pharos-{v}.zip.sha256").read().split()[0]})
+json.dump(rows,open(f"{d}/releases.json","w"),indent=1)
+PY
+  python3 scripts/release-page.py CHANGELOG.md "$DIST/latest.json" "$DIST/releases.json" > "$DIST/index.html"
+  rsync -a "$DIST/index.html" "$DIST/releases.json" "$REMOTE/" && echo "release page live: ${BASE_URL}/"
 else
   echo "== 6/6 upload skipped"
 fi
