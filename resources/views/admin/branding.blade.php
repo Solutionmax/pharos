@@ -87,7 +87,7 @@
           <div>
             <strong style="font-size:13.5px">One-time purchase</strong>
             <p class="sub" style="margin-top:4px;font-size:13px;color:var(--ink-3)">
-              Your own logo and favicon, your own sender address and email templates, and the
+              Your own logo and favicon, editable email templates, and the
               footer credit gone. Everything else in Pharos is free and stays free.
             </p>
           </div>

@@ -249,7 +249,7 @@ short contributor licence agreement that makes the dual licence possible.
 
 | | |
 |---|---|
-| **Brand pack** | One-time. Your logo, favicon and sender address, editable mail templates, the "Powered by Pharos" credit removed. |
+| **Brand pack** | One-time. Your logo and favicon, editable mail templates, the "Powered by Pharos" credit removed. |
 | **Supported** | Yearly. Support by e-mail from the person who wrote the code, your bug reports first, the Brand pack included and yours to keep. |
 | **Commercial licence** | Yearly. The AGPL publication requirement lifted for one organisation. Includes Supported. |
 
