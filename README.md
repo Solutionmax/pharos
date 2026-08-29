@@ -6,7 +6,7 @@
   <a href="LICENSE"><img alt="Licence: AGPL-3.0" src="https://img.shields.io/badge/licence-AGPL--3.0-0079d2"></a>
   <img alt="PHP 8.3+" src="https://img.shields.io/badge/PHP-8.3%2B-777bb4">
   <img alt="Laravel 12" src="https://img.shields.io/badge/Laravel-12-ff2d20">
-  <img alt="563 tests passing" src="https://img.shields.io/badge/tests-563%20passing-12b76a">
+  <img alt="569 tests passing" src="https://img.shields.io/badge/tests-569%20passing-12b76a">
   <img alt="Cachet 2.x compatible API" src="https://img.shields.io/badge/API-Cachet%202.x%20compatible-0e1726">
   <img alt="Runs on cPanel, DirectAdmin, Plesk or Docker" src="https://img.shields.io/badge/runs%20on-cPanel%20%C2%B7%20DirectAdmin%20%C2%B7%20Plesk%20%C2%B7%20Docker-475467">
   <a href="https://buymeacoffee.com/solutionmax"><img alt="Buy me a coffee" src="https://img.shields.io/badge/Buy%20me%20a%20coffee-ffdd00?logo=buymeacoffee&logoColor=000"></a>
@@ -250,7 +250,7 @@ short contributor licence agreement that makes the dual licence possible.
 | | |
 |---|---|
 | **Brand pack** | One-time. Your logo, favicon and sender address, editable mail templates, the "Powered by Pharos" credit removed. |
-| **Supported** | Yearly. Support by e-mail from the person who wrote the code, your bug reports first, the Brand pack included while it runs. |
+| **Supported** | Yearly. Support by e-mail from the person who wrote the code, your bug reports first, the Brand pack included and yours to keep. |
 | **Commercial licence** | Yearly. The AGPL publication requirement lifted for one organisation. Includes Supported. |
 
 None of it is required to run Pharos. Every feature — including signed one-click updates —

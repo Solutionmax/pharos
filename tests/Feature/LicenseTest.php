@@ -209,18 +209,52 @@ class LicenseTest extends TestCase
         $this->assertTrue($license->store($key));
     }
 
-    public function test_an_expired_key_takes_its_features_with_it(): void
+    public function test_an_expired_key_keeps_the_brand_pack_and_loses_support(): void
     {
+        // Supported is a yearly key that carries the Brand pack. When the year is
+        // over the customer loses support, not the logo they paid for.
         Setting::put('license.key', $this->sign([
             'product' => 'pharos',
             'issued_to' => 'klant@example.com',
-            'features' => [License::FEATURE_BRAND_PACK],
+            'features' => [License::FEATURE_BRAND_PACK, 'supported'],
             'issued_at' => '2025-08-01',
             'expires_at' => '2026-08-01',
         ]));
         Cache::forget('license.payload');
 
-        $this->assertFalse((new License)->has(License::FEATURE_BRAND_PACK));
+        $license = new License;
+        $this->assertTrue($license->expired());
+        $this->assertTrue($license->has(License::FEATURE_BRAND_PACK));
+        $this->assertFalse($license->has('supported'));
+        $this->assertSame('klant@example.com', $license->issuedTo());
+    }
+
+    public function test_an_expired_key_with_the_brand_pack_can_still_be_pasted(): void
+    {
+        $key = $this->sign([
+            'product' => 'pharos',
+            'issued_to' => 'klant@example.com',
+            'features' => [License::FEATURE_BRAND_PACK, 'supported'],
+            'issued_at' => '2025-08-01',
+            'expires_at' => '2026-08-01',
+        ]);
+
+        $license = new License;
+        $this->assertTrue($license->store($key));
+        $this->assertTrue($license->has(License::FEATURE_BRAND_PACK));
+    }
+
+    public function test_an_expired_key_without_a_perpetual_feature_is_refused_on_paste(): void
+    {
+        $key = $this->sign([
+            'product' => 'pharos',
+            'issued_to' => 'klant@example.com',
+            'features' => ['supported'],
+            'issued_at' => '2025-08-01',
+            'expires_at' => '2026-08-01',
+        ]);
+
+        $this->assertFalse((new License)->store($key));
     }
 
     public function test_it_says_when_a_licence_is_nearly_up(): void

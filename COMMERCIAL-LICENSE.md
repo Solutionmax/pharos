@@ -42,7 +42,7 @@ your own name. That is a separate conversation, and the answer is usually yes.
 | | |
 |---|---|
 | **Brand pack** | One-time · your logo, favicon and sender address, credit removed |
-| **Supported** | Yearly · support by e-mail within a working day, Brand pack included while it runs |
+| **Supported** | Yearly · support by e-mail within a working day, Brand pack included and yours to keep |
 | **Commercial licence** | Yearly · the AGPL publication requirement lifted, for one organisation |
 
 Current prices are on <https://pharos.solutionmax.net/#pricing>. If you are a one-person

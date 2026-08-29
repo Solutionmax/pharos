@@ -14,6 +14,12 @@ class License
 {
     public const FEATURE_BRAND_PACK = 'brand_pack';
 
+    /**
+     * Features a customer keeps after a yearly key runs out. Supported carries the
+     * Brand pack; when the year is over they lose support, not the logo they paid for.
+     */
+    public const PERPETUAL = [self::FEATURE_BRAND_PACK];
+
     public function key(): ?string
     {
         return Setting::get('license.key');
@@ -28,12 +34,28 @@ class License
             return null;
         }
 
-        return Cache::remember('license.payload', 300, fn () => $this->verify($key));
+        // The signature decides whether the key is ours; the date only decides
+        // which of its features still count (see has()).
+        return Cache::remember('license.payload', 300, fn () => $this->verify($key, ignoreExpiry: true));
+    }
+
+    /** The key is genuine but its term is over. */
+    public function expired(): bool
+    {
+        $payload = $this->payload();
+
+        return $payload !== null && $this->hasExpired($payload);
     }
 
     public function has(string $feature): bool
     {
-        return in_array($feature, $this->payload()['features'] ?? [], true);
+        $features = $this->payload()['features'] ?? [];
+
+        if ($this->expired() && ! in_array($feature, self::PERPETUAL, true)) {
+            return false;
+        }
+
+        return in_array($feature, $features, true);
     }
 
     public function issuedTo(): ?string
@@ -131,7 +153,12 @@ class License
 
     public function store(string $key): bool
     {
-        if ($this->verify($key) === null) {
+        $payload = $this->verify($key, ignoreExpiry: true);
+
+        // A lapsed key is still worth pasting when it carries something perpetual.
+        $keeps = array_intersect($payload['features'] ?? [], self::PERPETUAL) !== [];
+
+        if ($payload === null || ($this->hasExpired($payload) && ! $keeps)) {
             return false;
         }
 
