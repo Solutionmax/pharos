@@ -102,7 +102,7 @@
   <div class="panel-hd">
     <h3>Licence</h3>
     @if ($licensed)
-      <span class="hint">Active · {{ $issuedTo }}@if ($expiresAt) · until {{ $expiresAt->format('d M Y') }}@endif</span>
+      <span class="hint">Active · {{ $issuedTo }}@if ($expiresAt) · support until {{ $expiresAt->format('d M Y') }}@endif</span>
     @else
       <span class="hint">Not activated</span>
     @endif
@@ -112,15 +112,15 @@
       @if ($expiringSoon)
         <x-note id="branding.expiring" warn>
           <b>{{ $daysLeft === 0 ? 'Runs out today.' : 'Runs out in '.$daysLeft.' '.\Illuminate\Support\Str::plural('day', $daysLeft).'.' }}</b>
-          On {{ $expiresAt->format('d F Y') }} this key stops counting and the brand pack falls back
-          to the free options. Renew before then and paste the new key here; nothing else changes.
+          On {{ $expiresAt->format('d F Y') }} your support term ends. The Brand pack is yours to keep —
+          nothing on this page changes. Renew and paste the new key here to keep support going.
         </x-note>
       @endif
 
       <x-note id="branding.activated">
         <b>Activated.</b> Licensed to {{ $issuedTo }}.
         @if ($expiresAt)
-          This key runs until <b>{{ $expiresAt->format('d F Y') }}</b>.
+          Support runs until <b>{{ $expiresAt->format('d F Y') }}</b>; the Brand pack has no end date.
         @else
           This key has no end date.
         @endif
