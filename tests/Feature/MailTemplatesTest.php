@@ -141,6 +141,8 @@ class MailTemplatesTest extends TestCase
 
     public function test_a_saved_template_changes_the_sent_mail(): void
     {
+        // Custom wording is Brand pack; the mail is rendered under a licence.
+        $this->mock(\App\Services\License::class)->shouldReceive('has')->andReturn(true);
         $templates = app(MailTemplates::class);
         $templates->save('incident_opened', 'Heads up: {incident}', "Dear {name},\n\n{incident} is now **{status}**.");
         $subscriber = $this->subscriber();

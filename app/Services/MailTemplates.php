@@ -125,14 +125,22 @@ class MailTemplates
         return Str::before($email, '@') ?: $email;
     }
 
+    public function __construct(protected License $license) {}
+
+    /** Custom wording is part of the Brand pack; without a key the defaults go out. */
+    protected function custom(string $setting): ?string
+    {
+        return $this->license->has(License::FEATURE_BRAND_PACK) ? Setting::get($setting) : null;
+    }
+
     public function subject(string $key): string
     {
-        return (string) (Setting::get("mail.template.$key.subject") ?? self::defaultSubject($key));
+        return (string) ($this->custom("mail.template.$key.subject") ?? self::defaultSubject($key));
     }
 
     public function body(string $key): string
     {
-        return (string) (Setting::get("mail.template.$key.body") ?? self::defaultBody($key));
+        return (string) ($this->custom("mail.template.$key.body") ?? self::defaultBody($key));
     }
 
     public function isDefault(string $key): bool
