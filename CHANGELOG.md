@@ -1,0 +1,29 @@
+# Changelog
+
+All notable changes to Pharos. The format follows [Keep a Changelog](https://keepachangelog.com/);
+versions follow [SemVer](https://semver.org/). The signed manifest at
+`https://pharos.solutionmax.net/releases/latest.json` always points at the newest entry below.
+
+## [Unreleased]
+
+## [0.5.0] — 2026-08-29
+
+First packaged release: this is the version installers and the Updates screen download.
+
+### Added
+- Signed release manifests (Ed25519) with one-click updates, automatic backups, rollback and retention.
+- Licence keys tied to the status page domain given at checkout; a **Remove key** button on Branding.
+- Zabbix → Pharos incident webhook: opens an incident on a trigger, adds updates, resolves when every check on the host recovers.
+- Ongoing block on the public page for incidents older than the history window.
+- New sign-in screen: the network of checks, white-label under a Brand pack.
+- CI: Pint, Larastan (level 5), PHPUnit and `composer audit` on every push.
+
+### Changed
+- The Brand pack outlives a lapsed Supported key; branding is checked when shown, not only when saved.
+- The public API hides what the page hides (disabled components, invisible services); a valid token sees internal incidents.
+- The "Buy the brand pack" button opens the pricing page.
+
+### Fixed
+- Headline and service pills followed the first component instead of the worst one.
+- Hidden services no longer turn the public headline red.
+- `env()` calls that returned null once the config was cached (licence signing, version pin).
