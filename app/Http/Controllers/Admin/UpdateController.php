@@ -57,7 +57,7 @@ class UpdateController extends Controller
         };
     }
 
-    public function apply()
+    public function apply(Request $request)
     {
         if ($this->updater->managed()) {
             return $this->updater->requestManagedUpdate()
@@ -65,7 +65,13 @@ class UpdateController extends Controller
                 : back()->withErrors(['update' => 'Could not reach the host updater.']);
         }
 
+        // The screen asks for JSON so it can show the steps as they happen; the
+        // plain form post (no JS) still gets the redirect and the flash.
         $result = $this->selfUpdater->apply();
+
+        if ($request->wantsJson()) {
+            return response()->json($result, $result['ok'] ? 200 : 422);
+        }
 
         return $result['ok']
             ? redirect()->route('admin.updates')->with('status', $result['message'])
