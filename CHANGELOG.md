@@ -8,6 +8,10 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [0.5.1] — 2026-08-30
 
+### Fixed (added to the same release later that day)
+- A fresh install showed the "Get notified" form before any mail settings existed, and a visitor who used it got a server error. The form now stays off the public page until Settings → Mail has an SMTP host, the Subscribers screen says so, and a mail transport that fails answers with a message instead of a 500.
+- Opening an incident with a component id that does not exist no longer fails with a database error; unknown ids are dropped.
+
 ### Added
 - Updates: installing a release, making a backup and rolling back now open a dialog that shows each step as it happens (download, checksum, unpack, backup, install, migrate) with a live file count, instead of a bare button that returns when everything is over.
 

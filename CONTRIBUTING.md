@@ -11,7 +11,7 @@ something that does not fit, and me reviewing something I have to turn down.
 
 - **PHP 8.3, Laravel 12 LTS.** Follow the style already in the file you are editing.
 - **Tests.** Anything that can break has a test. Run `php artisan test` before opening a
-  pull request — 186 of them pass today and that number should only go up.
+  pull request — 580 of them pass today and that number should only go up.
 - **Small files.** If a class is past ~400 lines, it is probably two classes.
 - **No new dependencies** without saying why in the issue. This has to install on a plain
   cPanel, DirectAdmin or Plesk account where people cannot compile things.

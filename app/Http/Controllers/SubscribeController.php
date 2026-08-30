@@ -6,6 +6,7 @@ use App\Mail\SubscribeConfirmMail;
 use App\Models\Subscriber;
 use App\Services\Subscriptions;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -47,7 +48,17 @@ class SubscribeController extends Controller
             'created_ip' => $subscriber->created_ip ?? $request->ip(),
         ]);
 
-        Mail::to($subscriber->email)->send(new SubscribeConfirmMail($subscriber));
+        try {
+            Mail::to($subscriber->email)->send(new SubscribeConfirmMail($subscriber));
+        } catch (\Throwable $e) {
+            // A host that cannot send (no SMTP host yet, wrong password, port closed) is the
+            // operator's problem, not the visitor's: say so plainly and leave the details in the log.
+            Log::error('Subscribe confirmation mail failed', ['email' => $subscriber->email, 'error' => $e->getMessage()]);
+
+            return redirect()->route('status')
+                ->withInput()
+                ->withErrors(['email' => 'The confirmation e-mail could not be sent right now. Please try again later.']);
+        }
 
         return $this->reply();
     }

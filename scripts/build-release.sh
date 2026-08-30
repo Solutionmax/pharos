@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Build, sign and publish a Pharos release. Vendor side only — needs the Ed25519
-# secret in /root/secrets and SSH to edge-01. Runs on CT102.
+# Build, sign and publish a Pharos release. Maintainer side only: needs the Ed25519
+# signing secret (PHAROS_LICENSE_SECRET_FILE) and SSH access to the release server.
 #
 #   scripts/build-release.sh 0.5.0 [--notes "One line for the operator"] [--no-upload] [--no-tag]
 #
