@@ -98,25 +98,45 @@ change your mind.</em>
 ### cPanel, DirectAdmin, Plesk — or any PHP 8.3 host
 
 Requires PHP 8.3 or later with the usual Laravel extensions, and either SQLite or MySQL.
-No daemon, no worker queue, no root.
+No daemon, no worker queue, no root. Every path below downloads the same signed release and
+verifies the Ed25519 manifest and SHA-256 before unpacking.
+
+**Without SSH** — upload [`pharos-install.php`](https://pharos.solutionmax.net/pharos-install.php)
+into the domain's document root and open it in the browser. Four screens: check the server,
+download, configure, cron. It unpacks into `~/pharos-app`, copies `public/` into the web
+folder (no document-root change needed, `.env` stays out of reach), shows the cron line for
+your host, then deletes itself and opens the setup form.
+
+**With SSH** — one command:
 
 ```bash
-# 1. upload or clone into a directory outside the web root
-git clone https://github.com/solutionmax/pharos.git ~/pharos
-cd ~/pharos
+curl -fsSL https://pharos.solutionmax.net/get | sh -s -- --php --url https://status.example.com
+```
 
-# 2. dependencies
+Installs into `~/pharos-app`, writes `.env`, migrates, adds the cron line (or prints it where
+the crontab is not writable). **Then point the document root at `~/pharos-app/public`** — the
+script leaves that step to you:
+
+- cPanel: Domains → Manage → Document Root, or over SSH
+  `uapi SubDomain changedocroot domain=status.example.com docroot=pharos-app/public`
+- DirectAdmin: Domain Setup if your host allows it; otherwise
+  `cd ~/domains/status.example.com && mv public_html public_html.orig && ln -s ~/pharos-app/public public_html`
+- Plesk: Hosting Settings → Document root → `pharos-app/public`
+
+**A specific version** — both installers take the newest release unless you pin one:
+`--version 0.5.0` on the command, or `pharos-install.php?version=0.5.0` in the browser. Every
+release on [the releases page](https://pharos.solutionmax.net/releases/) also has a pre-pinned
+`pharos-install-<version>.php`. Pharos never downgrades by itself; use Roll back under Updates.
+
+**By hand:**
+
+```bash
+git clone https://github.com/solutionmax/pharos.git ~/pharos && cd ~/pharos
 composer install --no-dev --optimize-autoloader
-
-# 3. configuration
-cp .env.example .env
-php artisan key:generate
+cp .env.example .env && php artisan key:generate
 touch database/database.sqlite
-php artisan migrate --force
-php artisan storage:link
-
-# 4. point the document root at ~/pharos/public
-#    cPanel: Domains · DirectAdmin: Domain Setup · Plesk: Hosting Settings → Document root
+php artisan migrate --force && php artisan storage:link
+# then point the document root at ~/pharos/public, as above
 ```
 
 Then open the site in a browser. A fresh install answers every URL with a one-screen setup
@@ -126,14 +146,16 @@ that account exists.
 If you would rather not touch a browser, `php artisan pharos:user you@example.com` creates
 the first account from the command line — and gets you back in if you ever lock yourself out.
 
-Then add **one** cron entry. This is the entire scheduler:
+The installers add **one** cron entry; by hand, add it yourself. This is the entire scheduler:
 
 ```
-* * * * * cd ~/pharos && php artisan schedule:run
+* * * * * cd ~/pharos-app && php artisan schedule:run
 ```
 
 In a control panel's cron form the first five stars go in the schedule fields and the rest
-in the command field.
+in the command field. If the host's default `php` is not 8.3, use the full path
+(`/opt/alt/php83/usr/bin/php` on cPanel, `/usr/local/php83/bin/php` on DirectAdmin,
+`/opt/plesk/php/8.3/bin/php` on Plesk).
 
 ### Docker
 
