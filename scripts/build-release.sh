@@ -11,13 +11,14 @@
 # and uploads them to https://pharos.solutionmax.net/releases/ (Caddy handle_path → /var/www/pharos-releases).
 set -euo pipefail
 
-VERSION="${1:?usage: build-release.sh <version> [--notes ...] [--no-upload] [--no-tag]}"; shift
-NOTES="Pharos ${VERSION}"; UPLOAD=1; TAG=1
+VERSION="${1:?usage: build-release.sh <version> [--notes ...] [--no-upload] [--no-tag] [--no-gates]}"; shift
+NOTES="Pharos ${VERSION}"; UPLOAD=1; TAG=1; GATES=1
 while [ $# -gt 0 ]; do
   case "$1" in
     --notes) NOTES="$2"; shift 2 ;;
     --no-upload) UPLOAD=0; shift ;;
     --no-tag) TAG=0; shift ;;
+    --no-gates) GATES=0; shift ;;  # rebuilding an old tag whose tree predates a gate
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac
 done
@@ -35,16 +36,20 @@ DIST="${REPO}/dist"
 cd "$REPO"
 [ -z "$(git status --porcelain)" ] || { echo "working tree not clean — commit first" >&2; exit 1; }
 
-echo "== 1/6 gates"
-vendor/bin/pint --test -q
-vendor/bin/phpstan analyse --memory-limit=1G --no-progress -q
-php artisan test --compact 2>&1 | tail -1 | grep -q '"result":"passed"' || { echo "tests failed" >&2; exit 1; }
+if [ "$GATES" = 1 ]; then
+  echo "== 1/6 gates"
+  vendor/bin/pint --test -q
+  vendor/bin/phpstan analyse --memory-limit=1G --no-progress -q
+  php artisan test --compact 2>&1 | tail -1 | grep -q '"result":"passed"' || { echo "tests failed" >&2; exit 1; }
+else
+  echo "== 1/6 gates skipped (--no-gates)"
+fi
 
 echo "== 2/6 stage ${STAGE}"
 mkdir -p "$STAGE"
 rsync -a --delete \
-  --exclude '.git' --exclude '.github' --exclude 'tests' --exclude 'node_modules' --exclude 'dist' \
-  --exclude 'vendor' --exclude '.env' --exclude '.env.*.local' --exclude 'phpstan.neon' --exclude 'phpunit.xml' \
+  --exclude '/.git' --exclude '/.github' --exclude '/tests' --exclude '/node_modules' --exclude '/dist' \
+  --exclude '/vendor' --exclude '.env' --exclude '.env.*.local' --exclude 'phpstan.neon' --exclude 'phpunit.xml' \
   --exclude 'storage/app/*' --exclude 'storage/logs/*' --exclude 'storage/framework/cache/*' \
   --exclude 'storage/framework/sessions/*' --exclude 'storage/framework/views/*' --exclude 'storage/framework/phpstan' \
   --exclude 'database/*.sqlite*' --exclude 'bootstrap/cache/*.php' --exclude 'public/storage' \
@@ -76,14 +81,33 @@ php artisan tinker --execute="\$m = app(\App\Services\Updater::class)->verify(fi
 
 if [ "$UPLOAD" = 1 ]; then
   echo "== 6/6 upload → ${BASE_URL}/"
-  rsync -a "$DIST/pharos-${VERSION}.zip" "$DIST/pharos-${VERSION}.zip.sha256" "$DIST/latest.json" "$REMOTE/"
+  # the same signed manifest under the version's own name, so an installer can be pinned to it
+  cp "$DIST/latest.json" "$DIST/pharos-${VERSION}.json"
+  rsync -a "$DIST/pharos-${VERSION}.zip" "$DIST/pharos-${VERSION}.zip.sha256" "$DIST/pharos-${VERSION}.json" "$DIST/latest.json" "$REMOTE/"
   curl -fsS "${BASE_URL}/latest.json" | cmp -s - "$DIST/latest.json" && echo "latest.json live"
+  # the human-readable side: /releases/ rendered from CHANGELOG.md + releases.json (sizes, checksums)
+  curl -fsS "${BASE_URL}/releases.json" -o "$DIST/releases.json" 2>/dev/null || echo '[]' > "$DIST/releases.json"
+  python3 - "$VERSION" "$DIST" <<'PY'
+import json,os,sys,datetime
+v,d=sys.argv[1],sys.argv[2]; rows=[r for r in json.load(open(f"{d}/releases.json")) if r["version"]!=v]
+rows.insert(0,{"version":v,"date":datetime.date.today().isoformat(),"size":os.path.getsize(f"{d}/pharos-{v}.zip"),"sha256":open(f"{d}/pharos-{v}.zip.sha256").read().split()[0]})
+json.dump(rows,open(f"{d}/releases.json","w"),indent=1)
+PY
+  python3 scripts/release-page.py CHANGELOG.md "$DIST/latest.json" "$DIST/releases.json" > "$DIST/index.html"
+  rsync -a "$DIST/index.html" "$DIST/releases.json" "$REMOTE/" && echo "release page live: ${BASE_URL}/"
 else
   echo "== 6/6 upload skipped"
 fi
 
 if [ "$TAG" = 1 ]; then
   git tag -a "v${VERSION}" -m "Pharos ${VERSION}" 2>/dev/null && echo "tagged v${VERSION}" || echo "tag v${VERSION} already exists"
+  git push -q origin "v${VERSION}" 2>/dev/null || true
+  # GitHub Release carries the same artefacts as a mirror (assets are token-only while the repo is private)
+  if command -v gh >/dev/null 2>&1; then
+    awk -v v="$VERSION" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md > "$DIST/notes-${VERSION}.md"
+    gh release view "v${VERSION}" >/dev/null 2>&1 || gh release create "v${VERSION}" --title "Pharos ${VERSION}" --notes-file "$DIST/notes-${VERSION}.md" \
+      "$DIST/pharos-${VERSION}.zip" "$DIST/pharos-${VERSION}.zip.sha256" >/dev/null && echo "GitHub release v${VERSION} created"
+  fi
 fi
 
 rm -rf "$(dirname "$STAGE")"

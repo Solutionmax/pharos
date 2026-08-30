@@ -96,6 +96,7 @@
         @if ($sqlite) Your SQLite database is copied into the backup as well. @else Your database is <b>not</b> in that backup — take a dump before installing, because the update runs migrations. @endif
       </x-note>
       <form method="POST" action="{{ route('admin.updates.apply') }}"
+            data-job="update" data-progress="{{ route('admin.updates.backup.progress') }}"
             data-confirm-title="Install {{ $latest['version'] }}?"
             data-confirm="Pharos replaces its own files and is <strong>briefly unavailable</strong> while it does. Your settings, uploads and database are kept, and the current version is backed up first."
             data-confirm-action="Install update"
@@ -128,11 +129,6 @@ php artisan pharos:update</pre>
       @csrf
       <button class="btn" type="submit">Back up now</button>
     </form>
-  </div>
-  {{-- Filled by the script below while a backup or rollback runs; without JS the forms post as before. --}}
-  <div class="backup-progress" id="backup-progress" hidden>
-    <span class="mono" data-label></span><span class="mono" data-pct></span>
-    <progress class="bar"></progress>
   </div>
   @if ($backups)
     <div class="scroll">
@@ -184,38 +180,83 @@ php artisan pharos:update</pre>
   backup of its own, so a rollback can be undone too.
 </x-note>
 
+{{-- One dialog for the three jobs that rewrite the install — update, backup, rollback.
+     Each shows its steps as the server reports them; without JS the forms post as before. --}}
+<dialog class="modal job" id="job-dialog" aria-labelledby="job-title">
+  <div class="panel">
+    <div class="panel-hd"><span class="job-dot" aria-hidden="true"></span><h3 id="job-title">Working…</h3><span class="hint mono" data-pct></span></div>
+    <div class="panel-bd">
+      <ol class="job-steps" data-steps></ol>
+      <progress class="bar" data-bar></progress>
+      <p class="job-say mono" data-say>Starting…</p>
+      <div class="modal-act"><button type="button" class="btn ghost" data-close disabled>Close</button></div>
+    </div>
+  </div>
+</dialog>
+
 <script>
 (function () {
-  var box = document.getElementById('backup-progress');
-  if (!box || !window.fetch) return;
-  var bar = box.querySelector('progress'), label = box.querySelector('[data-label]'), pct = box.querySelector('[data-pct]');
-  var words = {
-    backup: {counting: 'Counting files…', code: 'Copying code…', vendor: 'Copying vendor…', database: 'Copying the database…', finishing: 'Finishing…'},
-    rollback: {safety: 'Keeping a safety copy…', code: 'Restoring code…', vendor: 'Restoring vendor…', database: 'Restoring the database…', finishing: 'Finishing…'}
+  var dialog = document.getElementById('job-dialog');
+  if (!dialog || !window.fetch || !dialog.showModal) return;
+  var q = function (sel) { return dialog.querySelector(sel); };
+  var title = q('#job-title'), steps = q('[data-steps]'), bar = q('[data-bar]'), say = q('[data-say]'), pct = q('[data-pct]'), close = q('[data-close]');
+  // Stage order per job, as the server reports them; the words are what the operator reads.
+  var jobs = {
+    update:   {title: 'Installing the update', steps: [['download', 'Downloading the release'], ['verify', 'Checking the signed checksum'], ['unpack', 'Unpacking'], ['backup', 'Backing up the current version'], ['install', 'Installing the new files'], ['migrate', 'Running migrations'], ['finishing', 'Clearing caches']]},
+    backup:   {title: 'Making a backup', steps: [['counting', 'Counting files'], ['code', 'Copying code'], ['vendor', 'Copying vendor'], ['database', 'Copying the database'], ['finishing', 'Finishing']]},
+    rollback: {title: 'Rolling back', steps: [['safety', 'Keeping a safety copy of now'], ['code', 'Restoring code'], ['vendor', 'Restoring vendor'], ['database', 'Restoring the database'], ['finishing', 'Clearing caches']]}
   };
   var fmt = function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f'); };
-  function finish(text, bad) { bar.hidden = true; pct.textContent = ''; label.textContent = text; box.classList.toggle('bad', !!bad); }
-  // Back up now and every Roll back go the same way: POST over fetch, poll the
-  // progress endpoint meanwhile, reload once the server has answered.
+  var running = false;
+
+  function open(job) {
+    title.textContent = jobs[job].title;
+    steps.innerHTML = '';
+    jobs[job].steps.forEach(function (st) {
+      var li = document.createElement('li'); li.dataset.stage = st[0]; li.innerHTML = '<i></i><span></span>'; li.querySelector('span').textContent = st[1]; steps.appendChild(li);
+    });
+    bar.hidden = false; bar.removeAttribute('value'); say.textContent = 'Starting…'; pct.textContent = '';
+    dialog.classList.remove('bad', 'ok'); close.disabled = true; running = true;
+    dialog.showModal();
+  }
+  function mark(stage) {
+    var seen = false;
+    steps.querySelectorAll('li').forEach(function (li) {
+      if (seen) { li.className = ''; return; }
+      if (li.dataset.stage === stage) { li.className = 'now'; seen = true; return; }
+      li.className = 'done';
+    });
+  }
+  function show(s) {
+    if (s.state === 'idle' || s.state === 'failed') return;
+    mark(s.stage);
+    if (s.total) { bar.max = s.total; bar.value = s.done; pct.textContent = Math.floor(100 * s.done / s.total) + '%'; say.textContent = fmt(s.done) + ' / ' + fmt(s.total) + ' files'; }
+    else { bar.removeAttribute('value'); say.textContent = ''; }
+  }
+  function finish(text, bad) {
+    running = false; bar.hidden = true; pct.textContent = '';
+    steps.querySelectorAll('li').forEach(function (li) { if (bad) { if (li.className === 'now') li.className = 'bad'; } else { li.className = 'done'; } });
+    say.textContent = text; dialog.classList.add(bad ? 'bad' : 'ok'); close.disabled = false; close.focus();
+  }
+  close.addEventListener('click', function () { dialog.close(); });
+  // Escape closes the dialog; while a job runs it must not, the server is still busy.
+  dialog.addEventListener('cancel', function (event) { if (running) event.preventDefault(); });
+
+  // Install, Back up now and every Roll back go the same way: POST over fetch,
+  // poll the progress endpoint meanwhile, reload once the server has answered.
   document.addEventListener('submit', function (event) {
     var form = event.target.closest('form[data-progress]');
     // A guarded form first goes through the confirm dialog; it comes back with confirmed=yes.
     if (!form || (form.dataset.confirm && form.dataset.confirmed !== 'yes')) return;
     event.preventDefault();
-    var job = form.dataset.job || 'backup', btn = form.querySelector('button'), failed = job === 'rollback' ? 'Rollback failed' : 'Backup failed';
-    function show(s) {
-      if (s.state === 'idle' || s.state === 'failed') return;
-      var text = words[job][s.stage] || s.stage;
-      if (s.total) { bar.max = s.total; bar.value = s.done; pct.textContent = Math.floor(100 * s.done / s.total) + '%'; text += ' ' + fmt(s.done) + ' / ' + fmt(s.total) + ' files'; }
-      label.textContent = text;
-    }
+    var job = form.dataset.job || 'backup', btn = form.querySelector('button');
+    var failed = {update: 'Update failed', backup: 'Backup failed', rollback: 'Rollback failed'}[job];
     function poll() {
       return fetch(form.dataset.progress, {credentials: 'same-origin', headers: {Accept: 'application/json'}}).then(function (r) { return r.json(); }).then(show).catch(function () {});
     }
-    btn.disabled = true; box.hidden = false; box.classList.remove('bad');
-    bar.hidden = false; bar.removeAttribute('value'); label.textContent = 'Starting…'; pct.textContent = '';
+    btn.disabled = true; open(job);
     // `php artisan serve` is single-threaded, so there the polls queue behind the
-    // POST and the bar only moves at the end. Real web servers are fine.
+    // POST and the steps only move at the end. Real web servers are fine.
     var timer = setInterval(poll, 500);
     fetch(form.action, {method: 'POST', credentials: 'same-origin', headers: {Accept: 'application/json', 'X-CSRF-TOKEN': form.querySelector('[name=_token]').value}})
       .then(function (r) {
@@ -227,8 +268,8 @@ php artisan pharos:update</pre>
         return poll().then(function () {
           if (!j.ok) throw new Error(j.message || failed + '.');
           finish(j.message || 'Backup made: ' + j.name + ' (' + j.size + ')');
-          // The table and the flash come with the fresh page; a rollback gets a moment longer to be read.
-          setTimeout(function () { location.href = form.dataset.after || location.href; }, job === 'rollback' ? 4000 : 1500);
+          // The fresh page carries the new version, table and flash; a rollback gets a moment longer to be read.
+          setTimeout(function () { location.href = form.dataset.after || location.href; }, job === 'backup' ? 1500 : 4000);
         });
       })
       .catch(function (err) { clearInterval(timer); finish(err.message || failed + '.', true); btn.disabled = false; });
@@ -237,17 +278,36 @@ php artisan pharos:update</pre>
 </script>
 @push('head')
 <style>
-.backup-progress[hidden]{display:none}
-.backup-progress{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--bg-tint);font-size:12px;color:var(--ink-3)}
-.backup-progress.bad{color:var(--red-ink)}
-.backup-progress .bar{grid-column:1/-1;width:100%;height:8px;border:0;border-radius:4px;overflow:hidden;background:var(--line);accent-color:var(--brand);-webkit-appearance:none;appearance:none}
-.backup-progress .bar::-webkit-progress-bar{background:var(--line);border-radius:4px}
-.backup-progress .bar::-webkit-progress-value{background:var(--brand);border-radius:4px;transition:width .3s var(--ease)}
-.backup-progress .bar::-moz-progress-bar{background:var(--brand);border-radius:4px}
+.modal.job .panel-hd{display:flex;align-items:center;gap:10px}
+.modal.job .panel-hd h3{flex:1}
+.job-dot{width:10px;height:10px;border-radius:50%;background:var(--brand);position:relative;flex:none}
+.job-dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--brand);opacity:0;animation:job-ring 1.4s ease-out infinite}
+.modal.job.ok .job-dot{background:var(--green)}.modal.job.ok .job-dot::after{animation:none}
+.modal.job.bad .job-dot{background:var(--red)}.modal.job.bad .job-dot::after{animation:none}
+@keyframes job-ring{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.8);opacity:0}}
+.job-steps{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:6px;font-size:13px;color:var(--ink-3)}
+.job-steps li{display:flex;align-items:center;gap:10px;transition:color .2s}
+.job-steps li i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line);flex:none;display:inline-grid;place-items:center;font:10px/1 ui-monospace,monospace;font-style:normal}
+.job-steps li.now{color:var(--ink)}
+.job-steps li.now i{border-color:var(--brand);border-top-color:transparent;animation:job-spin .8s linear infinite}
+.job-steps li.done{color:var(--ink-2)}
+.job-steps li.done i{background:var(--green);border-color:var(--green)}
+.job-steps li.done i::before{content:"✓";color:#fff}
+.job-steps li.bad{color:var(--red-ink)}
+.job-steps li.bad i{background:var(--red);border-color:var(--red)}
+.job-steps li.bad i::before{content:"!";color:#fff}
+@keyframes job-spin{to{transform:rotate(360deg)}}
+.job-say{margin:8px 0 0;font-size:12px;color:var(--ink-3);min-height:1.4em}
+.modal.job.bad .job-say{color:var(--red-ink)}
+.modal.job .bar[hidden]{display:none}
+.modal.job .bar{width:100%;height:8px;border:0;border-radius:4px;overflow:hidden;background:var(--line);accent-color:var(--brand);-webkit-appearance:none;appearance:none}
+.modal.job .bar::-webkit-progress-bar{background:var(--line);border-radius:4px}
+.modal.job .bar::-webkit-progress-value{background:var(--brand);border-radius:4px;transition:width .3s var(--ease)}
+.modal.job .bar::-moz-progress-bar{background:var(--brand);border-radius:4px}
 /* No value yet: a sliding band until the first sample arrives. */
-.backup-progress .bar:indeterminate::-webkit-progress-bar,.backup-progress .bar:indeterminate::-moz-progress-bar{background:linear-gradient(90deg,var(--line) 0 35%,var(--brand) 50%,var(--line) 65% 100%) 0 0/200% 100%;animation:bar-slide 1.2s linear infinite}
+.modal.job .bar:indeterminate::-webkit-progress-bar,.modal.job .bar:indeterminate::-moz-progress-bar{background:linear-gradient(90deg,var(--line) 0 35%,var(--brand) 50%,var(--line) 65% 100%) 0 0/200% 100%;animation:bar-slide 1.2s linear infinite}
 @keyframes bar-slide{to{background-position:-200% 0}}
-@media (prefers-reduced-motion:reduce){.backup-progress .bar:indeterminate::-webkit-progress-bar,.backup-progress .bar:indeterminate::-moz-progress-bar{animation:none;background:var(--brand-soft)}}
+@media (prefers-reduced-motion:reduce){.job-dot::after,.job-steps li.now i,.modal.job .bar:indeterminate::-webkit-progress-bar,.modal.job .bar:indeterminate::-moz-progress-bar{animation:none}.job-steps li.now i{border-top-color:var(--brand)}.modal.job .bar:indeterminate::-webkit-progress-bar{background:var(--brand-soft)}}
 </style>
 @endpush
 @endsection
