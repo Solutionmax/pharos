@@ -287,7 +287,7 @@ php artisan pharos:update</pre>
 @keyframes job-ring{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.8);opacity:0}}
 .job-steps{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:6px;font-size:13px;color:var(--ink-3)}
 .job-steps li{display:flex;align-items:center;gap:10px;transition:color .2s}
-.job-steps li i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line2);flex:none;display:inline-grid;place-items:center;font:10px/1 ui-monospace,monospace;font-style:normal}
+.job-steps li i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line);flex:none;display:inline-grid;place-items:center;font:10px/1 ui-monospace,monospace;font-style:normal}
 .job-steps li.now{color:var(--ink)}
 .job-steps li.now i{border-color:var(--brand);border-top-color:transparent;animation:job-spin .8s linear infinite}
 .job-steps li.done{color:var(--ink-2)}
