@@ -98,24 +98,49 @@ change your mind.</em>
 ### cPanel, DirectAdmin, Plesk — or any PHP 8.3 host
 
 Requires PHP 8.3 or later with the usual Laravel extensions, and either SQLite or MySQL.
-No daemon, no worker queue, no root. Every path below downloads the same signed release and
-verifies the Ed25519 manifest and SHA-256 before unpacking.
+No daemon, no worker queue, no root. Two installers, one result: the application lives outside
+the web root, the domain's document root points at its `public/` folder, and one cron line runs
+every minute. Both download the same signed release and verify the Ed25519 manifest and the
+SHA-256 before unpacking. Rather do it yourself? See [by hand](#by-hand).
 
-**Without SSH** — upload [`pharos-install.php`](https://pharos.solutionmax.net/pharos-install.php)
-into the domain's document root and open it in the browser. Four screens: check the server,
-download, configure, cron. It unpacks into `~/pharos-app`, copies `public/` into the web
-folder (no document-root change needed, `.env` stays out of reach), shows the cron line for
-your host, then deletes itself and opens the setup form.
+#### 1. Without SSH — the web installer
 
-**With SSH** — one command:
+Download [`pharos-install.php`](https://pharos.solutionmax.net/pharos-install.php) and upload it
+into the domain's document root (File Manager → `public_html`, or the subdomain's folder). Open
+`https://status.example.com/pharos-install.php`. The first screen says whether the host can run
+Pharos — nothing is written yet:
+
+<img src="docs/img/install-web-1-check.webp" alt="The web installer's first screen: PHP version, every required extension, the app folder, the web folder, outbound HTTPS and an existing-install check, each marked OK." width="100%">
+
+**Download** fetches the release, verifies the signed manifest and the checksum, unpacks the
+application into `~/pharos-app` — next to the web root, never inside it — and copies `public/`
+into the document root with an `index.php` that points at the app. No document-root change
+needed, and `.env` stays out of reach. Then it asks for the site address and the database:
+
+<img src="docs/img/install-web-2-download.webp" alt="The configure screen after the download: manifest signature valid, archive downloaded and verified, unpacked, public folder copied; a site address field and a database selector." width="100%">
+
+The last screen is the cron line, with the PHP binary that matches the version the installer
+found, and where it goes in cPanel, DirectAdmin and Plesk. **Finish** deletes the installer and
+opens the [setup form](#the-setup-form):
+
+<img src="docs/img/install-web-3-cron.webp" alt="The cron screen: one crontab line with a Copy button, and where to add it in cPanel, DirectAdmin and Plesk." width="100%">
+
+The installer keeps whatever your panel already put in `.htaccess` and adds Pharos's rules
+underneath; a half-finished install resumes where it stopped.
+
+#### 2. With SSH — one command
 
 ```bash
 curl -fsSL https://pharos.solutionmax.net/get | sh -s -- --php --url https://status.example.com
 ```
 
-Installs into `~/pharos-app`, writes `.env`, migrates, adds the cron line (or prints it where
-the crontab is not writable). **Then point the document root at `~/pharos-app/public`** — the
-script leaves that step to you:
+Same release, same checks. It installs into `~/pharos-app` (`--dir` to change that), writes
+`.env`, migrates, links `storage` and adds the cron line to your crontab — or prints it where
+the crontab is not writable, as in DirectAdmin's jailed shell:
+
+<img src="docs/img/install-ssh-get.webp" alt="A terminal running the get script: OS detected, manifest signature valid, archive downloaded and verified, PHP checked, unpacked, .env written and migrated, cron line added, then the document-root instructions per panel." width="100%">
+
+**Then point the document root at `~/pharos-app/public`** — the one step the script leaves to you:
 
 - cPanel: Domains → Manage → Document Root, or over SSH
   `uapi SubDomain changedocroot domain=status.example.com docroot=pharos-app/public`
@@ -123,30 +148,22 @@ script leaves that step to you:
   `cd ~/domains/status.example.com && mv public_html public_html.orig && ln -s ~/pharos-app/public public_html`
 - Plesk: Hosting Settings → Document root → `pharos-app/public`
 
-**A specific version** — both installers take the newest release unless you pin one:
-`--version 0.5.0` on the command, or `pharos-install.php?version=0.5.0` in the browser. Every
-release on [the releases page](https://pharos.solutionmax.net/releases/) also has a pre-pinned
-`pharos-install-<version>.php`. Pharos never downgrades by itself; use Roll back under Updates.
+Updating is the same command again; it hands over to Pharos's own updater, which backs the
+current version up first.
 
-**By hand:**
+#### The setup form
 
-```bash
-git clone https://github.com/solutionmax/pharos.git ~/pharos && cd ~/pharos
-composer install --no-dev --optimize-autoloader
-cp .env.example .env && php artisan key:generate
-touch database/database.sqlite
-php artisan migrate --force && php artisan storage:link
-# then point the document root at ~/pharos/public, as above
-```
+Either way it ends here. The first visit shows one screen: name the status page, create your
+administrator, done. The form disappears the moment that account exists.
 
-Then open the site in a browser. A fresh install answers every URL with a one-screen setup
-form: name the status page, create your administrator, done. The form disappears the moment
-that account exists.
+<img src="docs/img/install-web-4-setup.webp" alt="The setup form Pharos shows on first visit: status page name, time zone, your name, e-mail and password." width="100%">
 
 If you would rather not touch a browser, `php artisan pharos:user you@example.com` creates
 the first account from the command line — and gets you back in if you ever lock yourself out.
 
-The installers add **one** cron entry; by hand, add it yourself. This is the entire scheduler:
+#### The one cron line
+
+Both installers give you the exact line; by hand, add it yourself. This is the entire scheduler:
 
 ```
 * * * * * cd ~/pharos-app && php artisan schedule:run
@@ -155,33 +172,26 @@ The installers add **one** cron entry; by hand, add it yourself. This is the ent
 In a control panel's cron form the first five stars go in the schedule fields and the rest
 in the command field. If the host's default `php` is not 8.3, use the full path
 (`/opt/alt/php83/usr/bin/php` on cPanel, `/usr/local/php83/bin/php` on DirectAdmin,
-`/opt/plesk/php/8.3/bin/php` on Plesk).
+`/opt/plesk/php/8.3/bin/php` on Plesk). Pharos shows a warning in the admin until it sees the
+first run.
 
-### What the two installers look like
+#### A specific version
 
-**Without SSH.** Upload `pharos-install.php`, open it, and the first screen tells you whether the
-host can run Pharos before anything is written:
+Both installers take the newest release unless you pin one: `--version 0.5.0` on the command,
+or `pharos-install.php?version=0.5.0` in the browser. Every release on
+[the releases page](https://pharos.solutionmax.net/releases/) also has a pre-pinned
+`pharos-install-<version>.php`. Pharos never downgrades by itself; use Roll back under Updates.
 
-<img src="docs/img/install-web-1-check.webp" alt="The web installer's first screen: PHP version, every required extension, the app folder, the web folder, outbound HTTPS and an existing-install check, each marked OK." width="100%">
+#### By hand
 
-The download screen fetches the release, verifies the signed manifest and the checksum, unpacks
-into `~/pharos-app` and copies `public/` into the web folder — then asks for the site address and
-the database:
-
-<img src="docs/img/install-web-2-download.webp" alt="The configure screen after the download: manifest signature valid, archive downloaded and verified, unpacked, public folder copied; a site address field and a database selector." width="100%">
-
-The last screen is the cron line, with the PHP binary that matches the version the installer
-found, and where it goes in cPanel, DirectAdmin and Plesk. Finish deletes the installer and
-opens the setup form:
-
-<img src="docs/img/install-web-3-cron.webp" alt="The cron screen: one crontab line with a Copy button, and where to add it in cPanel, DirectAdmin and Plesk." width="100%">
-
-<img src="docs/img/install-web-4-setup.webp" alt="The setup form Pharos shows on first visit: status page name, time zone, your name, e-mail and password." width="100%">
-
-**With SSH.** The same release, the same checks, one command — and the document-root hint for
-your panel at the end:
-
-<img src="docs/img/install-ssh-get.webp" alt="A terminal running the get script: OS detected, manifest signature valid, archive downloaded and verified, PHP checked, unpacked, .env written and migrated, cron line added, then the document-root instructions per panel." width="100%">
+```bash
+git clone https://github.com/solutionmax/pharos.git ~/pharos && cd ~/pharos
+composer install --no-dev --optimize-autoloader
+cp .env.example .env && php artisan key:generate
+touch database/database.sqlite
+php artisan migrate --force && php artisan storage:link
+# then point the document root at ~/pharos/public, as above, and add the cron line
+```
 
 ### Docker
 
