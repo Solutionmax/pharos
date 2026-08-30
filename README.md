@@ -157,6 +157,32 @@ in the command field. If the host's default `php` is not 8.3, use the full path
 (`/opt/alt/php83/usr/bin/php` on cPanel, `/usr/local/php83/bin/php` on DirectAdmin,
 `/opt/plesk/php/8.3/bin/php` on Plesk).
 
+### What the two installers look like
+
+**Without SSH.** Upload `pharos-install.php`, open it, and the first screen tells you whether the
+host can run Pharos before anything is written:
+
+<img src="docs/img/install-web-1-check.webp" alt="The web installer's first screen: PHP version, every required extension, the app folder, the web folder, outbound HTTPS and an existing-install check, each marked OK." width="100%">
+
+The download screen fetches the release, verifies the signed manifest and the checksum, unpacks
+into `~/pharos-app` and copies `public/` into the web folder — then asks for the site address and
+the database:
+
+<img src="docs/img/install-web-2-download.webp" alt="The configure screen after the download: manifest signature valid, archive downloaded and verified, unpacked, public folder copied; a site address field and a database selector." width="100%">
+
+The last screen is the cron line, with the PHP binary that matches the version the installer
+found, and where it goes in cPanel, DirectAdmin and Plesk. Finish deletes the installer and
+opens the setup form:
+
+<img src="docs/img/install-web-3-cron.webp" alt="The cron screen: one crontab line with a Copy button, and where to add it in cPanel, DirectAdmin and Plesk." width="100%">
+
+<img src="docs/img/install-web-4-setup.webp" alt="The setup form Pharos shows on first visit: status page name, time zone, your name, e-mail and password." width="100%">
+
+**With SSH.** The same release, the same checks, one command — and the document-root hint for
+your panel at the end:
+
+<img src="docs/img/install-ssh-get.webp" alt="A terminal running the get script: OS detected, manifest signature valid, archive downloaded and verified, PHP checked, unpacked, .env written and migrated, cron line added, then the document-root instructions per panel." width="100%">
+
 ### Docker
 
 ```bash
