@@ -90,6 +90,7 @@ def main():
   {body}
   <footer>
     <a class="dl" href="{RELEASES}/pharos-{v}.zip"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0 3-3m-3 3L5 7M3 12v1.5A.5.5 0 0 0 3.5 14h9a.5.5 0 0 0 .5-.5V12"/></svg>pharos-{v}.zip{size}</a>
+    <a class="dl alt" href="{RELEASES}/pharos-install-{v}.php" download title="The web installer, pinned to {v}">pharos-install-{v}.php</a>
     {shabox}
     <span class="upd">{'Installed already? The Updates screen offers this release; or run the install command again.' if i == 0 else 'Superseded — the manifest points at the newest release.'}</span>
   </footer>
@@ -139,6 +140,8 @@ h1{{font-family:var(--display);font-weight:800;font-size:clamp(32px,4.4vw,46px);
 .rel footer{{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px;margin-top:4px;font-size:13px;color:var(--ink3)}}
 .dl{{display:inline-flex;align-items:center;gap:8px;background:var(--blue);color:#fff;text-decoration:none;font-weight:600;font-size:13.5px;padding:9px 14px;border-radius:10px;transition:transform .15s var(--ease)}}.dl:hover{{transform:translateY(-1px)}}
 .sha{{display:inline-flex;align-items:center;gap:8px}}.sha>span{{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}}.sha button{{font:11px var(--mono);color:var(--ink2);background:transparent;border:1px solid var(--line2);border-radius:6px;padding:3px 8px;cursor:pointer}}.sha button:hover{{border-color:var(--blue);color:var(--blue)}}
+.dl.alt{{background:var(--tint);color:var(--ink);border:1px solid var(--line2);font-family:var(--mono);font-weight:500;font-size:12.5px}}
+.pin{{margin:0 0 44px}}.pin h2{{font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:-.03em;margin:0 0 8px}}.pin p{{color:var(--ink2);max-width:72ch;margin:0 0 14px}}.pin .how{{margin-bottom:14px}}
 .upd{{margin-left:auto;max-width:34ch;text-align:right}}
 .foot{{color:var(--ink3);font-size:12.5px;margin-top:28px;display:flex;gap:16px;flex-wrap:wrap}}
 @media(max-width:820px){{.grid{{grid-template-columns:1fr}}.rail{{position:static;flex-direction:row;flex-wrap:wrap;gap:6px}}.rail .lbl{{width:100%}}.rail a{{border-left:0;border:1px solid var(--line)}}.rail a.on{{border-color:var(--blue)}}.rel{{padding:20px 18px 16px}}.grp{{grid-template-columns:1fr;gap:4px}}.upd{{margin-left:0;text-align:left;max-width:none}}}}
@@ -154,8 +157,21 @@ h1{{font-family:var(--display);font-weight:800;font-size:clamp(32px,4.4vw,46px);
 <span class="c"># cPanel · DirectAdmin · Plesk without SSH — upload this one file, open it in the browser</span>
 https://pharos.solutionmax.net/pharos-install.php
 
+<span class="c"># a specific version — see below</span>
+<span class="k">curl</span> -fsSL https://pharos.solutionmax.net/get | sh -s -- --version {latest["version"]}
+
 <span class="c"># what the Updates screen in every install reads</span>
 {RELEASES}/latest.json</pre></div>
+<section class="pin" id="specific-version">
+  <h2>Installing a specific version</h2>
+  <p>Both installers take the newest release from <code>latest.json</code> unless you pin one — to reproduce something, or to walk through an update yourself. A pinned install reads <code>pharos-&lt;version&gt;.json</code>, the manifest signed for that exact release; a version that was never published fails cleanly, and a tampered archive is refused the same way.</p>
+  <div class="how"><div class="bar"><b>›</b>pin a version</div><pre><span class="c"># over SSH</span>
+<span class="k">curl</span> -fsSL https://pharos.solutionmax.net/get | sh -s -- --php --url https://status.example.com --version {latest["version"]}
+
+<span class="c"># in the browser: the same installer with ?version=, or the pre-pinned copy next to each release below</span>
+https://status.example.com/pharos-install.php?version={latest["version"]}</pre></div>
+  <p>Afterwards the Updates screen offers the newest release as usual. Pharos never downgrades on its own: to go back, use <b>Roll back</b> under Updates, or run the <code>get</code> command with <code>--version</code> on the existing install — it puts that release's files in place and keeps your <code>.env</code>, database and uploads.</p>
+</section>
 <div class="grid">
   <aside class="rail"><span class="lbl">Versions</span>{rail}</aside>
   <div>{''.join(cards)}</div>

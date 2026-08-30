@@ -27,6 +27,7 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SECRET="${PHAROS_LICENSE_SECRET_FILE:-/root/secrets/pharos-license-secret.hex}"
 REMOTE="contabo:/var/www/pharos-releases"
 BASE_URL="https://pharos.solutionmax.net/releases"
+INSTALLER="${PHAROS_INSTALLER:-$REPO/../pharos-site/pharos-install.php}"   # the web installer lives in the site repo
 STAGE="$(mktemp -d)/pharos-${VERSION}"
 DIST="${REPO}/dist"
 
@@ -95,6 +96,14 @@ json.dump(rows,open(f"{d}/releases.json","w"),indent=1)
 PY
   python3 scripts/release-page.py CHANGELOG.md "$DIST/latest.json" "$DIST/releases.json" > "$DIST/index.html"
   rsync -a "$DIST/index.html" "$DIST/releases.json" "$REMOTE/" && echo "release page live: ${BASE_URL}/"
+  # the web installer, pinned to this release, next to its zip (the site's own copy stays unpinned)
+  if [ -r "$INSTALLER" ]; then
+    sed "s/^const PHAROS_PIN_VERSION = '';/const PHAROS_PIN_VERSION = '${VERSION}';/" "$INSTALLER" > "$DIST/pharos-install-${VERSION}.php"
+    grep -q "PHAROS_PIN_VERSION = '${VERSION}'" "$DIST/pharos-install-${VERSION}.php" || { echo "could not pin the installer" >&2; exit 1; }
+    rsync -a "$DIST/pharos-install-${VERSION}.php" "$REMOTE/" && echo "pinned installer live: ${BASE_URL}/pharos-install-${VERSION}.php"
+  else
+    echo "no installer at $INSTALLER — pinned copy skipped" >&2
+  fi
 else
   echo "== 6/6 upload skipped"
 fi
@@ -105,8 +114,10 @@ if [ "$TAG" = 1 ]; then
   # GitHub Release carries the same artefacts as a mirror (assets are token-only while the repo is private)
   if command -v gh >/dev/null 2>&1; then
     awk -v v="$VERSION" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md > "$DIST/notes-${VERSION}.md"
-    gh release view "v${VERSION}" >/dev/null 2>&1 || gh release create "v${VERSION}" --title "Pharos ${VERSION}" --notes-file "$DIST/notes-${VERSION}.md" \
-      "$DIST/pharos-${VERSION}.zip" "$DIST/pharos-${VERSION}.zip.sha256" >/dev/null && echo "GitHub release v${VERSION} created"
+    ASSETS="$DIST/pharos-${VERSION}.zip $DIST/pharos-${VERSION}.zip.sha256"
+    [ -r "$DIST/pharos-install-${VERSION}.php" ] && ASSETS="$ASSETS $DIST/pharos-install-${VERSION}.php $INSTALLER"
+    # shellcheck disable=SC2086
+    gh release view "v${VERSION}" >/dev/null 2>&1 || gh release create "v${VERSION}" --title "Pharos ${VERSION}" --notes-file "$DIST/notes-${VERSION}.md" $ASSETS >/dev/null && echo "GitHub release v${VERSION} created"
   fi
 fi
 
