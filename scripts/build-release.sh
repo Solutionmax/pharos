@@ -11,13 +11,14 @@
 # and uploads them to https://pharos.solutionmax.net/releases/ (Caddy handle_path → /var/www/pharos-releases).
 set -euo pipefail
 
-VERSION="${1:?usage: build-release.sh <version> [--notes ...] [--no-upload] [--no-tag]}"; shift
-NOTES="Pharos ${VERSION}"; UPLOAD=1; TAG=1
+VERSION="${1:?usage: build-release.sh <version> [--notes ...] [--no-upload] [--no-tag] [--no-gates]}"; shift
+NOTES="Pharos ${VERSION}"; UPLOAD=1; TAG=1; GATES=1
 while [ $# -gt 0 ]; do
   case "$1" in
     --notes) NOTES="$2"; shift 2 ;;
     --no-upload) UPLOAD=0; shift ;;
     --no-tag) TAG=0; shift ;;
+    --no-gates) GATES=0; shift ;;  # rebuilding an old tag whose tree predates a gate
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac
 done
@@ -35,10 +36,14 @@ DIST="${REPO}/dist"
 cd "$REPO"
 [ -z "$(git status --porcelain)" ] || { echo "working tree not clean — commit first" >&2; exit 1; }
 
-echo "== 1/6 gates"
-vendor/bin/pint --test -q
-vendor/bin/phpstan analyse --memory-limit=1G --no-progress -q
-php artisan test --compact 2>&1 | tail -1 | grep -q '"result":"passed"' || { echo "tests failed" >&2; exit 1; }
+if [ "$GATES" = 1 ]; then
+  echo "== 1/6 gates"
+  vendor/bin/pint --test -q
+  vendor/bin/phpstan analyse --memory-limit=1G --no-progress -q
+  php artisan test --compact 2>&1 | tail -1 | grep -q '"result":"passed"' || { echo "tests failed" >&2; exit 1; }
+else
+  echo "== 1/6 gates skipped (--no-gates)"
+fi
 
 echo "== 2/6 stage ${STAGE}"
 mkdir -p "$STAGE"
