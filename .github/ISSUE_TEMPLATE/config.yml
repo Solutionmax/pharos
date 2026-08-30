@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security report
+    url: https://github.com/Solutionmax/pharos/blob/main/SECURITY.md
+    about: Please e-mail security problems instead of opening an issue.
+  - name: Documentation
+    url: https://pharos.solutionmax.net/docs.html
+    about: Install, checks, incidents, API, updates.

@@ -1,10 +1,29 @@
 {
-    "$schema": "https://getcomposer.org/schema.json",
     "name": "solutionmax/pharos",
-    "type": "project",
     "description": "Self-hosted status page that runs its own checks. PHP 8.3, cPanel/DirectAdmin/Plesk or Docker.",
-    "keywords": ["status-page", "uptime", "monitoring", "laravel", "self-hosted"],
+    "type": "project",
+    "keywords": [
+        "status-page",
+        "uptime",
+        "monitoring",
+        "laravel",
+        "self-hosted"
+    ],
+    "homepage": "https://pharos.solutionmax.net",
     "license": "AGPL-3.0-only",
+    "authors": [
+        {
+            "name": "Raymon (SolutionMAX)",
+            "email": "mail@solutionmax.net",
+            "homepage": "https://solutionmax.net"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/Solutionmax/pharos/issues",
+        "docs": "https://pharos.solutionmax.net/docs.html",
+        "source": "https://github.com/Solutionmax/pharos"
+    },
+    "$schema": "https://getcomposer.org/schema.json",
     "require": {
         "php": "^8.3",
         "laravel/framework": "^12.0",
