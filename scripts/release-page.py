@@ -100,7 +100,6 @@ def main():
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pharos releases</title>
 <meta name="description" content="Every Pharos release: what changed, the signed download and its checksum.">
-<meta name="robots" content="noindex">
 <link rel="icon" href="https://pharos.solutionmax.net/assets/img/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
