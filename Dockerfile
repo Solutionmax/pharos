@@ -29,7 +29,11 @@ COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction
 
 COPY . .
-RUN composer dump-autoload --optimize --no-interaction \
+# The version travels with the code, as in the release zip: stamp the config so
+# the Updates screen shows the tag even when the environment is not passed on.
+RUN sed -i "s/'version' => env('PHAROS_VERSION', '[^']*')/'version' => env('PHAROS_VERSION', '${VERSION}')/" config/pharos.php \
+ && grep -q "'${VERSION}'" config/pharos.php \
+ && composer dump-autoload --optimize --no-interaction \
  && chown -R www-data:www-data storage bootstrap/cache database
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint

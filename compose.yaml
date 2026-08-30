@@ -1,6 +1,13 @@
+# The image comes from GHCR (built by .github/workflows/docker.yml on every
+# release tag). `build:` stays as the fallback: `docker compose up -d --build`
+# makes the same image from this checkout when the registry is out of reach.
 services:
   app:
-    build: .
+    image: ghcr.io/solutionmax/pharos:${PHAROS_VERSION:-latest}
+    build:
+      context: .
+      args:
+        VERSION: ${PHAROS_VERSION:-0.1.0-dev}
     ports:
       - "${PHAROS_PORT:-8080}:80"
     environment:
@@ -19,7 +26,11 @@ services:
   # Checks need a heartbeat of their own. On shared hosting this is one cron line;
   # here it is a second container sharing the same database volume.
   scheduler:
-    build: .
+    image: ghcr.io/solutionmax/pharos:${PHAROS_VERSION:-latest}
+    build:
+      context: .
+      args:
+        VERSION: ${PHAROS_VERSION:-0.1.0-dev}
     command: php artisan schedule:work
     environment:
       APP_ENV: production

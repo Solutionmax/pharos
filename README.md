@@ -196,6 +196,9 @@ php artisan migrate --force && php artisan storage:link
 
 ### Docker
 
+The image is `ghcr.io/solutionmax/pharos` — one tag per release (`:0.5.1`) plus `:latest`,
+built for `linux/amd64` and `linux/arm64` by GitHub Actions on every release tag.
+
 ```bash
 git clone https://github.com/solutionmax/pharos.git
 cd pharos
@@ -204,12 +207,21 @@ cp .env.docker.example .env
 # an application key is required; generate one and put it in .env as APP_KEY=
 docker run --rm php:8.3-cli php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
 
-docker compose up -d
+docker compose pull && docker compose up -d
 ```
 
 Two containers from one image: the application on `php:8.3-apache` (port `8080` by
 default, change `PHAROS_PORT` in `.env`), and a second one running `php artisan schedule:work`.
 The database is SQLite on a volume; point `DB_CONNECTION` at MySQL if you prefer.
+
+Pin a release with `PHAROS_VERSION=0.5.1` in `.env`. To build the image from your own checkout
+instead of pulling it, `docker compose up -d --build`; the `build:` block in `compose.yaml` stamps
+the same version into the image.
+
+**Updating** is `docker compose pull && docker compose up -d`. Inside a container the app does not
+replace its own files: the Updates screen says the install is *managed from the host* and shows
+that command. The `curl … /get | sh` installer pulls the same image and only builds it from the
+release archive when the registry cannot be reached.
 
 ### Check it is alive
 
@@ -271,7 +283,7 @@ on every installation, paid or not.
 
 On a PHP host it downloads the release, verifies the SHA-256, backs up the current version and
 replaces its own files, keeping `.env`, `storage/` and the database. Roll back from the same
-screen. On Docker the host pulls the new image.
+screen. On Docker the host pulls the new image: `docker compose pull && docker compose up -d`.
 
 Manifests are signed with **Ed25519** and verified locally. If the release server cannot be
 reached, that reads as *no update available* — never as an error.

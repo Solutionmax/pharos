@@ -1,0 +1,97 @@
+name: Docker image
+
+# Every release tag becomes ghcr.io/solutionmax/pharos:<version> and :latest.
+# Re-run by hand for an older tag with `gh workflow run docker.yml -f tag=v0.5.1`
+# (untick "move latest" for that so :latest keeps pointing at the newest release).
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to build, e.g. v0.5.1'
+        required: true
+        type: string
+      latest:
+        description: 'Also move the :latest tag to this build'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Build and push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Version and image name from the tag
+        id: meta
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+          MOVE_LATEST: ${{ github.event_name == 'push' || inputs.latest }}
+        run: |
+          set -eu
+          version="${TAG#v}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.]+)?$ ]] || { echo "tag $TAG is not a semver release tag" >&2; exit 1; }
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"   # GHCR wants lowercase
+          tags="${image}:${version}"
+          [ "$MOVE_LATEST" = "true" ] && tags="${tags}"$'\n'"${image}:latest"
+          {
+            echo "version=$version"
+            echo "image=$image"
+            echo "tags<<EOT"; echo "$tags"; echo "EOT"
+          } >> "$GITHUB_OUTPUT"
+          echo "building $image:$version (latest: $MOVE_LATEST)"
+
+      # Older tags stamp the version in the Dockerfile only from this commit on,
+      # so do it here as well; on a current tree this is a no-op.
+      - name: Stamp config/pharos.php with the version
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          sed -i "s/'version' => env('PHAROS_VERSION', '[^']*')/'version' => env('PHAROS_VERSION', '${VERSION}')/" config/pharos.php
+          grep -q "'${VERSION}'" config/pharos.php
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            org.opencontainers.image.title=Pharos
+            org.opencontainers.image.description=Status page and uptime monitor that runs on the PHP hosting you already have
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.url=https://pharos.solutionmax.net
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.licenses=AGPL-3.0-only
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: The pushed image knows its own version
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          docker pull -q "$IMAGE"
+          docker run --rm --entrypoint sh "$IMAGE" -c \
+            "grep -q \"'version' => env('PHAROS_VERSION', '$VERSION')\" config/pharos.php && php -r 'echo \"stamped \" . getenv(\"PHAROS_VERSION\") . PHP_EOL;'"

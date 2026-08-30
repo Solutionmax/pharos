@@ -16,6 +16,16 @@ if [ "${DB_CONNECTION:-sqlite}" = "sqlite" ]; then
     chown -R www-data:www-data "$(dirname "$DB_PATH")"
 fi
 
+# Tell the app that the host owns the image. With this file present the Updates
+# screen says the install is managed from outside and points at
+# `docker compose pull && docker compose up -d` instead of replacing its own
+# files inside a container that would lose them on the next restart.
+OTA_DIR=/var/www/html/storage/app/ota
+mkdir -p "$OTA_DIR"
+printf '{"host":"docker","version":"%s","update":"docker compose pull && docker compose up -d"}\n' \
+    "${PHAROS_VERSION:-unknown}" > "$OTA_DIR/update-status.json"
+chown -R www-data:www-data "$OTA_DIR"
+
 php artisan migrate --force --no-interaction
 
 php artisan optimize:clear
