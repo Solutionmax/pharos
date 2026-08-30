@@ -6,12 +6,10 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
-## [0.5.2] — 2026-08-30
+## [0.5.1] — 2026-08-30
 
 ### Added
 - Updates: installing a release, making a backup and rolling back now open a dialog that shows each step as it happens (download, checksum, unpack, backup, install, migrate) with a live file count, instead of a bare button that returns when everything is over.
-
-## [0.5.1] — 2026-08-30
 
 ### Fixed
 - Release archives left out `resources/views/vendor/` (the Pharos pagination view): the Audit log returned a 500 as soon as it had more than one page. Fresh installs of 0.5.0 are affected; installs updated from an older checkout were not.
