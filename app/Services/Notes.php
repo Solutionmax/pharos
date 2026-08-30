@@ -24,6 +24,7 @@ class Notes
         'sso.what-still-applies' => ['page' => 'Settings › Single sign-on', 'route' => 'admin.settings', 'params' => ['tab' => 'sso'], 'title' => 'What still applies with SSO'],
         'status-page.no-services' => ['page' => 'Status page', 'route' => 'admin.status-page', 'params' => [], 'title' => 'No services yet'],
         'subscribers.how' => ['page' => 'Subscribers', 'route' => 'admin.subscribers', 'params' => [], 'title' => 'How subscriptions work'],
+        'subscribers.no-mail' => ['page' => 'Subscribers', 'route' => 'admin.subscribers', 'params' => [], 'title' => 'No mail transport yet'],
         'updates.backups' => ['page' => 'Updates', 'route' => 'admin.updates', 'params' => [], 'title' => 'What a backup holds'],
         'updates.how-it-installs' => ['page' => 'Updates', 'route' => 'admin.updates', 'params' => [], 'title' => 'How an update installs'],
         'updates.managed' => ['page' => 'Updates', 'route' => 'admin.updates', 'params' => [], 'title' => 'This install is managed from outside'],

@@ -95,8 +95,8 @@ class SelfUpdater
     }
 
     /**
-     * The previous versions still on disk, newest first. Nothing prunes them:
-     * the operator decides when the new version has run long enough.
+     * The previous versions still on disk, newest first. The newest few are kept
+     * (Settings → General, PHAROS_KEEP_BACKUPS); the oldest go when a new one is made.
      *
      * @return list<array{name:string,version:string,created_at:Carbon,size:int}>
      */

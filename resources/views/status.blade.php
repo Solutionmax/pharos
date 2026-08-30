@@ -150,8 +150,9 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
   <header class="top">
     <span class="logo">@include('partials.logo', ['size' => 30])</span>
     <span class="right">
-      {{-- Two switches, both needed: the page module and the master switch on the Subscribers screen. --}}
-      @if ($modules['page.show_subscribe'] && \App\Services\Subscriptions::enabled())
+      {{-- Three things, all needed: the page module, the master switch on the Subscribers screen,
+           and a mail transport that can actually send — a form that ends in a 500 helps nobody. --}}
+      @if ($modules['page.show_subscribe'] && \App\Services\Subscriptions::enabled() && app(\App\Services\MailConfig::class)->configured())
         <details class="subscribe" @if (session('subscribed') || $errors->has('email')) open @endif>
           <summary class="sub">Get notified</summary>
           <div class="subscribe-box">

@@ -142,6 +142,14 @@ class MailConfig
      *
      * @return array<string, string>
      */
+    /** Can a mail leave this install at all? SMTP without a host cannot; every other transport can. */
+    public function configured(): bool
+    {
+        $effective = $this->effective();
+
+        return $effective['mailer'] !== 'smtp' || $effective['host'] !== '';
+    }
+
     public function effective(): array
     {
         $mailer = (string) config('mail.default');

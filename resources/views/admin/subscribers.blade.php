@@ -116,6 +116,13 @@
   @endif
 </div>
 
+@unless (app(\App\Services\MailConfig::class)->configured())
+<x-note id="subscribers.no-mail" warn>
+  <b>No mail transport yet.</b> The "Get notified" form stays off the public page, and nothing is
+  sent, until <a href="{{ route('admin.settings', ['tab' => 'mail']) }}">Settings → Mail</a> has an SMTP
+  host — a form that ends in an error helps nobody.
+</x-note>
+@endunless
 <x-note id="subscribers.how">
   <p><b>How it works.</b> A visitor enters an address, confirms it from the mail they get, and from
   then on receives every update on a public incident. Sending runs from the same cron line as the

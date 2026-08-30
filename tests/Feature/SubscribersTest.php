@@ -17,6 +17,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Symfony\Component\Mailer\Exception\TransportException;
 use Tests\TestCase;
 
 class SubscribersTest extends TestCase
@@ -119,6 +120,33 @@ class SubscribersTest extends TestCase
             ->assertSessionHasErrors('email');
 
         $this->assertSame(0, Subscriber::count());
+    }
+
+    public function test_the_form_is_hidden_until_mail_can_actually_be_sent(): void
+    {
+        // A fresh install: smtp selected, no host — the state every new install starts in.
+        config(['mail.default' => 'smtp', 'mail.mailers.smtp.host' => '']);
+
+        $this->get('/')->assertOk()->assertDontSee('Get notified');
+        $this->actingAs($this->user)->get('/admin/subscribers')->assertOk()->assertSee('No mail transport yet');
+
+        config(['mail.default' => 'array']);
+
+        $this->get('/')->assertOk()->assertSee('Get notified');
+        $this->actingAs($this->user)->get('/admin/subscribers')->assertOk()->assertDontSee('No mail transport yet');
+    }
+
+    public function test_a_mail_transport_that_cannot_send_is_a_message_not_a_500(): void
+    {
+        // What a fresh install's empty SMTP host throws, minus the socket.
+        Mail::shouldReceive('to')->once()->andThrow(new TransportException('Connection could not be established with host ":587"'));
+
+        $this->from('/')->post('/subscribe', ['email' => 'someone@example.com'])
+            ->assertRedirect('/')
+            ->assertSessionHasErrors(['email' => 'The confirmation e-mail could not be sent right now. Please try again later.']);
+
+        // The address is kept pending: the next attempt, once mail works, needs no second sign-up.
+        $this->assertNotNull(Subscriber::where('email', 'someone@example.com')->first());
     }
 
     public function test_the_form_is_rate_limited_per_ip(): void

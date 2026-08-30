@@ -107,7 +107,13 @@ class IncidentController extends Controller
                 'message' => $data['message'],
             ]);
 
+            // The form posts components[<id>] = status; a key that is not a component is dropped rather than tripping the foreign key.
+            $known = Component::whereKey(array_keys($data['components'] ?? []))->pluck('id')->all();
+
             foreach ($data['components'] ?? [] as $componentId => $componentStatus) {
+                if (! in_array((int) $componentId, $known, true)) {
+                    continue;
+                }
                 $incident->components()->attach($componentId, ['status' => (int) $componentStatus]);
                 Component::whereKey($componentId)
                     ->update(['status' => ComponentStatus::from((int) $componentStatus)->value]);
