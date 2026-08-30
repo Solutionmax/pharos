@@ -7,7 +7,8 @@
   <a href="LICENSE"><img alt="Licence: AGPL-3.0" src="https://img.shields.io/badge/licence-AGPL--3.0-0079d2"></a>
   <img alt="PHP 8.3+" src="https://img.shields.io/badge/PHP-8.3%2B-777bb4">
   <img alt="Laravel 12" src="https://img.shields.io/badge/Laravel-12-ff2d20">
-  <img alt="577 tests passing" src="https://img.shields.io/badge/tests-577%20passing-12b76a">
+  <img alt="580 tests passing" src="https://img.shields.io/badge/tests-580%20passing-12b76a">
+  <a href="https://pharos.solutionmax.net/releases/"><img alt="Releases: signed zips, changelog, pinned installers" src="https://img.shields.io/badge/releases-signed%20zips%20%C2%B7%20changelog%20%C2%B7%20installers-0079d2"></a>
   <img alt="Cachet 2.x compatible API" src="https://img.shields.io/badge/API-Cachet%202.x%20compatible-0e1726">
   <img alt="Runs on cPanel, DirectAdmin, Plesk or Docker" src="https://img.shields.io/badge/runs%20on-cPanel%20%C2%B7%20DirectAdmin%20%C2%B7%20Plesk%20%C2%B7%20Docker-475467">
   <a href="https://buymeacoffee.com/solutionmax"><img alt="Buy me a coffee" src="https://img.shields.io/badge/Buy%20me%20a%20coffee-ffdd00?logo=buymeacoffee&logoColor=000"></a>
@@ -274,6 +275,10 @@ screen. On Docker the host pulls the new image.
 
 Manifests are signed with **Ed25519** and verified locally. If the release server cannot be
 reached, that reads as *no update available* — never as an error.
+
+Every release — what changed, the signed zip, its SHA-256 and a copy of the web installer
+pinned to that version — is listed at **[pharos.solutionmax.net/releases](https://pharos.solutionmax.net/releases/)**.
+The GitHub Releases here carry the same files as a mirror.
 
 ---
 
