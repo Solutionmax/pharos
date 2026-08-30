@@ -6,6 +6,8 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-08-30
+
 ### Fixed
 - Release archives left out `resources/views/vendor/` (the Pharos pagination view): the Audit log returned a 500 as soon as it had more than one page. Fresh installs of 0.5.0 are affected; installs updated from an older checkout were not.
 - Installers: DirectAdmin support — the cron line is pinned to `/usr/local/php<MM>/bin/php`, and `DirectoryIndex index.php` keeps the panel's placeholder `index.html` from shadowing the status page.
