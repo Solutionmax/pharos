@@ -43,8 +43,8 @@ php artisan test --compact 2>&1 | tail -1 | grep -q '"result":"passed"' || { ech
 echo "== 2/6 stage ${STAGE}"
 mkdir -p "$STAGE"
 rsync -a --delete \
-  --exclude '.git' --exclude '.github' --exclude 'tests' --exclude 'node_modules' --exclude 'dist' \
-  --exclude 'vendor' --exclude '.env' --exclude '.env.*.local' --exclude 'phpstan.neon' --exclude 'phpunit.xml' \
+  --exclude '/.git' --exclude '/.github' --exclude '/tests' --exclude '/node_modules' --exclude '/dist' \
+  --exclude '/vendor' --exclude '.env' --exclude '.env.*.local' --exclude 'phpstan.neon' --exclude 'phpunit.xml' \
   --exclude 'storage/app/*' --exclude 'storage/logs/*' --exclude 'storage/framework/cache/*' \
   --exclude 'storage/framework/sessions/*' --exclude 'storage/framework/views/*' --exclude 'storage/framework/phpstan' \
   --exclude 'database/*.sqlite*' --exclude 'bootstrap/cache/*.php' --exclude 'public/storage' \
