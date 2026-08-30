@@ -411,34 +411,48 @@ class SelfUpdater
         $work = storage_path('app/update-'.Str::random(8));
         File::ensureDirectoryExists($work);
 
+        // The screen polls the same samples a backup writes: one stage at a time,
+        // file counts where there are files to count.
+        $sample = ['state' => 'running', 'stage' => 'download', 'done' => 0, 'total' => 0, 'name' => null, 'message' => null, 'started_at' => now()->toIso8601String()];
+        $this->report($sample);
+        $refuse = function (string $message) use (&$sample): array {
+            $this->report([...$sample, 'state' => 'failed', 'message' => $message]);
+
+            return ['ok' => false, 'message' => $message];
+        };
+
         try {
             $archive = $work.'/release.zip';
 
             $response = Http::timeout(120)->sink($archive)->get($manifest['url']);
 
             if (! $response->successful() || ! is_file($archive)) {
-                return ['ok' => false, 'message' => 'Could not download the release.'];
+                return $refuse('Could not download the release.');
             }
 
+            $sample['stage'] = 'verify';
+            $this->report($sample);
             $actual = hash_file('sha256', $archive);
 
             if (! hash_equals(strtolower($manifest['sha256']), strtolower($actual))) {
                 // The manifest is signed, so a mismatch means the archive was
                 // swapped or truncated. Either way it does not get unpacked.
-                return ['ok' => false, 'message' => 'The download does not match the signed checksum. Nothing was installed.'];
+                return $refuse('The download does not match the signed checksum. Nothing was installed.');
             }
 
             $zip = new \ZipArchive;
             if ($zip->open($archive) !== true) {
-                return ['ok' => false, 'message' => 'The release archive could not be opened.'];
+                return $refuse('The release archive could not be opened.');
             }
 
             if (($problem = $this->unsafeEntry($zip)) !== null) {
                 $zip->close();
 
-                return ['ok' => false, 'message' => "The release archive was refused: {$problem}. Nothing was installed."];
+                return $refuse("The release archive was refused: {$problem}. Nothing was installed.");
             }
 
+            $sample['stage'] = 'unpack';
+            $this->report($sample);
             $extracted = $work.'/files';
             File::ensureDirectoryExists($extracted);
 
@@ -448,24 +462,38 @@ class SelfUpdater
             $root = $this->archiveRoot($extracted);
 
             if (! is_file($root.'/artisan')) {
-                return ['ok' => false, 'message' => 'That archive does not look like a Pharos release.'];
+                return $refuse('That archive does not look like a Pharos release.');
             }
 
+            // The backup's own samples show as this one stage, counts included.
+            $this->within = 'backup';
             $backup = $this->backupCurrent();
+            $this->within = null;
 
-            $this->copyTree($root, base_path(), skip: self::KEEP);
+            $sample = [...$sample, 'stage' => 'install', 'done' => 0, 'total' => $this->countTree($root, self::KEEP), 'name' => basename($backup)];
+            [$tick, $stage] = $this->ticker($sample);
+            $stage('install');
+            $this->copyTree($root, base_path(), skip: self::KEEP, tick: $tick);
 
+            $stage('migrate');
             Artisan::call('migrate', ['--force' => true]);
+            $stage('finishing');
             Artisan::call('optimize:clear');
+
+            $message = "Updated to {$manifest['version']}. The previous version is in {$backup}.";
+            // After optimize:clear, which empties the cache the screen is polling.
+            $this->report([...$sample, 'done' => $sample['total'], 'state' => 'done', 'message' => $message]);
 
             return [
                 'ok' => true,
                 'version' => $manifest['version'],
                 'backup' => $backup,
-                'message' => "Updated to {$manifest['version']}. The previous version is in {$backup}.",
+                'message' => $message,
             ];
         } catch (\Throwable $e) {
-            return ['ok' => false, 'message' => 'Update failed: '.$e->getMessage()];
+            $this->within = null;
+
+            return $refuse('Update failed: '.$e->getMessage());
         } finally {
             File::deleteDirectory($work);
         }

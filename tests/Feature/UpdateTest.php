@@ -327,6 +327,40 @@ class UpdateTest extends TestCase
         ]);
     }
 
+    public function test_a_refused_archive_leaves_a_failed_progress_sample_at_its_stage(): void
+    {
+        $manifest = ['purpose' => 'pharos-release', 'version' => '1.1.0', 'url' => 'https://releases.example.net/pharos-1.1.0.zip', 'sha256' => str_repeat('0', 64)];
+        Http::fake(['releases.example.net/pharos-1.1.0.zip' => Http::response('not the release')]);
+
+        $result = app(SelfUpdater::class)->apply($manifest);
+
+        $this->assertFalse($result['ok']);
+        $sample = app(SelfUpdater::class)->progress();
+        $this->assertSame('failed', $sample['state']);
+        $this->assertSame('verify', $sample['stage']);
+        $this->assertSame($result['message'], $sample['message']);
+    }
+
+    public function test_the_screen_gets_json_when_it_asks_for_it(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::response('rubbish')]);
+
+        $this->actingAs($this->user)->postJson('/admin/updates')
+            ->assertStatus(422)
+            ->assertJson(['ok' => false, 'message' => 'No verified release available.']);
+    }
+
+    public function test_the_install_button_reports_its_steps_through_the_job_dialog(): void
+    {
+        Http::fake(['releases.example.net/*' => Http::response($this->manifest())]);
+
+        $this->actingAs($this->user)->get('/admin/updates')
+            ->assertOk()
+            ->assertSee('data-job="update"', false)
+            ->assertSee('id="job-dialog"', false)
+            ->assertSee('Backing up the current version');
+    }
+
     public function test_an_archive_that_climbs_out_of_its_folder_is_refused(): void
     {
         // Neither entry belongs in anything we built; the checksum passes because
