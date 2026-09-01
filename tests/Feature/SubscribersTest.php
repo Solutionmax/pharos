@@ -491,6 +491,18 @@ class SubscribersTest extends TestCase
         Mail::assertNothingSent();
     }
 
+    public function test_the_csv_export_neutralises_spreadsheet_formulas(): void
+    {
+        // RFC 5322 allows "=1+1@example.net"; opened in Excel that is a formula.
+        $this->active('=1+1@example.net');
+        $this->active('+cmd@example.net');
+
+        $csv = $this->actingAs($this->user)->get('/admin/subscribers/export')->assertOk()->streamedContent();
+
+        $this->assertStringContainsString("\n'=1+1@example.net,", $csv);
+        $this->assertStringContainsString("\n'+cmd@example.net,", $csv);
+    }
+
     public function test_the_csv_export_streams_active_addresses_only(): void
     {
         $this->active('ann@example.net');

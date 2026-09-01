@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditEntry;
 use App\Services\Clock;
 use App\Services\InstallSettings;
+use App\Support\Csv;
 use Illuminate\Http\Request;
 
 class AuditController extends Controller
@@ -54,7 +55,7 @@ class AuditController extends Controller
                     $changes = collect($e->changes ?? [])
                         ->map(fn ($c, $field) => is_array($c) ? $field.': '.($c['from'] ?? '—').' → '.($c['to'] ?? '—') : $field.': '.$c)
                         ->implode('; ');
-                    fputcsv($out, [$e->created_at->toIso8601String(), $e->actor, $e->ip, $e->action, $e->subject_label, $changes]);
+                    fputcsv($out, array_map(Csv::cell(...), [$e->created_at->toIso8601String(), $e->actor, $e->ip, $e->action, $e->subject_label, $changes]));
                 }
             }, 'id');
 
