@@ -6,6 +6,8 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [0.5.2] — 2026-09-01
+
 ### Fixed
 - Updates: when a migration or the file copy fails halfway, the version that was just backed up is put back automatically — files the new release added are removed first — instead of leaving new code on an old database. The message names the backup either way.
 - Backups and the Updates screen no longer need the `intl` PHP extension to show a size; hosts and the Docker image without it saw a backup "fail" right after it had been written.
