@@ -7,6 +7,7 @@ use App\Models\UptimeDay;
 use App\Services\Uptime;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class UptimeTest extends TestCase
@@ -113,5 +114,22 @@ class UptimeTest extends TestCase
     public function test_a_component_with_no_history_reports_full_uptime(): void
     {
         $this->assertSame(100.0, $this->uptime->percentage($this->component));
+    }
+
+    public function test_many_components_cost_one_query_and_match_the_single_bar(): void
+    {
+        $this->day(1, 3600);
+        $other = Component::create(['name' => 'web-07']);
+        $components = Component::whereIn('id', [$this->component->id, $other->id])->get();
+
+        DB::enableQueryLog();
+        $bars = $this->uptime->barsFor($components);
+        $queries = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        $this->assertSame(1, $queries);
+        $this->assertSame($this->uptime->bar($this->component), $bars[$this->component->id]);
+        $this->assertSame($this->uptime->bar($other), $bars[$other->id]);
+        $this->assertSame($this->uptime->percentage($this->component), $this->uptime->percentageOf($bars[$this->component->id]));
     }
 }

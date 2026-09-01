@@ -113,12 +113,10 @@ class StatusPageController extends Controller
             $all = $all->reject(fn ($c) => in_array((string) $c->component_group_id, $hiddenGroups, true));
         }
 
-        $bars = [];
-        $percentages = [];
-        foreach ($all as $component) {
-            $bars[$component->id] = $this->uptime->bar($component);
-            $percentages[$component->id] = $this->uptime->percentage($component);
-        }
+        // One query for all of them, and the percentage from the bar in hand:
+        // this used to be two queries per component on the busiest page.
+        $bars = $this->uptime->barsFor($all);
+        $percentages = array_map($this->uptime->percentageOf(...), $bars);
 
         $overall = $percentages === [] ? 100.0 : round(array_sum($percentages) / count($percentages), 2);
 
