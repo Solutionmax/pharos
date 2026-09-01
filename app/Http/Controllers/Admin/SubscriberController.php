@@ -8,6 +8,7 @@ use App\Models\Subscriber;
 use App\Services\Audit;
 use App\Services\Clock;
 use App\Services\Subscriptions;
+use App\Support\Csv;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -94,7 +95,7 @@ class SubscriberController extends Controller
 
             Subscriber::active()->chunkById(500, function ($rows) use ($out) {
                 foreach ($rows as $s) {
-                    fputcsv($out, [$s->email, $s->verified_at->toIso8601String()]);
+                    fputcsv($out, [Csv::cell($s->email), $s->verified_at->toIso8601String()]);
                 }
             });
 

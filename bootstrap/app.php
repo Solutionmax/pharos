@@ -24,6 +24,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: SecurityHeaders::class);
 
+        // Behind Cloudflare or a Docker reverse proxy every request arrives from
+        // the proxy's address, so the per-IP limits on login, subscribe and
+        // heartbeat would share one bucket. Only what the operator names is
+        // trusted: a forged X-Forwarded-For from the open internet must not count.
+        if (($proxies = trim((string) env('TRUSTED_PROXIES', ''))) !== '') {
+            $middleware->trustProxies(at: $proxies === '*' ? '*' : array_map('trim', explode(',', $proxies)));
+        }
+
         // One-click unsubscribe is a POST from a mail provider's server, with
         // no session and no form. The signed URL is its credential.
         $middleware->validateCsrfTokens(except: ['unsubscribe/*']);

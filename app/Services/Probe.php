@@ -8,9 +8,18 @@ use App\Models\Check;
 /**
  * Performs one check. Kept free of database writes so it can be tested and
  * swapped out (an external probe network would implement the same contract).
+ *
+ * Targets go through SafeHttp like every other URL an operator types: a check
+ * may watch the LAN it belongs to, never this machine or the cloud metadata
+ * address, and it follows no redirect — the response code is the result.
  */
 class Probe
 {
+    public function __construct(protected ?SafeHttp $safe = null)
+    {
+        $this->safe ??= new SafeHttp;
+    }
+
     public function run(Check $check): ProbeResult
     {
         return match ($check->type) {
@@ -22,46 +31,48 @@ class Probe
 
     protected function http(Check $check): ProbeResult
     {
-        $start = microtime(true);
-        $ctx = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'timeout' => $check->timeout_seconds,
-                'ignore_errors' => true,
-                'header' => "User-Agent: Pharos/1.0 (status monitor)\r\n",
-            ],
-            'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
-        ]);
+        try {
+            $request = $this->safe->toOwn($check->target);
+        } catch (\RuntimeException $e) {
+            return new ProbeResult(false, null, $e->getMessage());
+        }
 
-        $body = @file_get_contents($check->target, false, $ctx);
+        $start = microtime(true);
+
+        try {
+            $code = $request->timeout($check->timeout_seconds)
+                ->withHeaders(['User-Agent' => 'Pharos/1.0 (status monitor)'])
+                ->get($check->target)
+                ->status();
+        } catch (\Throwable $e) {
+            return new ProbeResult(false, (int) round((microtime(true) - $start) * 1000), $this->reason($e));
+        }
+
         $ms = (int) round((microtime(true) - $start) * 1000);
 
-        // PHP fills $http_response_header after file_get_contents; static analysis cannot see that.
-        if ($body === false && ! isset($http_response_header)) { // @phpstan-ignore booleanAnd.alwaysFalse, isset.variable
-            return new ProbeResult(false, $ms, 'No response');
-        }
-
-        $code = 0;
-        foreach ($http_response_header ?? [] as $line) { // @phpstan-ignore nullCoalesce.variable
-            if (preg_match('#^HTTP/\S+\s+(\d{3})#', $line, $m)) {
-                $code = (int) $m[1];
-            }
-        }
-
-        return $code >= 200 && $code < 400
-            ? new ProbeResult(true, $ms, "HTTP $code")
-            : new ProbeResult(false, $ms, "HTTP $code");
+        return new ProbeResult($code >= 200 && $code < 400, $ms, "HTTP $code");
     }
 
     protected function tcp(Check $check): ProbeResult
     {
-        [$host, $port] = array_pad(explode(':', $check->target, 2), 2, null);
-        if (! $port) {
+        // host:port, with brackets around an IPv6 literal as in a URL.
+        if (! preg_match('/^(\[[^\]]+\]|[^:]+):(\d{1,5})$/', $check->target, $m)) {
             return new ProbeResult(false, null, 'Target must be host:port');
         }
+        $host = trim($m[1], '[]');
+        $port = (int) $m[2];
+
+        $addresses = $this->safe->addresses($host);
+        if (($ip = $this->safe->forbiddenAddress("tcp://{$m[1]}:{$port}")) !== null) {
+            return new ProbeResult(false, null, "{$host} resolves to {$ip}, which is never allowed.");
+        }
+
+        // Connect to the address that was vetted, not to a second DNS answer.
+        $connectTo = $addresses[0] ?? $host;
+        $connectTo = str_contains($connectTo, ':') ? "[{$connectTo}]" : $connectTo;
 
         $start = microtime(true);
-        $sock = @fsockopen($host, (int) $port, $errno, $errstr, $check->timeout_seconds);
+        $sock = @fsockopen($connectTo, $port, $errno, $errstr, $check->timeout_seconds);
         $ms = (int) round((microtime(true) - $start) * 1000);
 
         if ($sock === false) {
@@ -70,6 +81,20 @@ class Probe
         fclose($sock);
 
         return new ProbeResult(true, $ms, 'Connected');
+    }
+
+    /** One line a person understands, without the curl error number. */
+    protected function reason(\Throwable $e): string
+    {
+        $message = $e->getMessage();
+
+        return match (true) {
+            str_contains($message, 'timed out') => 'Timed out',
+            str_contains($message, 'Could not resolve') => 'Name does not resolve',
+            str_contains($message, 'certificate') => 'TLS certificate problem',
+            $message === '' => 'No response',
+            default => 'No response ('.substr(strtok($message, "\n") ?: $message, 0, 80).')',
+        };
     }
 
     /**
