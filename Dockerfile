@@ -40,5 +40,8 @@ COPY docker/entrypoint.sh /usr/local/bin/entrypoint
 RUN chmod +x /usr/local/bin/entrypoint
 
 EXPOSE 80
+# The framework's health route; curl is not in the image, PHP is.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD php -r 'exit(@file_get_contents("http://127.0.0.1/up") === false ? 1 : 0);'
 ENTRYPOINT ["entrypoint"]
 CMD ["apache2-foreground"]

@@ -74,7 +74,7 @@ def main():
         sha = m.get("sha256") or (latest["sha256"] if v == latest["version"] else "")
         counts = " ".join(f'<i class="{KIND.get(k, ("", "chg"))[1]}">{len(items)} {KIND.get(k, (k, ""))[0].lower()}</i>' for k, items in groups if items)
         body = "".join(
-            f'<div class="grp"><h4 class="{KIND.get(k, ("", "chg"))[1]}">{inline(KIND.get(k, (k, ""))[0])}</h4><ul>'
+            f'<div class="grp"><h3 class="{KIND.get(k, ("", "chg"))[1]}">{inline(KIND.get(k, (k, ""))[0])}</h3><ul>'
             + "".join(f"<li>{inline(it)}</li>" for it in items) + "</ul></div>"
             for k, items in groups if items)
         shabox = (f'<span class="sha"><span>sha256</span><code>{sha[:12]}…{sha[-6:]}</code>'
@@ -100,6 +100,8 @@ def main():
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pharos releases</title>
 <meta name="description" content="Every Pharos release: what changed, the signed download and its checksum.">
+<link rel="canonical" href="https://pharos.solutionmax.net/releases/">
+<meta property="og:type" content="website"><meta property="og:title" content="Pharos releases"><meta property="og:description" content="Every Pharos release: what changed, the signed download and its checksum."><meta property="og:url" content="https://pharos.solutionmax.net/releases/"><meta property="og:image" content="https://pharos.solutionmax.net/assets/img/og.png"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="https://pharos.solutionmax.net/assets/img/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -134,7 +136,7 @@ h1{{font-family:var(--display);font-weight:800;font-size:clamp(32px,4.4vw,46px);
 .sum{{font-size:16.5px;color:var(--ink);margin:14px 0 6px;max-width:64ch}}
 .counts{{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 6px}}.counts i{{font-style:normal;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;border-radius:999px;padding:3px 9px}}
 .add{{color:var(--add);background:var(--add-bg)}}.chg{{color:var(--chg);background:var(--chg-bg)}}.fix{{color:var(--fix);background:var(--fix-bg)}}.sec{{color:var(--sec);background:var(--sec-bg)}}.rem{{color:var(--rem);background:var(--rem-bg)}}
-.grp{{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px 16px;padding:14px 0;border-top:1px solid var(--line)}}.grp h4{{margin:0;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;padding:4px 0 0;background:none;display:inline}}
+.grp{{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px 16px;padding:14px 0;border-top:1px solid var(--line)}}.grp h3{{margin:0;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;padding:4px 0 0;background:none;display:inline}}
 .grp ul{{margin:0;padding-left:18px;color:var(--ink2)}}.grp li{{margin:3px 0}}.grp li::marker{{color:var(--line2)}}
 .rel footer{{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px;margin-top:4px;font-size:13px;color:var(--ink3)}}
 .dl{{display:inline-flex;align-items:center;gap:8px;background:var(--blue);color:#fff;text-decoration:none;font-weight:600;font-size:13.5px;padding:9px 14px;border-radius:10px;transition:transform .15s var(--ease)}}.dl:hover{{transform:translateY(-1px)}}

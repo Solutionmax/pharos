@@ -41,7 +41,8 @@ services:
       - pharos-db:/var/www/html/database
       - pharos-storage:/var/www/html/storage
     depends_on:
-      - app
+      app:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

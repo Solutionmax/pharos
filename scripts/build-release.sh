@@ -54,7 +54,8 @@ rsync -a --delete \
   --exclude 'storage/app/*' --exclude 'storage/logs/*' --exclude 'storage/framework/cache/*' \
   --exclude 'storage/framework/sessions/*' --exclude 'storage/framework/views/*' --exclude 'storage/framework/phpstan' \
   --exclude 'database/*.sqlite*' --exclude 'bootstrap/cache/*.php' --exclude 'public/storage' \
-  --exclude 'public/brand/uploads' --exclude 'scripts/build-release.sh' \
+  --exclude 'public/brand/uploads' --exclude 'scripts/build-release.sh' --exclude 'scripts/release-page.py' \
+  --exclude '.phpunit.result.cache' \
   ./ "$STAGE/"
 # the version travels with the code, never with .env
 sed -i "s/'version' => env('PHAROS_VERSION', '[^']*')/'version' => env('PHAROS_VERSION', '${VERSION}')/" "$STAGE/config/pharos.php"
