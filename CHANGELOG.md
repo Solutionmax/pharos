@@ -6,6 +6,25 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+### Fixed
+- Updates: when a migration or the file copy fails halfway, the version that was just backed up is put back automatically — files the new release added are removed first — instead of leaving new code on an old database. The message names the backup either way.
+- Backups and the Updates screen no longer need the `intl` PHP extension to show a size; hosts and the Docker image without it saw a backup "fail" right after it had been written.
+- HTTP and TCP checks go through the same guard as webhooks and single sign-on: a check can watch your own network, but never this machine, `169.254.169.254` or another link-local address, and it follows no redirects — the response code is the result. Names are resolved once and the connection pinned to that address.
+- CSV exports (subscribers, audit log) neutralise cells that a spreadsheet would run as a formula, such as an address starting with `=`.
+- The public status page fetched uptime twice per component; it is one query for the whole page now.
+- Session cookies are marked `Secure` automatically when `APP_URL` is https; set `SESSION_SECURE_COOKIE` to override.
+- A test that compared "1 August" with "31 August" failed on the first day of a month.
+
+### Added
+- `TRUSTED_PROXIES` in `.env` (addresses, or `*`) for installs behind Cloudflare or a Docker reverse proxy, so rate limits and the audit log see the visitor's address rather than the proxy's.
+- Docker: the image carries a `HEALTHCHECK` on `/up`, and the scheduler container waits for the app to be healthy.
+- Release page: canonical URL and social-sharing tags.
+
+### Changed
+- The README's cron line redirects output, as the installers already did; without it a control panel mails the scheduler's output every minute.
+- "Cachet 2.x compatible" is now described as what it is: components and incidents in Cachet's shape, without `ping`, `version`, groups, metrics, subscribers or schedules.
+- Release archives no longer include `.phpunit.result.cache` and the release-page generator.
+
 ## [0.5.1] — 2026-08-30
 
 ### Fixed (added to the same release later that day)

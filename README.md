@@ -7,9 +7,9 @@
   <a href="LICENSE"><img alt="Licence: AGPL-3.0" src="https://img.shields.io/badge/licence-AGPL--3.0-0079d2"></a>
   <img alt="PHP 8.3+" src="https://img.shields.io/badge/PHP-8.3%2B-777bb4">
   <img alt="Laravel 12" src="https://img.shields.io/badge/Laravel-12-ff2d20">
-  <img alt="580 tests passing" src="https://img.shields.io/badge/tests-580%20passing-12b76a">
+  <img alt="591 tests passing" src="https://img.shields.io/badge/tests-591%20passing-12b76a">
   <a href="https://pharos.solutionmax.net/releases/"><img alt="Releases: signed zips, changelog, pinned installers" src="https://img.shields.io/badge/releases-signed%20zips%20%C2%B7%20changelog%20%C2%B7%20installers-0079d2"></a>
-  <img alt="Cachet 2.x compatible API" src="https://img.shields.io/badge/API-Cachet%202.x%20compatible-0e1726">
+  <img alt="Cachet-shaped API" src="https://img.shields.io/badge/API-Cachet--shaped-0e1726">
   <img alt="Runs on cPanel, DirectAdmin, Plesk or Docker" src="https://img.shields.io/badge/runs%20on-cPanel%20%C2%B7%20DirectAdmin%20%C2%B7%20Plesk%20%C2%B7%20Docker-475467">
   <a href="https://buymeacoffee.com/solutionmax"><img alt="Buy me a coffee" src="https://img.shields.io/badge/Buy%20me%20a%20coffee-ffdd00?logo=buymeacoffee&logoColor=000"></a>
 </p>
@@ -167,8 +167,11 @@ the first account from the command line — and gets you back in if you ever loc
 Both installers give you the exact line; by hand, add it yourself. This is the entire scheduler:
 
 ```
-* * * * * cd ~/pharos-app && php artisan schedule:run
+* * * * * cd ~/pharos-app && php artisan schedule:run >/dev/null 2>&1
 ```
+
+The redirect matters on cPanel and DirectAdmin: without it the panel mails you the
+scheduler's output every minute.
 
 In a control panel's cron form the first five stars go in the schedule fields and the rest
 in the command field. If the host's default `php` is not 8.3, use the full path
@@ -207,10 +210,11 @@ cp .env.docker.example .env
 # an application key is required; generate one and put it in .env as APP_KEY=
 docker run --rm php:8.3-cli php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
 
-docker compose pull && docker compose up -d
+docker compose up -d
 ```
 
-Two containers from one image: the application on `php:8.3-apache` (port `8080` by
+`up` pulls the tagged image, or builds it from this checkout when the registry cannot be
+reached. Two containers from one image: the application on `php:8.3-apache` (port `8080` by
 default, change `PHAROS_PORT` in `.env`), and a second one running `php artisan schedule:work`.
 The database is SQLite on a volume; point `DB_CONNECTION` at MySQL if you prefer.
 
@@ -249,8 +253,11 @@ before the incident closes. That is deliberate: one dropped packet should not pu
 
 ## Connecting it to what you already run
 
-The API is **Cachet 2.x compatible**: same endpoints, same status integers, and
-`X-Cachet-Token` accepted alongside `Authorization: Bearer`. Reads need no token.
+The API is **Cachet-shaped**: components and incidents under `/api/v1`, the same
+`{"data": …}` envelope and status integers, and `X-Cachet-Token` accepted alongside
+`Authorization: Bearer`. Reads need no token. Not there: `ping`, `version`, component
+groups, metrics, subscribers and schedules — a Cachet client that starts with `/ping`
+will not find them.
 
 ```bash
 curl -X POST https://status.example.com/api/v1/incidents \
