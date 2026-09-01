@@ -6,12 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Services\Audit;
 use App\Services\SelfUpdater;
 use App\Services\Updater;
+use App\Support\Bytes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Number;
 
 class UpdateController extends Controller
 {
@@ -94,7 +94,7 @@ class UpdateController extends Controller
         }
 
         $name = basename($backup);
-        $size = Number::fileSize($this->selfUpdater->treeSize($backup), precision: 1);
+        $size = Bytes::human($this->selfUpdater->treeSize($backup));
         $pruned = $this->selfUpdater->pruned();
         Audit::record('backup.created', null, array_filter(['name' => $name, 'size' => $size, 'removed' => implode(', ', $pruned)]));
 
