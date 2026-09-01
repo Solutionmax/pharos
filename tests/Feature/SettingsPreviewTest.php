@@ -133,7 +133,8 @@ class SettingsPreviewTest extends TestCase
         // A hand-edited URL must not ask the database for ten years of history.
         $this->preview(['page.show_incidents' => true, 'page.show_empty_days' => true], ['days' => 9999])
             ->assertOk()
-            ->assertDontSee(now()->subDays(31)->format('j F'));
+            // The whole heading, not a substring: "1 August" is inside "31 August".
+            ->assertDontSee('>'.now()->subDays(31)->format('j F').'</h3>', false);
 
         $this->preview(['page.show_incidents' => true], ['days' => -5])->assertOk();
     }
