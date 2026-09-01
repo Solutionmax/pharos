@@ -139,7 +139,7 @@ php artisan pharos:update</pre>
             <tr>
               <td><b>{{ $backup['version'] }}</b> <span class="sub mono">{{ $backup['name'] }}</span></td>
               <td>{{ $backup['created_at']->format('j M Y H:i') }} <span class="sub">{{ $backup['created_at']->diffForHumans() }}</span></td>
-              <td class="num">{{ Number::fileSize($backup['size'], precision: 1) }}</td>
+              <td class="num">{{ \App\Support\Bytes::human($backup['size']) }}</td>
               <td>
                 <span class="rowacts">
                   <a href="{{ route('admin.updates.backup.download', $backup['name']) }}">Download</a>

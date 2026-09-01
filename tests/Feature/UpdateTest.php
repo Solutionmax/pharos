@@ -361,6 +361,35 @@ class UpdateTest extends TestCase
             ->assertSee('Backing up the current version');
     }
 
+    public function test_a_failing_migration_puts_the_previous_version_back(): void
+    {
+        // A half-updated site is the worst outcome: new code on an old schema,
+        // and the Updates screen that could fix it may not load any more.
+        $site = storage_path('app/testing/site');
+        File::deleteDirectory($site);
+        File::ensureDirectoryExists($site.'/app');
+        File::put($site.'/artisan', '#!/usr/bin/env php');
+        File::put($site.'/app/Old.php', 'old');
+        config(['pharos.update.backup_source' => $site]);
+
+        // A partial mock with the real constructor, so only migrate() is faked.
+        $mock = \Mockery::mock(SelfUpdater::class, [app(Updater::class)])->makePartial()->shouldAllowMockingProtectedMethods();
+        $mock->shouldReceive('migrate')->once()->andThrow(new \RuntimeException('boom'));
+        $this->instance(SelfUpdater::class, $mock);
+
+        $result = $this->applyArchive($this->archive(function (\ZipArchive $zip) {
+            $zip->addFromString('pharos/artisan', '#!/usr/bin/env php');
+            $zip->addFromString('pharos/app/New.php', 'new');
+        }));
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('boom', $result['message']);
+        $this->assertStringContainsString('previous version', $result['message']);
+        $this->assertFileExists($site.'/app/Old.php');
+        $this->assertFileDoesNotExist($site.'/app/New.php');
+        $this->assertSame('failed', app(SelfUpdater::class)->progress()['state']);
+    }
+
     public function test_an_archive_that_climbs_out_of_its_folder_is_refused(): void
     {
         // Neither entry belongs in anything we built; the checksum passes because

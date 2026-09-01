@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use App\Support\Bytes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Number;
 use Illuminate\Support\Str;
 
 /**
@@ -196,7 +196,7 @@ class SelfUpdater
             $sample['done']++;
             $stage('finishing');
 
-            $this->report([...$sample, 'state' => 'done', 'message' => Number::fileSize($this->treeSize($backup), precision: 1)]);
+            $this->report([...$sample, 'state' => 'done', 'message' => Bytes::human($this->treeSize($backup))]);
             $this->prune($keep);
 
             return $backup;
@@ -472,11 +472,32 @@ class SelfUpdater
 
             $sample = [...$sample, 'stage' => 'install', 'done' => 0, 'total' => $this->countTree($root, self::KEEP), 'name' => basename($backup)];
             [$tick, $stage] = $this->ticker($sample);
-            $stage('install');
-            $this->copyTree($root, base_path(), skip: self::KEEP, tick: $tick);
+            // The test-only source override stands in for base_path() here as well.
+            $target = config('pharos.update.backup_source') ?? base_path();
 
-            $stage('migrate');
-            Artisan::call('migrate', ['--force' => true]);
+            try {
+                $stage('install');
+                $this->copyTree($root, $target, skip: self::KEEP, tick: $tick);
+
+                $stage('migrate');
+                $this->migrate();
+            } catch (\Throwable $e) {
+                // From here on the site is half new: new files on the old schema,
+                // or a copy that stopped midway. Put the version we just backed
+                // up straight back rather than leave that for a person to find.
+                $this->within = 'restore';
+                // Files the new version added have no counterpart in the backup,
+                // so the copy back would leave them; a new migration among them
+                // would run on the next attempt. Off they go first.
+                $this->removeAdded($root, $backup, $target);
+                $restored = $this->rollback(basename($backup), $target);
+                $this->within = null;
+
+                return $refuse('Update failed: '.$e->getMessage().($restored['ok']
+                    ? ' The previous version was put back from '.basename($backup).'.'
+                    : ' Restoring the previous version failed too: '.$restored['message'].' Roll back to '.basename($backup).' by hand.'));
+            }
+
             $stage('finishing');
             Artisan::call('optimize:clear');
 
@@ -497,6 +518,22 @@ class SelfUpdater
         } finally {
             File::deleteDirectory($work);
         }
+    }
+
+    /** Delete from $target what $root brought in and $backup never had. */
+    protected function removeAdded(string $root, string $backup, string $target): void
+    {
+        foreach ($this->walk($root, self::KEEP) as $path) {
+            if (! str_ends_with($path, '/') && ! file_exists($backup.'/'.$path) && is_file($target.'/'.$path)) {
+                File::delete($target.'/'.$path);
+            }
+        }
+    }
+
+    /** Its own method so a test can make it fail; the real thing has no knobs. */
+    protected function migrate(): void
+    {
+        Artisan::call('migrate', ['--force' => true]);
     }
 
     /**
