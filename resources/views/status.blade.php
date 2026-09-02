@@ -102,6 +102,10 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 .day-hd h3{font-size:13px;font-weight:700;color:var(--ink-2)}
 .day-hd .ln{flex:1;height:1px;background:var(--line)}
 .day-hd .none{font-size:12.5px;color:var(--ink-3)}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.pager a{font-size:13px;font-weight:600;color:var(--ink-2);text-decoration:none;padding:6px 10px;border-radius:8px}
+.pager a:hover,.pager a:focus-visible{color:var(--brand);background:var(--brand-soft);outline:none}
+.pager .older{margin-left:auto}
 .inc{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ink-3);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow-sm)}
 .inc+.inc{margin-top:10px}
 .inc.ok{border-left-color:var(--green)}.inc.w{border-left-color:var(--amber)}
@@ -293,6 +297,12 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
           <div class="day"><div class="day-hd"><h3>No incidents reported</h3><span class="ln"></span></div></div>
         @endif
       @endforelse
+      @if ($chrome && ($page > 1 || $hasOlder))
+        <nav class="pager" aria-label="Incident history">
+          @if ($page > 1)<a href="{{ $page === 2 ? url('/') : url('/?page='.($page - 1)) }}">&larr; Newer incidents</a>@endif
+          @if ($hasOlder)<a class="older" href="{{ url('/?page='.($page + 1)) }}">Older incidents &rarr;</a>@endif
+        </nav>
+      @endif
     </section>
   @endif
 
