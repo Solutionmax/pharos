@@ -6,6 +6,8 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [0.5.3] — 2026-09-02
+
 ### Added
 - Status page: the incident history is paged. *Days of incident history* now sets how many days one page shows; *Older incidents* and *Newer incidents* at the bottom of the list walk through the earlier days, and the Older link only appears when there is something earlier to see. Open incidents that outlive the first page stay pinned there and are not repeated on later pages.
 
