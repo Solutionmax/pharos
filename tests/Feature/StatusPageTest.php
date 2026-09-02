@@ -11,6 +11,7 @@ use App\Models\IncidentUpdate;
 use App\Models\Setting;
 use App\Models\UptimeDay;
 use App\Models\User;
+use App\Services\Clock;
 use App\Services\License;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -219,6 +220,63 @@ class StatusPageTest extends TestCase
             strpos($html, 'The queue is draining.'),
             'The newest update must come first in the timeline.',
         );
+    }
+
+    public function test_older_days_are_reached_one_page_at_a_time(): void
+    {
+        Setting::put('page.incident_days', 2);
+        $this->makeComponent();
+
+        Incident::create(['name' => 'Fresh outage', 'status' => IncidentStatus::Resolved, 'occurred_at' => now(), 'resolved_at' => now()]);
+        Incident::create(['name' => 'Three days ago', 'status' => IncidentStatus::Resolved, 'occurred_at' => now()->subDays(3), 'resolved_at' => now()->subDays(3)]);
+
+        $this->get('/')->assertOk()
+            ->assertSee('Fresh outage')
+            ->assertDontSee('Three days ago')
+            ->assertSee('Older incidents')
+            ->assertDontSee('Newer incidents');
+
+        $this->get('/?page=2')->assertOk()
+            ->assertSee('Three days ago')
+            ->assertDontSee('Fresh outage')
+            ->assertSee('Newer incidents')
+            ->assertDontSee('Older incidents');
+    }
+
+    public function test_the_older_link_only_appears_when_there_is_something_older(): void
+    {
+        Setting::put('page.incident_days', 2);
+        $this->makeComponent();
+
+        Incident::create(['name' => 'Only today', 'status' => IncidentStatus::Resolved, 'occurred_at' => now(), 'resolved_at' => now()]);
+        Incident::create(['name' => 'Internal, old', 'status' => IncidentStatus::Resolved, 'occurred_at' => now()->subDays(5), 'resolved_at' => now()->subDays(5), 'visibility' => 'internal']);
+
+        $this->get('/')->assertOk()->assertDontSee('Older incidents');
+    }
+
+    public function test_a_page_number_that_is_not_a_page_is_not_found(): void
+    {
+        $this->makeComponent();
+
+        $this->get('/?page=abc')->assertNotFound();
+        $this->get('/?page=0')->assertNotFound();
+        $this->get('/?page=99999999999999999999')->assertNotFound();
+    }
+
+    /**
+     * The pinned list and the day list must meet at midnight, not at "now minus
+     * N days": an open incident from the evening just before the first page
+     * used to fall between the two and vanish.
+     */
+    public function test_an_open_incident_just_before_the_first_page_is_pinned(): void
+    {
+        Setting::put('page.incident_days', 2);
+        $this->makeComponent();
+
+        $justBefore = Carbon::today(Clock::timezone())->subDay()->subHour();
+        Incident::create(['name' => 'Evening before the window', 'status' => IncidentStatus::Investigating, 'occurred_at' => $justBefore]);
+
+        $this->get('/')->assertOk()->assertSee('Evening before the window')->assertSee('Ongoing');
     }
 
     public function test_internal_incidents_are_never_shown(): void

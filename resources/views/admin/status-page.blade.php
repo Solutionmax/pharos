@@ -97,7 +97,7 @@
             <div class="field">
               <label for="incident_days">Days of incident history</label>
               <input id="incident_days" name="incident_days" type="number" min="1" max="30" value="{{ $incidentDays }}">
-              <span class="help">How far back the page lists days. Older incidents stay in the archive.</span>
+              <span class="help">Days per page. Visitors reach earlier days through the Older incidents link at the bottom of the page.</span>
             </div>
           </div>
           <div class="actions">

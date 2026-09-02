@@ -17,6 +17,9 @@ use Illuminate\Support\Collection;
 
 class StatusPageController extends Controller
 {
+    /** Far beyond any real history, and small enough that page × span never overflows. */
+    public const MAX_PAGE = 10000;
+
     public function __construct(protected Uptime $uptime, protected Branding $branding) {}
 
     public function show(Request $request)
@@ -28,11 +31,17 @@ class StatusPageController extends Controller
             return redirect()->route('admin.install');
         }
 
+        // ?page=2 is the previous span of days, ?page=3 the one before that. Only
+        // whole numbers from 1: anything else is a mistyped link, not a page.
+        $page = $request->query('page', '1');
+        abort_unless(is_string($page) && ctype_digit($page) && (int) $page >= 1 && (int) $page <= self::MAX_PAGE, 404);
+
         return $this->render(
             modules: $this->branding->modules(),
             theme: $this->branding->theme(),
             days: (int) Setting::get('page.incident_days', 5),
             chrome: true,
+            page: (int) $page,
         );
     }
 
@@ -77,7 +86,7 @@ class StatusPageController extends Controller
         ]);
     }
 
-    protected function render(array $modules, string $theme, int $days, bool $chrome, ?array $hiddenGroups = null)
+    protected function render(array $modules, string $theme, int $days, bool $chrome, ?array $hiddenGroups = null, int $page = 1)
     {
         $groups = $modules['page.show_services']
             ? ComponentGroup::with(['components' => fn ($q) => $q->where('enabled', true)])
@@ -135,30 +144,50 @@ class StatusPageController extends Controller
             // is pinned above the days: a component can stay red for longer than the
             // window, and the page must never show a red service without the
             // incident that explains it. Recent ones simply sit under their day.
-            'ongoing' => $modules['page.show_incidents']
+            // Only on the first page: on an older page the same incident may sit
+            // under its own day, and it must not appear twice.
+            'ongoing' => $modules['page.show_incidents'] && $page === 1
                 ? Incident::public()->whereNull('resolved_at')
-                    ->where('occurred_at', '<', now()->subDays($days))
+                    ->where('occurred_at', '<', $this->windowStart($days, 1))
                     ->with('updates', 'components')->orderByDesc('occurred_at')->get()
                 : collect(),
-            'days' => $modules['page.show_incidents'] ? $this->incidentDays($days, $modules) : [],
+            'days' => $modules['page.show_incidents'] ? $this->incidentDays($days, $modules, $page) : [],
+            'page' => $page,
+            // The "Older" link is offered only when a public incident exists before
+            // the oldest day on this page; otherwise it would lead to empty pages.
+            'hasOlder' => $chrome && $modules['page.show_incidents']
+                && Incident::public()->where('occurred_at', '<', $this->windowStart($days, $page))->exists(),
             'modules' => $modules,
             'theme' => $theme,
             'chrome' => $chrome,
         ]);
     }
 
-    /** @return array<string, Collection> */
-    protected function incidentDays(int $span, array $modules): array
+    /**
+     * Midnight, in the customer's zone, of the oldest day on the given page.
+     * Page 1 covers today and the span-1 days before it; page 2 the span before that.
+     */
+    protected function windowStart(int $span, int $page): Carbon
     {
+        return Carbon::today(Clock::timezone())->subDays($span * $page - 1);
+    }
+
+    /** @return array<string, Collection> */
+    protected function incidentDays(int $span, array $modules, int $page = 1): array
+    {
+        $start = $this->windowStart($span, $page);
+        $offset = $span * ($page - 1);
+
         $incidents = Incident::public()
             ->with('updates', 'components')
-            ->where('occurred_at', '>=', now()->subDays($span))
+            ->where('occurred_at', '>=', $start)
+            ->where('occurred_at', '<', $start->copy()->addDays($span))
             ->orderByDesc('occurred_at')
             ->get()
             ->groupBy(fn (Incident $i) => $i->occurred_at->format('Y-m-d'));
 
         $days = [];
-        for ($i = 0; $i < $span; $i++) {
+        for ($i = $offset; $i < $offset + $span; $i++) {
             // Days are the customer's days: occurred_at is read in their zone above.
             $key = Carbon::today(Clock::timezone())->subDays($i)->format('Y-m-d');
             $day = $incidents->get($key, collect());
