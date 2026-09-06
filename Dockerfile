@@ -3,7 +3,7 @@
 FROM php:8.3-apache
 
 # Passed by CI from the git tag, so the running app knows its own version.
-ARG VERSION=0.5.4
+ARG VERSION=0.5.5
 ENV PHAROS_VERSION=${VERSION}
 
 # unzip is not in the base image, and without it composer cannot unpack a single

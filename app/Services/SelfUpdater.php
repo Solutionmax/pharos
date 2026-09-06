@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -306,6 +307,8 @@ class SelfUpdater
         $version = $m[1];
         $sample = ['state' => 'running', 'stage' => 'safety', 'done' => 0, 'total' => 0, 'name' => $name, 'message' => null, 'started_at' => now()->toIso8601String()];
 
+        $resetNeeded = false;
+
         try {
             $this->within = 'safety';
             $safety = basename($this->backupCurrent($target, $database, keep: [$name]));
@@ -316,6 +319,7 @@ class SelfUpdater
             [$tick, $stage] = $this->ticker($sample);
 
             $stage('code');
+            $resetNeeded = true;
             $this->copyTree($backup, $target, [...self::KEEP, 'vendor'], $tick);
             if (is_dir($backup.'/vendor')) {
                 $stage('vendor');
@@ -329,7 +333,10 @@ class SelfUpdater
 
             Artisan::call('optimize:clear');
 
-            $message = "Rolled back to {$version}".($note ? ": code restored; {$note}" : '.')." The state you just left is kept as {$safety}.";
+            $cacheNote = $this->resetOpcodeCache();
+            $resetNeeded = false;
+
+            $message = "Rolled back to {$version}".($note ? ": code restored; {$note}" : '.')." The state you just left is kept as {$safety}.".$cacheNote;
             // After optimize:clear, which empties the cache the screen is polling.
             $this->report([...$sample, 'state' => 'done', 'message' => $message]);
 
@@ -339,6 +346,10 @@ class SelfUpdater
             $this->report([...$sample, 'state' => 'failed', 'message' => 'Rollback failed: '.$e->getMessage()]);
 
             return ['ok' => false, 'message' => 'Rollback failed: '.$e->getMessage()];
+        } finally {
+            if ($resetNeeded) {
+                $this->resetOpcodeCache();
+            }
         }
     }
 
@@ -422,6 +433,8 @@ class SelfUpdater
             return ['ok' => false, 'message' => $message];
         };
 
+        $resetNeeded = false;
+
         try {
             $archive = $work.'/release.zip';
 
@@ -478,6 +491,7 @@ class SelfUpdater
 
             try {
                 $stage('install');
+                $resetNeeded = true;
                 $this->copyTree($root, $target, skip: self::KEEP, tick: $tick);
 
                 $stage('migrate');
@@ -503,7 +517,10 @@ class SelfUpdater
             $stage('finishing');
             Artisan::call('optimize:clear');
 
-            $message = "Updated to {$manifest['version']}. The previous version is in {$backup}.";
+            $cacheNote = $this->resetOpcodeCache();
+            $resetNeeded = false;
+
+            $message = "Updated to {$manifest['version']}. The previous version is in {$backup}.".$cacheNote;
             // After optimize:clear, which empties the cache the screen is polling.
             $this->report([...$sample, 'done' => $sample['total'], 'state' => 'done', 'message' => $message]);
 
@@ -518,8 +535,44 @@ class SelfUpdater
 
             return $refuse('Update failed: '.$e->getMessage());
         } finally {
+            if ($resetNeeded) {
+                $this->resetOpcodeCache();
+            }
             File::deleteDirectory($work);
         }
+    }
+
+    /** Reset after the last write, including failed installs and restores. */
+    protected function resetOpcodeCache(): string
+    {
+        clearstatcache(true);
+
+        // CLI and web workers do not share an opcode cache. Do not promise that
+        // a reset in Artisan refreshed PHP-FPM or Apache.
+        if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+            $note = ' Restart the web PHP service or container if it uses OPcache; a command-line update cannot clear the web cache.';
+        } elseif (! filter_var(ini_get('opcache.enable'), FILTER_VALIDATE_BOOLEAN)) {
+            return '';
+        } else {
+            try {
+                if (function_exists('opcache_reset') && @opcache_reset()) {
+                    return '';
+                }
+                // A nested rollback may already have scheduled the reset.
+                $status = function_exists('opcache_get_status') ? @opcache_get_status(false) : false;
+                if (is_array($status) && ($status['restart_pending'] ?? false)) {
+                    return '';
+                }
+            } catch (\Throwable) {
+                // Hosts may disable or restrict the API. Files have already
+                // changed; report the required restart instead of rolling back.
+            }
+            $note = ' OPcache could not be reset. Restart the web PHP service or container to load the installed code.';
+        }
+
+        Log::warning(trim($note));
+
+        return $note;
     }
 
     /** Delete from $target what $root brought in and $backup never had. */

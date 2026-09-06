@@ -248,7 +248,7 @@
       }).then(function (agreed) {
         if (!agreed) { return; }
 
-        send(@json(url('/admin/services')) + '/' + chip.dataset.value, 'DELETE').then(function (response) {
+        send({{ \Illuminate\Support\Js::from(\App\Support\BrowserUrl::route('admin.groups', [])) }} + '/' + chip.dataset.value, 'DELETE').then(function (response) {
           if (!response.ok) { return; }
 
           if (groupField.value === chip.dataset.value) { groupField.value = ''; }
@@ -287,7 +287,7 @@
     save.disabled = true;
     error.style.display = 'none';
 
-    fetch(@json(route('admin.groups.store')), {
+    fetch({{ \Illuminate\Support\Js::from(\App\Support\BrowserUrl::route('admin.groups.store', [])) }}, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
       body: JSON.stringify({
@@ -297,13 +297,26 @@
       }),
     })
       .then(function (response) {
-        return response.json().then(function (body) { return { ok: response.ok, body: body }; });
+        return response.json().catch(function () { return null; }).then(function (body) {
+          return { ok: response.ok, status: response.status, redirected: response.redirected, body: body };
+        });
+      }, function () {
+        fail('Could not reach the server. Check your connection and try again.');
+        return null;
       })
       .then(function (result) {
+        if (!result) { return; }
+        if (result.status === 419 || result.status === 401 || result.redirected) {
+          return fail('Your session has expired. Reload the page and sign in again before adding a service.');
+        }
         if (!result.ok) {
           // Laravel's 422 shape; anything else is unexpected and says so.
           var messages = result.body && result.body.errors && result.body.errors.name;
-          return fail(messages ? messages[0] : 'Could not add the service.');
+          return fail(messages ? messages[0] : 'Could not add the service (HTTP ' + result.status + '). Please try again.');
+        }
+
+        if (!result.body || !result.body.id || typeof result.body.name !== 'string') {
+          return fail('The server returned an unexpected response. Reload the page to check whether the service was added.');
         }
 
         if (select) {
@@ -335,7 +348,7 @@
 
         dialog.close();
       })
-      .catch(function () { fail('Could not reach the server.'); })
+      .catch(function () { fail('Could not display the new service. Reload the page to check whether it was added.'); })
       .finally(function () { save.disabled = false; });
   });
 
@@ -383,7 +396,7 @@
       }).then(function (agreed) {
         if (!agreed) { return; }
 
-        send(@json(url('/admin/components/tags')) + '/' + encodeURIComponent(tag), 'DELETE')
+        send({{ \Illuminate\Support\Js::from(\App\Support\BrowserUrl::route('admin.components.tags.destroy', ['tag' => '__TAG__'])) }}.replace('__TAG__', encodeURIComponent(tag)), 'DELETE')
           .then(function (response) {
             if (!response.ok) { return; }
 

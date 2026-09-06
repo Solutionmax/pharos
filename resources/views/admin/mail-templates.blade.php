@@ -129,8 +129,9 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
       </div>
       <div class="subject-line"><span class="k">Subject</span><span class="v" id="preview-subject">{{ $previewSubject }}</span></div>
       <div class="stage">
-        <iframe id="preview" title="Preview of the mail" src="{{ route('admin.mail-templates.preview', ['template' => $key]) }}"></iframe>
+        <iframe id="preview" title="Preview of the mail" src="{{ \App\Support\BrowserUrl::route('admin.mail-templates.preview', ['template' => $key]) }}"></iframe>
       </div>
+      <p class="hint-row" id="preview-error" role="alert" hidden></p>
       <p class="hint-row">
         Rendered from the wording on the left with a sample incident, in the real frame.
         Nothing is saved until you press <b>Save</b>.
@@ -145,7 +146,8 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
   var frame = document.getElementById('preview');
   var live = document.getElementById('live');
   var subjectOut = document.getElementById('preview-subject');
-  var url = @json(route('admin.mail-templates.preview'), JSON_UNESCAPED_SLASHES);
+  var previewError = document.getElementById('preview-error');
+  var url = {{ \Illuminate\Support\Js::from(\App\Support\BrowserUrl::route('admin.mail-templates.preview', [])) }};
   var token = document.querySelector('meta[name=csrf-token]').content;
   var key = @json($key);
   var timer = null;
@@ -155,15 +157,26 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
   // The unsaved wording goes up as a POST; the reply is written into the frame.
   function refresh() {
     live.classList.add('busy');
+    previewError.hidden = true;
     var data = new FormData();
     data.set('_token', token);
     data.set('template', key);
     data.set('subject', field('subject').value);
     data.set('body', field('body').value);
     fetch(url, { method: 'POST', body: data, headers: { Accept: 'application/json' }, credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
-      .then(function (r) { frame.srcdoc = r.html; subjectOut.textContent = r.subject; })
-      .catch(function () {})
+      .then(function (r) {
+        if (!r.ok || r.redirected) { throw new Error('Preview request failed'); }
+        return r.json();
+      })
+      .then(function (r) {
+        if (typeof r.html !== 'string' || typeof r.subject !== 'string') { throw new Error('Invalid preview'); }
+        frame.srcdoc = r.html;
+        subjectOut.textContent = r.subject;
+      })
+      .catch(function () {
+        previewError.textContent = 'The preview could not be refreshed. Check your connection or reload the page to sign in again. The preview below may be out of date.';
+        previewError.hidden = false;
+      })
       .then(function () { live.classList.remove('busy'); });
   }
 

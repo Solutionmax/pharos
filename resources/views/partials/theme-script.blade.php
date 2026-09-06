@@ -5,10 +5,13 @@
 
   var root = document.documentElement;
   var DEFAULT = @json($theme ?? $branding->theme());
+  var REMEMBER = @json($rememberTheme ?? true);
 
   // Whatever the operator picked is only the starting point; a visitor's own
   // choice wins and survives navigation. Storage can throw in private mode.
   function stored() {
+    // The editor preview follows its form, not a visitor's saved preference.
+    if (!REMEMBER) return null;
     try { return localStorage.getItem('pharos-theme'); } catch (e) { return null; }
   }
   function resolved() {
@@ -32,7 +35,9 @@
     var button = event.target.closest('[data-theme-toggle]');
     if (!button) return;
     var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    try { localStorage.setItem('pharos-theme', next); } catch (e) {}
+    if (REMEMBER) {
+      try { localStorage.setItem('pharos-theme', next); } catch (e) {}
+    }
     paint(next);
   });
 })();

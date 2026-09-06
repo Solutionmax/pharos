@@ -12,7 +12,10 @@
   <div class="panel-hd"><h3>Your services</h3><span class="hint">Order here is the order on the page</span></div>
   @if ($groups->isEmpty())
     <div class="empty">
-      No services yet. <a href="{{ route('admin.groups.create', array_filter(['from' => $from])) }}">Add one</a>, then put components in it.
+      @include('partials.icon', ['name' => 'empty', 'size' => 28])
+      <p><b>No services yet.</b></p>
+      <p>Add a service, then put components in it.</p>
+      <a class="btn" href="{{ route('admin.groups.create', array_filter(['from' => $from])) }}">Add a service</a>
     </div>
   @else
   <div class="scroll">

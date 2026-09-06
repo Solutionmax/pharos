@@ -180,7 +180,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
       @include('partials.theme-toggle')
     </span>
   </header>
-  @include('partials.theme-script')
+  @include('partials.theme-script', ['rememberTheme' => $chrome ?? true])
 
   @if ($modules['page.show_overall'] || $modules['page.show_uptime'])
     <section class="hero">
