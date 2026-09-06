@@ -13,6 +13,7 @@ use App\Models\Incident;
 use App\Models\IncidentUpdate;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\CronSetup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -323,7 +324,7 @@ class AdminTest extends TestCase
         $this->actingAs($this->user)->get('/admin/components')
             ->assertOk()
             ->assertSee('Nothing is being checked')
-            ->assertSee('php artisan schedule:run');
+            ->assertSee(app(CronSetup::class)->command());
     }
 
     public function test_a_stalled_scheduler_is_called_out(): void

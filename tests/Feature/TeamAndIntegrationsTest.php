@@ -170,12 +170,12 @@ class TeamAndIntegrationsTest extends TestCase
     {
         $this->actingAs($this->user)->post('/admin/integrations/notifications', [
             'label' => 'n8n',
-            'url' => 'https://hooks.example.net/webhook/pharos',
+            'url' => 'https://203.0.113.10/webhook/pharos',
             'format' => 'generic',
         ])->assertRedirect();
 
         $endpoint = WebhookEndpoint::sole();
-        $this->assertSame('https://hooks.example.net/webhook/pharos', $endpoint->url);
+        $this->assertSame('https://203.0.113.10/webhook/pharos', $endpoint->url);
         $this->assertTrue($endpoint->enabled);
         $this->assertSame(32, strlen(Setting::get('integrations.webhook_secret')));
     }
@@ -192,7 +192,7 @@ class TeamAndIntegrationsTest extends TestCase
     public function test_publishing_an_incident_fires_a_signed_webhook(): void
     {
         Http::fake();
-        WebhookEndpoint::create(['label' => 'n8n', 'url' => 'https://hooks.example.net/webhook/pharos', 'format' => 'generic']);
+        WebhookEndpoint::create(['label' => 'n8n', 'url' => 'https://203.0.113.10/webhook/pharos', 'format' => 'generic']);
         Setting::put('integrations.webhook_secret', 'a-secret');
 
         $component = Component::create(['name' => 'web-01']);
@@ -206,11 +206,12 @@ class TeamAndIntegrationsTest extends TestCase
             'components' => [$component->id => 3],
         ])->assertRedirect();
 
+        app(OutgoingWebhook::class)->sendPending();
         Http::assertSent(function ($request) {
             $body = $request->body();
             $payload = json_decode($body, true);
 
-            return $request->url() === 'https://hooks.example.net/webhook/pharos'
+            return $request->url() === 'https://203.0.113.10/webhook/pharos'
                 && $payload['event'] === 'incident.created'
                 && $payload['incident']['name'] === 'Mail queue backed up'
                 && $payload['incident']['components'] === ['web-01']
@@ -225,7 +226,7 @@ class TeamAndIntegrationsTest extends TestCase
     public function test_slack_gets_slack_shaped_json_and_no_signature(): void
     {
         Http::fake();
-        WebhookEndpoint::create(['label' => '#ops', 'url' => 'https://hooks.slack.com/services/T/B/x', 'format' => 'slack']);
+        WebhookEndpoint::create(['label' => '#ops', 'url' => 'https://203.0.113.11/services/T/B/x', 'format' => 'slack']);
         Setting::put('integrations.webhook_secret', 'a-secret');
 
         $component = Component::create(['name' => 'web-01']);
@@ -239,10 +240,11 @@ class TeamAndIntegrationsTest extends TestCase
             'components' => [$component->id => 3],
         ])->assertRedirect();
 
+        app(OutgoingWebhook::class)->sendPending();
         Http::assertSent(function ($request) {
             $payload = json_decode($request->body(), true);
 
-            return $request->url() === 'https://hooks.slack.com/services/T/B/x'
+            return $request->url() === 'https://203.0.113.11/services/T/B/x'
                 && str_contains($payload['text'], 'Mail queue backed up')
                 && $payload['blocks'][0]['type'] === 'section'
                 // Slack drops unknown headers; signing it would only be theatre.
@@ -253,7 +255,7 @@ class TeamAndIntegrationsTest extends TestCase
     public function test_teams_gets_an_adaptive_card_envelope(): void
     {
         Http::fake();
-        WebhookEndpoint::create(['label' => 'Ops channel', 'url' => 'https://prod.westeurope.logic.azure.com/workflows/x', 'format' => 'teams']);
+        WebhookEndpoint::create(['label' => 'Ops channel', 'url' => 'https://203.0.113.12/workflows/x', 'format' => 'teams']);
 
         $this->actingAs($this->user)->post('/admin/incidents', [
             'name' => 'Mail queue backed up',
@@ -263,6 +265,7 @@ class TeamAndIntegrationsTest extends TestCase
             'visibility' => 'public',
         ])->assertRedirect();
 
+        app(OutgoingWebhook::class)->sendPending();
         Http::assertSent(function ($request) {
             $payload = json_decode($request->body(), true);
 
@@ -276,23 +279,24 @@ class TeamAndIntegrationsTest extends TestCase
     public function test_every_enabled_destination_is_notified(): void
     {
         Http::fake();
-        WebhookEndpoint::create(['label' => 'n8n', 'url' => 'https://hooks.example.net/a', 'format' => 'generic']);
-        WebhookEndpoint::create(['label' => '#ops', 'url' => 'https://hooks.slack.com/b', 'format' => 'slack']);
-        WebhookEndpoint::create(['label' => 'old', 'url' => 'https://hooks.example.net/c', 'format' => 'generic', 'enabled' => false]);
+        WebhookEndpoint::create(['label' => 'n8n', 'url' => 'https://203.0.113.10/a', 'format' => 'generic']);
+        WebhookEndpoint::create(['label' => '#ops', 'url' => 'https://203.0.113.11/b', 'format' => 'slack']);
+        WebhookEndpoint::create(['label' => 'old', 'url' => 'https://203.0.113.10/c', 'format' => 'generic', 'enabled' => false]);
 
         $this->actingAs($this->user)->post('/admin/incidents', [
             'name' => 'Mail queue backed up', 'message' => 'Looking into it.',
             'status' => 1, 'impact' => 'minor', 'visibility' => 'public',
         ])->assertRedirect();
 
+        app(OutgoingWebhook::class)->sendPending();
         Http::assertSentCount(2);
-        Http::assertNotSent(fn ($request) => $request->url() === 'https://hooks.example.net/c');
+        Http::assertNotSent(fn ($request) => $request->url() === 'https://203.0.113.10/c');
     }
 
     public function test_a_test_send_records_what_came_back(): void
     {
         Http::fake(['*' => Http::response('ok', 200)]);
-        $endpoint = WebhookEndpoint::create(['label' => '#ops', 'url' => 'https://hooks.slack.com/b', 'format' => 'slack']);
+        $endpoint = WebhookEndpoint::create(['label' => '#ops', 'url' => 'https://203.0.113.11/b', 'format' => 'slack']);
 
         $this->actingAs($this->user)
             ->post("/admin/integrations/notifications/{$endpoint->id}/test")
@@ -307,7 +311,7 @@ class TeamAndIntegrationsTest extends TestCase
     public function test_a_refused_delivery_is_recorded_on_the_endpoint(): void
     {
         Http::fake(['*' => Http::response('invalid_payload', 400)]);
-        $endpoint = WebhookEndpoint::create(['label' => '#ops', 'url' => 'https://hooks.slack.com/b', 'format' => 'slack']);
+        $endpoint = WebhookEndpoint::create(['label' => '#ops', 'url' => 'https://203.0.113.11/b', 'format' => 'slack']);
 
         $this->actingAs($this->user)->post("/admin/integrations/notifications/{$endpoint->id}/test")->assertRedirect();
 
@@ -339,7 +343,7 @@ class TeamAndIntegrationsTest extends TestCase
     {
         // Mid-outage, a broken receiver must not stop you telling customers.
         Http::fake(fn () => throw new \RuntimeException('connection refused'));
-        WebhookEndpoint::create(['label' => 'down', 'url' => 'https://hooks.example.net/down', 'format' => 'generic']);
+        WebhookEndpoint::create(['label' => 'down', 'url' => 'https://203.0.113.10/down', 'format' => 'generic']);
 
         $this->actingAs($this->user)->post('/admin/incidents', [
             'name' => 'Mail queue backed up',
@@ -356,7 +360,7 @@ class TeamAndIntegrationsTest extends TestCase
     {
         // This is the headline feature. It used to reach nobody.
         Http::fake();
-        WebhookEndpoint::create(['label' => 'n8n', 'url' => 'https://hooks.example.net/webhook/pharos', 'format' => 'generic']);
+        WebhookEndpoint::create(['label' => 'n8n', 'url' => 'https://203.0.113.10/webhook/pharos', 'format' => 'generic']);
         Setting::put('integrations.webhook_secret', 'a-secret');
 
         $component = Component::create(['name' => 'web-06']);
@@ -379,6 +383,7 @@ class TeamAndIntegrationsTest extends TestCase
         );
         $runner->runOne($check);
 
+        app(OutgoingWebhook::class)->sendPending();
         Http::assertSent(function ($request) {
             $payload = json_decode($request->body(), true);
 
@@ -391,7 +396,7 @@ class TeamAndIntegrationsTest extends TestCase
     public function test_creating_an_incident_over_the_api_fires_the_webhook(): void
     {
         Http::fake();
-        WebhookEndpoint::create(['label' => 'n8n', 'url' => 'https://hooks.example.net/webhook/pharos', 'format' => 'generic']);
+        WebhookEndpoint::create(['label' => 'n8n', 'url' => 'https://203.0.113.10/webhook/pharos', 'format' => 'generic']);
         [, $plain] = ApiToken::issue('n8n');
 
         $this->withHeader('Authorization', "Bearer {$plain}")
@@ -401,6 +406,7 @@ class TeamAndIntegrationsTest extends TestCase
                 'message' => 'Looking into it.',
             ])->assertCreated();
 
+        app(OutgoingWebhook::class)->sendPending();
         Http::assertSent(fn ($request) => json_decode($request->body(), true)['event'] === 'incident.created');
     }
 

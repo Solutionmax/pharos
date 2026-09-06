@@ -6,6 +6,31 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [0.5.4] — 2026-09-06
+
+### Added
+- Discord notifications, with mentions disabled and rate-limit-aware retries.
+- Signal notifications through your own authenticated HTTPS bridge. An optional Docker Compose and gateway configuration is included; linking a Signal account is still required.
+- A persistent notification outbox with bounded retries and delivery history, so a temporary delivery failure does not silently lose an incident notification.
+- Optional automatic cron setup through DirectAdmin or cPanel, plus `php artisan pharos:cron --install` for hosts with shell access. Existing tasks are read first, preserved and checked after installation.
+- A dedicated authenticated Uptime Kuma status webhook for manually managed components.
+
+### Fixed
+- Installer: detects versioned CLI PHP installations for DirectAdmin, cPanel, CloudLinux and Plesk and distinguishes web PHP from cron PHP. Restricted filesystem access produces an explicit warning instead of a false success.
+- Installer: a private installation key protects the initial setup; CSRF checks and installation locks prevent unintended configuration changes. Existing installations and APP_KEY are preserved, and database passwords retain special characters.
+- MySQL: setting changes no longer fail because the audit log expected a numeric ID for a text setting key.
+- Updates and rollback: copied public files follow the exact release or backup; tracked obsolete release files are removed without deleting uploads or custom files. Symlink destinations are refused, and failed backups or migrations stop the update.
+- Monitoring: DNS resolution fails closed and TCP checks use the same validated address throughout. Failed scheduler runs no longer appear as successful checks.
+- Notifications: connection credentials are stored encrypted and excluded from delivery errors. Signal credentials are not rendered back into the page.
+- Integrations: clearer heartbeat and Kuma instructions and long API addresses that fit mobile screens.
+- Shell installer: unverified releases, non-empty installation directories and unsafe pinned-version overwrites are refused. Older releases receive manual cron instructions when automatic setup is unavailable.
+
+### Upgrade notes
+- Back up your installation and database, then run `php artisan migrate --force` after updating. Keep the scheduler running every minute for checks and notification retries.
+- Discord requires a channel webhook. Signal requires a linked bridge, HTTPS endpoint and bearer token; it is not hosted by Pharos.
+- Cron availability depends on hosting permissions. Plesk can use Scheduled Tasks or the CLI command. A saved cron task is only confirmed operational after a successful scheduler run.
+- MySQL database backups and restores remain operator-managed. Public files from before the new ownership manifest are not deleted automatically.
+
 ## [0.5.3] — 2026-09-02
 
 ### Added

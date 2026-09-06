@@ -13,12 +13,25 @@ class InstallTest extends TestCase
     use RefreshDatabase;
 
     protected array $valid = [
+        'setup_key' => 'test-installation-secret',
         'site' => 'Acme Hosting',
         'name' => 'Raymon',
         'email' => 'raymon@example.net',
         'password' => 'correct-horse-battery-staple',
         'password_confirmation' => 'correct-horse-battery-staple',
     ];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config()->set('pharos.setup_key', 'test-installation-secret');
+    }
+
+    public function test_a_visitor_without_the_installation_key_cannot_claim_the_site(): void
+    {
+        $this->post('/admin/install', [...$this->valid, 'setup_key' => 'wrong'])->assertForbidden();
+        $this->assertDatabaseCount('users', 0);
+    }
 
     private function existingAdmin(): User
     {

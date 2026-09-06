@@ -23,6 +23,13 @@
       The scheduler has never run, so every status on this page is whatever someone typed.
     @endif
     Add this one line to cron:
-    <code class="mono">* * * * * cd {{ base_path() }} &amp;&amp; php artisan schedule:run</code>
+    @if (app(\App\Services\CronSetup::class)->php())
+      <code class="mono">* * * * * {{ app(\App\Services\CronSetup::class)->command() }}</code>
+    @else
+      <span>Ask your host for the versioned CLI PHP path, then run <code>php artisan pharos:cron</code> with that PHP. The web PHP selector does not configure cron.</span>
+    @endif
+    @if (\App\Models\Setting::get('checks.last_error'))
+      <span>{{ \App\Models\Setting::get('checks.last_error') }}</span>
+    @endif
   </div>
 @endif

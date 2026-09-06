@@ -1,0 +1,23 @@
+{$SIGNAL_BRIDGE_HOST} {
+    @send {
+        method POST
+        path /v2/send
+    }
+    handle @send {
+        @authorized header Authorization "Bearer {$SIGNAL_BRIDGE_TOKEN}"
+        handle @authorized {
+            request_body {
+                max_size 64KB
+            }
+            reverse_proxy signal:8080 {
+                header_up -Authorization
+            }
+        }
+        handle {
+            respond "Unauthorized" 401
+        }
+    }
+    handle {
+        respond "Not found" 404
+    }
+}

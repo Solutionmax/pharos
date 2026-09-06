@@ -609,9 +609,13 @@ class UpdateTest extends TestCase
         $this->assertDirectoryDoesNotExist($backup.'/node_modules');
 
         // Not the stale file from the tree: a live, consistent copy of the database in use.
-        $this->assertFileExists($backup.'/database/database.sqlite');
-        $copy = new \PDO('sqlite:'.$backup.'/database/database.sqlite');
-        $this->assertContains('settings', $copy->query("select name from sqlite_master where type='table'")->fetchAll(\PDO::FETCH_COLUMN));
+        if (DB::getDriverName() === 'sqlite') {
+            $this->assertFileExists($backup.'/database/database.sqlite');
+            $copy = new \PDO('sqlite:'.$backup.'/database/database.sqlite');
+            $this->assertContains('settings', $copy->query("select name from sqlite_master where type='table'")->fetchAll(\PDO::FETCH_COLUMN));
+        } else {
+            $this->assertFileDoesNotExist($backup.'/database/database.sqlite');
+        }
 
         File::deleteDirectory($src);
         File::deleteDirectory($dir);
@@ -622,7 +626,7 @@ class UpdateTest extends TestCase
         Http::fake(['releases.example.net/*' => Http::response('', 404)]);
 
         $this->actingAs($this->user)->get('/admin/updates')->assertOk()
-            ->assertSee('SQLite database is copied into the backup');
+            ->assertSee(DB::getDriverName() === 'sqlite' ? 'SQLite database is copied into the backup' : 'database');
     }
 
     // ---------- backup management ----------
@@ -989,7 +993,7 @@ class UpdateTest extends TestCase
         $this->assertTrue($result['ok'], $result['message']);
         $this->assertSame('v2', File::get($live.'/artisan'));
         $this->assertSame('v2', File::get($live.'/vendor/x.php'));
-        $this->assertSame('v2', $this->sqliteRow($liveDb));
+        $this->assertSame(DB::getDriverName() === 'sqlite' ? 'v2' : 'v1', $this->sqliteRow($liveDb));
         $this->assertSame('secret', File::get($live.'/.env'));
 
         // What was replaced is a backup of its own now: a rollback can be undone.
@@ -997,7 +1001,12 @@ class UpdateTest extends TestCase
         $safety = storage_path('app/testing/backups/'.$result['safety']);
         $this->assertSame('v1', File::get($safety.'/artisan'));
         $this->assertSame('v1', File::get($safety.'/vendor/x.php'));
-        $this->assertSame('v1', $this->sqliteRow($safety.'/database/database.sqlite'));
+        if (DB::getDriverName() === 'sqlite') {
+            $this->assertSame('v1', $this->sqliteRow($safety.'/database/database.sqlite'));
+        } else {
+            $this->assertFileDoesNotExist($safety.'/database/database.sqlite');
+            $this->assertStringContainsString('restore your database dump yourself', $result['message']);
+        }
         $this->assertStringContainsString('Rolled back to 1.0.0', $result['message']);
         $this->assertStringContainsString($result['safety'], $result['message']);
 
@@ -1031,7 +1040,7 @@ class UpdateTest extends TestCase
         $this->assertTrue($result['ok'], $result['message']);
         $this->assertSame('v2', File::get($live.'/artisan'));
         $this->assertSame('v1', $this->sqliteRow($liveDb));
-        $this->assertStringContainsString('the database was not in this backup', $result['message']);
+        $this->assertStringContainsString(DB::getDriverName() === 'sqlite' ? 'the database was not in this backup' : 'restore your database dump yourself', $result['message']);
         $this->assertStringContainsString($result['safety'], $result['message']);
     }
 

@@ -5,24 +5,17 @@ namespace App\Services;
 use App\Enums\IncidentStatus;
 use App\Models\Incident;
 use App\Models\Setting;
+use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
-/**
- * Fires on every incident change, to as many places as are configured.
- *
- * Slack and Teams each insist on their own JSON shape, so pointing a raw
- * webhook at them returns 400 and nothing arrives. Each endpoint therefore
- * carries the shape it wants, and the payload is built per endpoint.
- *
- * There is no retry and no queue: Pharos has to run on shared hosting with one
- * cron line, and a slow receiver must never hold up publishing an outage. A
- * failed delivery is recorded on the endpoint so it is visible in the admin
- * instead of only in a log file.
- */
+/** Incident changes enqueue immutable payloads; the minute scheduler delivers them. */
 class OutgoingWebhook
 {
+    private ?int $retryAfter = null;
+
     public function __construct(protected SafeHttp $safe = new SafeHttp) {}
 
     public function incidentChanged(Incident $incident, string $event): void
@@ -30,8 +23,49 @@ class OutgoingWebhook
         $endpoints = WebhookEndpoint::where('enabled', true)->get();
 
         foreach ($endpoints as $endpoint) {
-            $this->deliver($endpoint, $this->payload($endpoint->format, $incident, $event));
+            $key = hash('sha256', implode(':', [$incident->id, $event, $incident->updates()->max('id') ?? 0, $incident->status->value, $incident->updated_at?->format('U.u')]));
+            WebhookDelivery::firstOrCreate(['webhook_endpoint_id' => $endpoint->id, 'event_key' => $key],
+                ['payload' => $this->payload($endpoint->format, $incident, $event), 'next_attempt_at' => now()]);
         }
+    }
+
+    /** A bounded batch fits inside the lock and shared-hosting execution limits. */
+    public function sendPending(): int
+    {
+        $lock = Cache::lock('pharos:webhook-outbox', 180);
+        if (! $lock->get()) {
+            return 0;
+        }
+        $sent = 0;
+        try {
+            $due = WebhookDelivery::with('endpoint')->whereNull('sent_at')->where('attempts', '<', 6)
+                ->where('next_attempt_at', '<=', now())->oldest('id')->limit(10)->get();
+            foreach ($due as $delivery) {
+                $endpoint = $delivery->endpoint;
+                if (! $endpoint?->enabled) {
+                    $delivery->update(['attempts' => 6, 'error' => 'Destination disabled or removed']);
+
+                    continue;
+                }
+                $delivery->increment('attempts');
+                $ok = $this->deliver($endpoint, $delivery->payload);
+                $status = $endpoint->last_status;
+                $permanent = $status >= 400 && $status < 500 && ! in_array($status, [408, 429], true);
+                $delivery->update([
+                    'sent_at' => $ok ? now() : null,
+                    'attempts' => $permanent ? 6 : $delivery->attempts,
+                    'last_status' => $status,
+                    'error' => $endpoint->last_error,
+                    'next_attempt_at' => now()->addSeconds($this->retryAfter ?? min(3600, 60 * (2 ** $delivery->attempts))),
+                ]);
+                $sent += (int) $ok;
+            }
+            WebhookDelivery::where('created_at', '<', now()->subDays(30))->where(fn ($q) => $q->whereNotNull('sent_at')->orWhere('attempts', '>=', 6))->delete();
+        } finally {
+            $lock->release();
+        }
+
+        return $sent;
     }
 
     /** One fake incident, so an operator can prove the wiring before an outage does. */
@@ -55,6 +89,8 @@ class OutgoingWebhook
         return match ($format) {
             'slack' => $this->slack($incident, $event),
             'teams' => $this->teams($incident, $event),
+            'discord' => ['content' => Str::limit(($incident->resolved_at ? 'Resolved: ' : 'Incident: ').$incident->name, 1800)."\n".route('status'), 'allowed_mentions' => ['parse' => []]],
+            'signal' => ['message' => Str::limit(($incident->resolved_at ? 'Resolved: ' : 'Incident: ').$incident->name, 1800)."\n".route('status')],
             default => $this->generic($incident, $event),
         };
     }
@@ -163,6 +199,10 @@ class OutgoingWebhook
     /** @param array<string, mixed> $payload */
     protected function deliver(WebhookEndpoint $endpoint, array $payload): bool
     {
+        $this->retryAfter = null;
+        if ($endpoint->format === 'signal') {
+            $payload += ['number' => $endpoint->options['number'], 'recipients' => [$endpoint->options['recipient']]];
+        }
         $body = json_encode($payload, JSON_UNESCAPED_SLASHES);
         $headers = ['Content-Type' => 'application/json'];
 
@@ -173,12 +213,21 @@ class OutgoingWebhook
             $headers['X-Pharos-Signature'] = hash_hmac('sha256', $body, $secret);
         }
 
+        if ($endpoint->format === 'signal') {
+            $headers['Authorization'] = 'Bearer '.$endpoint->options['token'];
+        }
+
         try {
             // Vetted again here, not only when the endpoint was saved: a name can
             // be re-pointed at the metadata service in between (DNS rebinding).
-            $response = $this->safe->toOwn($endpoint->url)->timeout(5)->withHeaders($headers)
+            $response = $this->safe->toOwn($endpoint->url)->timeout(5)->connectTimeout(5)->withHeaders($headers)
                 ->withBody($body, 'application/json')->post($endpoint->url);
 
+            $retry = $response->header('Retry-After');
+            if ($retry !== '') {
+                $seconds = is_numeric($retry) ? (int) $retry : max(0, (strtotime($retry) ?: time()) - time());
+                $this->retryAfter = min(86400, max(60, $seconds));
+            }
             $endpoint->forceFill([
                 'last_status' => $response->status(),
                 // The status is what diagnoses it. The body is the receiver's,
@@ -189,11 +238,11 @@ class OutgoingWebhook
 
             return $response->successful();
         } catch (\Throwable $e) {
-            Log::warning('Outgoing webhook failed', ['endpoint' => $endpoint->id, 'error' => $e->getMessage()]);
+            Log::warning('Outgoing webhook failed', ['endpoint' => $endpoint->id, 'type' => get_class($e)]);
 
             $endpoint->forceFill([
                 'last_status' => null,
-                'last_error' => Str::limit($e->getMessage(), 180),
+                'last_error' => str_contains($e->getMessage(), 'never allowed') ? 'Destination is never allowed.' : 'Connection failed; check the address, DNS, TLS and receiver.',
                 'last_attempt_at' => now(),
             ])->save();
 

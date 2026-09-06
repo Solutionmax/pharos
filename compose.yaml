@@ -7,7 +7,7 @@ services:
     build:
       context: .
       args:
-        VERSION: ${PHAROS_VERSION:-0.1.0-dev}
+        VERSION: ${PHAROS_VERSION:-0.5.4}
     ports:
       - "${PHAROS_PORT:-8080}:80"
     environment:
@@ -30,7 +30,7 @@ services:
     build:
       context: .
       args:
-        VERSION: ${PHAROS_VERSION:-0.1.0-dev}
+        VERSION: ${PHAROS_VERSION:-0.5.4}
     command: php artisan schedule:work
     environment:
       APP_ENV: production

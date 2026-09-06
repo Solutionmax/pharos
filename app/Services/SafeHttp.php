@@ -71,13 +71,22 @@ class SafeHttp
     public function toOwn(string $url): PendingRequest
     {
         $host = $this->host($url);
-        $addresses = $this->addresses($host);
 
+        return $this->pinned($url, $host, $this->resolveOwn($host));
+    }
+
+    /** Resolve once, vet every answer, and never delegate an unchecked lookup. */
+    public function resolveOwn(string $host): string
+    {
+        $addresses = $this->addresses($host);
+        if ($addresses === []) {
+            throw new \RuntimeException("Could not resolve {$host}.");
+        }
         if (($ip = $this->forbiddenAmong($addresses)) !== null) {
             throw new \RuntimeException("{$host} resolves to {$ip}, which is never allowed.");
         }
 
-        return $this->pinned($url, $host, $addresses[0] ?? null);
+        return $addresses[0];
     }
 
     /** The address behind a URL that nothing may reach, or null when there is none. */

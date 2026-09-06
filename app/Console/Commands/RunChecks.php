@@ -30,7 +30,17 @@ class RunChecks extends Command
         }
 
         try {
-            return $this->runAll($runner);
+            Setting::put('checks.last_started_at', now()->toIso8601String());
+            $result = $this->runAll($runner);
+            Setting::put('checks.last_run_at', now()->toIso8601String());
+            Setting::put('checks.php_version', PHP_VERSION);
+            Setting::put('checks.php_binary', PHP_BINARY);
+            Setting::put('checks.last_error', null);
+
+            return $result;
+        } catch (\Throwable $e) {
+            Setting::put('checks.last_error', 'Check run failed. See the server log.');
+            throw $e;
         } finally {
             $lock->release();
         }
@@ -41,8 +51,6 @@ class RunChecks extends Command
         // Stamped on every run, due checks or not: this is the only evidence that
         // the one cron line exists. Without it a forgotten scheduler looks exactly
         // like a healthy install — every component green, nothing ever checked.
-        Setting::put('checks.last_run_at', now()->toIso8601String());
-
         if ($this->option('force')) {
             $checks = Check::with('component')->where('enabled', true)->get();
             foreach ($checks as $check) {

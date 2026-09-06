@@ -203,14 +203,14 @@ class ServicesTest extends TestCase
 
     public function test_the_status_page_screen_lists_each_service_as_its_own_switch(): void
     {
-        $this->group('Email', 1);
+        $email = $this->group('Email', 1);
         $this->group('Shared hosting', 2);
 
         $this->actingAs($this->user)->get('/admin/status-page')
             ->assertOk()
             ->assertSee('Email')
             ->assertSee('Shared hosting')
-            ->assertSee('name="groups[1]"', false);
+            ->assertSee('name="groups['.$email->id.']"', false);
     }
 
     public function test_the_services_screen_is_closed_to_strangers(): void

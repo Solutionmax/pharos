@@ -41,7 +41,7 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
     // Outside the guest group on purpose: this route guards itself on whether an
     // account exists, which is a different question from whether you are signed in.
     Route::get('install', [InstallController::class, 'form'])->name('install');
-    Route::post('install', [InstallController::class, 'store'])->name('install.store');
+    Route::post('install', [InstallController::class, 'store'])->middleware('throttle:10,1')->name('install.store');
 
     Route::middleware('guest')->group(function () {
         Route::get('login', [AuthController::class, 'form'])->name('login');
@@ -165,3 +165,12 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         });
     });
 });
+
+// Shared hosting can disable symlink(). Laravel serves only the public disk.
+Route::get('/storage/{path}', function (string $path) {
+    $root = realpath(storage_path('app/public'));
+    $file = realpath(storage_path('app/public/'.$path));
+    abort_unless($root && $file && str_starts_with($file, $root.DIRECTORY_SEPARATOR) && is_file($file), 404);
+
+    return response()->file($file, ['X-Content-Type-Options' => 'nosniff', 'Content-Security-Policy' => "sandbox; default-src 'none'"]);
+})->where('path', '.*')->name('public.upload');

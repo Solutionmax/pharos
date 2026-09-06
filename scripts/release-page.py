@@ -171,7 +171,7 @@ https://pharos.solutionmax.net/pharos-install.php
 
 <span class="c"># in the browser: the same installer with ?version=, or the pre-pinned copy next to each release below</span>
 https://status.example.com/pharos-install.php?version={latest["version"]}</pre></div>
-  <p>Afterwards the Updates screen offers the newest release as usual. Pharos never downgrades on its own: to go back, use <b>Roll back</b> under Updates, or run the <code>get</code> command with <code>--version</code> on the existing install — it puts that release's files in place and keeps your <code>.env</code>, database and uploads.</p>
+  <p>Afterwards the Updates screen offers the newest release as usual. Pharos never downgrades on its own: to go back, use <b>Roll back</b> under Updates, restore a verified backup. The <code>get --version</code> option is for new installations; it refuses to overwrite an existing PHP install.</p>
 </section>
 <div class="grid">
   <aside class="rail"><span class="lbl">Versions</span>{rail}</aside>
