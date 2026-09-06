@@ -136,7 +136,7 @@
   var frame = document.getElementById('preview');
   var live = document.getElementById('live');
   var stage = document.getElementById('stage');
-  var base = @json(route('admin.status-page.preview'), JSON_UNESCAPED_SLASHES);
+  var base = {{ \Illuminate\Support\Js::from(\App\Support\BrowserUrl::route('admin.status-page.preview', [])) }};
   var timer = null;
 
   function url() {
@@ -161,10 +161,12 @@
   frame.addEventListener('load', function () { live.classList.remove('busy'); });
 
   // Debounced: typing a number should not fire a render per keystroke.
-  form.addEventListener('input', function () {
+  function scheduleRefresh() {
     clearTimeout(timer);
     timer = setTimeout(refresh, 250);
-  });
+  }
+  form.addEventListener('input', scheduleRefresh);
+  form.addEventListener('change', scheduleRefresh);
 
   // A reset restores the inputs but fires no input event, so the preview would
   // keep showing the abandoned state.

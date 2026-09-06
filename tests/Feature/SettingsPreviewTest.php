@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\Branding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Js;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
@@ -116,6 +117,7 @@ class SettingsPreviewTest extends TestCase
         $tag = substr($html, 0, strpos($html, '>', strpos($html, '<html')) + 1);
 
         $this->assertStringContainsString('data-theme="dark"', $tag);
+        $this->assertStringContainsString('var REMEMBER = false;', $html);
         // Nothing was saved by looking at it.
         $this->assertSame('light', Setting::get('brand.theme'));
     }
@@ -165,6 +167,6 @@ class SettingsPreviewTest extends TestCase
             ->assertOk()
             ->assertSee('Live preview')
             ->assertSee('id="preview"', false)
-            ->assertSee(route('admin.status-page.preview'));
+            ->assertSee((string) Js::from('/admin/status-page/preview'), false);
     }
 }

@@ -361,6 +361,36 @@ class UpdateTest extends TestCase
             ->assertSee('Backing up the current version');
     }
 
+    public function test_a_successful_update_reports_when_the_web_cache_needs_a_restart(): void
+    {
+        $this->fakeSourceTree();
+        $mock = \Mockery::mock(SelfUpdater::class, [app(Updater::class)])->makePartial()->shouldAllowMockingProtectedMethods();
+        $mock->shouldReceive('migrate')->once();
+        $mock->shouldReceive('resetOpcodeCache')->once()->andReturn(' Restart the web PHP service.');
+        $this->instance(SelfUpdater::class, $mock);
+
+        $result = $this->applyArchive($this->archive(function (\ZipArchive $zip) {
+            $zip->addFromString('pharos/artisan', '#!/usr/bin/env php');
+        }));
+
+        $this->assertTrue($result['ok'], $result['message']);
+        $this->assertStringContainsString('Restart the web PHP service.', $result['message']);
+        $this->assertSame($result['message'], $mock->progress()['message']);
+    }
+
+    public function test_a_failed_rollback_still_resets_the_opcode_cache(): void
+    {
+        [$name, $live, $liveDb] = $this->fakeRollbackPair();
+        $mock = \Mockery::mock(SelfUpdater::class, [app(Updater::class)])->makePartial()->shouldAllowMockingProtectedMethods();
+        $mock->shouldReceive('restoreDatabase')->once()->andThrow(new \RuntimeException('restore failed'));
+        $mock->shouldReceive('resetOpcodeCache')->once()->andReturn('');
+
+        $result = $mock->rollback($name, $live, $liveDb);
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('v2', File::get($live.'/vendor/x.php'));
+    }
+
     public function test_a_failing_migration_puts_the_previous_version_back(): void
     {
         // A half-updated site is the worst outcome: new code on an old schema,
@@ -375,6 +405,8 @@ class UpdateTest extends TestCase
         // A partial mock with the real constructor, so only migrate() is faked.
         $mock = \Mockery::mock(SelfUpdater::class, [app(Updater::class)])->makePartial()->shouldAllowMockingProtectedMethods();
         $mock->shouldReceive('migrate')->once()->andThrow(new \RuntimeException('boom'));
+        // Once for rollback and once for the failed outer install.
+        $mock->shouldReceive('resetOpcodeCache')->twice()->andReturn('');
         $this->instance(SelfUpdater::class, $mock);
 
         $result = $this->applyArchive($this->archive(function (\ZipArchive $zip) {

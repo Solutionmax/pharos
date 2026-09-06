@@ -218,6 +218,13 @@ reached. Two containers from one image: the application on `php:8.3-apache` (por
 default, change `PHAROS_PORT` in `.env`), and a second one running `php artisan schedule:work`.
 The database is SQLite on a volume; point `DB_CONNECTION` at MySQL if you prefer.
 
+If HTTPS ends at a reverse proxy, set `APP_URL` to the public HTTPS address and
+`TRUSTED_PROXIES` to that proxy's IP address or CIDR in `.env`. The proxy must send
+`X-Forwarded-Proto: https` and preserve the public host. Recreate the app container
+after changing these values so generated links and redirects use HTTPS. Leave
+`TRUSTED_PROXIES` empty when connecting directly; do not trust arbitrary forwarded
+headers on a publicly reachable backend.
+
 Pin a release with `PHAROS_VERSION=0.5.1` in `.env`. To build the image from your own checkout
 instead of pulling it, `docker compose up -d --build`; the `build:` block in `compose.yaml` stamps
 the same version into the image.

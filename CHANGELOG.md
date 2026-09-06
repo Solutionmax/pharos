@@ -6,6 +6,17 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [0.5.5] — 2026-09-06
+
+### Fixed
+- Services: the empty state uses the same layout as Components. Creating a service from the component dialog reports session, validation and server errors separately.
+- Browser requests and live previews retain the public origin behind HTTPS proxies, including installations in a subdirectory. The status-page preview follows the form's theme without overwriting the visitor's preference; mail preview failures are visible.
+- Proxy trust now loads after the environment and works with cached configuration. Docker Compose forwards `TRUSTED_PROXIES`, so configured HTTPS proxies produce correct form actions and redirects.
+- Self-updates and rollbacks reset the web OPcache after replacing files, including recovery from failed updates. Hosts that restrict the reset API receive a restart warning; command-line updates explicitly require checking/restarting the separate web PHP cache.
+
+### Upgrade notes
+- The updater running in 0.5.4 does not include this fix. The first upgrade from 0.5.4 may still require a one-time PHP service or container restart. Docker image updates already recreate the container.
+
 ## [0.5.4] — 2026-09-06
 
 ### Added
