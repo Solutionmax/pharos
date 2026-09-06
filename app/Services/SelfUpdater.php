@@ -279,8 +279,8 @@ class SelfUpdater
         try {
             $pdo = new \PDO('sqlite:'.$live);
             $pdo->exec('VACUUM INTO '.$pdo->quote($target));
-        } catch (\Throwable) {
-            File::copy($live, $target); // last resort: may miss what still sits in the WAL
+        } catch (\Throwable $e) {
+            throw new \RuntimeException('Could not create a consistent SQLite backup. Update stopped.', 0, $e);
         }
     }
 
@@ -325,6 +325,7 @@ class SelfUpdater
             $note = $this->restoreDatabase($backup, $database);
             $sample['done']++;
             $stage('finishing');
+            app(PublicFiles::class)->sync($target, $backup.'/public');
 
             Artisan::call('optimize:clear');
 
@@ -481,6 +482,7 @@ class SelfUpdater
 
                 $stage('migrate');
                 $this->migrate();
+                app(PublicFiles::class)->sync($target, $root.'/public');
             } catch (\Throwable $e) {
                 // From here on the site is half new: new files on the old schema,
                 // or a copy that stopped midway. Put the version we just backed
@@ -533,7 +535,9 @@ class SelfUpdater
     /** Its own method so a test can make it fail; the real thing has no knobs. */
     protected function migrate(): void
     {
-        Artisan::call('migrate', ['--force' => true]);
+        if (Artisan::call('migrate', ['--force' => true]) !== 0) {
+            throw new \RuntimeException('Database migration failed.');
+        }
     }
 
     /**

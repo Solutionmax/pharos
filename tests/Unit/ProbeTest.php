@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Enums\CheckType;
 use App\Models\Check;
 use App\Services\Probe;
+use App\Services\SafeHttp;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -55,5 +56,36 @@ class ProbeTest extends TestCase
             $this->assertFalse($result->ok, $target);
             $this->assertStringContainsString('never allowed', $result->message);
         }
+    }
+
+    public function test_tcp_vets_the_same_dns_answer_it_would_connect_to(): void
+    {
+        $safe = new class extends SafeHttp
+        {
+            public int $calls = 0;
+
+            public function addresses(string $host): array
+            {
+                return ++$this->calls === 1 ? ['127.0.0.1'] : ['203.0.113.10'];
+            }
+        };
+        $result = (new Probe($safe))->run($this->check(CheckType::Tcp, 'changing.example.test:80'));
+        $this->assertFalse($result->ok);
+        $this->assertSame(1, $safe->calls);
+    }
+
+    public function test_unresolved_http_target_never_reaches_the_client(): void
+    {
+        Http::fake();
+        $safe = new class extends SafeHttp
+        {
+            public function addresses(string $host): array
+            {
+                return [];
+            }
+        };
+        $result = (new Probe($safe))->run($this->check(CheckType::Http, 'https://missing.example.test/'));
+        $this->assertFalse($result->ok);
+        Http::assertNothingSent();
     }
 }

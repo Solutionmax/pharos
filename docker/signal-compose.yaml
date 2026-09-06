@@ -1,0 +1,29 @@
+# Optional dedicated Signal bridge. Run with an explicit --env-file.
+services:
+  signal:
+    image: bbernhard/signal-cli-rest-api:0.100
+    restart: unless-stopped
+    environment:
+      MODE: json-rpc
+    volumes:
+      - signal-state:/home/.local/share/signal-cli
+    # Only for linking the device through an SSH tunnel; never bind this to 0.0.0.0.
+    ports:
+      - "127.0.0.1:58080:8080"
+  gateway:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SIGNAL_BRIDGE_HOST: ${SIGNAL_BRIDGE_HOST:?Set the bridge DNS hostname}
+      SIGNAL_BRIDGE_TOKEN: ${SIGNAL_BRIDGE_TOKEN:?Set a random 32-byte hex token}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./signal.Caddyfile:/etc/caddy/Caddyfile:ro
+      - signal-tls:/data
+    depends_on:
+      - signal
+volumes:
+  signal-state:
+  signal-tls:

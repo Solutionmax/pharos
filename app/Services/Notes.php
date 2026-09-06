@@ -15,7 +15,7 @@ class Notes
         'branding.activated' => ['page' => 'Branding', 'route' => 'admin.branding', 'params' => [], 'title' => 'What the Brand pack unlocks'],
         'component.heartbeat-url' => ['page' => 'Components', 'route' => 'admin.components', 'params' => [], 'title' => 'How a heartbeat check is pinged'],
         'integrations.no-heartbeats' => ['page' => 'Integrations', 'route' => 'admin.integrations', 'params' => [], 'title' => 'No heartbeats yet'],
-        'integrations.one-attempt' => ['page' => 'Integrations', 'route' => 'admin.integrations', 'params' => [], 'title' => 'A webhook gets one attempt'],
+        'integrations.delivery' => ['page' => 'Integrations', 'route' => 'admin.integrations', 'params' => [], 'title' => 'How notification delivery and retries work'],
         'mail-templates.frame' => ['page' => 'Mail templates', 'route' => 'admin.mail-templates', 'params' => [], 'title' => 'You edit the body, not the frame'],
         'profile.recovery-codes' => ['page' => 'Your profile', 'route' => 'admin.profile', 'params' => [], 'title' => 'Recovery codes'],
         'profile.two-factor' => ['page' => 'Your profile', 'route' => 'admin.profile', 'params' => [], 'title' => 'Two-factor authentication'],

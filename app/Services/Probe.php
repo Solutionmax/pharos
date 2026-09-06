@@ -62,13 +62,11 @@ class Probe
         $host = trim($m[1], '[]');
         $port = (int) $m[2];
 
-        $addresses = $this->safe->addresses($host);
-        if (($ip = $this->safe->forbiddenAddress("tcp://{$m[1]}:{$port}")) !== null) {
-            return new ProbeResult(false, null, "{$host} resolves to {$ip}, which is never allowed.");
+        try {
+            $connectTo = $this->safe->resolveOwn($host);
+        } catch (\RuntimeException $e) {
+            return new ProbeResult(false, null, $e->getMessage());
         }
-
-        // Connect to the address that was vetted, not to a second DNS answer.
-        $connectTo = $addresses[0] ?? $host;
         $connectTo = str_contains($connectTo, ':') ? "[{$connectTo}]" : $connectTo;
 
         $start = microtime(true);

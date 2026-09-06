@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\ApiToken;
 use App\Models\Component;
 use App\Models\Setting;
+use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
 use App\Services\OutgoingWebhook;
 use App\Services\SafeHttp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class IntegrationController extends Controller
 {
@@ -20,6 +22,7 @@ class IntegrationController extends Controller
         return view('admin.integrations', [
             'tokens' => ApiToken::orderByDesc('created_at')->get(),
             'newToken' => session('new_token'),
+            'deliveries' => WebhookDelivery::with('endpoint')->latest('id')->limit(20)->get(),
             'endpoints' => WebhookEndpoint::orderBy('id')->get(),
             'webhookSecret' => Setting::get('integrations.webhook_secret'),
             'heartbeats' => Component::whereHas('check', fn ($q) => $q->where('type', 'heartbeat'))
@@ -61,9 +64,29 @@ class IntegrationController extends Controller
                 }
             }],
             'format' => ['required', Rule::in(array_keys(WebhookEndpoint::FORMATS))],
+            'signal_number' => ['exclude_unless:format,signal', 'required', 'regex:/^\+[1-9][0-9]{6,14}$/'],
+            'signal_recipient' => ['exclude_unless:format,signal', 'required', 'regex:/^(\+[1-9][0-9]{6,14}|group\.[A-Za-z0-9+\/_=-]{1,200})$/'],
+            'signal_token' => ['exclude_unless:format,signal', 'required', 'string', 'min:16', 'max:512', 'regex:/^[A-Za-z0-9._~+\/-]+={0,2}$/'],
         ]);
 
-        WebhookEndpoint::create($data + ['enabled' => true]);
+        $parts = parse_url($data['url']);
+        $errors = [];
+        if (isset($parts['user']) || isset($parts['pass'])) {
+            $errors['url'] = 'Put credentials in the dedicated field, not in the address.';
+        }
+        if ($data['format'] === 'discord' && (($parts['scheme'] ?? '') !== 'https'
+            || ($parts['host'] ?? '') !== 'discord.com' || ! preg_match('~^/api/webhooks/[0-9]+/[A-Za-z0-9_-]+$~', $parts['path'] ?? ''))) {
+            $errors['url'] = 'Use an HTTPS Discord webhook address from discord.com.';
+        }
+        if ($data['format'] === 'signal' && (($parts['scheme'] ?? '') !== 'https' || ($parts['path'] ?? '') !== '/v2/send')) {
+            $errors['url'] = 'Use your authenticated HTTPS Signal bridge endpoint ending in /v2/send.';
+        }
+        if ($errors) {
+            throw ValidationException::withMessages($errors);
+        }
+        $options = $data['format'] === 'signal'
+            ? ['number' => $data['signal_number'], 'recipient' => $data['signal_recipient'], 'token' => $data['signal_token']] : null;
+        WebhookEndpoint::create(['label' => $data['label'], 'url' => $data['url'], 'format' => $data['format'], 'enabled' => true, 'options' => $options]);
 
         // The signature only means anything to a generic receiver, but the secret
         // has to exist before the first one fires.

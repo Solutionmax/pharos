@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\Audit;
+use App\Services\OutgoingWebhook;
 use Illuminate\Support\Facades\Schedule;
 
 // One entry point for both deployment shapes: a real scheduler on a VPS, or a
@@ -12,3 +13,5 @@ Schedule::call(fn () => Audit::prune())->dailyAt('03:20')->name('prune-audit-log
 
 // The subscriber outbox. An incident update only queues rows; this is what sends them.
 Schedule::command('pharos:notify')->everyMinute()->withoutOverlapping();
+
+Schedule::call(fn () => app(OutgoingWebhook::class)->sendPending())->everyMinute()->name('deliver-webhooks')->withoutOverlapping();

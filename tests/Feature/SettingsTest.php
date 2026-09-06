@@ -392,8 +392,9 @@ class SettingsTest extends TestCase
 
         $entry = AuditEntry::where('action', 'settings.saved')->latest('id')->first();
         $this->assertNotNull($entry);
-        $this->assertSame(['app.timezone', 'audit.days', 'update.keep_backups', 'update.check_enabled'], array_keys($entry->changes));
-        $this->assertSame(['from' => 180, 'to' => 30], $entry->changes['audit.days']);
+        $this->assertEqualsCanonicalizing(['app.timezone', 'audit.days', 'update.keep_backups', 'update.check_enabled'], array_keys($entry->changes));
+        $this->assertSame(180, $entry->changes['audit.days']['from']);
+        $this->assertSame(30, $entry->changes['audit.days']['to']);
 
         // Saving the same values again changes nothing, so nothing is recorded.
         $this->actingAs($this->user)->put('/admin/settings', ['timezone' => 'Europe/Amsterdam', 'audit_days' => 30, 'keep_backups' => 0])

@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\TokenMismatchException;
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -41,6 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToPriorityList(SubstituteBindings::class, ApiTokenAuth::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->dontFlash(['setup_key', 'signal_token', 'url']);
         // A form posted after the session expired used to end on a bare "419 Page
         // Expired". Say what happened and put the person back at the door.
         $exceptions->render(function (TokenMismatchException $e, Request $request) {
@@ -54,3 +55,11 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })->create();
+
+// Web installs keep the application outside a fixed hosting document root.
+$marker = dirname(__DIR__).'/.pharos-public';
+if (is_file($marker) && ($public = realpath(trim(file_get_contents($marker)))) && is_dir($public)) {
+    $app->usePublicPath($public);
+}
+
+return $app;

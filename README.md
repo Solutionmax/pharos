@@ -359,3 +359,39 @@ If it saved you an afternoon:
 <a href="https://buymeacoffee.com/solutionmax">
   <img alt="Buy me a coffee" src="https://img.shields.io/badge/Buy%20me%20a%20coffee-ffdd00?logo=buymeacoffee&logoColor=000">
 </a>
+
+### Optional Signal bridge
+
+`docker/signal-compose.yaml` provides a separate Signal bridge behind HTTPS and
+Bearer authentication. It exposes only POST `/v2/send` publicly; linking and account
+management remain on loopback port 58080. Use a dedicated host with ports 80/443
+available, set its DNS, copy `docker/signal.env.example` to a private env file and
+set a random token (`openssl rand -hex 32`, protect the file with `chmod 600`). Then:
+
+```sh
+docker compose --env-file /private/path/signal.env -f docker/signal-compose.yaml up -d
+```
+
+Link your Signal device using the bridge's loopback API over an SSH tunnel, following
+[the bridge's instructions](https://github.com/bbernhard/signal-cli-rest-api#linking-an-existing-device).
+In Pharos Integrations choose Signal, enter `https://your-bridge-host/v2/send`,
+the linked sender number, recipient number or group ID, and the same Bearer token.
+Back up `signal-state` privately. This is an optional self-hosted bridge, not an
+integration provided or operated by Signal. Linking a real number and sending a
+test notification require your own account.
+
+### Hosting update and cron recovery
+
+The installer can add cron through DirectAdmin or cPanel when your host permits API
+access. CloudLinux uses the surrounding hosting panel. Plesk users can use Scheduled
+Tasks, or execute `pharos:cron --install` with their CLI PHP if shell access permits it.
+A successful task save is followed by verification, but monitoring is only proven
+once the scheduler has actually run.
+
+Updates track copied public files in the private storage manifest. Obsolete,
+unmodified release files are removed on update/rollback; local files and uploads
+remain. If an obsolete tracked file was edited, the update stops for review. Files
+copied before the first manifest are not guessed or deleted. PHP shell installs
+refuse pinned-version overwrites of existing installs; use Updates and its backups.
+MySQL backups remain external: take and verify a consistent database backup before
+updating, and restore it together with code when rolling back schema changes.

@@ -142,6 +142,11 @@
 
       <form method="POST" action="{{ route('admin.install.store') }}" novalidate>
         @csrf
+        <div class="field">
+          <label for="setup_key">Installation key</label>
+          <input id="setup_key" name="setup_key" type="password" required autocomplete="off">
+          <span class="help">Use the key shown by your installer, or read <code>{{ $setupKeyPath }}</code> with your hosting File Manager. It is never shown to visitors.</span>
+        </div>
 
         <div class="field">
           <label for="site">Status page name</label>

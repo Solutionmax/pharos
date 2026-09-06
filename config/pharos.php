@@ -1,13 +1,14 @@
 <?php
 
 return [
+    'setup_key' => env('PHAROS_SETUP_KEY'),
     // Set at build time from the git tag; never bumped by hand in two places.
     // The number that ships with the code. An update replaces this file, which is
     // how an install learns its new version — .env is deliberately never replaced,
     // so a value pinned there would survive the upgrade and make the same release
     // be offered for ever. The override exists for Docker, where the host owns the
     // image and the app never updates itself.
-    'version' => env('PHAROS_VERSION', '0.1.0-dev'),
+    'version' => env('PHAROS_VERSION', '0.5.4'),
 
     // Ed25519 public key, hex. Signs both licence keys and update manifests,
     // with a different purpose field so one can never be replayed as the other.

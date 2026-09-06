@@ -58,10 +58,10 @@ class NotesTest extends TestCase
     {
         $this->actingAs($this->admin)
             ->from('/admin/integrations')
-            ->post('/admin/notes/integrations.one-attempt/dismiss')
+            ->post('/admin/notes/integrations.delivery/dismiss')
             ->assertRedirect('/admin/integrations');
 
-        $this->assertTrue($this->admin->fresh()->hasDismissed('integrations.one-attempt'));
+        $this->assertTrue($this->admin->fresh()->hasDismissed('integrations.delivery'));
     }
 
     public function test_dismissals_are_per_user(): void
@@ -71,14 +71,14 @@ class NotesTest extends TestCase
             'password' => Hash::make('correct-horse-battery'),
         ]);
 
-        $this->actingAs($this->admin)->postJson('/admin/notes/integrations.one-attempt/dismiss')->assertNoContent();
+        $this->actingAs($this->admin)->postJson('/admin/notes/integrations.delivery/dismiss')->assertNoContent();
 
         $this->actingAs($this->admin)->get('/admin/integrations')
-            ->assertDontSee('data-note="integrations.one-attempt"', false);
+            ->assertDontSee('data-note="integrations.delivery"', false);
         // AuthenticateSession would treat the second person as a hijack of the first's session.
         $this->flushSession();
         $this->actingAs($other)->get('/admin/integrations')
-            ->assertSee('data-note="integrations.one-attempt"', false);
+            ->assertSee('data-note="integrations.delivery"', false);
     }
 
     public function test_dismissing_twice_stores_the_id_once(): void
@@ -92,7 +92,7 @@ class NotesTest extends TestCase
     public function test_restoring_brings_every_note_back_and_says_so(): void
     {
         $this->admin->dismissNote('updates.backups');
-        $this->admin->dismissNote('integrations.one-attempt');
+        $this->admin->dismissNote('integrations.delivery');
 
         $this->actingAs($this->admin)
             ->from('/admin/profile')
@@ -102,7 +102,7 @@ class NotesTest extends TestCase
 
         $this->assertFalse($this->admin->fresh()->hasDismissed('updates.backups'));
         $this->actingAs($this->admin)->get('/admin/integrations')
-            ->assertSee('data-note="integrations.one-attempt"', false);
+            ->assertSee('data-note="integrations.delivery"', false);
     }
 
     public function test_a_warning_cannot_be_dismissed(): void

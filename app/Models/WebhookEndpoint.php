@@ -5,8 +5,14 @@ namespace App\Models;
 use App\Casts\LocalTime;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\LocalTimestamps;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Crypt;
 
+/**
+ * @property string $url
+ * @property array{number?: string, recipient?: string, token?: string}|null $options
+ */
 class WebhookEndpoint extends Model
 {
     use Auditable, LocalTimestamps;
@@ -22,6 +28,7 @@ class WebhookEndpoint extends Model
     {
         return [
             'enabled' => 'boolean',
+            'options' => 'encrypted:array',
             'last_attempt_at' => LocalTime::class,
             'created_at' => LocalTime::class,
             'updated_at' => LocalTime::class,
@@ -33,7 +40,27 @@ class WebhookEndpoint extends Model
         'generic' => 'Generic JSON (n8n, Zapier, your own)',
         'slack' => 'Slack',
         'teams' => 'Microsoft Teams',
+        'discord' => 'Discord',
+        'signal' => 'Signal (own bridge)',
     ];
+
+    /** @return Attribute<string, string> */
+    protected function url(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => str_starts_with($value, 'http') ? $value : Crypt::decryptString($value),
+            set: fn ($value) => Crypt::encryptString($value),
+        );
+    }
+
+    public function auditFilter(array $changes): array
+    {
+        if (isset($changes['options'])) {
+            $changes['options'] = ['from' => '****', 'to' => '****'];
+        }
+
+        return $changes;
+    }
 
     /**
      * A Slack or Teams webhook URL is a bearer credential: whoever has it can

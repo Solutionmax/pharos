@@ -68,7 +68,7 @@
 <div class="panel">
   <div class="panel-hd"><h3>Incoming: n8n, Zabbix, scripts</h3><span class="hint">Anything that can POST</span></div>
   <div class="panel-bd">
-    <p class="sub" style="font-size:13.5px;color:var(--ink-2)">
+    <p class="sub" style="font-size:13.5px;color:var(--ink-2);overflow-wrap:anywhere">
       Set a component's status, or open an incident that touches several at once.
       The old Cachet <span class="mono">X-Cachet-Token</span> header works too, so existing
       workflows do not have to change.
@@ -82,11 +82,15 @@
 </div>
 
 <div class="panel">
-  <div class="panel-hd"><h3>Incoming: Uptime Kuma</h3><span class="hint">Push monitor</span></div>
+  <div class="panel-hd"><h3>Incoming: Uptime Kuma and heartbeats</h3><span class="hint">Webhook or POST</span></div>
   <div class="panel-bd">
-    <p class="sub" style="font-size:13.5px;color:var(--ink-2)">
-      In Kuma, add a <b>Push</b> monitor per component and point it at the URL below.
-      Kuma calls in on every successful check; when it stops, the component goes down by itself.
+    <p class="sub" style="font-size:13.5px;color:var(--ink-2);overflow-wrap:anywhere">
+      For Kuma, configure a <b>Webhook notification</b> with its default JSON body, an
+      <code>Authorization: Bearer TOKEN</code> header and URL
+      <code>{{ url('/api/v1/kuma/components/COMPONENT_ID') }}</code>.
+      Choose a manually managed component; Pharos maps Kuma up/down notifications to its status.
+      A Kuma Push monitor receives heartbeats; it does not send them to Pharos.
+      The separate heartbeat URLs below accept POSTs from your own jobs and mean “healthy”.
     </p>
     @forelse ($heartbeats as $component)
       <div class="field">
@@ -163,7 +167,7 @@
         </div>
         <div class="field">
           <span class="lblrow"><label for="format">Shape</label>
-            @include('partials.tip', ['text' => 'Slack and Teams each demand their own JSON. Pick the wrong one and they answer 400 and show nothing.'])</span>
+            @include('partials.tip', ['text' => 'Choose the receiving service so Pharos sends the JSON it expects.'])</span>
           <select id="format" name="format">
             @foreach (\App\Models\WebhookEndpoint::FORMATS as $value => $label)
               <option value="{{ $value }}" @selected(old('format') === $value)>{{ $label }}</option>
@@ -173,26 +177,47 @@
       </div>
       <div class="field wide">
         <span class="lblrow"><label for="url">Address</label>
-          @include('partials.tip', ['text' => 'For Slack an Incoming Webhook URL; for Teams a Workflow URL. Treat both as a password — anyone holding one can post in that channel.'])</span>
+          @include('partials.tip', ['text' => 'Use the service webhook URL, or your Signal bridge /v2/send URL. Webhook URLs can contain credentials; keep them private.'])</span>
         <input id="url" name="url" type="url" value="{{ old('url') }}" required
                placeholder="https://hooks.slack.com/services/…">
         <span class="help">
           Slack: <span class="mono">Incoming Webhooks</span> in the app settings.
           Teams: a Workflow with <span class="mono">When a Teams webhook request is received</span>.
+          Discord: copy the webhook URL from channel settings.
+          Signal: use your own HTTPS bridge at <code>/v2/send</code>, protected by a bearer-token reverse proxy.
           Anything else: pick Generic JSON.
         </span>
       </div>
+      <div id="signal-fields" hidden>
+        <p class="help">Signal requires a separately managed signal-cli-rest-api bridge. Configure its reverse proxy to check the bearer token. Pharos does not register or host a Signal account.</p>
+        <div class="field"><label for="signal_number">Signal sender number</label><input id="signal_number" name="signal_number" placeholder="+31612345678" value="{{ old('signal_number') }}"></div>
+        <div class="field"><label for="signal_recipient">Signal recipient or group ID</label><input id="signal_recipient" name="signal_recipient" value="{{ old('signal_recipient') }}"></div>
+        <div class="field"><label for="signal_token">Bridge bearer token</label><input type="password" id="signal_token" name="signal_token" autocomplete="new-password"></div>
+      </div>
+      <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          const format = document.getElementById('format');
+          const fields = document.getElementById('signal-fields');
+          function update() { fields.hidden = format.value !== 'signal'; fields.querySelectorAll('input').forEach(input => { input.disabled = fields.hidden; }); }
+          format.addEventListener('change', update); update();
+        });
+      </script>
       <div class="actions">
         <button class="btn" type="submit">Add notification</button>
       </div>
     </form>
 
-    <x-note id="integrations.one-attempt">
-      <b>One attempt, no retry.</b> A notification is sent once with a five second limit, because a slow
-      receiver must not hold up publishing an outage. If it fails you see it in the table above, and the
-      incident is still on the status page — but nobody was told. Where that matters, send to something
-      that retries for you, such as n8n, and let it fan out from there.
-    </x-note>
+    <x-note id="integrations.delivery">Incident notifications are queued and sent by the minute scheduler. Temporary failures retry up to six attempts with backoff; Send test makes one immediate attempt.</x-note>
+    @if ($deliveries->isNotEmpty())
+    <div class="scroll"><table>
+      <thead><tr><th>Destination</th><th>Attempts</th><th>Delivery</th></tr></thead>
+      <tbody>@foreach ($deliveries as $delivery)
+      <tr><td>{{ $delivery->endpoint?->label ?? 'Removed' }}</td><td>{{ $delivery->attempts }}</td>
+      <td>{{ $delivery->sent_at ? 'Delivered' : ($delivery->attempts >= 6 ? 'Stopped — check destination' : 'Queued for retry') }}
+      @if ($delivery->error)<span class="help">{{ $delivery->error }}</span>@endif</td></tr>
+      @endforeach</tbody>
+    </table></div>
+    @endif
 
     @if ($webhookSecret && auth()->user()->isAdmin())
       <div class="field">
