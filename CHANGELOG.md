@@ -6,6 +6,9 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+### Fixed
+- Docker updates no longer offer a non-functional pull-and-restart button or report success after writing an unconsumed trigger. The Updates screen explains host-side Compose updates and version pins; direct update requests fail explicitly and cannot replace container files.
+
 ## [0.5.6] — 2026-09-07
 
 ### Changed

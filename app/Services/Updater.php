@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -11,13 +10,12 @@ use Illuminate\Support\Str;
 /**
  * Two worlds, one check.
  *
- * On Docker a host-side updater owns the image, exactly as Portalis does: it
- * writes a status file, the app shows a banner, and applying drops a trigger
- * file the host watches. The app never pulls its own image, because it cannot.
+ * Docker images are updated on the host with Compose. The status file marks
+ * external ownership; it does not prove that an update worker is connected.
  *
  * On shared hosting there is no daemon and no root, but the app owns its own
- * files, so it can replace them itself. Both paths refuse anything that is not
- * signed by our key.
+ * files, so it can replace them itself. The release check and shared-hosting
+ * archive updates require our signature.
  */
 class Updater
 {
@@ -46,7 +44,7 @@ class Updater
         return ! $this->managed() && $pinned !== false && $pinned !== '';
     }
 
-    /** True when a host-side updater is in charge of the image. */
+    /** True when application files are managed outside this process. */
     public function managed(): bool
     {
         return is_file((string) config('pharos.update.status_file'));
@@ -176,7 +174,7 @@ class Updater
         return $latest !== null && version_compare($latest['version'], $this->current(), '>');
     }
 
-    /** What the host-side updater last reported, on a Docker install. */
+    /** Installation metadata written by the Docker entrypoint. */
     public function managedStatus(): ?array
     {
         if (! $this->managed()) {
@@ -187,20 +185,5 @@ class Updater
         $data = json_decode((string) $raw, true);
 
         return is_array($data) ? $data : null;
-    }
-
-    /** Asks the host-side updater to pull and restart. */
-    public function requestManagedUpdate(): bool
-    {
-        if (! $this->managed()) {
-            return false;
-        }
-
-        $trigger = (string) config('pharos.update.trigger_file');
-        File::ensureDirectoryExists(dirname($trigger));
-
-        return File::put($trigger, json_encode([
-            'requested_at' => now()->toIso8601String(),
-        ])) !== false;
     }
 }

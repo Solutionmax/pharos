@@ -60,9 +60,11 @@ class UpdateController extends Controller
     public function apply(Request $request)
     {
         if ($this->updater->managed()) {
-            return $this->updater->requestManagedUpdate()
-                ? redirect()->route('admin.updates')->with('status', 'Asked the host to pull the new image. It restarts in a moment.')
-                : back()->withErrors(['update' => 'Could not reach the host updater.']);
+            $message = 'No host updater is connected. On the Docker host, open the directory containing compose.yaml and run docker compose pull && docker compose up -d. If PHAROS_VERSION is pinned, change it to the target release first.';
+
+            return $request->wantsJson()
+                ? response()->json(['ok' => false, 'message' => $message], 422)
+                : back()->withErrors(['update' => $message]);
         }
 
         // The screen asks for JSON so it can show the steps as they happen; the

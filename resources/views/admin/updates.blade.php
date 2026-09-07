@@ -77,17 +77,12 @@
       <p class="note">Nothing to do. Pharos checks once an hour, and you can force it with <b>Check again</b>.</p>
     @elseif ($managed)
       <x-note id="updates.managed">
-        <b>This install is managed from outside.</b> The Docker image belongs to the host, so the
-        app cannot replace itself. Pressing the button asks the host updater to pull and restart.
+        <b>Update on the Docker host.</b> This installation has no connected host updater.
+        The app cannot pull or restart its own container.
       </x-note>
-      @if ($managedStatus)
-        <p class="note mono" style="font-size:12.5px">Host reported: {{ json_encode($managedStatus) }}</p>
-      @endif
-      <form method="POST" action="{{ route('admin.updates.apply') }}">
-        @csrf
-        <button class="btn" type="submit">Pull {{ $latest['version'] }} and restart</button>
-      </form>
-      <p class="note">Or, on the host: <span class="mono">docker compose pull &amp;&amp; docker compose up -d</span></p>
+      <p class="note">On the Docker host, open the directory containing <span class="mono">compose.yaml</span> and run:</p>
+      <p class="note mono">docker compose pull &amp;&amp; docker compose up -d</p>
+      <p class="note">If <span class="mono">PHAROS_VERSION</span> is pinned in your Compose environment or <span class="mono">.env</span>, change it to <b>{{ $latest['version'] }}</b> first. After the containers restart, return here and check the installed version.</p>
     @elseif ($writable)
       <x-note id="updates.how-it-installs">
         The archive is downloaded, checked against a signature made with our key, and only then
