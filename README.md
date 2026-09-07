@@ -121,24 +121,24 @@ into the domain's document root (File Manager → `public_html`, or the subdomai
 key: the screen shows the file to open in your hosting File Manager. Keep the key for the
 administrator form. The installer contains its own logo and needs no external image files.
 
-<img src="docs/img/current-install-web-0-unlock-fonts.png" alt="The installer unlock screen with the Pharos logo and a private installation-key field." width="100%">
+<img src="docs/img/current-install-web-0-unlock-type-v2.png" alt="The installer unlock screen with the Pharos logo and a private installation-key field." width="100%">
 
 After unlocking, the requirements screen checks whether the host can run Pharos:
 
-<img src="docs/img/current-install-web-1-check-fonts.png" alt="The web installer's requirements screen: PHP version, every required extension, the app folder, the web folder, outbound HTTPS and an existing-install check, each marked OK." width="100%">
+<img src="docs/img/current-install-web-1-check-type-v2.png" alt="The web installer's requirements screen: PHP version, every required extension, the app folder, the web folder, outbound HTTPS and an existing-install check, each marked OK." width="100%">
 
 **Download** fetches the release, verifies the signed manifest and the checksum, unpacks the
 application into a private `pharos-app-<domain-id>` folder — next to the web root, never inside it — and copies `public/`
 into the document root with an `index.php` that points at the app. No document-root change
 needed, and `.env` stays out of reach. Then it asks for the site address and the database:
 
-<img src="docs/img/current-install-web-2-download-fonts.png" alt="The configure screen after the download: manifest signature valid, archive downloaded and verified, unpacked, public folder copied; a site address field and a database selector." width="100%">
+<img src="docs/img/current-install-web-2-download-type-v2.png" alt="The configure screen after the download: manifest signature valid, archive downloaded and verified, unpacked, public folder copied; a site address field and a database selector." width="100%">
 
 The last screen is the cron line, with the PHP binary that matches the version the installer
 found, and where it goes in cPanel, DirectAdmin and Plesk. **Finish** deletes the installer and
 opens the [setup form](#the-setup-form):
 
-<img src="docs/img/current-install-web-3-cron-fonts.png" alt="The cron screen: one crontab line with a Copy button, and where to add it in cPanel, DirectAdmin and Plesk." width="100%">
+<img src="docs/img/current-install-web-3-cron-type-v2.png" alt="The cron screen: one crontab line with a Copy button, and where to add it in cPanel, DirectAdmin and Plesk." width="100%">
 
 The installer keeps whatever your panel already put in `.htaccess` and adds Pharos's rules
 underneath; a half-finished install resumes where it stopped.
