@@ -106,7 +106,7 @@
 <div class="setup">
 
   <aside class="setup-aside">
-    <span class="setup-brand">@include('partials.logo', ['size' => 26])</span>
+    <span class="setup-brand">@include('partials.logo', ['size' => 26, 'logoTheme' => 'dark'])</span>
 
     <div class="setup-lede">
       <h2>Your status page is green.<br><em>Your server is not.</em></h2>

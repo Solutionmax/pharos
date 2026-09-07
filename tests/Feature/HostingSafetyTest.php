@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Services\Branding;
 use App\Services\CronSetup;
 use App\Services\PublicFiles;
 use Illuminate\Support\Facades\File;
@@ -44,6 +45,34 @@ class HostingSafetyTest extends TestCase
         file_put_contents($base.'/public/app.css', 'rollback-style');
         (new PublicFiles)->sync($base);
         $this->assertSame('rollback-style', file_get_contents($web.'/app.css'));
+    }
+
+    public function test_brand_assets_are_replaced_in_a_separate_hosting_webroot_and_urls_change(): void
+    {
+        $base = $this->fixture.'/app';
+        $web = $this->fixture.'/web';
+        file_put_contents($base.'/.pharos-public', $web);
+        File::ensureDirectoryExists($base.'/public/brand');
+        foreach (['pharos-logo.svg', 'pharos-logo-white.svg'] as $name) {
+            file_put_contents($base.'/public/brand/'.$name, 'old-'.$name);
+        }
+        (new PublicFiles)->sync($base);
+        $previousPublic = public_path();
+        $this->app->usePublicPath($web);
+        try {
+            $branding = app(Branding::class);
+            $old = $branding->builtInAssetUrl('pharos-logo.svg');
+            foreach (['pharos-logo.svg', 'pharos-logo-white.svg'] as $name) {
+                File::copy($previousPublic.'/brand/'.$name, $base.'/public/brand/'.$name);
+            }
+            (new PublicFiles)->sync($base);
+            $this->assertNotSame($old, $branding->builtInAssetUrl('pharos-logo.svg'));
+            foreach (['pharos-logo.svg', 'pharos-logo-white.svg'] as $name) {
+                $this->assertSame(file_get_contents($previousPublic.'/brand/'.$name), file_get_contents($web.'/brand/'.$name));
+            }
+        } finally {
+            $this->app->usePublicPath($previousPublic);
+        }
     }
 
     public function test_obsolete_release_files_are_removed_on_update_and_rollback_but_uploads_survive(): void

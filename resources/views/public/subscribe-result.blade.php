@@ -10,7 +10,7 @@
 <title>{{ $outcome === 'subscribed' ? "You're subscribed" : 'Unsubscribed' }} · {{ $branding->name() }} Status</title>
 <link rel="icon" href="{{ $branding->faviconUrl() }}">
 @if ($branding->name() === 'Pharos' && ! $branding->logoUrl())
-<link rel="apple-touch-icon" href="{{ asset('brand/apple-touch-icon.png') }}">
+<link rel="apple-touch-icon" href="{{ $branding->builtInAssetUrl('apple-touch-icon.png') }}">
 @endif
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
