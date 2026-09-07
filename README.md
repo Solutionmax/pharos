@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://pharos.solutionmax.net"><img src="docs/img/banner.png" alt="Pharos — your status page is green. Your server is not. A status page opening an incident by itself." width="100%"></a>
+  <a href="https://pharos.solutionmax.net"><img src="docs/img/current-readme-logo.png" alt="Pharos — self-hosted status pages with automatic monitoring" width="300"></a>
 </p>
 
 <p align="center">
@@ -7,7 +7,6 @@
   <a href="LICENSE"><img alt="Licence: AGPL-3.0" src="https://img.shields.io/badge/licence-AGPL--3.0-0079d2"></a>
   <img alt="PHP 8.3+" src="https://img.shields.io/badge/PHP-8.3%2B-777bb4">
   <img alt="Laravel 12" src="https://img.shields.io/badge/Laravel-12-ff2d20">
-  <img alt="591 tests passing" src="https://img.shields.io/badge/tests-591%20passing-12b76a">
   <a href="https://pharos.solutionmax.net/releases/"><img alt="Releases: signed zips, changelog, pinned installers" src="https://img.shields.io/badge/releases-signed%20zips%20%C2%B7%20changelog%20%C2%B7%20installers-0079d2"></a>
   <img alt="Cachet-shaped API" src="https://img.shields.io/badge/API-Cachet--shaped-0e1726">
   <img alt="Runs on cPanel, DirectAdmin, Plesk or Docker" src="https://img.shields.io/badge/runs%20on-cPanel%20%C2%B7%20DirectAdmin%20%C2%B7%20Plesk%20%C2%B7%20Docker-475467">
@@ -16,7 +15,7 @@
 
 <p align="center">
   <a href="https://pharos.solutionmax.net">Website</a> ·
-  <a href="https://pharos.solutionmax.net/docs.html">Documentation</a> ·
+  <a href="https://pharos.solutionmax.net/docs/">Documentation</a> ·
   <a href="#install">Install</a> ·
   <a href="#connecting-it-to-what-you-already-run">API &amp; integrations</a> ·
   <a href="#licence">Licence</a>
@@ -26,27 +25,25 @@
 
 **A self-hosted status page that runs its own checks.**
 
-Every status page you know waits for a human to notice. Pharos polls HTTP endpoints and TCP
+Pharos polls HTTP endpoints and TCP
 ports, listens for heartbeats from jobs it cannot see from outside, and sets component status
 without anyone pressing a button. A failing check opens an incident and posts the first update;
 a recovered check closes it and posts the closing update.
 
-It is a standard PHP 8.3 application with SQLite or MySQL — so it runs on the cPanel,
-DirectAdmin or Plesk account you already pay for, on any other PHP host, or in Docker.
+It is a PHP 8.3 application with SQLite or MySQL. Run it on compatible cPanel,
+DirectAdmin or Plesk hosting, another PHP host that meets the requirements, or in Docker.
 No daemon, no worker queue, no VPS.
 
 ---
 
 ## Why it exists
 
-- **Cachet 2.x has had no release since 2023.** Nothing checks anything: a component turns red
-  because a person made it red, so it is usually still green while the site is down.
-- **Cachet 3.x is no longer open source.** Its licence forbids removing its notices and forbids
-  distributing it as a standalone product — which rules it out for anyone reselling hosting.
-- **One incident, one component.** A hypervisor failure that takes down four customer sites gets
-  logged four times, or once while ignoring three of them.
+Pharos brings automated incident publishing to compatible PHP shared hosting. It runs HTTP,
+TCP and heartbeat checks, groups affected components into one incident, and notifies customers.
+Host it separately from the services it watches so the status page survives their outage.
 
-Pharos speaks the Cachet 2.x API on purpose, so scripts written against Cachet keep working.
+The API follows parts of Cachet 2.x's shape. Component updates accept the same status integers
+and token header; incident creation needs changes. See the compatibility guide before migrating.
 
 ---
 
@@ -59,7 +56,7 @@ Pharos speaks the Cachet 2.x API on purpose, so scripts written against Cachet k
 | **Uptime** | Daily roll-ups into a 90-day bar and a percentage. Days without data are grey and left out of the average — never counted as green. |
 | **Public page** | Every section is a switch (banner, uptime bar, services, per-component bars, incident history, empty days, API link), per-service visibility, light and dark theme, and a live preview in the admin that renders the real page from values you have not saved yet. |
 | **Subscribers** | A *Get notified* button, double opt-in, one e-mail per incident update, one-click unsubscribe. The four mails are editable Markdown templates. |
-| **Integrations** | Cachet 2.x compatible REST API, Uptime Kuma push monitors, n8n in both directions with an HMAC-signed outgoing webhook, Zabbix and Grafana through the API, Slack incoming webhooks. |
+| **Integrations** | Cachet-shaped REST API for components and incidents, Uptime Kuma through a separately configured API workflow or heartbeat adapter, n8n in both directions with an HMAC-signed outgoing webhook, Zabbix and Grafana through the API, Slack and Discord webhooks, Signal through your own secured bridge. |
 | **Updates** | Signed release manifests (Ed25519), one-click install from the admin with an automatic backup, rollback, download and retention. Docker hosts pull the image instead. |
 | **Users** | Per-user TOTP two-factor with recovery codes, OpenID Connect single sign-on, roles. |
 | **Audit log** | Who changed what and when, filterable, exportable as CSV, with a configurable retention. |
@@ -69,25 +66,25 @@ Pharos speaks the Cachet 2.x API on purpose, so scripts written against Cachet k
 
 ## What it looks like
 
-<img src="docs/img/status-page.webp" alt="The public status page: overall headline, a 90-day uptime bar, services grouped into rows, and incidents listed per day." width="100%">
+<img src="docs/img/current-status-page.webp" alt="The public status page: overall headline, a 90-day uptime bar, services grouped into rows, and incidents listed per day." width="100%">
 
 <em>The public page. Every section on it is a switch on the Status page screen.</em>
 
-<img src="docs/img/admin-components.webp" alt="The components screen with tiles showing what is down right now, average uptime, and how many components are checked automatically." width="100%">
+<img src="docs/img/current-admin-components.webp" alt="The components screen with tiles showing what is down right now, average uptime, and how many components are checked automatically." width="100%">
 
 <em>Components. The tiles answer “what is wrong right now” before the table does — including how
 many components still rely on someone noticing.</em>
 
-<img src="docs/img/admin-status-page.webp" alt="The Status page screen with one switch per section on the left and a live preview of the public page on the right, with a desktop and phone toggle." width="100%">
+<img src="docs/img/current-admin-status-page.webp" alt="The Status page screen with one switch per section on the left and a live preview of the public page on the right, with a desktop and phone toggle." width="100%">
 
 <em>Status page. Tick a section off and it disappears from the preview beside it — the real page,
 rendered from values you have not saved yet.</em>
 
-<img src="docs/img/admin-incidents.webp" alt="The incidents screen: open now, opened in the last 30 days, typical time to resolve, and a list showing which incidents were opened by a check and which by the API." width="100%">
+<img src="docs/img/current-admin-incidents.webp" alt="The incidents screen: open now, opened in the last 30 days, typical time to resolve, and a list showing which incidents were opened by a check and which by the API." width="100%">
 
 <em>Incidents. Each row says whether a check, the API or a person opened it.</em>
 
-<img src="docs/img/admin-updates.webp" alt="The updates screen: installed version, available release, how this install updates, and the backups kept with download, roll back and delete." width="100%">
+<img src="docs/img/current-admin-updates.webp" alt="The updates screen: installed version, available release, how this install updates, and the backups kept with download, roll back and delete." width="100%">
 
 <em>Updates. Signed releases, one click, a backup before anything is written, and roll back if you
 change your mind.</em>
@@ -96,11 +93,23 @@ change your mind.</em>
 
 ## Install
 
-### cPanel, DirectAdmin, Plesk — or any PHP 8.3 host
+| Environment | Guide | Verify before use |
+|---|---|---|
+| DirectAdmin | [Web installation](https://pharos.solutionmax.net/docs/install/directadmin/) | Web PHP, CLI PHP, permissions and cron |
+| cPanel / CloudLinux | [Web installation](https://pharos.solutionmax.net/docs/install/cpanel/) | PHP selector versus CLI binary and cron |
+| Plesk | [Web installation](https://pharos.solutionmax.net/docs/install/plesk/) | Document root and scheduled task permissions |
+| Docker | [Docker guide](https://pharos.solutionmax.net/docs/docker/) | App and scheduler containers, volumes and proxy |
+
+[Discord setup](https://pharos.solutionmax.net/docs/discord/) ·
+[Signal bridge setup](https://pharos.solutionmax.net/docs/signal/) ·
+[Update recovery](https://pharos.solutionmax.net/docs/recovery/)
+
+
+### cPanel, DirectAdmin, Plesk — or compatible PHP 8.3 hosting
 
 Requires PHP 8.3 or later with the usual Laravel extensions, and either SQLite or MySQL.
 No daemon, no worker queue, no root. Two installers, one result: the application lives outside
-the web root, the domain's document root points at its `public/` folder, and one cron line runs
+the web root, only the public files are served by the web server, and one cron line runs
 every minute. Both download the same signed release and verify the Ed25519 manifest and the
 SHA-256 before unpacking. Rather do it yourself? See [by hand](#by-hand).
 
@@ -269,6 +278,7 @@ will not find them.
 ```bash
 curl -X POST https://status.example.com/api/v1/incidents \
   -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
         "template":   "server-unreachable",
         "vars":       { "server": "web-06.example.net" },
@@ -277,7 +287,7 @@ curl -X POST https://status.example.com/api/v1/incidents \
       }'
 ```
 
-- **Uptime Kuma** — a push monitor calls in; silence turns the component red
+- **Uptime Kuma** — connect a separately configured API workflow or periodic heartbeat adapter
 - **n8n** — both directions, with an HMAC-SHA256 signed outgoing webhook on every incident
 - **Zabbix and Grafana** — through the same API, no plugin needed
 - **Slack** — an incoming webhook per incident update; see [docs/notifications.md](docs/notifications.md)
@@ -314,8 +324,8 @@ Stated plainly rather than described as if it were finished:
 
 - **External probe locations.** Everything is checked from wherever Pharos runs, which is why
   you should host it away from what it is watching.
-- **Cachet importer.** Moving from an existing Cachet install is manual for now; the API
-  compatibility means your integrations do not have to move at all.
+- **Cachet importer.** Moving from an existing Cachet install is manual for now; existing API
+  integrations must be checked against the supported endpoints and payloads.
 
 ---
 

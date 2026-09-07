@@ -4,7 +4,7 @@
     scripts/release-page.py CHANGELOG.md dist/latest.json dist/releases.json > dist/index.html
 
 releases.json is kept by build-release.sh: [{"version","date","size","sha256"}], newest first.
-Static, no dependencies. Light + dark. Same type as the site (Archivo / Public Sans / JetBrains Mono).
+Static, no build dependencies. Same type as the site (Archivo / Public Sans / JetBrains Mono).
 """
 import base64
 import html
@@ -62,126 +62,57 @@ def main():
     latest = manifest(sys.argv[2])
     meta = {r["version"]: r for r in json.load(open(sys.argv[3]))} if len(sys.argv) > 3 else {}
     rels = sections(changelog)
-
-    rail = "".join(
-        f'<a href="#v{v}" class="{"on" if v == latest["version"] else ""}"><b>{v}</b><span>{d}</span></a>'
-        for v, d, _, _ in rels)
-
+    version = latest["version"]
+    current = next((r for r in rels if r[0] == version), None)
+    if current is None:
+        raise ValueError("Latest manifest version is missing from changelog")
+    featured_summary = current[2] or latest.get("notes", "")
+    size = human(meta[version]["size"]) if meta.get(version, {}).get("size") else "Production package"
     cards = []
-    for i, (v, d, summary, groups) in enumerate(rels):
-        m = meta.get(v, {})
-        size = f' · {human(m["size"])}' if m.get("size") else ""
-        sha = m.get("sha256") or (latest["sha256"] if v == latest["version"] else "")
-        counts = " ".join(f'<i class="{KIND.get(k, ("", "chg"))[1]}">{len(items)} {KIND.get(k, (k, ""))[0].lower()}</i>' for k, items in groups if items)
-        body = "".join(
-            f'<div class="grp"><h3 class="{KIND.get(k, ("", "chg"))[1]}">{inline(KIND.get(k, (k, ""))[0])}</h3><ul>'
-            + "".join(f"<li>{inline(it)}</li>" for it in items) + "</ul></div>"
-            for k, items in groups if items)
-        shabox = (f'<span class="sha"><span>sha256</span><code>{sha[:12]}…{sha[-6:]}</code>'
-                  f'<button type="button" data-sha="{sha}">Copy</button></span>') if sha else ""
-        cards.append(f"""
-<article class="rel" id="v{v}">
-  <header>
-    <div class="ver"><h2>{v}</h2>{'<span class="tag">latest</span>' if v == latest["version"] else ''}</div>
-    <time datetime="{d}">{nice_date(d)}</time>
-  </header>
-  {f'<p class="sum">{inline(summary)}</p>' if summary else ''}
-  <p class="counts">{counts}</p>
-  {body}
-  <footer>
-    <a class="dl" href="{RELEASES}/pharos-{v}.zip"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0 3-3m-3 3L5 7M3 12v1.5A.5.5 0 0 0 3.5 14h9a.5.5 0 0 0 .5-.5V12"/></svg>pharos-{v}.zip{size}</a>
-    <a class="dl alt" href="{RELEASES}/pharos-install-{v}.php" download title="The web installer, pinned to {v}">pharos-install-{v}.php</a>
-    {shabox}
-    <span class="upd">{'Installed already? The Updates screen offers this release; or run the install command again.' if i == 0 else 'Superseded — the manifest points at the newest release.'}</span>
-  </footer>
-</article>""")
+    for v, d, summary, groups in rels:
+        digest = meta.get(v, {}).get("sha256") or (latest["sha256"] if v == version else "")
+        notes = "".join('<section class="change-group"><h3>'+inline(k)+'</h3><ul>'+"".join('<li>'+inline(it)+'</li>' for it in items)+'</ul></section>' for k, items in groups if items)
+        digest_html = '<code class="digest">'+html.escape(digest)+'</code><button type="button" data-copy="'+html.escape(digest, quote=True)+'">Copy SHA-256</button>' if digest else ''
+        checksum = '<details class="verify"><summary>Verify this download</summary><p>The installer verifies the signed manifest and archive. A checksum alone confirms file integrity, not who published it.</p>'+digest_html+'<a href="'+RELEASES+'/pharos-'+v+'.json">Signed manifest</a><a href="'+RELEASES+'/pharos-'+v+'.zip.sha256">Checksum file</a></details>'
 
-    print(f"""<!doctype html>
+        cards.append('<article class="release" id="v'+v+'"><header><div><span class="eyebrow">'+('LATEST RELEASE' if v == version else 'PREVIOUS RELEASE')+'</span><h2>Pharos '+v+'</h2></div><time datetime="'+d+'">'+nice_date(d)+'</time></header><p class="release-summary">'+inline(summary)+'</p><details class="notes" '+('open' if v == version else '')+'><summary>Read release notes</summary>'+notes+'</details><div class="release-downloads"><a href="'+RELEASES+'/pharos-'+v+'.zip">Download ZIP</a><a href="'+RELEASES+'/pharos-install-'+v+'.php" download>Version-pinned installer</a>'+('' if v == version else '<span>Use the latest version for a new installation.</span>')+'</div>'+checksum+'</article>')
+    nav = ''.join('<a href="#v'+v+'">'+v+' <span>'+d+'</span></a>' for v,d,_,_ in rels)
+    schema = json.dumps({"@context":"https://schema.org","@type":"SoftwareApplication","name":"Pharos","softwareVersion":version,"operatingSystem":"PHP 8.3+ or Docker","applicationCategory":"DeveloperApplication","url":"https://pharos.solutionmax.net/","downloadUrl":RELEASES+'/pharos-'+version+'.zip'})
+    template = TEMPLATE.replace('@@CSS@@', CSS).replace('@@SCHEMA@@', schema).replace('@@VERSION@@', html.escape(version)).replace('@@DATE@@', nice_date(current[1])).replace('@@SUMMARY@@', inline(featured_summary)).replace('@@SIZE@@',size).replace('@@CARDS@@',''.join(cards)).replace('@@NAV@@',nav)
+    print(template)
+
+
+CSS = r"""
+:root{--ink:#101c2d;--muted:#596a7e;--blue:#0070d8;--line:#dfe7f0;--bg:#f8fafd;--card:#fff;font-family:'Public Sans',system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+*{box-sizing:border-box}body{margin:0;line-height:1.65}a{color:var(--blue);text-underline-offset:4px}button,summary{cursor:pointer}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #168ef0;outline-offset:4px}h1,h2,h3{font-family:Archivo,system-ui,sans-serif;letter-spacing:-.04em;line-height:1.12;margin:0}p{margin:12px 0}code{font-family:'JetBrains Mono',monospace;font-size:12px}.wrap{max-width:1200px;padding:0 26px;margin:auto}.nav{border-bottom:1px solid var(--line);background:white}.nav .wrap{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand img{display:block;width:110px;height:auto}.nav-links{display:flex;gap:25px;align-items:center}.nav-links a{font-size:13px;color:var(--muted);text-decoration:none}.nav-links .nav-start{background:var(--blue);color:white;padding:9px 15px;border-radius:6px}.skip{position:absolute;left:10px;top:-100px}.skip:focus{top:10px;background:white;z-index:5}.intro{padding:48px 0 30px;display:flex;justify-content:space-between;gap:30px;align-items:end}.eyebrow{font:10px 'JetBrains Mono',monospace;letter-spacing:.12em;color:var(--blue);display:block;margin-bottom:10px}h1{font-size:clamp(35px,4vw,52px)}.intro p{max-width:56ch;color:var(--muted);font-size:16px}.intro>a{white-space:nowrap;font-size:13px;margin-bottom:18px}.latest{display:grid;grid-template-columns:1.15fr 1fr;gap:45px;background:#0c2038;color:white;border:1px solid #203c5a;border-radius:16px;padding:34px 38px;box-shadow:0 20px 48px -32px #163a69;margin-bottom:34px}.latest .eyebrow{color:#83bfff}.latest h2{font-size:42px}.latest p{color:#c1d0e0;font-size:14px;max-width:53ch}.latest .release-date{font-size:12px;color:#96abc4}.latest-badge{display:inline-flex;gap:7px;align-items:center;color:#94ebc0;background:#123f39;font:10px 'JetBrains Mono',monospace;border:1px solid #27584c;border-radius:30px;padding:4px 10px;margin-bottom:14px}.latest-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}.button{display:inline-flex;justify-content:center;align-items:center;text-decoration:none;padding:11px 17px;background:#007ae6;border-radius:7px;color:white;font-size:13px;font-weight:600}.button.secondary{background:#1d3653;border:1px solid #38546f}.latest .file-note{font-size:11px;color:#aabbd0}.latest-points{border-left:1px solid #304761;padding-left:32px;align-self:center}.latest-points h3{font-size:16px;letter-spacing:-.015em}.latest-points p{font-size:13px}.latest-points a{color:#9bd1ff;font-size:12px}.paths{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:45px}.path{background:white;padding:23px;border:1px solid var(--line);border-radius:10px;min-width:0;display:flex;flex-direction:column}.path h3{font-size:19px}.path p{font-size:13px;color:var(--muted)}.path>a{font-size:12px;font-weight:600;margin-top:auto;padding-top:12px}.path-label{font:10px 'JetBrains Mono',monospace;color:var(--muted);display:block;margin-bottom:12px}.command{background:#edf2f8;border-radius:6px;padding:12px;overflow-wrap:anywhere;white-space:pre-wrap;margin:10px 0}.history-layout{display:grid;grid-template-columns:180px minmax(0,1fr);gap:40px}.version-nav{position:sticky;top:25px;align-self:start}.version-nav a{display:block;padding:9px 10px;border-left:2px solid var(--line);text-decoration:none;font:12px 'JetBrains Mono',monospace;color:var(--ink)}.version-nav a:hover{border-color:var(--blue);background:#edf4fc}.version-nav a span{display:block;font-size:10px;color:var(--muted);margin-top:5px}.release{scroll-margin-top:20px;background:white;border:1px solid var(--line);border-radius:12px;padding:28px;margin-bottom:18px;min-width:0}.release header{display:flex;justify-content:space-between;align-items:center;gap:16px}.release h2{font-size:27px}.release time{font-size:11px;color:var(--muted);white-space:nowrap}.release-summary{font-size:14px;color:var(--muted)}summary{font-size:13px;font-weight:600;padding:12px 0}.change-group{display:grid;grid-template-columns:90px minmax(0,1fr);gap:18px;border-top:1px solid #edf1f6;padding:15px 0}.change-group h3{font-size:12px;color:var(--blue);padding-top:5px;letter-spacing:0}.change-group ul{margin:0;padding-left:18px;font-size:13px;color:var(--muted)}li+li{margin-top:9px}.release-downloads{display:flex;gap:16px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px;font-size:12px}.release-downloads span{color:var(--muted);font-size:11px}.verify{margin-top:10px}.verify p{font-size:12px;color:var(--muted)}.digest{display:block;overflow-wrap:anywhere;white-space:normal;background:#f2f5f9;padding:12px;margin-bottom:12px}.verify button{border:1px solid #ccd9e8;border-radius:5px;padding:7px 10px;background:white;font:12px inherit;color:var(--ink);margin-right:15px}.verify>a{font-size:12px;margin-right:15px}.upgrade-note{margin:28px 0;background:#eef4fa;border-left:3px solid var(--blue);padding:20px 24px}.upgrade-note h2{font-size:20px}.upgrade-note p{font-size:13px;color:var(--muted)}.foot{padding:32px 0 45px;font-size:12px;color:var(--muted);display:flex;gap:18px;flex-wrap:wrap}.copy-status{font-size:12px;color:var(--muted)}
+@media(max-width:850px){.latest{grid-template-columns:1fr;gap:24px}.latest-points{border-left:0;border-top:1px solid #304761;padding:22px 0 0}.paths{grid-template-columns:1fr}.history-layout{grid-template-columns:1fr;gap:20px}.version-nav{position:static;display:flex;flex-wrap:wrap;gap:5px}.version-nav .eyebrow{width:100%}.version-nav a{border:1px solid var(--line);border-radius:6px}.intro{display:block}.nav-links{gap:14px}}
+@media(max-width:520px){.wrap{padding:0 20px}.intro{padding:32px 0 20px}.latest{padding:25px}.latest h2{font-size:35px}.release{padding:20px}.release header{align-items:start;flex-direction:column;gap:4px}.change-group{grid-template-columns:1fr;gap:8px}.nav-links a:nth-child(2){display:none}.nav-links{gap:12px}.nav-links a{font-size:12px}.brand img{width:90px}.latest-actions .button{width:100%}.release code{overflow-wrap:anywhere}}
+"""
+
+TEMPLATE = r"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pharos releases</title>
-<meta name="description" content="Every Pharos release: what changed, the signed download and its checksum.">
-<link rel="canonical" href="https://pharos.solutionmax.net/releases/">
-<meta property="og:type" content="website"><meta property="og:title" content="Pharos releases"><meta property="og:description" content="Every Pharos release: what changed, the signed download and its checksum."><meta property="og:url" content="https://pharos.solutionmax.net/releases/"><meta property="og:image" content="https://pharos.solutionmax.net/assets/img/og.png"><meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="https://pharos.solutionmax.net/assets/img/favicon.svg">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
-<style>
-:root{{--bg:#fbfcfe;--tint:#f2f6fb;--card:#fff;--line:#e8edf4;--line2:#d6e0ed;--ink:#0e1726;--ink2:#475467;--ink3:#667085;--blue:#0079d2;--blue-soft:#e8f3fc;--navy:#0a1729;--navy2:#0e2036;
- --add:#027a48;--add-bg:#e6f7ef;--chg:#175cd3;--chg-bg:#e8f1fd;--fix:#b54708;--fix-bg:#fef4e6;--sec:#b42318;--sec-bg:#fee4e2;--rem:#475467;--rem-bg:#eef2f6;
- --display:'Archivo',system-ui,sans-serif;--body:'Public Sans',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;--ease:cubic-bezier(.16,1,.3,1)}}
-@media(prefers-color-scheme:dark){{:root:not([data-theme=light]){{--bg:#080e18;--tint:#0b1523;--card:#0e1a2b;--line:#1c2b3f;--line2:#2a3b52;--ink:#eaf0f7;--ink2:#a7b6c7;--ink3:#7d8fa3;--blue:#53b1fd;--blue-soft:#0f2438;
- --add:#6ce9a6;--add-bg:#0d2a1e;--chg:#84caff;--chg-bg:#10233a;--fix:#fec84b;--fix-bg:#2c2211;--sec:#fda29b;--sec-bg:#2d1614;--rem:#a7b6c7;--rem-bg:#16213a}}}}
-:root[data-theme=dark]{{--bg:#080e18;--tint:#0b1523;--card:#0e1a2b;--line:#1c2b3f;--line2:#2a3b52;--ink:#eaf0f7;--ink2:#a7b6c7;--ink3:#7d8fa3;--blue:#53b1fd;--blue-soft:#0f2438;
- --add:#6ce9a6;--add-bg:#0d2a1e;--chg:#84caff;--chg-bg:#10233a;--fix:#fec84b;--fix-bg:#2c2211;--sec:#fda29b;--sec-bg:#2d1614;--rem:#a7b6c7;--rem-bg:#16213a}}
-*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15.5px;line-height:1.65;-webkit-font-smoothing:antialiased}}
-a{{color:var(--blue)}}code{{font-family:var(--mono);font-size:.88em;background:var(--tint);border:1px solid var(--line);border-radius:6px;padding:.05em .4em}}
-.nav{{border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);position:sticky;top:0;z-index:5}}
-.nav .in{{max-width:1120px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:18px;font-size:14px}}.nav .brand{{font-weight:800;letter-spacing:-.02em;color:var(--ink);text-decoration:none;display:flex;align-items:center;gap:8px}}
-.nav .brand img{{width:22px;height:22px}}.nav .r{{margin-left:auto;display:flex;gap:16px;align-items:center}}.nav .r a{{color:var(--ink2);text-decoration:none}}.nav .r a.gh{{display:inline-flex;align-items:center;gap:6px}}
-.wrap{{max-width:1120px;margin:0 auto;padding:44px 24px 90px}}
-.eyebrow{{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);display:flex;align-items:center;gap:.6rem}}.eyebrow i{{width:6px;height:6px;border-radius:50%;background:#12b76a}}
-h1{{font-family:var(--display);font-weight:800;font-size:clamp(32px,4.4vw,46px);letter-spacing:-.04em;line-height:1.02;margin:10px 0 12px;max-width:16ch;text-wrap:balance}}
-.lede{{color:var(--ink2);font-size:17px;max-width:58ch;margin:0 0 26px}}
-.how{{background:var(--navy);border-radius:12px;overflow:hidden;box-shadow:0 18px 40px -26px #0a172999;margin:0 0 44px}}
-.how .bar{{display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid #1b3350;font-family:var(--mono);font-size:11px;color:#7e9ab5;letter-spacing:.04em}}.how .bar b{{color:#2ea3ff;font-weight:500;margin-right:4px}}
-.how pre{{margin:0;padding:14px 16px;font-family:var(--mono);font-size:12.5px;line-height:1.9;color:#eaf2fb;white-space:pre-wrap;overflow-wrap:anywhere}}.how .c{{color:#5d7794}}.how .k{{color:#6ee7a8}}
-.grid{{display:grid;grid-template-columns:200px minmax(0,1fr);gap:40px;align-items:start}}
-.rail{{position:sticky;top:76px;display:flex;flex-direction:column;gap:2px}}.rail .lbl{{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);padding:0 10px 8px}}
-.rail a{{display:flex;flex-direction:column;padding:8px 10px;border-radius:8px;text-decoration:none;color:var(--ink2);border-left:2px solid transparent}}.rail a b{{font-family:var(--mono);font-size:13px;color:var(--ink);font-weight:500}}.rail a span{{font-size:11.5px;color:var(--ink3)}}
-.rail a:hover{{background:var(--tint)}}.rail a.on{{border-left-color:var(--blue);background:var(--blue-soft)}}.rail a.on b{{color:var(--blue)}}
-.rel{{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px 20px;margin:0 0 18px;box-shadow:0 1px 2px #10182808,0 24px 48px -36px #0a172940}}
-.rel header{{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}}.ver{{display:flex;align-items:center;gap:10px}}.rel h2{{font-family:var(--display);font-weight:800;font-size:32px;letter-spacing:-.04em;margin:0;line-height:1}}
-.tag{{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;background:var(--add-bg);color:var(--add);border-radius:999px;padding:4px 9px}}
-.rel time{{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink3)}}
-.sum{{font-size:16.5px;color:var(--ink);margin:14px 0 6px;max-width:64ch}}
-.counts{{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 6px}}.counts i{{font-style:normal;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;border-radius:999px;padding:3px 9px}}
-.add{{color:var(--add);background:var(--add-bg)}}.chg{{color:var(--chg);background:var(--chg-bg)}}.fix{{color:var(--fix);background:var(--fix-bg)}}.sec{{color:var(--sec);background:var(--sec-bg)}}.rem{{color:var(--rem);background:var(--rem-bg)}}
-.grp{{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px 16px;padding:14px 0;border-top:1px solid var(--line)}}.grp h3{{margin:0;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;padding:4px 0 0;background:none;display:inline}}
-.grp ul{{margin:0;padding-left:18px;color:var(--ink2)}}.grp li{{margin:3px 0}}.grp li::marker{{color:var(--line2)}}
-.rel footer{{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px;margin-top:4px;font-size:13px;color:var(--ink3)}}
-.dl{{display:inline-flex;align-items:center;gap:8px;background:var(--blue);color:#fff;text-decoration:none;font-weight:600;font-size:13.5px;padding:9px 14px;border-radius:10px;transition:transform .15s var(--ease)}}.dl:hover{{transform:translateY(-1px)}}
-.sha{{display:inline-flex;align-items:center;gap:8px}}.sha>span{{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}}.sha button{{font:11px var(--mono);color:var(--ink2);background:transparent;border:1px solid var(--line2);border-radius:6px;padding:3px 8px;cursor:pointer}}.sha button:hover{{border-color:var(--blue);color:var(--blue)}}
-.dl.alt{{background:var(--tint);color:var(--ink);border:1px solid var(--line2);font-family:var(--mono);font-weight:500;font-size:12.5px}}
-.pin{{margin:0 0 44px}}.pin h2{{font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:-.03em;margin:0 0 8px}}.pin p{{color:var(--ink2);max-width:72ch;margin:0 0 14px}}.pin .how{{margin-bottom:14px}}
-.upd{{margin-left:auto;max-width:34ch;text-align:right}}
-.foot{{color:var(--ink3);font-size:12.5px;margin-top:28px;display:flex;gap:16px;flex-wrap:wrap}}
-@media(max-width:820px){{.grid{{grid-template-columns:1fr}}.rail{{position:static;flex-direction:row;flex-wrap:wrap;gap:6px}}.rail .lbl{{width:100%}}.rail a{{border-left:0;border:1px solid var(--line)}}.rail a.on{{border-color:var(--blue)}}.rel{{padding:20px 18px 16px}}.grp{{grid-template-columns:1fr;gap:4px}}.upd{{margin-left:0;text-align:left;max-width:none}}}}
-</style></head><body>
-<nav class="nav"><div class="in"><a class="brand" href="https://pharos.solutionmax.net"><img src="https://pharos.solutionmax.net/assets/img/favicon.svg" alt="">Pharos</a><span style="color:var(--ink3)">/ releases</span><div class="r"><a href="https://pharos.solutionmax.net/docs.html">Docs</a><a href="https://pharos.solutionmax.net/#pricing">Pricing</a><a href="https://pharos.solutionmax.net/#contact">Contact</a><a class="gh" href="https://github.com/solutionmax/pharos"><svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></div></div></nav>
-<div class="wrap">
-<p class="eyebrow"><i></i>Releases <span style="color:var(--line2)">/</span> signed manifests <span style="color:var(--line2)">/</span> latest {latest["version"]}</p>
-<h1>What changed, and when.</h1>
-<p class="lede">Every release is one zip with everything in it, a SHA-256, and a manifest signed by SolutionMAX that your install verifies before it touches a file. Nothing here phones home.</p>
-<div class="how"><div class="bar"><b>›</b>install or update</div><pre><span class="c"># VPS or Docker host — installs Docker after a Y if it is missing</span>
-<span class="k">curl</span> -fsSL https://pharos.solutionmax.net/get | sh
-
-<span class="c"># cPanel · DirectAdmin · Plesk without SSH — upload this one file, open it in the browser</span>
-https://pharos.solutionmax.net/pharos-install.php
-
-<span class="c"># a specific version — see below</span>
-<span class="k">curl</span> -fsSL https://pharos.solutionmax.net/get | sh -s -- --version {latest["version"]}
-
-<span class="c"># what the Updates screen in every install reads</span>
-{RELEASES}/latest.json</pre></div>
-<section class="pin" id="specific-version">
-  <h2>Installing a specific version</h2>
-  <p>Both installers take the newest release from <code>latest.json</code> unless you pin one — to reproduce something, or to walk through an update yourself. A pinned install reads <code>pharos-&lt;version&gt;.json</code>, the manifest signed for that exact release; a version that was never published fails cleanly, and a tampered archive is refused the same way.</p>
-  <div class="how"><div class="bar"><b>›</b>pin a version</div><pre><span class="c"># over SSH</span>
-<span class="k">curl</span> -fsSL https://pharos.solutionmax.net/get | sh -s -- --php --url https://status.example.com --version {latest["version"]}
-
-<span class="c"># in the browser: the same installer with ?version=, or the pre-pinned copy next to each release below</span>
-https://status.example.com/pharos-install.php?version={latest["version"]}</pre></div>
-  <p>Afterwards the Updates screen offers the newest release as usual. Pharos never downgrades on its own: to go back, use <b>Roll back</b> under Updates, restore a verified backup. The <code>get --version</code> option is for new installations; it refuses to overwrite an existing PHP install.</p>
-</section>
-<div class="grid">
-  <aside class="rail"><span class="lbl">Versions</span>{rail}</aside>
-  <div>{''.join(cards)}</div>
-</div>
-<p class="foot"><span>Manifests: Ed25519, verified locally.</span><span>Changelog kept in the repository as CHANGELOG.md.</span><a href="https://pharos.solutionmax.net">pharos.solutionmax.net</a></p>
-</div>
-<script>document.querySelectorAll('[data-sha]').forEach(function(b){{b.addEventListener('click',function(){{navigator.clipboard.writeText(b.dataset.sha).then(function(){{b.textContent='Copied';setTimeout(function(){{b.textContent='Copy'}},1500)}})}})}});</script>
-</body></html>""")
-
+<title>Pharos downloads and release notes — @@VERSION@@</title><meta name="description" content="Download Pharos @@VERSION@@, choose a hosting installer or Docker, and review release notes, checksums and update instructions."><meta name="robots" content="index,follow,max-image-preview:large"><link rel="canonical" href="https://pharos.solutionmax.net/releases/"><meta property="og:type" content="website"><meta property="og:title" content="Pharos @@VERSION@@ — downloads and release notes"><meta property="og:description" content="Get the latest Pharos release, choose your installation route and see what changed."><meta property="og:url" content="https://pharos.solutionmax.net/releases/"><meta property="og:image" content="https://pharos.solutionmax.net/assets/img/og.png"><meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/assets/img/favicon.svg"><link rel="stylesheet" href="/assets/css/fonts.css?v=20260907"><link rel="preload" href="/assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/assets/fonts/public-sans-latin.woff2" as="font" type="font/woff2" crossorigin><script type="application/ld+json">@@SCHEMA@@</script><style>@@CSS@@</style></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="nav"><div class="wrap"><a class="brand" href="/"><img src="/assets/img/pharos-logo.svg" alt="Pharos" width="110" height="35"></a><nav class="nav-links" aria-label="Main navigation"><a href="/docs/">Docs</a><a href="/#pricing">Pricing</a><a class="nav-start" href="/#install-pharos">Install Pharos</a></nav></div></header>
+<main id="main" class="wrap"><div class="intro"><div><span class="eyebrow">DOWNLOADS &amp; CHANGELOG</span><h1>The latest Pharos.<br>Ready for your hosting.</h1><p>Choose your installation, see what changed and update with a clear recovery path.</p></div><a href="#history">Browse release history ↓</a></div>
+<section class="latest" aria-labelledby="latest-title"><div><span class="latest-badge">● LATEST RELEASE</span><h2 id="latest-title">Pharos @@VERSION@@</h2><p class="release-date">Released @@DATE@@</p><p>@@SUMMARY@@</p><div class="latest-actions"><a class="button" href="https://pharos.solutionmax.net/releases/pharos-install-@@VERSION@@.php" download>Download web installer ↓</a><a class="button secondary" href="https://pharos.solutionmax.net/releases/pharos-@@VERSION@@.zip">Download ZIP ↓</a></div><p class="file-note">ZIP: @@SIZE@@ · Dependencies included · PHP 8.3+</p></div><div class="latest-points"><h3>Installing for the first time?</h3><p>Use the web installer on shared hosting. It checks requirements and verifies the signed release before unpacking.</p><a href="/docs/install/">Installation guide →</a><h3 style="margin-top:22px">Already running Pharos?</h3><p>On PHP hosting, open Admin → Updates. On Docker, update from the host using the guide below.</p><a href="#v@@VERSION@@">Read the release notes →</a></div></section>
+<section class="paths" aria-label="Installation and update options"><article class="path"><span class="path-label">01 / SHARED HOSTING</span><h3>Upload. Open. Set up.</h3><p>DirectAdmin, cPanel or Plesk. Upload the PHP installer to your web folder, open it in a browser and follow the steps, including cron verification.</p><a href="/docs/install/">Install without SSH →</a></article><article class="path"><span class="path-label">02 / DOCKER</span><h3>Update your containers.</h3><p>For an existing Compose installation, set PHAROS_VERSION=@@VERSION@@ in its environment, then run:</p><pre class="command"><code>docker compose pull
+docker compose up -d</code></pre><a href="/docs/docker/">First install or updating? Read the guide →</a></article><article class="path"><span class="path-label">03 / PHP WITH SSH</span><h3>Install from your shell.</h3><p>For a new PHP installation, run the installer and follow the document-root and scheduler instructions:</p><pre class="command"><code>curl -fsSL https://pharos.solutionmax.net/get | sh -s -- --php --version @@VERSION@@</code></pre><a href="/docs/install/">SSH installation guide →</a></article></section>
+<div class="history-layout" id="history"><aside class="version-nav" aria-label="Release versions"><span class="eyebrow">RELEASE HISTORY</span>@@NAV@@</aside><div>@@CARDS@@</div></div>
+<section class="upgrade-note" id="specific-version"><h2>Before you update or roll back</h2><p>Take a backup first. Pharos snapshots include SQLite; MySQL needs a separate database backup. A version-pinned installer is for a fresh installation, not a downgrade. Restore matching code and database when rolling back.</p><p>Updating from 0.5.4 may require one PHP or container restart to clear old OPcache code. <a href="/docs/recovery/">Read the update and recovery guide →</a></p></section>
+</main><footer class="wrap foot"><span>Pharos by SolutionMAX</span><a href="/docs/">Documentation</a><a href="/legal.html">Legal &amp; privacy</a><a href="https://pharos.solutionmax.net/releases/latest.json">Signed update manifest</a></footer><p class="wrap copy-status" role="status" id="copy-status"></p>
+<script>
+document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
+ const status = document.getElementById('copy-status');
+ try {
+  if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(button.dataset.copy);
+  else {
+   const area = document.createElement('textarea'); area.value = button.dataset.copy; area.style.position='fixed'; area.style.opacity='0'; document.body.append(area); area.select();
+   const ok = document.execCommand('copy'); area.remove(); if (!ok) throw new Error('Copy unavailable');
+  }
+  button.textContent='Copied'; status.textContent='SHA-256 checksum copied.';
+ } catch { button.textContent='Select checksum above'; status.textContent='Copy was unavailable. Select and copy the full checksum above.'; }
+}));
+</script></body></html>"""
 
 if __name__ == "__main__":
     main()
