@@ -245,7 +245,9 @@ the same version into the image.
 
 **Updating** is `docker compose pull && docker compose up -d`. Inside a container the app does not
 replace its own files: the Updates screen says the install is *managed from the host* and shows
-that command. The `curl … /get | sh` installer pulls the same image and only builds it from the
+that command. There is no bundled host updater; the web interface cannot request a container restart.
+If `PHAROS_VERSION` is pinned in your Compose environment or `.env`, change it to the target release
+before running the command from the directory containing `compose.yaml`. The `curl … /get | sh` installer pulls the same image and only builds it from the
 release archive when the registry cannot be reached.
 
 ### Check it is alive

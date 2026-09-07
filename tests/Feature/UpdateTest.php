@@ -191,23 +191,37 @@ class UpdateTest extends TestCase
         $this->assertFalse(app(Updater::class)->managed());
     }
 
-    public function test_a_status_file_makes_it_managed_and_apply_drops_a_trigger(): void
+    public function test_docker_status_does_not_offer_a_nonfunctional_update_button(): void
     {
         File::ensureDirectoryExists(storage_path('app/testing'));
-        File::put(config('pharos.update.status_file'), json_encode(['updateAvailable' => true]));
+        // Exact legacy marker written by existing 0.5.6 Docker containers.
+        File::put(config('pharos.update.status_file'), json_encode(['host' => 'docker', 'version' => '1.0.0', 'update' => 'docker compose pull && docker compose up -d']));
+        Http::fake(['releases.example.net/*' => Http::response($this->manifest())]);
 
-        $updater = app(Updater::class);
-
-        $this->assertTrue($updater->managed());
-        $this->assertSame(['updateAvailable' => true], $updater->managedStatus());
-        $this->assertTrue($updater->requestManagedUpdate());
-        $this->assertFileExists(config('pharos.update.trigger_file'));
+        $this->assertTrue(app(Updater::class)->managed());
+        $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+            ->assertSee('Update on the Docker host.')
+            ->assertSee('PHAROS_VERSION')
+            ->assertDontSee('and restart</button>', false);
+        $this->actingAs($this->user)->post('/admin/updates')
+            ->assertSessionHasErrors('update')->assertSessionMissing('status');
+        $this->actingAs($this->user)->postJson('/admin/updates')
+            ->assertStatus(422)->assertJson(['ok' => false]);
+        $this->assertFileDoesNotExist(config('pharos.update.trigger_file'));
     }
 
-    public function test_an_unmanaged_install_cannot_drop_a_trigger(): void
+    public function test_managed_installs_cannot_replace_container_files_even_with_a_direct_service_call(): void
     {
-        $this->assertFalse(app(Updater::class)->requestManagedUpdate());
-        $this->assertFileDoesNotExist(config('pharos.update.trigger_file'));
+        File::ensureDirectoryExists(storage_path('app/testing'));
+        // A malformed marker must fail closed, not enable archive updates.
+        File::put(config('pharos.update.status_file'), 'invalid json');
+        Http::fake();
+
+        $result = app(SelfUpdater::class)->apply();
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('managed externally', $result['message']);
+        Http::assertNothingSent();
     }
 
     // ---------- the screen ----------
@@ -236,7 +250,7 @@ class UpdateTest extends TestCase
 
         $this->actingAs($this->user)->get('/admin/updates')
             ->assertOk()
-            ->assertSee('managed from outside')
+            ->assertSee('Update on the Docker host.')
             ->assertSee('docker compose pull');
     }
 

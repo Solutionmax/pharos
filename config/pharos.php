@@ -27,10 +27,9 @@ return [
         'manifest_url' => env('PHAROS_UPDATE_URL', 'https://pharos.solutionmax.net/releases/latest.json'),
         // Settings → General overrides this and the two below once saved (InstallSettings).
         'check_enabled' => env('PHAROS_UPDATE_CHECK', true),
-        // Written by a host-side updater on a Docker install; absent on shared
+        // Written by the Docker entrypoint to mark external ownership; absent on shared
         // hosting, which is how the app knows which world it is in.
         'status_file' => storage_path('app/ota/update-status.json'),
-        'trigger_file' => storage_path('app/ota/update.trigger'),
         // Where a self-update parks the version it replaces.
         'backups_dir' => storage_path('app/backups'),
         // How many backups to keep; the oldest go when a new one is made. 0 keeps everything.

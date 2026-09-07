@@ -404,6 +404,10 @@ class SelfUpdater
      */
     public function apply(?array $manifest = null): array
     {
+        if ($this->updater->managed()) {
+            return ['ok' => false, 'message' => 'This installation is managed externally. Update the Docker image on the host.'];
+        }
+
         $manifest ??= $this->updater->latest(fresh: true);
 
         if ($manifest === null) {
