@@ -117,23 +117,28 @@ SHA-256 before unpacking. Rather do it yourself? See [by hand](#by-hand).
 
 Download [`pharos-install.php`](https://pharos.solutionmax.net/pharos-install.php) and upload it
 into the domain's document root (File Manager → `public_html`, or the subdomain's folder). Open
-`https://status.example.com/pharos-install.php`. The first screen says whether the host can run
-Pharos — nothing is written yet:
+`https://status.example.com/pharos-install.php`. First, unlock it with the private installation
+key: the screen shows the file to open in your hosting File Manager. Keep the key for the
+administrator form. The installer contains its own logo and needs no external image files.
 
-<img src="docs/img/install-web-1-check.webp" alt="The web installer's first screen: PHP version, every required extension, the app folder, the web folder, outbound HTTPS and an existing-install check, each marked OK." width="100%">
+<img src="docs/img/current-install-web-0-unlock.png" alt="The installer unlock screen with the Pharos logo and a private installation-key field." width="100%">
+
+After unlocking, the requirements screen checks whether the host can run Pharos:
+
+<img src="docs/img/current-install-web-1-check.png" alt="The web installer's requirements screen: PHP version, every required extension, the app folder, the web folder, outbound HTTPS and an existing-install check, each marked OK." width="100%">
 
 **Download** fetches the release, verifies the signed manifest and the checksum, unpacks the
-application into `~/pharos-app` — next to the web root, never inside it — and copies `public/`
+application into a private `pharos-app-<domain-id>` folder — next to the web root, never inside it — and copies `public/`
 into the document root with an `index.php` that points at the app. No document-root change
 needed, and `.env` stays out of reach. Then it asks for the site address and the database:
 
-<img src="docs/img/install-web-2-download.webp" alt="The configure screen after the download: manifest signature valid, archive downloaded and verified, unpacked, public folder copied; a site address field and a database selector." width="100%">
+<img src="docs/img/current-install-web-2-download.png" alt="The configure screen after the download: manifest signature valid, archive downloaded and verified, unpacked, public folder copied; a site address field and a database selector." width="100%">
 
 The last screen is the cron line, with the PHP binary that matches the version the installer
 found, and where it goes in cPanel, DirectAdmin and Plesk. **Finish** deletes the installer and
 opens the [setup form](#the-setup-form):
 
-<img src="docs/img/install-web-3-cron.webp" alt="The cron screen: one crontab line with a Copy button, and where to add it in cPanel, DirectAdmin and Plesk." width="100%">
+<img src="docs/img/current-install-web-3-cron.png" alt="The cron screen: one crontab line with a Copy button, and where to add it in cPanel, DirectAdmin and Plesk." width="100%">
 
 The installer keeps whatever your panel already put in `.htaccess` and adds Pharos's rules
 underneath; a half-finished install resumes where it stopped.
@@ -144,7 +149,7 @@ underneath; a half-finished install resumes where it stopped.
 curl -fsSL https://pharos.solutionmax.net/get | sh -s -- --php --url https://status.example.com
 ```
 
-Same release, same checks. It installs into `~/pharos-app` (`--dir` to change that), writes
+Same release, same checks. It installs into a private `pharos-app-<domain-id>` folder (`--dir` to change that), writes
 `.env`, migrates, links `storage` and adds the cron line to your crontab — or prints it where
 the crontab is not writable, as in DirectAdmin's jailed shell:
 
@@ -164,9 +169,9 @@ current version up first.
 #### The setup form
 
 Either way it ends here. The first visit shows one screen: name the status page, create your
-administrator, done. The form disappears the moment that account exists.
+administrator using the installation key, done. The form disappears the moment that account exists.
 
-<img src="docs/img/install-web-4-setup.webp" alt="The setup form Pharos shows on first visit: status page name, time zone, your name, e-mail and password." width="100%">
+<img src="docs/img/current-install-web-4-setup.png" alt="The setup form Pharos shows on first visit: installation key, status page name, time zone, your name, e-mail and password." width="100%">
 
 If you would rather not touch a browser, `php artisan pharos:user you@example.com` creates
 the first account from the command line — and gets you back in if you ever lock yourself out.
