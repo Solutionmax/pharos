@@ -6,6 +6,11 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [0.5.6] — 2026-09-07
+
+### Changed
+- Updated the built-in Pharos logos, light/dark variants, browser icon and default email logo from the new brand kit. Custom installation names and uploaded branding remain supported.
+
 ## [0.5.5] — 2026-09-06
 
 ### Fixed

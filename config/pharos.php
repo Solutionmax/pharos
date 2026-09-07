@@ -8,7 +8,7 @@ return [
     // so a value pinned there would survive the upgrade and make the same release
     // be offered for ever. The override exists for Docker, where the host owns the
     // image and the app never updates itself.
-    'version' => env('PHAROS_VERSION', '0.5.5'),
+    'version' => env('PHAROS_VERSION', '0.5.6'),
 
     // Ed25519 public key, hex. Signs both licence keys and update manifests,
     // with a different purpose field so one can never be replayed as the other.
