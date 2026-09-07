@@ -87,7 +87,7 @@ class Branding
 
     public function faviconUrl(): string
     {
-        return ($this->licensed() ? $this->assetUrl('brand.favicon_path') : null) ?? asset('brand/pharos-favicon.svg');
+        return ($this->licensed() ? $this->assetUrl('brand.favicon_path') : null) ?? asset('brand/pharos-favicon.svg').'?v='.rawurlencode((string) config('pharos.version'));
     }
 
     protected function assetUrl(string $key): ?string

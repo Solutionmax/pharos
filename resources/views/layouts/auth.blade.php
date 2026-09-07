@@ -123,8 +123,9 @@
         <div class="core">
           @if ($ownLogo)
             <img src="{{ $ownLogo }}" alt="">
+          @elseif (! $whiteLabel)
+            <img src="{{ asset('brand/pharos-mark-white.svg') }}" alt="">
           @else
-            {{-- no logo: the installation is a node like the others, only bigger and alive --}}
             <span class="core-dot"></span>
           @endif
         </div>
@@ -143,11 +144,7 @@
   <main class="au">
     <div class="au-card">
       <div class="au-brand">
-        @if ($branding->logoUrl())
-          @include('partials.logo', ['size' => 34])
-        @else
-          <span>{{ $branding->name() }}</span>
-        @endif
+        @include('partials.logo', ['size' => 34])
       </div>
       @yield('card')
       <div class="au-foot">

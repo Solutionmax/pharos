@@ -203,6 +203,9 @@ class MailTemplates
     {
         $branding = app(Branding::class);
         $logo = $branding->logoUrl();
+        if ($logo === null && $branding->name() === 'Pharos' && ! $branding->creditHidden()) {
+            $logo = asset('brand/pharos-email-logo.png');
+        }
 
         return [
             'brand' => $branding->name(),
