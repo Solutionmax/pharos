@@ -6,6 +6,8 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [0.5.7] — 2026-09-07
+
 ### Fixed
 - Built-in logos and icons use content-versioned URLs after PHP updates. Logo theme selection is scoped consistently, and the fixed dark setup panel always uses the white variant.
 - Docker updates no longer offer a non-functional pull-and-restart button or report success after writing an unconsumed trigger. The Updates screen explains host-side Compose updates and version pins; direct update requests fail explicitly and cannot replace container files.
