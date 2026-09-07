@@ -124,7 +124,7 @@
           @if ($ownLogo)
             <img src="{{ $ownLogo }}" alt="">
           @elseif (! $whiteLabel)
-            <img src="{{ asset('brand/pharos-mark-white.svg') }}" alt="">
+            <img src="{{ $branding->builtInAssetUrl('pharos-mark-white.svg') }}" alt="">
           @else
             <span class="core-dot"></span>
           @endif

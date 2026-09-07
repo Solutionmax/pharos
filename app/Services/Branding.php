@@ -85,9 +85,18 @@ class Branding
         return $this->licensed() ? $this->assetUrl('brand.logo_dark_path') : null;
     }
 
+    /** Content-based URLs also refresh assets when the configured release version is stale. */
+    public function builtInAssetUrl(string $name): string
+    {
+        $path = public_path('brand/'.$name);
+        $revision = is_file($path) ? hash_file('sha256', $path) : (string) config('pharos.version');
+
+        return asset('brand/'.$name).'?v='.rawurlencode((string) $revision);
+    }
+
     public function faviconUrl(): string
     {
-        return ($this->licensed() ? $this->assetUrl('brand.favicon_path') : null) ?? asset('brand/pharos-favicon.svg').'?v='.rawurlencode((string) config('pharos.version'));
+        return ($this->licensed() ? $this->assetUrl('brand.favicon_path') : null) ?? $this->builtInAssetUrl('pharos-favicon.svg');
     }
 
     protected function assetUrl(string $key): ?string

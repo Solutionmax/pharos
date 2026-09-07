@@ -539,7 +539,7 @@ class TeamAndIntegrationsTest extends TestCase
 
         $this->assertNull(Setting::get('brand.logo_dark_path'));
         Storage::disk('public')->assertMissing($dark);
-        $this->get('/')->assertOk()->assertDontSee('logo-dark', false);
+        $this->get('/')->assertOk()->assertDontSee($dark)->assertSee(Setting::get('brand.logo_path'));
     }
 
     public function test_replacing_a_logo_deletes_the_old_file(): void
