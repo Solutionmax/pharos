@@ -6,6 +6,8 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [0.5.9] — 2026-09-08
+
 ### Added
 - Signed-in users can open an incident update directly from the public status page.
 - Telegram notifications with a bot token and chat ID, encrypted credentials, test delivery, and queued retries.
