@@ -412,6 +412,8 @@ pre .k{color:var(--brand)}
 </div>
 @include('partials.confirm')
 @include('partials.daytip')
+{{-- Where a note's dismiss form actually lives; see components/note.blade.php. --}}
+@stack('deferred-forms')
 <script>
 // "Got it" on a note: tell the server over fetch and take the box away at once.
 // Without JavaScript the form around the button posts and the page comes back without it.

@@ -134,7 +134,11 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
       <p class="hint-row" id="preview-error" role="alert" hidden></p>
       <p class="hint-row">
         Rendered from the wording on the left with a sample incident, in the real frame.
-        Nothing is saved until you press <b>Save</b>.
+        @if ($licensed)
+          Nothing is saved until you press <b>Save</b>.
+        @else
+          This is the built-in wording; there is nothing to save without the brand pack.
+        @endif
       </p>
     </div>
   </div>

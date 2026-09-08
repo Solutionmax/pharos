@@ -102,6 +102,13 @@ class MailSettingsTest extends TestCase
             ->assertRedirect('/admin/settings?tab=mail')
             ->assertSessionHasErrors(['mail' => 'Test e-mail failed: Connection refused [smtp.example.net:587]']);
 
+        // Setting the error is not the same as showing it: the Mail tab must
+        // actually render it, or a failed test looks identical to a working one.
+        // (followingRedirects() so the array session driver used in tests
+        // carries the flashed error into the page the redirect lands on.)
+        $this->actingAs($this->admin)->followingRedirects()->post('/admin/settings/mail-test')
+            ->assertSee('Test e-mail failed: Connection refused [smtp.example.net:587]');
+
         $this->assertSame(0, AuditEntry::where('action', 'mail.test')->count());
     }
 

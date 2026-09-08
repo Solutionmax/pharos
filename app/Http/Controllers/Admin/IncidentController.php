@@ -73,6 +73,19 @@ class IncidentController extends Controller
 
     public function store(Request $request)
     {
+        // The form's per-component <select> always posts something, even the
+        // "leave unchanged" option (value=""). Drop those before validating —
+        // otherwise picking a status for one component while leaving any
+        // other on "unchanged" fails the whole request.
+        // ConvertEmptyStringsToNull has already turned the "leave unchanged"
+        // option's empty string into null by the time this runs.
+        $request->merge([
+            'components' => array_filter(
+                $request->input('components', []),
+                fn ($status) => $status !== null && $status !== '',
+            ),
+        ]);
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string'],

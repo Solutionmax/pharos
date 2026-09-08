@@ -159,6 +159,7 @@
         <button class="btn" type="submit">Send test e-mail</button>
         <span class="help" style="align-self:center">Goes to {{ auth()->user()->email }}, with the settings as saved above.</span>
       </div>
+      @error('mail')<span class="help" style="color:var(--red-ink);display:block;margin-top:8px">{{ $message }}</span>@enderror
     </form>
 
     <x-note id="settings.mail-env" style="margin-top:16px">

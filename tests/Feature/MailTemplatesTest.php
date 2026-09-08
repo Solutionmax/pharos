@@ -271,6 +271,10 @@ class MailTemplatesTest extends TestCase
             ->assertSee('{unsubscribe}')
             ->assertSee('disabled', false)
             ->assertDontSee('Send test to me')
+            // No Save button exists without the brand pack; the hint must not
+            // still tell the admin to press one.
+            ->assertDontSee('press <b>Save</b>', false)
+            ->assertSee('nothing to save without the brand pack')
             ->assertSee(e(MailTemplates::defaultSubject('incident_updated')), false);
 
         $this->actingAs($this->admin)

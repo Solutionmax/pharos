@@ -71,10 +71,11 @@
               <tr>
                 <td>{{ $component->name }}<div class="sub">{{ $component->group?->name ?? 'Ungrouped' }}</div></td>
                 <td>
+                  @php $oldStatus = old("components.{$component->id}"); @endphp
                   <select name="components[{{ $component->id }}]" style="max-width:230px">
-                    <option value="">— leave unchanged —</option>
+                    <option value="" @selected(! $oldStatus)>— leave unchanged —</option>
                     @foreach (\App\Enums\ComponentStatus::cases() as $case)
-                      <option value="{{ $case->value }}">{{ $case->label() }}</option>
+                      <option value="{{ $case->value }}" @selected($oldStatus == $case->value)>{{ $case->label() }}</option>
                     @endforeach
                   </select>
                 </td>
