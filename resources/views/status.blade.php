@@ -114,7 +114,12 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 .inc.ok{border-left-color:var(--green)}.inc.w{border-left-color:var(--amber)}
 .inc.p{border-left-color:var(--orange)}.inc.b{border-left-color:var(--red)}.inc.m{border-left-color:var(--blue)}
 .inc-hd{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:6px}
-.inc-hd h4{font-size:16px}
+.inc-hd h4{font-size:16px;min-width:0;overflow-wrap:anywhere}
+.inc-update{display:inline-flex;align-items:center;justify-content:center;gap:7px;margin-left:auto;flex-shrink:0;min-height:36px;padding:7px 12px;border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);border-radius:10px;background:color-mix(in srgb,var(--ink) 4%,transparent);color:var(--ink-2);font-size:12px;font-weight:600;line-height:1.4;text-decoration:none;transition:opacity .16s ease,background .16s ease,border-color .16s ease,color .16s ease}
+.inc-update:hover,.inc-update:focus-visible{color:var(--brand);background:color-mix(in srgb,var(--brand) 10%,transparent);border-color:color-mix(in srgb,var(--brand) 22%,transparent)}
+@media(hover:hover) and (pointer:fine){.inc-update{opacity:0;pointer-events:none}.inc:hover .inc-update,.inc:focus-within .inc-update{opacity:1;pointer-events:auto}}
+@media(hover:none),(pointer:coarse){.inc-update{min-height:44px}}
+@media(prefers-reduced-motion:reduce){.inc-update{transition:none}}
 .inc .aff{font-size:12.5px;color:var(--ink-3);margin-bottom:16px}
 .inc .aff b{color:var(--ink-2);font-weight:500}
 .tl{display:flex;flex-direction:column;gap:15px;padding-left:18px;border-left:2px solid var(--line);margin-left:3px}

@@ -6,6 +6,11 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [0.5.10] — 2026-09-08
+
+### Changed
+- The Update link on an incident is now a proper button with a pencil icon, placed before the status label. On a mouse it appears when you hover the incident, so a signed-out visitor's view stays uncluttered; on touch it is always visible, and keyboard focus brings it back. A long incident title now wraps instead of pushing the button off the card.
+
 ## [0.5.9] — 2026-09-08
 
 ### Added

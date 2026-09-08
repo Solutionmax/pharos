@@ -7,10 +7,13 @@
         <article class="inc {{ $tone }}">
           <div class="inc-hd">
             <h4>{{ $incident->name }}</h4>
-            @if (($chrome ?? true) && auth()->check())
-              <a class="pill" href="{{ route('admin.incidents.update-form', $incident) }}" aria-label="Update {{ $incident->name }}">Update</a>
-            @endif
             <span class="pill {{ $tone }}">{{ $incident->status->label() }}</span>
+            @if (($chrome ?? true) && auth()->check())
+              <a class="inc-update" href="{{ route('admin.incidents.update-form', $incident) }}" aria-label="Update {{ $incident->name }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5M4 16 16.5 3.5a3.5 3.5 0 0 1 5 5L9 21H4v-5Z"/></svg>
+                <span>Update</span>
+              </a>
+            @endif
           </div>
           @if ($incident->components->isNotEmpty())
             <p class="aff">
