@@ -36,7 +36,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToPriorityList(SubstituteBindings::class, ApiTokenAuth::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->dontFlash(['setup_key', 'signal_token', 'url']);
+        $exceptions->dontFlash(['setup_key', 'signal_token', 'telegram_token', 'url']);
         // A form posted after the session expired used to end on a bare "419 Page
         // Expired". Say what happened and put the person back at the door.
         $exceptions->render(function (TokenMismatchException $e, Request $request) {

@@ -7,6 +7,9 @@
         <article class="inc {{ $tone }}">
           <div class="inc-hd">
             <h4>{{ $incident->name }}</h4>
+            @if (($chrome ?? true) && auth()->check())
+              <a class="pill" href="{{ route('admin.incidents.update-form', $incident) }}" aria-label="Update {{ $incident->name }}">Update</a>
+            @endif
             <span class="pill {{ $tone }}">{{ $incident->status->label() }}</span>
           </div>
           @if ($incident->components->isNotEmpty())

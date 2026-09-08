@@ -170,3 +170,19 @@ Two things it deliberately does not record. The **check runner writes nothing**,
 because cron is not an actor and a row a minute would bury everything a person
 did. And **no secret value is stored** — a rotated signing secret shows as
 changed, not as its new value.
+
+
+## Telegram notifications
+
+In **Integrations → Notifications**, select **Telegram**. Create a bot through
+[@BotFather](https://t.me/BotFather), then enter its bot token and the destination
+chat ID (keep the minus sign for groups) or public channel @username. Start a
+conversation with the bot for personal notifications, or add it to the group or
+channel with permission to send messages.
+
+Click **Add notification**, then **Send test** to verify the destination.
+Pharos stores the token encrypted and hides it from the notification list.
+Incident notifications use the same scheduler and retry queue as other destinations.
+Telegram rate limits respect the API retry delay.
+
+Pharos uses Telegram's [sendMessage API](https://core.telegram.org/bots/api#sendmessage).

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
 use App\Services\OutgoingWebhook;
+use App\Services\SafeHttp;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -102,6 +103,74 @@ class DeliverySecurityTest extends TestCase
         ])->assertSessionHasErrors('url');
         $this->assertNull(session()->getOldInput('signal_token'));
         $this->assertDatabaseCount('webhook_endpoints', 0);
+    }
+
+    public function test_telegram_stores_credentials_encrypted_and_sends_plain_text(): void
+    {
+        Http::fake(['*' => Http::response(['ok' => true])]);
+        $user = User::create(['name' => 'Admin', 'email' => 'telegram@example.test', 'password' => bcrypt('local-test-password')]);
+        $token = '123456:abcdefghijklmnopqrstuvwxyz_12345';
+        $this->actingAs($user)->post('/admin/integrations/notifications', [
+            'label' => 'Telegram', 'format' => 'telegram',
+            'telegram_token' => $token, 'telegram_chat_id' => '-1001234567890',
+            'url' => 'http://127.0.0.1/ignored',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+        $endpoint = WebhookEndpoint::sole();
+        $this->assertStringNotContainsString($token, DB::table('webhook_endpoints')->value('url'));
+        $this->assertStringNotContainsString($token, $endpoint->maskedUrl());
+        $safe = new class extends SafeHttp
+        {
+            public function resolveOwn(string $host): string
+            {
+                return '203.0.113.10';
+            }
+        };
+        $this->assertTrue((new OutgoingWebhook($safe))->test($endpoint));
+        Http::assertSent(fn ($r) => $r->url() === 'https://api.telegram.org/bot'.$token.'/sendMessage'
+            && $r['chat_id'] === '-1001234567890' && str_contains($r['text'], 'Test notification from Pharos')
+            && ! isset($r['parse_mode']));
+    }
+
+    public function test_telegram_retries_after_api_rate_limit_and_rejects_false_success(): void
+    {
+        Http::fake(['*' => Http::sequence()
+            ->push(['ok' => false, 'parameters' => ['retry_after' => 600]], 429)
+            ->push(['ok' => true])
+            ->push(['ok' => false])]);
+        $endpoint = $this->endpoint('telegram');
+        $endpoint->update(['options' => ['chat_id' => '-1001234567890']]);
+        $service = app(OutgoingWebhook::class);
+        $service->incidentChanged($this->incident(), 'incident.created');
+        $this->assertSame(0, $service->sendPending());
+        $this->travel(599)->seconds();
+        $this->assertSame(0, $service->sendPending());
+        Http::assertSentCount(1);
+        $this->travel(2)->seconds();
+        $this->assertSame(1, $service->sendPending());
+        $this->assertFalse($service->test($endpoint));
+        $this->assertSame('Telegram rejected the message.', $endpoint->fresh()->last_error);
+    }
+
+    public function test_telegram_validation_does_not_flash_token(): void
+    {
+        $user = User::create(['name' => 'Admin', 'email' => 'telegram@example.test', 'password' => bcrypt('local-test-password')]);
+        $this->actingAs($user)->post('/admin/integrations/notifications', [
+            'label' => 'Telegram', 'format' => 'telegram', 'telegram_token' => 'secret-invalid-token',
+            'telegram_chat_id' => 'invalid',
+        ])->assertSessionHasErrors(['telegram_token', 'telegram_chat_id']);
+        $this->assertNull(session()->getOldInput('telegram_token'));
+        $this->assertDatabaseCount('webhook_endpoints', 0);
+    }
+
+    public function test_status_update_link_is_only_visible_when_signed_in(): void
+    {
+        $incident = $this->incident();
+        $user = User::create(['name' => 'Operator', 'email' => 'operator@example.test', 'password' => bcrypt('local-test-password'), 'role' => 'user']);
+        $url = route('admin.incidents.update-form', $incident);
+        $this->get('/')->assertOk()->assertDontSee($url, false);
+        $this->get($url)->assertRedirect(route('admin.login'));
+        $this->actingAs($user)->get('/')->assertOk()->assertSee($url, false);
+        $this->get($url)->assertOk()->assertSee($incident->name);
     }
 
     public function test_kuma_maps_up_down_and_requires_an_api_token(): void

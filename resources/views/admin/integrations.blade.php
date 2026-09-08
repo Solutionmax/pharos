@@ -175,7 +175,7 @@
           </select>
         </div>
       </div>
-      <div class="field wide">
+      <div class="field wide" id="webhook-address">
         <span class="lblrow"><label for="url">Address</label>
           @include('partials.tip', ['text' => 'Use the service webhook URL, or your Signal bridge /v2/send URL. Webhook URLs can contain credentials; keep them private.'])</span>
         <input id="url" name="url" type="url" value="{{ old('url') }}" required
@@ -188,6 +188,11 @@
           Anything else: pick Generic JSON.
         </span>
       </div>
+      <div id="telegram-fields" hidden>
+        <p class="help">Create a bot with @BotFather in Telegram and paste its token below. Start a conversation with the bot, or add it to your group or channel with permission to send messages. Enter the chat ID (including the minus sign for groups) or a public channel @username, then use Send test.</p>
+        <div class="field"><label for="telegram_token">Telegram bot token</label><input type="password" id="telegram_token" name="telegram_token" autocomplete="new-password" maxlength="200"></div>
+        <div class="field"><label for="telegram_chat_id">Chat ID or channel @username</label><input id="telegram_chat_id" name="telegram_chat_id" value="{{ old('telegram_chat_id') }}" placeholder="-1001234567890" maxlength="100"></div>
+      </div>
       <div id="signal-fields" hidden>
         <p class="help">Signal requires a separately managed signal-cli-rest-api bridge. Configure its reverse proxy to check the bearer token. Pharos does not register or host a Signal account.</p>
         <div class="field"><label for="signal_number">Signal sender number</label><input id="signal_number" name="signal_number" placeholder="+31612345678" value="{{ old('signal_number') }}"></div>
@@ -198,7 +203,16 @@
         document.addEventListener('DOMContentLoaded', function () {
           const format = document.getElementById('format');
           const fields = document.getElementById('signal-fields');
-          function update() { fields.hidden = format.value !== 'signal'; fields.querySelectorAll('input').forEach(input => { input.disabled = fields.hidden; }); }
+          function update() {
+            fields.hidden = format.value !== 'signal';
+            fields.querySelectorAll('input').forEach(input => { input.disabled = fields.hidden; });
+            const telegram = document.getElementById('telegram-fields');
+            telegram.hidden = format.value !== 'telegram';
+            telegram.querySelectorAll('input').forEach(input => { input.disabled = telegram.hidden; input.required = !telegram.hidden; });
+            const address = document.getElementById('webhook-address');
+            address.hidden = !telegram.hidden;
+            document.getElementById('url').disabled = address.hidden;
+          }
           format.addEventListener('change', update); update();
         });
       </script>

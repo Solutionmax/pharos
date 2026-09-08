@@ -90,6 +90,7 @@ class OutgoingWebhook
             'slack' => $this->slack($incident, $event),
             'teams' => $this->teams($incident, $event),
             'discord' => ['content' => Str::limit(($incident->resolved_at ? 'Resolved: ' : 'Incident: ').$incident->name, 1800)."\n".route('status'), 'allowed_mentions' => ['parse' => []]],
+            'telegram' => ['text' => Str::limit($incident->status->label().': '.$incident->name, 1800)."\n".route('status')],
             'signal' => ['message' => Str::limit(($incident->resolved_at ? 'Resolved: ' : 'Incident: ').$incident->name, 1800)."\n".route('status')],
             default => $this->generic($incident, $event),
         };
@@ -203,6 +204,9 @@ class OutgoingWebhook
         if ($endpoint->format === 'signal') {
             $payload += ['number' => $endpoint->options['number'], 'recipients' => [$endpoint->options['recipient']]];
         }
+        if ($endpoint->format === 'telegram') {
+            $payload['chat_id'] = $endpoint->options['chat_id'];
+        }
         $body = json_encode($payload, JSON_UNESCAPED_SLASHES);
         $headers = ['Content-Type' => 'application/json'];
 
@@ -223,7 +227,10 @@ class OutgoingWebhook
             $response = $this->safe->toOwn($endpoint->url)->timeout(5)->connectTimeout(5)->withHeaders($headers)
                 ->withBody($body, 'application/json')->post($endpoint->url);
 
-            $retry = $response->header('Retry-After');
+            $successful = $response->successful() && ($endpoint->format !== 'telegram' || $response->json('ok') === true);
+            $retry = $endpoint->format === 'telegram'
+                ? ($response->json('parameters.retry_after') ?? $response->header('Retry-After'))
+                : $response->header('Retry-After');
             if ($retry !== '') {
                 $seconds = is_numeric($retry) ? (int) $retry : max(0, (strtotime($retry) ?: time()) - time());
                 $this->retryAfter = min(86400, max(60, $seconds));
@@ -232,11 +239,11 @@ class OutgoingWebhook
                 'last_status' => $response->status(),
                 // The status is what diagnoses it. The body is the receiver's,
                 // could be anything, and would be stored and shown in the admin.
-                'last_error' => $response->successful() ? null : "HTTP {$response->status()}",
+                'last_error' => $successful ? null : ($response->successful() ? 'Telegram rejected the message.' : "HTTP {$response->status()}"),
                 'last_attempt_at' => now(),
             ])->save();
 
-            return $response->successful();
+            return $successful;
         } catch (\Throwable $e) {
             Log::warning('Outgoing webhook failed', ['endpoint' => $endpoint->id, 'type' => get_class($e)]);
 
