@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Crypt;
 
 /**
  * @property string $url
- * @property array{number?: string, recipient?: string, token?: string}|null $options
+ * @property array{number?: string, recipient?: string, token?: string, chat_id?: string}|null $options
  */
 class WebhookEndpoint extends Model
 {
@@ -41,6 +41,7 @@ class WebhookEndpoint extends Model
         'slack' => 'Slack',
         'teams' => 'Microsoft Teams',
         'discord' => 'Discord',
+        'telegram' => 'Telegram',
         'signal' => 'Signal (own bridge)',
     ];
 
@@ -69,6 +70,9 @@ class WebhookEndpoint extends Model
      */
     public function maskedUrl(): string
     {
+        if ($this->format === 'telegram') {
+            return 'https://api.telegram.org/bot…/sendMessage';
+        }
         $parts = parse_url($this->url);
         $host = ($parts['host'] ?? $this->url).(isset($parts['port']) ? ':'.$parts['port'] : ''); // :8799 is half the address on a LAN
         $path = $parts['path'] ?? '';
