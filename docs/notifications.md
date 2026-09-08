@@ -2,7 +2,8 @@
 
 Pharos publishes an outage on the status page. Telling people about it is a
 separate step, and this is that step. It covers Slack first, because that is
-where most teams already look.
+where most teams already look. For Telegram, go directly to
+[Telegram notifications](#telegram-notifications).
 
 The chain has three links, and each one is worth proving on its own before the
 next is added:
@@ -150,12 +151,13 @@ Every incident change fires every enabled endpoint: opened, updated, and
 resolved. Resolved messages carry a green check instead of the red light, so a
 channel reads as a timeline rather than a pile of alarms.
 
-⚠️ **One attempt, no retry, five second limit.** A slow receiver must never hold
-up publishing an outage, and Pharos has to survive on a plain PHP host with a
-single cron line — there is no queue to retry from. A failed delivery is
-recorded on the endpoint and visible in the admin, but nobody was told. Where
-that genuinely matters, point Pharos at something that retries for you, such as
-n8n, and let that fan out to Slack.
+Incident changes are queued in the database and delivered by the scheduler,
+which must run every minute. Temporary failures retry up to six total attempts
+with increasing delays. Rate limits respect the receiver's retry delay.
+Most other HTTP 4xx responses stop retries; HTTP 408 and 429 can retry.
+Each request has a five-second timeout. **Send test** makes one immediate
+attempt and does not use the retry queue. Check delivery history under
+**Integrations** for queued, delivered and stopped messages.
 
 ---
 
@@ -174,15 +176,49 @@ changed, not as its new value.
 
 ## Telegram notifications
 
-In **Integrations → Notifications**, select **Telegram**. Create a bot through
-[@BotFather](https://t.me/BotFather), then enter its bot token and the destination
-chat ID (keep the minus sign for groups) or public channel @username. Start a
-conversation with the bot for personal notifications, or add it to the group or
-channel with permission to send messages.
+### Create the bot and choose a destination
 
-Click **Add notification**, then **Send test** to verify the destination.
-Pharos stores the token encrypted and hides it from the notification list.
-Incident notifications use the same scheduler and retry queue as other destinations.
-Telegram rate limits respect the API retry delay.
+Create a bot through [@BotFather](https://t.me/BotFather) and copy its bot token.
+For personal notifications, start a conversation with the bot first. For a
+group or channel, add the bot with permission to send messages; in a channel,
+give it administrator permission to post messages.
+
+Use the destination's numeric chat ID, including the minus sign for a group or
+supergroup, or the @username of a public channel. A personal Telegram username
+is not a substitute for the numeric chat ID.
+
+### Configure Pharos
+
+Open **Admin → Integrations → Notifications** and enter:
+
+| Field | Value |
+|-------|-------|
+| **Name** | A label such as Telegram operations. |
+| **Shape** | **Telegram**. |
+| **Telegram bot token** | The token supplied by BotFather. |
+| **Chat ID or channel @username** | For example, `-1001234567890` or `@your_status_channel`. Replace these examples with your destination. |
+
+The Address field is hidden for Telegram; Pharos builds the API address itself.
+Click **Add notification**, then **Send test** and confirm receipt in Telegram.
+A successful test proves immediate delivery; keep the scheduler running every
+minute for actual incident notifications.
+
+Messages contain the incident status, title and status-page link as plain text.
+Opened, updated and resolved incidents use the same delivery queue and retry
+rules described above. Pharos stores the token encrypted, masks it in the
+notification list and excludes it from validation input retained in the session.
+To replace a token or destination, remove the notification and add it again.
+
+### If nothing arrives
+
+| What you see | What to check |
+|-------------|---------------|
+| Telegram is missing from **Shape** | Update to Pharos 0.5.9 or later; Telegram was added in that release. |
+| `HTTP 400` | Check the chat ID, including its minus sign, and the bot's membership of the destination. |
+| `HTTP 401` or `HTTP 404` | Check the bot token and replace the notification if the token was revoked. |
+| `HTTP 403` | Start the personal chat, unblock the bot, or check its permission to post in the group or channel. |
+| `HTTP 429` | Telegram rate-limited delivery. Queued messages wait for its retry delay; an immediate test is not queued. |
+| Test succeeds, incident messages do not arrive | Check the minute scheduler and delivery history in **Integrations**. |
+| Connection failure | Check outbound HTTPS, DNS and TLS access to api.telegram.org. |
 
 Pharos uses Telegram's [sendMessage API](https://core.telegram.org/bots/api#sendmessage).

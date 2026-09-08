@@ -56,7 +56,7 @@ and token header; incident creation needs changes. See the compatibility guide b
 | **Uptime** | Daily roll-ups into a 90-day bar and a percentage. Days without data are grey and left out of the average — never counted as green. |
 | **Public page** | Every section is a switch (banner, uptime bar, services, per-component bars, incident history, empty days, API link), per-service visibility, light and dark theme, and a live preview in the admin that renders the real page from values you have not saved yet. |
 | **Subscribers** | A *Get notified* button, double opt-in, one e-mail per incident update, one-click unsubscribe. The four mails are editable Markdown templates. |
-| **Integrations** | Cachet-shaped REST API for components and incidents, Uptime Kuma through a separately configured API workflow or heartbeat adapter, n8n in both directions with an HMAC-signed outgoing webhook, Zabbix and Grafana through the API, Slack and Discord webhooks, Signal through your own secured bridge. |
+| **Integrations** | Cachet-shaped REST API for components and incidents, Uptime Kuma through a separately configured API workflow or heartbeat adapter, n8n in both directions with an HMAC-signed outgoing webhook, Zabbix and Grafana through the API, Slack and Discord webhooks, Telegram bot notifications, Signal through your own secured bridge. |
 | **Updates** | Signed release manifests (Ed25519), one-click install from the admin with an automatic backup, rollback, download and retention. Docker hosts pull the image instead. |
 | **Users** | Per-user TOTP two-factor with recovery codes, OpenID Connect single sign-on, roles. |
 | **Audit log** | Who changed what and when, filterable, exportable as CSV, with a configurable retention. |
@@ -101,6 +101,7 @@ change your mind.</em>
 | Docker | [Docker guide](https://pharos.solutionmax.net/docs/docker/) | App and scheduler containers, volumes and proxy |
 
 [Discord setup](https://pharos.solutionmax.net/docs/discord/) ·
+[Telegram setup](docs/notifications.md#telegram-notifications) ·
 [Signal bridge setup](https://pharos.solutionmax.net/docs/signal/) ·
 [Update recovery](https://pharos.solutionmax.net/docs/recovery/)
 
@@ -297,6 +298,7 @@ curl -X POST https://status.example.com/api/v1/incidents \
 - **Uptime Kuma** — connect a separately configured API workflow or periodic heartbeat adapter
 - **n8n** — both directions, with an HMAC-SHA256 signed outgoing webhook on every incident
 - **Zabbix and Grafana** — through the same API, no plugin needed
+- **Telegram** — bot notifications to a chat, group or channel; see [Telegram setup](docs/notifications.md#telegram-notifications)
 - **Slack** — an incoming webhook per incident update; see [docs/notifications.md](docs/notifications.md)
 - **Anything else** — a token and a POST is the whole contract
 - **Your visitors** — a *Get notified* button on the status page; confirmed addresses get an
