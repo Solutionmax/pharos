@@ -6,6 +6,15 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [0.5.8] — 2026-09-08
+
+### Fixed
+- A note's dismiss button no longer brings its own `<form>`. When a note sits inside another form — the Status page screen, or a component's heartbeat note — the nested form was invalid HTML, and the browser silently closed the outer form at that point. That detached everything after the note (theme, incident days, Save/Undo) from the real form, so the Status page settings screen showed no live preview and neither Save nor any toggle did anything whenever no service group existed yet.
+- Reporting an incident no longer fails with "The components.N field must be an integer" when a component is left on "— leave unchanged —". Every component's status selector posted a value, even the placeholder one, so picking a real status for one component while leaving any other unchanged rejected the whole report.
+- Settings → Mail's "Send test e-mail" now shows the failure when the test can't actually be sent (bad host, refused connection, ...) instead of silently redirecting back with nothing to see — the same information the button already collects, just never rendered.
+- Mail templates no longer tells an install without the brand pack to "press Save" on a screen that has no Save button.
+- Reporting an incident that fails validation for an unrelated reason (a missing title, say) no longer resets every component's status back to "— leave unchanged —"; the choices you made are kept so you don't have to redo them.
+
 ## [0.5.7] — 2026-09-07
 
 ### Fixed

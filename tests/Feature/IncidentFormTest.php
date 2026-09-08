@@ -34,4 +34,42 @@ class IncidentFormTest extends TestCase
         $this->assertSame([$real->id], $incident->components()->pluck('components.id')->all());
         $this->assertSame(4, $real->fresh()->status->value);
     }
+
+    /**
+     * The form's per-component <select> always posts something, even the
+     * "leave unchanged" option (value=""). Picking a real status for one
+     * component while leaving others on "unchanged" must not fail the whole
+     * request with "The components.N field must be an integer."
+     */
+    public function test_leaving_a_component_unchanged_does_not_fail_validation(): void
+    {
+        $affected = Component::create(['name' => 'API', 'status' => 1, 'source' => 'manual', 'enabled' => true]);
+        $unchanged = Component::create(['name' => 'Website', 'status' => 1, 'source' => 'manual', 'enabled' => true]);
+
+        $this->actingAs($this->user)->post('/admin/incidents', [
+            'name' => 'API outage', 'message' => 'Investigating.', 'status' => 1, 'impact' => 'major', 'visibility' => 'public',
+            'components' => [$affected->id => 4, $unchanged->id => ''],
+        ])->assertRedirect('/admin/incidents');
+
+        $incident = Incident::firstOrFail();
+        $this->assertSame([$affected->id], $incident->components()->pluck('components.id')->all());
+        $this->assertSame(4, $affected->fresh()->status->value);
+        $this->assertSame(1, $unchanged->fresh()->status->value);
+    }
+
+    /** A validation failure for an unrelated field must not silently reset every component choice. */
+    public function test_a_validation_failure_keeps_the_chosen_component_statuses(): void
+    {
+        $component = Component::create(['name' => 'API', 'status' => 1, 'source' => 'manual', 'enabled' => true]);
+
+        $this->actingAs($this->user)->from('/admin/incidents/create')->followingRedirects()->post('/admin/incidents', [
+            'name' => '', // required, so this fails validation
+            'message' => 'Investigating.', 'status' => 1, 'impact' => 'major', 'visibility' => 'public',
+            'components' => [$component->id => 4],
+        ])
+            ->assertSee('selected', false)
+            ->assertSee('value="4" selected', false);
+
+        $this->assertSame(0, Incident::count());
+    }
 }
