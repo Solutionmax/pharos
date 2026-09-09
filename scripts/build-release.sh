@@ -38,6 +38,8 @@ cd "$REPO"
 [ -z "$(git status --porcelain)" ] || { echo "working tree not clean — commit first" >&2; exit 1; }
 
 if [ "$GATES" = 1 ]; then
+  npm ci --ignore-scripts --no-audit --no-fund
+  npm run build:editor
   echo "== 1/6 gates"
   vendor/bin/pint --test -q
   vendor/bin/phpstan analyse --memory-limit=1G --no-progress -q
@@ -49,7 +51,7 @@ fi
 echo "== 2/6 stage ${STAGE}"
 mkdir -p "$STAGE"
 rsync -a --delete \
-  --exclude '/.git' --exclude '/.github' --exclude '/tests' --exclude '/node_modules' --exclude '/dist' \
+  --exclude '/preview-notes' --exclude '/.git' --exclude '/.github' --exclude '/tests' --exclude '/node_modules' --exclude '/dist' \
   --exclude '/vendor' --exclude '.env' --exclude '.env.*.local' --exclude 'phpstan.neon' --exclude 'phpunit.xml' \
   --exclude 'storage/app/*' --exclude 'storage/logs/*' --exclude 'storage/framework/cache/*' \
   --exclude 'storage/framework/sessions/*' --exclude 'storage/framework/views/*' --exclude 'storage/framework/phpstan' \

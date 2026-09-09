@@ -11,14 +11,20 @@
 {{-- Three unrelated things on one screen read better as three tabs. The server
      renders one at a time (?tab=), so a save or a validation error can send
      you straight back to the tab you were on. --}}
-<nav class="seg tabs" aria-label="Settings">
-  @foreach ($tabs as $tabKey => $hint)
-    <a href="{{ route('admin.settings', ['tab' => $tabKey]) }}" @if ($tabKey === $tab) aria-current="page" @endif>
-      {{ ['general' => 'General', 'mail' => 'Mail', 'sso' => 'Single sign-on'][$tabKey] }}
-      @if ($hint !== '')<span class="tabhint">{{ $hint }}</span>@endif
-    </a>
-  @endforeach
-</nav>
+@php
+  $sectionItems = [];
+  foreach ($tabs as $tabKey => $hint) {
+      $sectionItems[] = [
+          'url' => route('admin.settings', ['tab' => $tabKey]),
+          'active' => $tabKey === $tab,
+          'label' => ['general' => 'General', 'mail' => 'Mail', 'sso' => 'Single sign-on'][$tabKey],
+          'description' => ['general' => 'Time, retention and updates', 'mail' => 'Delivery and sender settings', 'sso' => 'Identity provider and access'][$tabKey],
+          'icon' => ['general' => 'settings', 'mail' => 'mail', 'sso' => 'users'][$tabKey],
+          'hint' => $hint,
+      ];
+  }
+@endphp
+@include('partials.section-tabs', ['items' => $sectionItems, 'navigationLabel' => 'Settings'])
 
 @if ($tab === 'general')
 <div class="panel" id="general">
@@ -78,7 +84,7 @@
 <div class="panel" id="mail">
   <div class="panel-hd">
     <h3>Mail</h3>
-    <span class="hint">Used for subscriber notifications</span>
+    <span class="hint">Notifications and account recovery</span>
   </div>
   <div class="panel-bd">
     <form method="POST" action="{{ route('admin.settings.mail') }}" style="display:flex;flex-direction:column;gap:16px">

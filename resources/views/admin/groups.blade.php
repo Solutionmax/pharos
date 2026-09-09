@@ -9,7 +9,7 @@
 ]))
 
 <div class="panel">
-  <div class="panel-hd"><h3>Your services</h3><span class="hint">Order here is the order on the page</span></div>
+  <div class="panel-hd"><h3>Your services</h3><span class="hint">30-day bars · 90-day availability</span></div>
   @if ($groups->isEmpty())
     <div class="empty">
       @include('partials.icon', ['name' => 'empty', 'size' => 28])
@@ -20,7 +20,7 @@
   @else
   <div class="scroll">
     <table>
-      <thead><tr><th>Service</th><th>Components</th><th>On the page</th><th>Order</th><th></th></tr></thead>
+      <thead><tr><th>Service</th><th>Uptime</th><th>Components</th><th>On the page</th><th>Order</th><th></th></tr></thead>
       <tbody>
       @foreach ($groups as $group)
         <tr>
@@ -28,6 +28,7 @@
             {{ $group->name }}
             <div class="sub">{{ $group->collapsed ? 'Starts collapsed' : 'Starts open' }}</div>
           </td>
+          <td>@include('partials.service-history', ['serviceBar' => $serviceBars[$group->id], 'historyName' => $group->name])</td>
           <td class="num">{{ $group->components_count }}</td>
           <td>
             <span class="pill {{ $group->visible ? 'ok' : 'w' }}">{{ $group->visible ? 'Visible' : 'Hidden' }}</span>

@@ -2,9 +2,39 @@
 
 All notable changes to Pharos. The format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/). The signed manifest at
-`https://pharos.solutionmax.net/releases/latest.json` always points at the newest entry below.
+`https://pharos.solutionmax.net/releases/latest.json` points at the newest published release.
 
 ## [Unreleased]
+
+## [0.6.0] — 2026-09-09
+
+### Added
+- Provider-specific integration fields, examples and setup guides, with separate incoming monitoring and outgoing notification flows.
+- Interactive n8n and Uptime Kuma instructions with component-specific URLs, valid incident examples and copy controls.
+- Account password recovery using one-time, expiring email links, rate limits, generic request responses and unchanged two-factor requirements. Resetting a password invalidates old remembered logins and authenticated sessions.
+- Shared, clearly highlighted section navigation for Settings and Mail templates.
+- Accessible, colour-coded status choices for reporting incidents and posting updates.
+- Locally bundled WYSIWYG editor with Markdown mode and a plain-text fallback. Messages remain Markdown in storage and notifications.
+- Incident cards with the latest update, affected components, visibility, source and repeat counts.
+- Service availability bars with day tooltips and measured uptime, plus visible component bars on mobile.
+- Public status refresh every 30 seconds while the tab is visible. Real changes trigger a dismissible notification and a brief highlight, respecting reduced-motion preferences.
+- Connection-loss feedback and automatic retry without discarding the last loaded status.
+
+### Changed
+- Service bars, percentages and status labels align in a fixed area on the right. Expanded component bars use the same height, spacing and 30-day display as their service; percentages still cover 90 days.
+- The visual editor and formatting toolbar use more compact dimensions.
+- The displayed incident status Watching is now Monitoring. The stored value 3 and the existing Watching API name remain compatible; Monitoring is accepted as an alias.
+- Saved-action notifications appear at the bottom right. Delivery success is never inferred from an update being posted.
+- Incident timelines and status headers use the existing status colours in light and dark themes.
+- Fonts are self-hosted, and editor usage statistics are disabled.
+
+### Fixed
+- Editor initialization no longer runs before its textarea exists; failed validation preserves the selected status and message.
+- Missing or empty uptime samples show No data and are excluded from averages.
+- Reopening an incident clears its previous resolution timestamp.
+
+### Upgrade
+- No new database migration or environment setting is required. Built editor assets are included; Node.js is only needed to rebuild them.
 
 ## [0.5.10] — 2026-09-08
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ComponentGroup;
+use App\Services\Uptime;
 use Illuminate\Http\Request;
 
 /**
@@ -31,8 +32,13 @@ class GroupController extends Controller
 
     public function index(Request $request)
     {
+        $groups = ComponentGroup::with(['components' => fn ($query) => $query->where('enabled', true)])->withCount('components')->orderBy('position')->get();
+        $uptime = app(Uptime::class);
+        $bars = $uptime->barsFor($groups->flatMap->components);
+
         return view('admin.groups', [
-            'groups' => ComponentGroup::withCount('components')->orderBy('position')->get(),
+            'groups' => $groups,
+            'serviceBars' => $groups->mapWithKeys(fn ($group) => [$group->id => $uptime->aggregate($group->components->mapWithKeys(fn ($component) => [$component->id => $bars[$component->id]])->all())]),
             'origin' => $this->origin($request),
             'from' => $request->query('from'),
         ]);

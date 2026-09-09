@@ -31,11 +31,19 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
   'sub' => 'What subscribers receive',
 ])
 
-<nav class="seg tabs" aria-label="Template">
-  @foreach ($labels as $tabKey => $label)
-    <a href="{{ route('admin.mail-templates', ['template' => $tabKey]) }}" @if ($tabKey === $key) aria-current="page" @endif>{{ $label }}</a>
-  @endforeach
-</nav>
+@php
+  $sectionItems = [];
+  foreach ($labels as $tabKey => $label) {
+      $sectionItems[] = [
+          'url' => route('admin.mail-templates', ['template' => $tabKey]),
+          'active' => $tabKey === $key,
+          'label' => $label,
+          'description' => ['subscribe_confirm' => 'Confirm a new subscription', 'incident_opened' => 'Announce a new incident', 'incident_updated' => 'Share the latest progress', 'incident_resolved' => 'Confirm service recovery'][$tabKey],
+          'icon' => $tabKey === 'subscribe_confirm' ? 'mail' : 'incidents',
+      ];
+  }
+@endphp
+@include('partials.section-tabs', ['items' => $sectionItems, 'navigationLabel' => 'Template'])
 
 <div class="split">
   <div>

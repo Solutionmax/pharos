@@ -10,9 +10,7 @@
 @if ($branding->name() === 'Pharos' && ! $branding->logoUrl())
 <link rel="apple-touch-icon" href="{{ $branding->builtInAssetUrl('apple-touch-icon.png') }}">
 @endif
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}">
 @include('partials.tokens')
 <style>
 *{box-sizing:border-box}
@@ -329,6 +327,8 @@ pre .k{color:var(--brand)}
       background:var(--bg-2,rgba(127,127,127,.12));padding:1px 5px;border-radius:4px}
 </style>
 @stack('head')
+@stack('head-assets')
+<link rel="stylesheet" href="{{ asset('assets/pharos-v06.css') }}?v=0.6.0">
 </head>
 <body>
 @auth
@@ -434,5 +434,6 @@ document.addEventListener('click', function (event) {
 @yield('content')
 @endauth
 @include('partials.theme-script')
+<script defer src="{{ asset('assets/pharos-v06.js') }}?v=0.6.0"></script>
 </body>
 </html>

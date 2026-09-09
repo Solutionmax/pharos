@@ -15,13 +15,17 @@ enum IncidentStatus: int
         return match ($this) {
             self::Investigating => 'Investigating',
             self::Identified => 'Identified',
-            self::Watching => 'Watching',
+            self::Watching => 'Monitoring',
             self::Resolved => 'Resolved',
         };
     }
 
     public static function fromName(string $name): self
     {
+        if (strcasecmp($name, 'Monitoring') === 0) {
+            return self::Watching;
+        }
+
         foreach (self::cases() as $case) {
             if (strcasecmp($case->name, $name) === 0) {
                 return $case;

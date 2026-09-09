@@ -58,12 +58,13 @@ class Uptime
         for ($i = 0; $i < self::WINDOW_DAYS; $i++) {
             $key = $start->copy()->addDays($i)->format('Y-m-d');
             $row = $rows->get($key);
+            $known = $row && ($row->up_seconds + $row->down_seconds) > 0;
 
             $bar[] = [
                 'day' => $key,
-                'known' => (bool) $row,
-                'pct' => $row?->percentage() ?? 100.0,
-                'tone' => $row ? $this->tone($row->percentage()) : 'unknown',
+                'known' => $known,
+                'pct' => $known ? $row->percentage() : 0.0,
+                'tone' => $known ? $this->tone($row->percentage()) : 'unknown',
             ];
         }
 
@@ -71,21 +72,49 @@ class Uptime
     }
 
     /** Uptime over the window as a percentage, days without data excluded. */
-    public function percentage(Component $component, ?Carbon $today = null): float
+    public function percentage(Component $component, ?Carbon $today = null): ?float
     {
         return $this->percentageOf($this->bar($component, $today));
     }
 
     /** The same figure from a bar that is already in hand, so the page asks once. */
-    public function percentageOf(array $bar): float
+    public function percentageOf(array $bar): ?float
     {
         $known = array_filter($bar, fn ($d) => $d['known']);
 
         if ($known === []) {
-            return 100.0;
+            return null;
         }
 
         return round(array_sum(array_column($known, 'pct')) / count($known), 2);
+    }
+
+    public static function format(?float $percentage): string
+    {
+        return $percentage === null ? 'No data' : number_format($percentage, 2).'%';
+    }
+
+    /** Equal weight per component with observations; unknown components are excluded. */
+    public static function average(iterable $percentages): ?float
+    {
+        $known = collect($percentages)->filter(fn ($value) => $value !== null);
+
+        return $known->isEmpty() ? null : round($known->avg(), 2);
+    }
+
+    /** Aggregate known component-days, keeping unmeasured days visibly unknown. */
+    public function aggregate(array $bars): array
+    {
+        if ($bars === []) {
+            return [];
+        }
+        $result = [];
+        foreach (reset($bars) as $index => $day) {
+            $pct = self::average(array_map(fn ($bar) => $bar[$index]['known'] ? $bar[$index]['pct'] : null, $bars));
+            $result[] = ['day' => $day['day'], 'known' => $pct !== null, 'pct' => $pct ?? 0.0, 'tone' => $pct === null ? 'unknown' : $this->tone($pct)];
+        }
+
+        return $result;
     }
 
     protected function tone(float $pct): string

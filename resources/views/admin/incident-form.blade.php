@@ -19,12 +19,7 @@
           <input id="name" name="name" type="text" value="{{ old('name') }}" required placeholder="web-06 unreachable">
         </div>
         <div class="field">
-          <label for="status">Status</label>
-          <select id="status" name="status">
-            @foreach (\App\Enums\IncidentStatus::cases() as $case)
-              <option value="{{ $case->value }}" @selected(old('status', 1) == $case->value)>{{ $case->label() }}</option>
-            @endforeach
-          </select>
+          @include('partials.incident-status-choice', ['selectedStatus' => 1])
         </div>
         <div class="field">
           <label for="impact">Impact</label>

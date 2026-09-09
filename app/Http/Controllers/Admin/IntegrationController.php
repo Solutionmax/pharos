@@ -19,7 +19,15 @@ class IntegrationController extends Controller
 {
     public function index()
     {
+        $profiles = config('integrations.destinations');
+        $format = old('format', request()->query('destination', 'generic'));
+        $format = is_string($format) && isset($profiles[$format]) ? $format : 'generic';
+        $components = Component::with('check')->orderBy('position')->get();
+
         return view('admin.integrations', [
+            'destinationProfiles' => $profiles,
+            'selectedFormat' => $format,
+            'manualComponents' => $components->filter(fn ($component) => $component->enabled && ! $component->check?->enabled),
             'tokens' => ApiToken::orderByDesc('created_at')->get(),
             'newToken' => session('new_token'),
             'deliveries' => WebhookDelivery::with('endpoint')->latest('id')->limit(20)->get(),
@@ -27,7 +35,7 @@ class IntegrationController extends Controller
             'webhookSecret' => Setting::get('integrations.webhook_secret'),
             'heartbeats' => Component::whereHas('check', fn ($q) => $q->where('type', 'heartbeat'))
                 ->with('check')->get(),
-            'components' => Component::orderBy('position')->get(),
+            'components' => $components,
         ]);
     }
 

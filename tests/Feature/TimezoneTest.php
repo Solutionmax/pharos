@@ -88,7 +88,7 @@ class TimezoneTest extends TestCase
     {
         Setting::put('app.timezone', 'Europe/Amsterdam');
 
-        $this->get('/')->assertOk()->assertSee('updated 14:00');
+        $this->get('/')->assertOk()->assertSee('checked 14:00');
     }
 
     public function test_a_local_time_typed_in_the_admin_form_is_stored_as_utc(): void
