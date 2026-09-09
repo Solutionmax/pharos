@@ -9,9 +9,7 @@
 @if ($branding->name() === 'Pharos' && ! $branding->logoUrl())
 <link rel="apple-touch-icon" href="{{ $branding->builtInAssetUrl('apple-touch-icon.png') }}">
 @endif
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}">
 @include('partials.tokens')
 <style>
 *{box-sizing:border-box}
@@ -147,6 +145,8 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
     .md code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;
       background:rgba(127,127,127,.12);padding:1px 5px;border-radius:4px}
 </style>
+@stack('head-assets')
+<link rel="stylesheet" href="{{ asset('assets/pharos-v06.css') }}?v=0.6.0">
 </head>
 <body>
 @if (($chrome ?? true) && auth()->check())
@@ -190,20 +190,22 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
   </header>
   @include('partials.theme-script', ['rememberTheme' => $chrome ?? true])
 
+  @if ($chrome)<p id="live-refresh" class="live-refresh">Refreshes every 30 seconds</p>@endif
+  <div @if ($chrome) id="pharos-live" @endif>
   @if ($modules['page.show_overall'] || $modules['page.show_uptime'])
-    <section class="hero">
+    <section class="hero tone-{{ $worst->tone() }}" data-live-key="overall" data-live-value="{{ $worst->value }}:{{ $overall }}">
       @if ($modules['page.show_overall'])
         <div class="hero-top">
           <span class="dot" style="color:var(--{{ ['ok' => 'green', 'w' => 'amber', 'p' => 'orange', 'b' => 'red', 'm' => 'blue'][$worst->tone()] }})"></span>
           <h1>{{ $worst === \App\Enums\ComponentStatus::Operational ? 'All systems operational' : $worst->label() }}</h1>
-          <span class="when">updated {{ \App\Services\Clock::now()->format('H:i') }}</span>
+          <span class="when">checked {{ \App\Services\Clock::now()->format('H:i') }}</span>
         </div>
       @endif
 
       @if ($modules['page.show_uptime'])
         <div class="uptime @unless($modules['page.show_overall']) solo @endunless">
           <div class="row">
-            <span class="big">{{ number_format($overall, 2) }}<span style="font-size:19px">%</span></span>
+            <span class="big">{{ \App\Services\Uptime::format($overall) }}</span>
             <span class="cap">uptime</span>
             <span class="rng">last {{ \App\Services\Uptime::WINDOW_DAYS }} days</span>
           </div>
@@ -221,7 +223,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
           @endphp
           {{-- One tab stop for the whole bar with the summary spoken, not ninety for the slivers. --}}
           <div class="bar" role="img" tabindex="0"
-               aria-label="Daily availability over the last {{ \App\Services\Uptime::WINDOW_DAYS }} days: {{ number_format($overall, 2) }}% uptime, {{ $badDays ? $badDays.' '.\Illuminate\Support\Str::plural('day', $badDays).' with a disruption' : 'no disruptions' }}">
+               aria-label="Daily availability over the last {{ \App\Services\Uptime::WINDOW_DAYS }} days: {{ \App\Services\Uptime::format($overall) }} uptime, {{ $overall === null ? 'awaiting measurements' : ($badDays ? $badDays.' '.\Illuminate\Support\Str::plural('day', $badDays).' with a disruption' : 'no recorded disruptions') }}">
             @foreach ($overallBar as $i => $tone)<span class="{{ $tone }}" data-tip="{{ $overallDays[$i] ? \Carbon\Carbon::parse($overallDays[$i])->format('j M') : '' }}{{ ['b' => ' · major outage', 'p' => ' · partial outage', 'w' => ' · degraded', 'unknown' => ' · no data'][$tone] ?? ' · all operational' }}"></span>@endforeach
           </div>
           <div class="scale"><span>{{ \App\Services\Uptime::WINDOW_DAYS }} days ago</span><span>today</span></div>
@@ -250,17 +252,18 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
       @foreach ($groups as $group)
         @continue($group->components->isEmpty())
         @php $gs = $group->status(); @endphp
-        <details class="svc" @if(!$group->collapsed || $gs->isDown()) open @endif>
+        <details id="service-{{ $group->id }}" class="svc" @if(!$group->collapsed || $gs->isDown()) open @endif>
           <summary>
             <div class="svc-hd">
               <span class="car" aria-hidden="true">&#9654;</span>
               <span class="nm">{{ $group->name }}</span>
               <span class="cnt">{{ $group->components->count() }} {{ \Illuminate\Support\Str::plural('component', $group->components->count()) }}</span>
+              <span class="service-metrics">
               @if ($modules['page.show_component_uptime'])
-                @php $groupPct = round($group->components->avg(fn ($c) => $percentages[$c->id] ?? 100), 2); @endphp
-                <span class="pct">{{ number_format($groupPct, 2) }}%</span>
+                @include('partials.service-history', ['historyName' => $group->name, 'serviceBar' => app(\App\Services\Uptime::class)->aggregate($group->components->mapWithKeys(fn ($c) => [$c->id => $bars[$c->id]])->all())])
               @endif
               <span class="pill {{ $gs->tone() }}">{{ $gs->label() }}</span>
+              </span>
             </div>
           </summary>
           <div class="svc-bd">
@@ -314,11 +317,13 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
     </section>
   @endif
 
+  </div>
   <footer class="foot">
     @if ($modules['page.show_api_link'])<a href="{{ url('/api/v1/components') }}">API</a>@endif
     @unless ($branding->creditHidden())<a class="cr" href="https://pharos.solutionmax.net" rel="noopener">Powered by Pharos</a>@endunless
   </footer>
 </div>
 @include('partials.daytip')
+<script defer src="{{ asset('assets/pharos-v06.js') }}?v=0.6.0"></script>
 </body>
 </html>

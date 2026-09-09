@@ -16,7 +16,7 @@
     </div>
     <div class="tile">
       <span class="k">Uptime</span>
-      <span class="v">{{ number_format($summary['uptime'], 2) }}%</span>
+      <span class="v">{{ \App\Services\Uptime::format($summary['uptime']) }}</span>
       <span class="n">Average over 90 days</span>
     </div>
     <div class="tile">
@@ -69,7 +69,7 @@
               @foreach ($strips[$component->id] as $d)<span class="{{ $d['tone'] === 'ok' ? '' : $d['tone'] }}" data-tip="{{ \Carbon\Carbon::parse($d['day'])->format('j M') }}{{ $d['known'] ? ' · '.number_format($d['pct'], 2).'%' : ' · no data' }}"></span>@endforeach
             </span>
           </td>
-          <td class="num">{{ number_format($uptime[$component->id], 2) }}%</td>
+          <td class="num">{{ \App\Services\Uptime::format($uptime[$component->id]) }}</td>
           <td>
             <span class="state-cell">
               <span class="state-dot {{ $component->status->tone() }}"></span>
@@ -82,7 +82,7 @@
               <a href="{{ route('admin.components.edit', $component) }}">Edit</a>
               <form method="POST" action="{{ route('admin.components.destroy', $component) }}"
                     data-confirm-title="Delete {{ $component->name }}?"
-                    data-confirm="Its <strong>{{ number_format($uptime[$component->id], 2) }}% uptime history</strong> is deleted with it, and it disappears from the public page. This cannot be undone."
+                    data-confirm="Its <strong>{{ \App\Services\Uptime::format($uptime[$component->id]) }} uptime history</strong> is deleted with it, and it disappears from the public page. This cannot be undone."
                     data-confirm-action="Delete component">
                 @csrf @method('DELETE')
                 <button type="submit">Delete</button>

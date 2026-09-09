@@ -459,7 +459,7 @@ class AdminTest extends TestCase
 
         $this->actingAs($this->user)->get('/admin/incidents')
             ->assertOk()
-            ->assertSee('3× in 30 days');
+            ->assertSee('3 occurrences in 30 days');
     }
 
     public function test_branding_basics_are_free(): void

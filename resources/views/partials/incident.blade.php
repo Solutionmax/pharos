@@ -4,7 +4,7 @@
               ? 'ok'
               : (($incident->components->max('pivot.status') ?? 0) >= 4 ? 'b' : 'p');
         @endphp
-        <article class="inc {{ $tone }}">
+        <article class="inc {{ $tone }}" data-live-key="incident-{{ $incident->id }}" data-live-value="{{ $incident->status->value }}:{{ $incident->updates->max('id') }}" data-live-message="{{ $incident->name }}: {{ $incident->status->label() }}">
           <div class="inc-hd">
             <h4>{{ $incident->name }}</h4>
             <span class="pill {{ $tone }}">{{ $incident->status->label() }}</span>

@@ -403,7 +403,7 @@ class StatusPageTest extends TestCase
 
         $body = $this->get('/')->assertOk()
             ->assertSee('class="bar" role="img" tabindex="0"', false)
-            ->assertSee('% uptime, no disruptions', false)
+            ->assertSee('No data uptime, awaiting measurements', false)
             ->assertSee('class="bar mini" role="img" tabindex="0" aria-label="Website:', false)
             ->getContent();
 

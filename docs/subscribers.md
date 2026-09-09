@@ -97,7 +97,7 @@ Tag meanings: `{brand}` the name from Branding · `{link}` the confirmation link
 confirmation mail, the status page on the incident mails · `{hours}` how long the
 confirmation link is good for · `{name}` the part of the subscriber's address before
 the `@` · `{incident}` the incident's name · `{status}` Investigating, Identified,
-Watching or Resolved · `{message}` the update text · `{components}` the affected
+Monitoring or Resolved · `{message}` the update text · `{components}` the affected
 components, comma-separated · `{unsubscribe}` the subscriber's signed unsubscribe link ·
 `{when}` the update's time in the install's time zone.
 

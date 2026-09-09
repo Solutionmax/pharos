@@ -44,36 +44,28 @@
       <p>That is the good outcome. Incidents you publish, and ones your checks open, appear here.</p>
     </div>
   @else
-  <div class="scroll">
-    <table>
-      <thead><tr><th>Incident</th><th>Status</th><th>Components</th><th>When</th><th></th></tr></thead>
-      <tbody>
-      @foreach ($incidents as $incident)
-        <tr>
-          <td>
-            {{ $incident->name }}
-            <div class="sub">
-              {{ $incident->impact->label() }} impact ·
-              {{ $incident->updates->count() }} {{ \Illuminate\Support\Str::plural('update', $incident->updates->count()) }}
-              @if ($incident->updates->count() <= 1 && $incident->isOpen())
-                · <span class="pill w" style="font-size:10px;padding:1px 8px">never updated</span>
-              @endif
-              @if ($incident->grouping_key && ($repeats[$incident->grouping_key] ?? 0) > 1)
-                · <span class="pill b" style="font-size:10px;padding:1px 8px">{{ $repeats[$incident->grouping_key] }}× in 30 days</span>
-              @endif
-              @if ($incident->source !== 'manual') · <span class="src">{{ $incident->source }}</span> @endif
+  <div class="incident-cards">
+    @foreach ($incidents as $incident)
+      <article class="incident-card status-{{ $incident->status->value }}">
+        <div class="incident-card-head">
+          <div>
+            <h3><a href="{{ route('admin.incidents.update-form', $incident) }}">{{ $incident->name }}</a></h3>
+            <div class="sub">{{ $incident->impact->label() }} impact · {{ $incident->updates->count() }} {{ \Illuminate\Support\Str::plural('update', $incident->updates->count()) }}
+              @if ($incident->updates->count() <= 1 && $incident->isOpen()) · <span class="pill w">Awaiting an update</span>@endif
+              @if ($incident->grouping_key && ($repeats[$incident->grouping_key] ?? 0) > 1) · <span class="pill b">{{ $repeats[$incident->grouping_key] }} occurrences in 30 days</span>@endif
             </div>
-          </td>
-          <td>
-            <span class="state-cell">
-              <span class="state-dot {{ $incident->isOpen() ? 'p' : 'ok' }}"></span>
-              <span class="txt">{{ $incident->status->label() }}</span>
-            </span>
-          </td>
-          <td class="sub">{{ $incident->components->pluck('name')->join(', ') ?: '—' }}</td>
-          <td class="num">{{ $incident->occurred_at->format('d M H:i') }}</td>
-          <td>
-            <span class="rowacts">
+          </div>
+          <span class="incident-state">{{ $incident->status->label() }}</span>
+        </div>
+        @if ($latest = $incident->updates->sortByDesc('id')->first())
+          <div class="incident-card-message md">{!! $latest->messageHtml() !!}</div>
+        @endif
+        <div class="incident-card-meta">
+          <time datetime="{{ $incident->occurred_at->toIso8601String() }}">{{ $incident->occurred_at->format('d M H:i') }}</time>
+          <span>{{ $incident->components->pluck('name')->join(', ') ?: 'No affected components' }}</span>
+          <span class="src">{{ $incident->source }}</span>
+          <span class="src">{{ $incident->visibility }}</span>
+          <span class="rowacts">
               <a href="{{ route('admin.incidents.update-form', $incident) }}">Add update</a>
               <form method="POST" action="{{ route('admin.incidents.destroy', $incident) }}"
                     data-confirm-title="Delete {{ $incident->name }}?"
@@ -83,11 +75,9 @@
                 <button type="submit">Delete</button>
               </form>
             </span>
-          </td>
-        </tr>
-      @endforeach
-      </tbody>
-    </table>
+        </div>
+      </article>
+    @endforeach
   </div>
   <div style="padding:14px 20px;border-top:1px solid var(--line)">{{ $incidents->links() }}</div>
   @endif

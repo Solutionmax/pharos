@@ -159,7 +159,7 @@ class IncidentController extends Controller
 
             $incident->update([
                 'status' => $status,
-                'resolved_at' => $status === IncidentStatus::Resolved ? now() : $incident->resolved_at,
+                'resolved_at' => $status === IncidentStatus::Resolved ? now() : null,
             ]);
 
             // Closing an incident puts its components back; leaving them red is

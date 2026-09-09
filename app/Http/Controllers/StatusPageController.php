@@ -127,7 +127,7 @@ class StatusPageController extends Controller
         $bars = $this->uptime->barsFor($all);
         $percentages = array_map($this->uptime->percentageOf(...), $bars);
 
-        $overall = $percentages === [] ? 100.0 : round(array_sum($percentages) / count($percentages), 2);
+        $overall = Uptime::average($percentages);
 
         // max('status') compared the enum *objects*, which PHP cannot order, so
         // the headline followed whichever component happened to come first.

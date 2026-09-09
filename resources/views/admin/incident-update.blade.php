@@ -7,24 +7,19 @@
   'back' => ['url' => route('admin.incidents'), 'label' => 'Incidents'],
 ])
 
-<div class="panel">
+<div class="panel composer-panel">
   <div class="panel-hd"><h3>Post an update</h3></div>
   <div class="panel-bd">
     <form method="POST" action="{{ route('admin.incidents.update', $incident) }}" style="display:flex;flex-direction:column;gap:16px">
       @csrf
       <div class="field">
-        <label for="status">Status</label>
-        <select id="status" name="status">
-          @foreach (\App\Enums\IncidentStatus::cases() as $case)
-            <option value="{{ $case->value }}" @selected($incident->status === $case)>{{ $case->label() }}</option>
-          @endforeach
-        </select>
+        @include('partials.incident-status-choice', ['selectedStatus' => $incident->status->value])
         <span class="help">Choosing Resolved also puts the affected components back to operational.</span>
       </div>
       <div class="field">
         <label for="message">Message</label>
         @include('partials.editor', ['for' => 'message'])
-        <textarea id="message" name="message" rows="4" required></textarea>
+        <textarea id="message" name="message" rows="4" required>{{ old('message') }}</textarea>
       </div>
       <div class="actions">
         <button class="btn" type="submit">Post update</button>
@@ -38,7 +33,7 @@
   <div class="panel-hd"><h3>Timeline</h3><span class="hint">{{ $incident->updates->count() }} so far</span></div>
   <div class="panel-bd">
     @foreach ($incident->updates as $update)
-      <div style="border-left:2px solid var(--line);padding-left:16px">
+      <div class="update-entry status-{{ $update->status->value }}">
         <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
           <strong style="font-size:13px">{{ $update->status->label() }}</strong>
           <span class="mono" style="font-size:11px;color:var(--ink-3)">{{ $update->created_at->format('d M H:i') }}</span>

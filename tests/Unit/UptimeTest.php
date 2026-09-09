@@ -111,9 +111,9 @@ class UptimeTest extends TestCase
         $this->assertSame('b', $this->uptime->bar($this->component)[Uptime::WINDOW_DAYS - 2]['tone']);
     }
 
-    public function test_a_component_with_no_history_reports_full_uptime(): void
+    public function test_a_component_with_no_history_reports_unknown_uptime(): void
     {
-        $this->assertSame(100.0, $this->uptime->percentage($this->component));
+        $this->assertNull($this->uptime->percentage($this->component));
     }
 
     public function test_many_components_cost_one_query_and_match_the_single_bar(): void

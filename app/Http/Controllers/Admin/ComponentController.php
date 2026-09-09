@@ -40,9 +40,7 @@ class ComponentController extends Controller
                 'down' => $enabled->filter(fn ($c) => $c->status->isDown())->count(),
                 'degraded' => $enabled->where('status', ComponentStatus::PerformanceIssues)->count(),
                 'checked' => $components->filter(fn ($c) => $c->check?->enabled)->count(),
-                'uptime' => $enabled->isEmpty() ? 100.0 : round(
-                    $enabled->avg(fn ($c) => $this->uptime->percentage($c)), 2,
-                ),
+                'uptime' => Uptime::average($enabled->map(fn ($c) => $this->uptime->percentage($c))),
             ],
         ]);
     }

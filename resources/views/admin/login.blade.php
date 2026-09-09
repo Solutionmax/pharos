@@ -21,7 +21,10 @@
       <label for="password">Password</label>
       <input id="password" name="password" type="password" required autocomplete="current-password">
     </div>
-    <label class="check"><input type="checkbox" name="remember" value="1"> Stay signed in</label>
+    <div class="login-options">
+      <label class="check"><input type="checkbox" name="remember" value="1"> Stay signed in</label>
+      <a href="{{ route('admin.password.request') }}">Forgot password?</a>
+    </div>
     <button class="btn" type="submit">Sign in</button>
   </form>
 

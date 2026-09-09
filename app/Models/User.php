@@ -6,6 +6,7 @@ use App\Casts\LocalTime;
 use App\Enums\UserRole;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\LocalTimestamps;
+use App\Notifications\ResetAccountPassword;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -47,6 +48,11 @@ class User extends Authenticatable
         static::creating(function (self $user) {
             $user->role ??= static::count() === 0 ? UserRole::Admin : UserRole::User;
         });
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetAccountPassword($token));
     }
 
     public function isAdmin(): bool

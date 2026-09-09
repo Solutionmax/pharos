@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\IncidentController;
 use App\Http\Controllers\Admin\InstallController;
 use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\MailTemplateController;
+use App\Http\Controllers\Admin\PasswordResetController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SsoController;
@@ -44,6 +45,10 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
     Route::post('install', [InstallController::class, 'store'])->middleware('throttle:10,1')->name('install.store');
 
     Route::middleware('guest')->group(function () {
+        Route::get('forgot-password', [PasswordResetController::class, 'requestForm'])->name('password.request');
+        Route::post('forgot-password', [PasswordResetController::class, 'sendLink'])->middleware('throttle:5,1')->name('password.email');
+        Route::get('reset-password/{token}', [PasswordResetController::class, 'resetForm'])->middleware('throttle:30,1')->name('password.reset');
+        Route::post('reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:5,1')->name('password.update');
         Route::get('login', [AuthController::class, 'form'])->name('login');
         Route::post('login', [AuthController::class, 'login'])->name('login.attempt');
         Route::get('sso/redirect', [SsoController::class, 'redirect'])->name('sso.redirect');
