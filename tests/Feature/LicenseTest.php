@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\License;
 use App\Services\MailTemplates;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -77,6 +78,71 @@ class LicenseTest extends TestCase
         $this->assertTrue($license->store($this->validKey()));
         $this->assertTrue($license->has(License::FEATURE_BRAND_PACK));
         $this->assertSame('klant@example.com', $license->issuedTo());
+    }
+
+    public function test_multi_page_licences_are_unlimited_without_a_signed_limit(): void
+    {
+        Setting::put('license.key', $this->sign([
+            'product' => 'pharos',
+            'features' => [License::FEATURE_MULTI_PAGES],
+        ]));
+        Cache::forget('license.payload');
+
+        $license = new License;
+
+        $this->assertTrue($license->has(License::FEATURE_MULTI_PAGES));
+        $this->assertNull($license->statusPageLimit());
+    }
+
+    public function test_a_signed_status_page_limit_is_enforced(): void
+    {
+        Setting::put('license.key', $this->sign([
+            'product' => 'pharos',
+            'features' => [License::FEATURE_MULTI_PAGES],
+            'limits' => ['status_pages' => 4],
+        ]));
+        Cache::forget('license.payload');
+
+        $this->assertSame(4, (new License)->statusPageLimit());
+    }
+
+    public function test_without_an_active_multi_page_feature_the_limit_is_one(): void
+    {
+        $this->assertSame(1, (new License)->statusPageLimit());
+
+        Setting::put('license.key', $this->sign([
+            'product' => 'pharos',
+            'features' => [License::FEATURE_MULTI_PAGES],
+            'limits' => ['status_pages' => 5],
+            'expires_at' => '2026-08-01',
+        ]));
+        Cache::forget('license.payload');
+
+        $this->assertSame(1, (new License)->statusPageLimit());
+    }
+
+    public function test_signed_invalid_status_page_limits_are_rejected(): void
+    {
+        foreach ([0, -1, 1.5, '3', [], null] as $limit) {
+            $key = $this->sign([
+                'product' => 'pharos',
+                'features' => [License::FEATURE_MULTI_PAGES],
+                'limits' => ['status_pages' => $limit],
+            ]);
+
+            $this->assertNull((new License)->verify($key, ignoreExpiry: true), 'Accepted invalid limit: '.json_encode($limit));
+        }
+    }
+
+    public function test_a_malformed_limits_claim_is_rejected(): void
+    {
+        $key = $this->sign([
+            'product' => 'pharos',
+            'features' => [License::FEATURE_MULTI_PAGES],
+            'limits' => 'unlimited',
+        ]);
+
+        $this->assertNull((new License)->verify($key, ignoreExpiry: true));
     }
 
     public function test_a_key_signed_with_the_wrong_private_key_is_refused(): void
@@ -316,6 +382,22 @@ class LicenseTest extends TestCase
         $this->assertSame('klant@example.com', $license->issuedTo());
     }
 
+    public function test_an_expired_key_does_not_keep_multi_page_creation_rights(): void
+    {
+        Setting::put('license.key', $this->sign([
+            'product' => 'pharos',
+            'features' => [License::FEATURE_BRAND_PACK, License::FEATURE_MULTI_PAGES],
+            'expires_at' => '2026-08-01',
+        ]));
+        Cache::forget('license.payload');
+
+        $license = new License;
+
+        $this->assertTrue($license->has(License::FEATURE_BRAND_PACK));
+        $this->assertFalse($license->has(License::FEATURE_MULTI_PAGES));
+        $this->assertSame(1, $license->statusPageLimit());
+    }
+
     public function test_an_expired_key_with_the_brand_pack_can_still_be_pasted(): void
     {
         $key = $this->sign([
@@ -390,6 +472,29 @@ class LicenseTest extends TestCase
         ])->assertSuccessful();
 
         unlink($keyFile);
+    }
+
+    public function test_the_signing_command_can_add_a_status_page_limit(): void
+    {
+        $keyFile = tempnam(sys_get_temp_dir(), 'phk');
+        file_put_contents($keyFile, sodium_bin2hex($this->secret));
+
+        try {
+            $this->withoutMockingConsoleOutput();
+            $exitCode = Artisan::call('pharos:license:sign', [
+                'email' => 'klant@example.com',
+                '--key' => $keyFile,
+                '--features' => 'brand_pack,multi_pages',
+                '--status-pages' => 4,
+            ]);
+        } finally {
+            unlink($keyFile);
+        }
+
+        $this->assertSame(0, $exitCode);
+        $payload = (new License)->verify(trim(Artisan::output()), ignoreExpiry: true);
+        $this->assertSame([License::FEATURE_BRAND_PACK, License::FEATURE_MULTI_PAGES], $payload['features']);
+        $this->assertSame(4, $payload['limits']['status_pages']);
     }
 
     public function test_the_branding_screen_shows_when_a_licence_runs_out(): void

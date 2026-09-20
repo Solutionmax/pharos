@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\BelongsToStatusPage;
 use Illuminate\Database\Eloquent\Model;
 
 class IncidentTemplate extends Model
 {
-    use Auditable;
+    use Auditable, BelongsToStatusPage;
 
     protected $auditName = 'incident_template';
 

@@ -4,12 +4,13 @@ namespace App\Models;
 
 use App\Enums\ComponentStatus;
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\BelongsToStatusPage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ComponentGroup extends Model
 {
-    use Auditable;
+    use Auditable, BelongsToStatusPage;
 
     protected $guarded = [];
 

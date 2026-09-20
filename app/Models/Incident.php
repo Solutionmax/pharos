@@ -6,6 +6,7 @@ use App\Casts\LocalTime;
 use App\Enums\Impact;
 use App\Enums\IncidentStatus;
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\BelongsToStatusPage;
 use App\Models\Concerns\LocalTimestamps;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Incident extends Model
 {
-    use Auditable, LocalTimestamps;
+    use Auditable, BelongsToStatusPage, LocalTimestamps;
 
     protected $guarded = [];
 

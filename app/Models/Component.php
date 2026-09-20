@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Casts\LocalTime;
 use App\Enums\ComponentStatus;
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\BelongsToStatusPage;
 use App\Models\Concerns\LocalTimestamps;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  */
 class Component extends Model
 {
-    use Auditable, LocalTimestamps;
+    use Auditable, BelongsToStatusPage, LocalTimestamps;
 
     protected $guarded = [];
 
