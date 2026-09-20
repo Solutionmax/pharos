@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Casts\LocalTime;
+use App\Models\Concerns\BelongsToStatusPage;
 use App\Models\Concerns\LocalTimestamps;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /** One mail owed to one subscriber about one incident update. */
 class SubscriberNotification extends Model
 {
-    use LocalTimestamps;
+    use BelongsToStatusPage, LocalTimestamps;
 
     protected $guarded = [];
 

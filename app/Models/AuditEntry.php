@@ -26,6 +26,12 @@ class AuditEntry extends Model
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<StatusPage, $this> */
+    public function statusPage(): BelongsTo
+    {
+        return $this->belongsTo(StatusPage::class);
+    }
+
     /**
      * One line per change. A change is either {from, to} or a plain value
      * (a backup's name, a template key); the plain kind used to render as "— → —".

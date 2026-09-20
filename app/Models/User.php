@@ -8,6 +8,7 @@ use App\Models\Concerns\Auditable;
 use App\Models\Concerns\LocalTimestamps;
 use App\Notifications\ResetAccountPassword;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -58,6 +59,17 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;
+    }
+
+    /** @return BelongsToMany<StatusPage, $this> */
+    public function statusPages(): BelongsToMany
+    {
+        return $this->belongsToMany(StatusPage::class);
+    }
+
+    public function canAccessPage(int $pageId): bool
+    {
+        return $this->isAdmin() || $this->statusPages()->whereKey($pageId)->exists();
     }
 
     /** @return HasMany<RecoveryCode, $this> */

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Casts\LocalTime;
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\BelongsToStatusPage;
 use App\Models\Concerns\LocalTimestamps;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\Crypt;
  */
 class WebhookEndpoint extends Model
 {
-    use Auditable, LocalTimestamps;
+    use Auditable, BelongsToStatusPage, LocalTimestamps;
 
     protected $auditName = 'notification';
 

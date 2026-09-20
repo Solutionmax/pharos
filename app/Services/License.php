@@ -15,6 +15,8 @@ class License
 {
     public const FEATURE_BRAND_PACK = 'brand_pack';
 
+    public const FEATURE_MULTI_PAGES = 'multi_pages';
+
     /**
      * Features a customer keeps after a yearly key runs out. Supported carries the
      * Brand pack; when the year is over they lose support, not the logo they paid for.
@@ -26,7 +28,7 @@ class License
         return Setting::get('license.key');
     }
 
-    /** @return array{product?:string,features?:array<int,string>,issued_to?:string,issued_at?:string,expires_at?:string,issued_for?:string}|null */
+    /** @return array{product?:string,features?:array<int,string>,limits?:array{status_pages?:int},issued_to?:string,issued_at?:string,expires_at?:string,issued_for?:string}|null */
     public function payload(): ?array
     {
         $key = $this->key();
@@ -102,6 +104,10 @@ class License
             return null;
         }
 
+        if (! $this->hasValidLimits($data)) {
+            return null;
+        }
+
         // A key sold for one status page must not unlock another. Keys without the
         // claim (everything issued before it existed) keep working anywhere.
         if (! $this->boundToThisHost($data)) {
@@ -116,6 +122,16 @@ class License
         }
 
         return $data;
+    }
+
+    /** The active-page ceiling, or null when a valid Multi-page key is unlimited. */
+    public function statusPageLimit(): ?int
+    {
+        if (! $this->has(self::FEATURE_MULTI_PAGES)) {
+            return 1;
+        }
+
+        return $this->payload()['limits']['status_pages'] ?? null;
     }
 
     /** The domain a key was sold for, or null for one that works anywhere. */
@@ -250,6 +266,24 @@ class License
             // An unreadable date is not a licence we can vouch for.
             return true;
         }
+    }
+
+    /** @param array<string, mixed> $payload */
+    protected function hasValidLimits(array $payload): bool
+    {
+        if (! array_key_exists('limits', $payload)) {
+            return true;
+        }
+
+        if (! is_array($payload['limits'])) {
+            return false;
+        }
+
+        if (! array_key_exists('status_pages', $payload['limits'])) {
+            return true;
+        }
+
+        return is_int($payload['limits']['status_pages']) && $payload['limits']['status_pages'] >= 1;
     }
 
     public function store(string $key): bool

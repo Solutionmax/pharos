@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ApiToken;
 use App\Models\AuditEntry;
 use App\Models\IncidentUpdate;
+use App\Models\StatusPage;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -43,6 +44,7 @@ class Audit
 
         return AuditEntry::create([
             'user_id' => auth()->id(),
+            'status_page_id' => self::pageId($subject),
             'actor' => $actor,
             'action' => $action,
             'subject_type' => $subject ? class_basename($subject) : null,
@@ -70,6 +72,7 @@ class Audit
     {
         return AuditEntry::create([
             'user_id' => null,
+            'status_page_id' => self::pageId($subject),
             'actor' => $actor,
             'action' => $action,
             'subject_type' => $subject ? class_basename($subject) : null,
@@ -79,6 +82,19 @@ class Audit
             'ip' => request()->ip(),
             'created_at' => now(),
         ]);
+    }
+
+    private static function pageId(?Model $subject): ?int
+    {
+        if ($subject instanceof StatusPage) {
+            return (int) $subject->getKey();
+        }
+
+        if ($subject !== null && $subject->getAttribute('status_page_id') !== null) {
+            return (int) $subject->getAttribute('status_page_id');
+        }
+
+        return app(PageContext::class)->selectedId();
     }
 
     /** Something a human recognises, because an id alone says nothing. */

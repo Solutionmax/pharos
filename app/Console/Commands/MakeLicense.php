@@ -16,7 +16,8 @@ class MakeLicense extends Command
         {--features=brand_pack : Comma separated}
         {--key= : Path to the Ed25519 secret key (hex), defaults to PHAROS_LICENSE_SECRET_FILE}
         {--months= : Term in months; leave off for a key that never expires}
-        {--domain= : Status page domain the key is tied to; leave off for a key that works anywhere}';
+        {--domain= : Status page domain the key is tied to; leave off for a key that works anywhere}
+        {--status-pages= : Positive maximum number of active status pages; leave off for unlimited}';
 
     protected $description = 'Sign a licence key (vendor side)';
 
@@ -32,12 +33,29 @@ class MakeLicense extends Command
 
         $secret = sodium_hex2bin(trim(file_get_contents($path)));
 
+        $features = array_values(array_filter(array_map('trim', explode(',', $this->option('features')))));
+        $statusPages = $this->option('status-pages');
+
+        if ($statusPages !== null) {
+            $statusPages = filter_var($statusPages, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+            if ($statusPages === false || ! in_array(License::FEATURE_MULTI_PAGES, $features, true)) {
+                $this->error('A positive --status-pages limit requires the multi_pages feature.');
+
+                return self::FAILURE;
+            }
+        }
+
         $claims = [
             'product' => 'pharos',
             'issued_to' => $this->argument('email'),
-            'features' => array_values(array_filter(array_map('trim', explode(',', $this->option('features'))))),
+            'features' => $features,
             'issued_at' => now()->toDateString(),
         ];
+
+        if ($statusPages !== null) {
+            $claims['limits'] = ['status_pages' => $statusPages];
+        }
 
         // A yearly subscription needs a key that stops; a perpetual one must not
         // carry the claim at all, so leaving the option off means forever.
