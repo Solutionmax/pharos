@@ -21,7 +21,7 @@
         </div>
         <div class="field">
           <label for="page-slug">Slug</label>
-          <input id="page-slug" name="slug" type="text" value="{{ old('slug', $statusPage->slug) }}" required maxlength="100" pattern="[a-z0-9]+(?:-[a-z0-9]+)*">
+          <input id="page-slug" name="slug" @if($statusPage->exists) readonly @endif type="text" value="{{ old('slug', $statusPage->slug) }}" required maxlength="100" pattern="[a-z0-9]+(?:-[a-z0-9]+)*">
           <span class="help">Lowercase letters, numbers and hyphens.</span>
         </div>
       </div>

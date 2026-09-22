@@ -4,10 +4,10 @@
 @php $check = $component->check; @endphp
 @include('partials.pagehead', [
   'title' => $component->exists ? 'Edit '.$component->name : 'Add a component',
-  'back' => ['url' => route('admin.components'), 'label' => 'Components'],
+  'back' => ['url' => \App\Services\PageUrls::route('admin.components'), 'label' => 'Components'],
 ])
 
-<form method="POST" action="{{ $component->exists ? route('admin.components.update', $component) : route('admin.components.store') }}">
+<form method="POST" action="{{ $component->exists ? \App\Services\PageUrls::route('admin.components.update', $component) : \App\Services\PageUrls::route('admin.components.store') }}">
   @csrf
   @if ($component->exists) @method('PUT') @endif
 
@@ -141,7 +141,7 @@
       @if ($check && $check->type === \App\Enums\CheckType::Heartbeat)
         <x-note id="component.heartbeat-url">
           <b>Heartbeat URL.</b> Have the job call this when it finishes. Silence for two intervals is the alarm.
-          <div class="mono" style="margin-top:8px;word-break:break-all">{{ url("/api/v1/heartbeat/{$check->target}") }}</div>
+          <div class="mono" style="margin-top:8px;word-break:break-all">{{ \App\Services\PageUrls::api("heartbeat/{$check->target}") }}</div>
         </x-note>
       @endif
 
@@ -156,7 +156,7 @@
 
       <div class="actions">
         <button class="btn" type="submit">{{ $component->exists ? 'Save component' : 'Add component' }}</button>
-        <a class="btn ghost" href="{{ route('admin.components') }}">Cancel</a>
+        <a class="btn ghost" href="{{ \App\Services\PageUrls::route('admin.components') }}">Cancel</a>
       </div>
     </div>
   </div>

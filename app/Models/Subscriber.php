@@ -3,21 +3,25 @@
 namespace App\Models;
 
 use App\Casts\LocalTime;
+use App\Models\Concerns\BelongsToStatusPage;
 use App\Models\Concerns\LocalTimestamps;
+use App\Services\PageContext;
+use App\Services\PageUrls;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 /**
  * A visitor who asked to be mailed about incidents. Not Auditable: the public
  * opt-in has no actor, and what an operator does to a subscriber is recorded by
  * name in the controller (removed, confirmation resent).
+ *
+ * @property int $status_page_id
  */
 class Subscriber extends Model
 {
-    use LocalTimestamps;
+    use BelongsToStatusPage, LocalTimestamps;
 
     /** How long a confirmation link is good for. */
     public const CONFIRM_HOURS = 24;
@@ -76,21 +80,19 @@ class Subscriber extends Model
      */
     public function confirmUrl(): string
     {
-        return url(URL::temporarySignedRoute(
+        return app(PageContext::class)->run($this->status_page_id, fn () => PageUrls::signedRoute(
             'subscribe.confirm',
-            now()->addHours(self::CONFIRM_HOURS),
             ['subscriber' => $this->id, 'token' => $this->token],
-            absolute: false,
+            now()->addHours(self::CONFIRM_HOURS),
         ));
     }
 
     /** No expiry: the link in a mail from last year must still work. */
     public function unsubscribeUrl(): string
     {
-        return url(URL::signedRoute(
+        return app(PageContext::class)->run($this->status_page_id, fn () => PageUrls::signedRoute(
             'unsubscribe',
             ['subscriber' => $this->id, 'token' => $this->token],
-            absolute: false,
         ));
     }
 }

@@ -13,15 +13,22 @@ class TemplatePreviewMail extends Mailable
     use Branded;
 
     /** @param  array{subject: string, html: string, text: string}  $rendered */
-    public function __construct(public array $rendered) {}
+    public function __construct(public array $rendered)
+    {
+        $this->captureBrandContext();
+    }
 
     public function envelope(): Envelope
     {
-        return new Envelope(from: $this->brandedFrom(), subject: $this->rendered['subject']);
+        return $this->inBrandContext(fn () => new Envelope(
+            from: $this->brandedFrom(),
+            replyTo: $this->brandedReplyTo(),
+            subject: $this->rendered['subject'],
+        ));
     }
 
     public function content(): Content
     {
-        return $this->templateContent($this->rendered);
+        return $this->inBrandContext(fn () => $this->templateContent($this->rendered));
     }
 }

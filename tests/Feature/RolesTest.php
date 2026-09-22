@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Models\Setting;
+use App\Models\StatusPage;
 use App\Models\User;
 use App\Services\Clock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,6 +33,7 @@ class RolesTest extends TestCase
             'name' => 'Tom', 'email' => 'tom@example.com',
             'password' => Hash::make('correct-horse-battery'), 'role' => UserRole::User,
         ]);
+        $this->member->statusPages()->attach(StatusPage::default());
     }
 
     public static function adminOnlyPages(): array

@@ -7,6 +7,8 @@ use App\Mail\SubscribeConfirmMail;
 use App\Models\Subscriber;
 use App\Services\Audit;
 use App\Services\Clock;
+use App\Services\MailConfig;
+use App\Services\PageUrls;
 use App\Services\Subscriptions;
 use App\Support\Csv;
 use Illuminate\Http\Request;
@@ -49,7 +51,7 @@ class SubscriberController extends Controller
 
         Subscriptions::set($enabled);
 
-        return redirect()->route('admin.subscribers')->with('status', $enabled
+        return redirect()->to(PageUrls::route('admin.subscribers'))->with('status', $enabled
             ? 'Subscriptions are on: the button is back on the status page and new updates are mailed.'
             : 'Subscriptions are off: no button, no new mail. Existing addresses are kept, and unsubscribing still works.');
     }
@@ -60,23 +62,23 @@ class SubscriberController extends Controller
         Audit::record('subscriber.removed', $subscriber);
         $subscriber->delete();
 
-        return redirect()->route('admin.subscribers')
+        return redirect()->to(PageUrls::route('admin.subscribers'))
             ->with('status', "{$subscriber->email} removed, along with their notification history.");
     }
 
     public function resend(Subscriber $subscriber)
     {
         if (! $subscriber->isPending()) {
-            return redirect()->route('admin.subscribers')
+            return redirect()->to(PageUrls::route('admin.subscribers'))
                 ->withErrors(['resend' => "{$subscriber->email} is already confirmed."]);
         }
 
         // Fresh token: the mail they lost stops working, the one they get now does.
         $subscriber->forceFill(['token' => Subscriber::freshToken()])->save();
-        Mail::to($subscriber->email)->send(new SubscribeConfirmMail($subscriber));
+        app(MailConfig::class)->sendTo($subscriber->email, new SubscribeConfirmMail($subscriber));
         Audit::record('subscriber.confirmation_resent', $subscriber);
 
-        return redirect()->route('admin.subscribers')
+        return redirect()->to(PageUrls::route('admin.subscribers'))
             ->with('status', "Confirmation sent again to {$subscriber->email}.");
     }
 

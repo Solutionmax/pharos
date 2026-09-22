@@ -10,6 +10,7 @@ use App\Models\Incident;
 use App\Models\IncidentTemplate;
 use App\Models\IncidentUpdate;
 use App\Services\OutgoingWebhook;
+use App\Services\PageUrls;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -137,7 +138,7 @@ class IncidentController extends Controller
 
         $this->webhook->incidentChanged($incident->fresh('components'), 'incident.created');
 
-        return redirect()->route('admin.incidents')
+        return redirect()->to(PageUrls::route('admin.incidents'))
             ->with('status', "Incident \"{$incident->name}\" published.");
     }
 
@@ -173,7 +174,7 @@ class IncidentController extends Controller
 
         $this->webhook->incidentChanged($incident->fresh('components'), 'incident.updated');
 
-        return redirect()->route('admin.incidents')->with('status', 'Update posted.');
+        return redirect()->to(PageUrls::route('admin.incidents'))->with('status', 'Update posted.');
     }
 
     /**
@@ -186,7 +187,7 @@ class IncidentController extends Controller
         $name = $incident->name;
         $incident->delete();
 
-        return redirect()->route('admin.incidents')
+        return redirect()->to(PageUrls::route('admin.incidents'))
             ->with('status', "Incident \"{$name}\" deleted, along with its updates.");
     }
 }

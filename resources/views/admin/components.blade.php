@@ -4,7 +4,7 @@
 @include('partials.pagehead', [
   'title' => 'Components',
   'sub' => 'The individual things a service is made of',
-  'action' => ['url' => route('admin.components.create'), 'label' => 'Add a component'],
+  'action' => ['url' => \App\Services\PageUrls::route('admin.components.create'), 'label' => 'Add a component'],
 ])
 
 @if ($summary['total'] > 0)
@@ -42,7 +42,7 @@
       @include('partials.icon', ['name' => 'empty', 'size' => 28])
       <p><b>Nothing on the status page yet.</b></p>
       <p>Add a component and it appears for your customers straight away.</p>
-      <a class="btn" href="{{ route('admin.components.create') }}">Add a component</a>
+      <a class="btn" href="{{ \App\Services\PageUrls::route('admin.components.create') }}">Add a component</a>
     </div>
   @else
   <div class="scroll">
@@ -79,8 +79,8 @@
           </td>
           <td>
             <span class="rowacts">
-              <a href="{{ route('admin.components.edit', $component) }}">Edit</a>
-              <form method="POST" action="{{ route('admin.components.destroy', $component) }}"
+              <a href="{{ \App\Services\PageUrls::route('admin.components.edit', $component) }}">Edit</a>
+              <form method="POST" action="{{ \App\Services\PageUrls::route('admin.components.destroy', $component) }}"
                     data-confirm-title="Delete {{ $component->name }}?"
                     data-confirm="Its <strong>{{ \App\Services\Uptime::format($uptime[$component->id]) }} uptime history</strong> is deleted with it, and it disappears from the public page. This cannot be undone."
                     data-confirm-action="Delete component">

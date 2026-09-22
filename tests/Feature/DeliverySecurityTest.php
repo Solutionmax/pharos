@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ApiToken;
 use App\Models\Component;
 use App\Models\Incident;
+use App\Models\StatusPage;
 use App\Models\User;
 use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
@@ -97,6 +98,7 @@ class DeliverySecurityTest extends TestCase
     public function test_signal_requires_https_and_does_not_flash_token_on_error(): void
     {
         $user = User::create(['name' => 'Admin', 'email' => 'admin@example.test', 'password' => bcrypt('local-test-password')]);
+        $user->statusPages()->attach(StatusPage::default());
         $this->actingAs($user)->post('/admin/integrations/notifications', [
             'label' => 'Signal', 'format' => 'signal', 'url' => 'http://203.0.113.10/v2/send',
             'signal_number' => '+31612345678', 'signal_recipient' => '+31687654321', 'signal_token' => 'test-bridge-secret',
@@ -109,6 +111,7 @@ class DeliverySecurityTest extends TestCase
     {
         Http::fake(['*' => Http::response(['ok' => true])]);
         $user = User::create(['name' => 'Admin', 'email' => 'telegram@example.test', 'password' => bcrypt('local-test-password')]);
+        $user->statusPages()->attach(StatusPage::default());
         $token = '123456:abcdefghijklmnopqrstuvwxyz_12345';
         $this->actingAs($user)->post('/admin/integrations/notifications', [
             'label' => 'Telegram', 'format' => 'telegram',
@@ -154,6 +157,7 @@ class DeliverySecurityTest extends TestCase
     public function test_telegram_validation_does_not_flash_token(): void
     {
         $user = User::create(['name' => 'Admin', 'email' => 'telegram@example.test', 'password' => bcrypt('local-test-password')]);
+        $user->statusPages()->attach(StatusPage::default());
         $this->actingAs($user)->post('/admin/integrations/notifications', [
             'label' => 'Telegram', 'format' => 'telegram', 'telegram_token' => 'secret-invalid-token',
             'telegram_chat_id' => 'invalid',
@@ -166,6 +170,7 @@ class DeliverySecurityTest extends TestCase
     {
         $incident = $this->incident();
         $user = User::create(['name' => 'Operator', 'email' => 'operator@example.test', 'password' => bcrypt('local-test-password'), 'role' => 'user']);
+        $user->statusPages()->attach(StatusPage::default());
         $url = route('admin.incidents.update-form', $incident);
         $this->get('/')->assertOk()->assertDontSee($url, false);
         $this->get($url)->assertRedirect(route('admin.login'));

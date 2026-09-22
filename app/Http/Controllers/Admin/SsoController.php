@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Audit;
+use App\Services\PageUrls;
 use App\Services\Sso;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -88,7 +89,7 @@ class SsoController extends Controller
         $request->session()->regenerate();
         Audit::record('sso.login');
 
-        return redirect()->intended(route('admin.components'));
+        return redirect()->intended(PageUrls::landing(auth()->user()));
     }
 
     // ---------- administration (the form sits on the Settings screen) ----------

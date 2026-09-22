@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Mail\Concerns\Branded;
 use App\Models\User;
+use App\Services\MailConfig;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -13,25 +14,29 @@ class TestMail extends Mailable
 {
     use Branded;
 
-    public function __construct(public User $user) {}
+    public function __construct(public User $user)
+    {
+        $this->captureBrandContext();
+    }
 
     public function envelope(): Envelope
     {
-        return new Envelope(
+        return $this->inBrandContext(fn () => new Envelope(
             from: $this->brandedFrom(),
+            replyTo: $this->brandedReplyTo(),
             subject: 'Test e-mail from '.$this->branding()->name(),
-        );
+        ));
     }
 
     public function content(): Content
     {
-        return new Content(
+        return $this->inBrandContext(fn () => new Content(
             view: 'mail.test',
             text: 'mail.text.test',
             with: $this->brandVars() + [
-                'mailer' => (string) config('mail.default'),
+                'mailer' => app(MailConfig::class)->effectivePage()['mailer'],
                 'user' => $this->user,
             ],
-        );
+        ));
     }
 }

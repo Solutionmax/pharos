@@ -49,7 +49,7 @@ php artisan pharos:license:sign customer@example.net \
 
 Prints the key. Mail it. Done.
 
-Features currently understood by the app: `brand_pack`. Everything else in the payload is
+Features currently understood by the app: `brand_pack` and `multi_pages`. Everything else in the payload is
 ignored, so adding a future feature name to a key is harmless.
 
 ## Issuing a key after a payment
@@ -79,14 +79,15 @@ Every failure reads as *not licensed*, never as an error:
 A status page must not go down because a licence check had a bad day. That rule is in
 `App\Services\License::verify()` and there is a test for it.
 
-## What is deliberately absent
+## Offline operation and page licences
 
-- **No phone-home.** Pharos never asks a server whether it is allowed to run.
-- **No expiry inside the key.** A Supported subscription lapsing does not switch anything
-  off; it stops the updates and the support. The customer keeps what they paid for.
-- **No per-domain binding.** A key is issued to an email address, not to a hostname. It is
-  a receipt, not a lock, and pretending otherwise would only punish honest customers who
-  move their install.
+No phone-home is required. Licence rights are verified locally. Keys may include
+expiry and a central-installation domain binding; see the sections below.
+
+Multiple pages use the signed `multi_pages` feature and optional positive integer
+`limits.status_pages`. The commercial bundle also includes `brand_pack`. Creation
+and reactivation above the active-page limit are blocked; existing pages keep running.
+See [multiple status pages](multiple-status-pages.md) for signing examples and behavior.
 
 ## Keys that run out
 
@@ -107,9 +108,9 @@ php artisan pharos:license:sign klant@example.net --features=brand_pack --domain
 Leave `--months` off and the claim is absent, which means the key never expires —
 that is what every key signed before this existed does, and they keep working.
 
-An expired key stops being a licence: `verify()` returns null, so its features go
-back to the free set. The branding screen shows the date, and warns for the last
-thirty days.
+Expired keys lose time-limited rights such as creating extra pages. Brand Pack is
+a perpetual feature and remains usable. Existing status pages continue operating.
+The branding screen shows the expiry date and warns for the last thirty days.
 
 There is still nothing to revoke a key that is already out there. That is the
 price of checking offline, and expiry is the answer: a key that was passed around

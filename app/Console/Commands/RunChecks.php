@@ -4,7 +4,9 @@ namespace App\Console\Commands;
 
 use App\Models\Check;
 use App\Models\Setting;
+use App\Models\StatusPage;
 use App\Services\CheckRunner;
+use App\Services\PageContext;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 
@@ -31,7 +33,13 @@ class RunChecks extends Command
 
         try {
             Setting::put('checks.last_started_at', now()->toIso8601String());
-            $result = $this->runAll($runner);
+            $result = self::SUCCESS;
+            foreach (StatusPage::query()->whereNull('archived_at')->orderBy('id')->pluck('id') as $pageId) {
+                $pageResult = app(PageContext::class)->run($pageId, fn () => $this->runAll($runner));
+                if ($pageResult !== self::SUCCESS) {
+                    $result = $pageResult;
+                }
+            }
             Setting::put('checks.last_run_at', now()->toIso8601String());
             Setting::put('checks.php_version', PHP_VERSION);
             Setting::put('checks.php_binary', PHP_BINARY);
@@ -52,7 +60,7 @@ class RunChecks extends Command
         // the one cron line exists. Without it a forgotten scheduler looks exactly
         // like a healthy install — every component green, nothing ever checked.
         if ($this->option('force')) {
-            $checks = Check::with('component')->where('enabled', true)->get();
+            $checks = Check::with('component')->whereHas('component')->where('enabled', true)->get();
             foreach ($checks as $check) {
                 $result = $runner->runOne($check);
                 $this->line(sprintf(

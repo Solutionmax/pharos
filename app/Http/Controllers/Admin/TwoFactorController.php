@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\RecoveryCode;
 use App\Models\User;
 use App\Services\Audit;
+use App\Services\PageUrls;
 use App\Services\Totp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -82,7 +83,7 @@ class TwoFactorController extends Controller
         $request->session()->regenerate();
         Audit::record('auth.login');
 
-        return redirect()->intended(route('admin.components'));
+        return redirect()->intended(PageUrls::landing(auth()->user()));
     }
 
     protected function pending(Request $request): ?User

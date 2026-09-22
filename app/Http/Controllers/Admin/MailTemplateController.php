@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Mail\TemplatePreviewMail;
 use App\Services\Audit;
 use App\Services\License;
+use App\Services\MailConfig;
 use App\Services\MailTemplates;
+use App\Services\PageUrls;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -70,7 +72,7 @@ class MailTemplateController extends Controller
         $rendered = $this->templates->render($key, $this->templates->sample($key, $user), $request->input('subject'), $request->input('body'));
 
         try {
-            Mail::to($user->email)->send(new TemplatePreviewMail($rendered));
+            app(MailConfig::class)->sendTo($user->email, new TemplatePreviewMail($rendered));
         } catch (\Throwable $e) {
             return $this->back($key)->withErrors(['mail' => 'Test e-mail failed: '.$e->getMessage()]);
         }
@@ -144,6 +146,6 @@ class MailTemplateController extends Controller
 
     protected function back(mixed $key): RedirectResponse
     {
-        return redirect()->route('admin.mail-templates', ['template' => $this->key($key)]);
+        return redirect()->to(PageUrls::route('admin.mail-templates', ['template' => $this->key($key)]));
     }
 }

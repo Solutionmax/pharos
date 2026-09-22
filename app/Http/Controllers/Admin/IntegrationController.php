@@ -9,6 +9,8 @@ use App\Models\Setting;
 use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
 use App\Services\OutgoingWebhook;
+use App\Services\PageContext;
+use App\Services\PageUrls;
 use App\Services\SafeHttp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -28,9 +30,9 @@ class IntegrationController extends Controller
             'destinationProfiles' => $profiles,
             'selectedFormat' => $format,
             'manualComponents' => $components->filter(fn ($component) => $component->enabled && ! $component->check?->enabled),
-            'tokens' => ApiToken::orderByDesc('created_at')->get(),
+            'tokens' => ApiToken::where('status_page_id', app(PageContext::class)->id())->orderByDesc('created_at')->get(),
             'newToken' => session('new_token'),
-            'deliveries' => WebhookDelivery::with('endpoint')->latest('id')->limit(20)->get(),
+            'deliveries' => WebhookDelivery::whereHas('endpoint')->with('endpoint')->latest('id')->limit(20)->get(),
             'endpoints' => WebhookEndpoint::orderBy('id')->get(),
             'webhookSecret' => Setting::get('integrations.webhook_secret'),
             'heartbeats' => Component::whereHas('check', fn ($q) => $q->where('type', 'heartbeat'))
@@ -43,19 +45,21 @@ class IntegrationController extends Controller
     {
         $data = $request->validate(['name' => ['required', 'string', 'max:60']]);
 
-        [, $plain] = ApiToken::issue($data['name']);
+        [$token, $plain] = ApiToken::issue($data['name']);
+        $token->forceFill(['status_page_id' => app(PageContext::class)->id(), 'user_id' => $request->user()->id])->save();
 
         // Passed through the session because it is the only moment it exists in
         // plaintext; only a hash is stored.
-        return redirect()->route('admin.integrations')->with('new_token', $plain);
+        return redirect()->to(PageUrls::route('admin.integrations'))->with('new_token', $plain);
     }
 
     public function destroyToken(ApiToken $token)
     {
+        abort_unless((int) $token->status_page_id === app(PageContext::class)->id(), 404);
         $name = $token->name;
         $token->delete();
 
-        return redirect()->route('admin.integrations')
+        return redirect()->to(PageUrls::route('admin.integrations'))
             ->with('status', "Token \"{$name}\" revoked. Anything using it stops working now.");
     }
 
@@ -110,7 +114,7 @@ class IntegrationController extends Controller
             Setting::put('integrations.webhook_secret', Str::random(32));
         }
 
-        return redirect()->route('admin.integrations')
+        return redirect()->to(PageUrls::route('admin.integrations'))
             ->with('status', "Notification to \"{$data['label']}\" added. Send a test to be sure it arrives.");
     }
 
@@ -119,7 +123,7 @@ class IntegrationController extends Controller
         $label = $endpoint->label;
         $endpoint->delete();
 
-        return redirect()->route('admin.integrations')
+        return redirect()->to(PageUrls::route('admin.integrations'))
             ->with('status', "Notification to \"{$label}\" removed.");
     }
 
@@ -128,7 +132,7 @@ class IntegrationController extends Controller
         $ok = $webhook->test($endpoint);
         $endpoint->refresh();
 
-        return redirect()->route('admin.integrations')->with(
+        return redirect()->to(PageUrls::route('admin.integrations'))->with(
             'status',
             $ok
                 ? "Test sent to \"{$endpoint->label}\" and accepted (HTTP {$endpoint->last_status}). Check the channel."
@@ -140,7 +144,7 @@ class IntegrationController extends Controller
     {
         Setting::put('integrations.webhook_secret', Str::random(32));
 
-        return redirect()->route('admin.integrations')
+        return redirect()->to(PageUrls::route('admin.integrations'))
             ->with('status', 'Signing secret rotated. Update the receiving end.');
     }
 }

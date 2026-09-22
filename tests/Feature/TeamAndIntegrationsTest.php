@@ -54,7 +54,7 @@ class TeamAndIntegrationsTest extends TestCase
 
         $this->post('/admin/logout');
         $this->post('/admin/login', ['email' => 'tom@example.com', 'password' => 'a-long-enough-password'])
-            ->assertRedirect('/admin/components');
+            ->assertRedirect('/admin/no-pages');
     }
 
     public function test_a_short_password_is_refused(): void

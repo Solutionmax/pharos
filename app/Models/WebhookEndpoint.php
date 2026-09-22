@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Crypt;
 /**
  * @property string $url
  * @property array{number?: string, recipient?: string, token?: string, chat_id?: string}|null $options
+ * @property int $status_page_id
  */
 class WebhookEndpoint extends Model
 {

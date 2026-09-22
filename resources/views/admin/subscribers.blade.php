@@ -19,7 +19,7 @@
     <span class="hint">{{ $enabled ? 'On' : 'Off' }}</span>
   </div>
   <div class="panel-bd">
-    <form method="POST" action="{{ route('admin.subscribers.toggle') }}">
+    <form method="POST" action="{{ \App\Services\PageUrls::route('admin.subscribers.toggle') }}">
       @csrf
       <input type="hidden" name="enabled" value="{{ $enabled ? '0' : '1' }}">
       <div class="switchrow">
@@ -52,10 +52,10 @@
       </div>
       <button class="btn" type="submit">Search</button>
       @if ($search !== '')
-        <a class="btn ghost" href="{{ route('admin.subscribers') }}">Clear</a>
+        <a class="btn ghost" href="{{ \App\Services\PageUrls::route('admin.subscribers') }}">Clear</a>
       @endif
       @if ($summary['active'] > 0)
-        <a class="btn ghost" style="margin-left:auto" href="{{ route('admin.subscribers.export') }}"
+        <a class="btn ghost" style="margin-left:auto" href="{{ \App\Services\PageUrls::route('admin.subscribers.export') }}"
            title="Every active address, as CSV">Export CSV</a>
       @endif
     </form>
@@ -93,12 +93,12 @@
             <td>
               <span class="rowacts">
                 @if ($s->isPending())
-                  <form method="POST" action="{{ route('admin.subscribers.resend', $s) }}">
+                  <form method="POST" action="{{ \App\Services\PageUrls::route('admin.subscribers.resend', $s) }}">
                     @csrf
                     <button type="submit">Resend confirmation</button>
                   </form>
                 @endif
-                <form method="POST" action="{{ route('admin.subscribers.destroy', $s) }}"
+                <form method="POST" action="{{ \App\Services\PageUrls::route('admin.subscribers.destroy', $s) }}"
                       data-confirm-title="Remove {{ $s->email }}?"
                       data-confirm="The address and its notification history are <strong>deleted</strong>. This is how you honour a request to be forgotten."
                       data-confirm-action="Remove address">

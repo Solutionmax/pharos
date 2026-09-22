@@ -6,7 +6,7 @@
   'sub' => 'How your status page introduces itself',
 ])
 
-<form method="POST" action="{{ route('admin.branding.update') }}" enctype="multipart/form-data">
+<form method="POST" action="{{ \App\Services\PageUrls::route('admin.branding.update') }}" enctype="multipart/form-data">
   @csrf @method('PUT')
 
   <div class="panel">

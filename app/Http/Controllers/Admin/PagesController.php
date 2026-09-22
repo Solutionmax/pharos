@@ -124,6 +124,7 @@ class PagesController extends Controller
                 'string',
                 'max:100',
                 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                ...($statusPage ? [Rule::in([$statusPage->slug])] : []),
                 Rule::unique('status_pages', 'slug')->ignore($statusPage),
             ],
             'domain' => [
@@ -131,8 +132,9 @@ class PagesController extends Controller
                 'string',
                 'max:253',
                 function (string $attribute, mixed $value, \Closure $fail): void {
-                    if ($value !== null && filter_var($value, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false) {
-                        $fail('The domain must be a valid host name.');
+                    if ($value !== null && ($value === strtolower((string) parse_url(config('app.url'), PHP_URL_HOST))
+                        || filter_var($value, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false)) {
+                        $fail('Use a valid customer host name different from the central installation host.');
                     }
                 },
                 Rule::unique('status_pages', 'domain')->ignore($statusPage),

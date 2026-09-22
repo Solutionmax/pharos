@@ -4,7 +4,7 @@
 @include('partials.pagehead', array_filter([
   'title' => 'Services',
   'sub' => 'The headings your customers read. Components live inside them.',
-  'action' => ['url' => route('admin.groups.create', array_filter(['from' => $from])), 'label' => 'Add a service'],
+  'action' => ['url' => \App\Services\PageUrls::route('admin.groups.create', array_filter(['from' => $from])), 'label' => 'Add a service'],
   'back' => $origin,
 ]))
 
@@ -15,7 +15,7 @@
       @include('partials.icon', ['name' => 'empty', 'size' => 28])
       <p><b>No services yet.</b></p>
       <p>Add a service, then put components in it.</p>
-      <a class="btn" href="{{ route('admin.groups.create', array_filter(['from' => $from])) }}">Add a service</a>
+      <a class="btn" href="{{ \App\Services\PageUrls::route('admin.groups.create', array_filter(['from' => $from])) }}">Add a service</a>
     </div>
   @else
   <div class="scroll">
@@ -35,11 +35,11 @@
           </td>
           <td>
             <span class="rowacts" style="justify-content:flex-start">
-              <form method="POST" action="{{ route('admin.groups.move', $group) }}">
+              <form method="POST" action="{{ \App\Services\PageUrls::route('admin.groups.move', $group) }}">
                 @csrf <input type="hidden" name="direction" value="up">
                 <button type="submit" @disabled($loop->first) aria-label="Move up">↑</button>
               </form>
-              <form method="POST" action="{{ route('admin.groups.move', $group) }}">
+              <form method="POST" action="{{ \App\Services\PageUrls::route('admin.groups.move', $group) }}">
                 @csrf <input type="hidden" name="direction" value="down">
                 <button type="submit" @disabled($loop->last) aria-label="Move down">↓</button>
               </form>
@@ -47,8 +47,8 @@
           </td>
           <td>
             <span class="rowacts">
-              <a href="{{ route('admin.groups.edit', array_filter(['group' => $group->id, 'from' => $from])) }}">Edit</a>
-              <form method="POST" action="{{ route('admin.groups.destroy', $group) }}"
+              <a href="{{ \App\Services\PageUrls::route('admin.groups.edit', array_filter(['group' => $group->id, 'from' => $from])) }}">Edit</a>
+              <form method="POST" action="{{ \App\Services\PageUrls::route('admin.groups.destroy', $group) }}"
                     data-confirm-title="Delete {{ $group->name }}?"
                     data-confirm="Its {{ $group->components_count }} {{ \Illuminate\Support\Str::plural('component', $group->components_count) }} and their uptime history are <strong>kept</strong> — they move to the page without a heading. Only the grouping is lost."
                     data-confirm-action="Delete service">

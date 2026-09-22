@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\IncidentController;
 use App\Http\Controllers\Admin\InstallController;
 use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\MailTemplateController;
+use App\Http\Controllers\Admin\PageMailController;
+use App\Http\Controllers\Admin\PagesController;
 use App\Http\Controllers\Admin\PasswordResetController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -22,7 +24,9 @@ use App\Http\Controllers\StatusPageController;
 use App\Http\Controllers\SubscribeController;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\NoStore;
+use App\Http\Middleware\ResolveStatusPage;
 use App\Models\Incident;
+use App\Services\PageUrls;
 use App\Services\SelfUpdater;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Support\Facades\Route;
@@ -62,7 +66,7 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
     Route::middleware(['auth', AuthenticateSession::class])->group(function () {
         Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
-        Route::get('/', fn () => redirect()->route('admin.components'));
+        Route::get('/', fn () => redirect()->to(PageUrls::landing(auth()->user())));
 
         Route::get('components', [ComponentController::class, 'index'])->name('components');
         Route::get('components/create', [ComponentController::class, 'create'])->name('components.create');
@@ -179,3 +183,48 @@ Route::get('/storage/{path}', function (string $path) {
 
     return response()->file($file, ['X-Content-Type-Options' => 'nosniff', 'Content-Security-Policy' => "sandbox; default-src 'none'"]);
 })->where('path', '.*')->name('public.upload');
+
+// Register explicit page routes from the same actions, so legacy and page routes
+// cannot drift in validation or middleware. Account/install routes remain central.
+$pageRouteNames = ['status', 'subscribe', 'subscribe.confirm', 'unsubscribe'];
+$pageAdminPrefixes = ['components', 'groups', 'incidents', 'status-page', 'subscribers', 'integrations', 'branding', 'mail-templates', 'mail'];
+$originalRoutes = Route::getRoutes()->getRoutes();
+foreach ($originalRoutes as $original) {
+    $name = $original->getName();
+    $adminPageRoute = $name && str_starts_with($name, 'admin.')
+        && in_array(explode('.', substr($name, 6))[0], $pageAdminPrefixes, true)
+        && ! in_array($name, ['admin.branding.activate', 'admin.branding.deactivate'], true);
+    $publicPageRoute = in_array($name, $pageRouteNames, true)
+        || ($original->uri() === 'unsubscribe/{subscriber}');
+    if (! $adminPageRoute && ! $publicPageRoute) {
+        continue;
+    }
+    $original->middleware(ResolveStatusPage::class);
+    $uri = $adminPageRoute
+        ? 'admin/pages/{statusPage}/'.substr($original->uri(), 6)
+        : 'status/{slug}'.($original->uri() === '/' ? '' : '/'.$original->uri());
+    $action = $original->getAction();
+    $action['as'] = $name ? 'page.'.$name : null;
+    $copy = clone $original;
+    $copy->setUri($uri);
+    $copy->setAction($action);
+    Route::getRoutes()->add($copy);
+}
+
+Route::prefix('admin/pages')->name('admin.pages.')->middleware(['web', 'auth', AuthenticateSession::class, NoStore::class, EnsureAdmin::class])->group(function () {
+    Route::get('/', [PagesController::class, 'index'])->name('index');
+    Route::get('/create', [PagesController::class, 'create'])->name('create');
+    Route::post('/', [PagesController::class, 'store'])->name('store');
+    Route::get('/{statusPage}/edit', [PagesController::class, 'edit'])->name('edit');
+    Route::put('/{statusPage}', [PagesController::class, 'update'])->name('update');
+    Route::post('/{statusPage}/archive', [PagesController::class, 'archive'])->name('archive');
+});
+Route::get('admin/no-pages', fn () => view('admin.no-pages'))->middleware(['auth', AuthenticateSession::class, NoStore::class])->name('admin.no-pages');
+
+foreach (['admin' => 'admin.', 'admin/pages/{statusPage}' => 'page.admin.'] as $prefix => $names) {
+    Route::prefix($prefix)->name($names)->middleware(['auth', AuthenticateSession::class, NoStore::class, EnsureAdmin::class, ResolveStatusPage::class])->group(function () {
+        Route::get('mail', [PageMailController::class, 'edit'])->name('mail.edit');
+        Route::put('mail', [PageMailController::class, 'update'])->name('mail.update');
+        Route::post('mail-test', [PageMailController::class, 'test'])->name('mail.test');
+    });
+}

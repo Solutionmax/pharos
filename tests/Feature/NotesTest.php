@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\StatusPage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -70,6 +71,7 @@ class NotesTest extends TestCase
             'name' => 'Other', 'email' => 'other@example.com',
             'password' => Hash::make('correct-horse-battery'),
         ]);
+        $other->statusPages()->attach(StatusPage::default());
 
         $this->actingAs($this->admin)->postJson('/admin/notes/integrations.delivery/dismiss')->assertNoContent();
 

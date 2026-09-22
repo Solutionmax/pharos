@@ -9,7 +9,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** One mail owed to one subscriber about one incident update. */
+/**
+ * One mail owed to one subscriber about one incident update.
+ *
+ * @property int $status_page_id
+ */
 class SubscriberNotification extends Model
 {
     use BelongsToStatusPage, LocalTimestamps;

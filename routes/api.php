@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\HeartbeatController;
 use App\Http\Controllers\Api\IncidentController;
 use App\Http\Controllers\Api\KumaController;
 use App\Http\Middleware\ApiTokenAuth;
+use App\Http\Middleware\ResolveStatusPage;
 use Illuminate\Support\Facades\Route;
 
 // Path and shape match Cachet 2.x on purpose: existing scripts keep working.
@@ -24,3 +25,15 @@ Route::prefix('v1')->group(function () {
         Route::post('incidents/{incident}/updates', [IncidentController::class, 'addUpdate']);
     });
 });
+
+foreach (Route::getRoutes()->getRoutes() as $original) {
+    if (! str_starts_with($original->uri(), 'api/v1/')) {
+        continue;
+    }
+    $original->middleware(ResolveStatusPage::class);
+    $action = $original->getAction();
+    $copy = clone $original;
+    $copy->setUri('api/v1/pages/{slug}/'.substr($original->uri(), strlen('api/v1/')));
+    $copy->setAction($action);
+    Route::getRoutes()->add($copy);
+}

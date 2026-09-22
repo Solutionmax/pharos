@@ -3,8 +3,12 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use App\Models\StatusPageSetting;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Mail;
+use RuntimeException;
 
 /**
  * Mail settings from the admin, laid over the MAIL_* lines in .env.
@@ -28,6 +32,17 @@ class MailConfig
     ];
 
     public const PASSWORD_KEY = 'mail.password';
+
+    public const PAGE_FIELDS = [
+        'mode' => 'mail.mode',
+        'host' => 'mail.host',
+        'port' => 'mail.port',
+        'encryption' => 'mail.encryption',
+        'username' => 'mail.username',
+        'from_address' => 'mail.from_address',
+        'from_name' => 'mail.from_name',
+        'reply_to' => 'mail.reply_to',
+    ];
 
     public const MAILERS = ['smtp', 'sendmail', 'log'];
 
@@ -145,6 +160,21 @@ class MailConfig
     /** Can a mail leave this install at all? SMTP without a host cannot; every other transport can. */
     public function configured(): bool
     {
+        $page = $this->storedPage();
+        if (($page['mode'] ?: 'central') === 'custom') {
+            if ($this->pageHasPassword()) {
+                try {
+                    $this->pagePassword();
+                } catch (RuntimeException) {
+                    return false;
+                }
+            }
+
+            return $page['host'] !== ''
+                && (int) $page['port'] > 0
+                && $this->sender()['address'] !== '';
+        }
+
         $effective = $this->effective();
 
         return $effective['mailer'] !== 'smtp' || $effective['host'] !== '';
@@ -162,5 +192,129 @@ class MailConfig
             'from' => (string) config('mail.from.address'),
             'from_name' => (string) (config('mail.from.name') ?: app(Branding::class)->name()),
         ];
+    }
+
+    /** @param array<string, mixed> $data */
+    public function savePage(array $data): void
+    {
+        $pageId = app(PageContext::class)->id();
+        foreach (self::PAGE_FIELDS as $field => $key) {
+            StatusPageSetting::updateOrCreate(
+                ['status_page_id' => $pageId, 'key' => $key],
+                ['value' => trim((string) ($data[$field] ?? ''))],
+            );
+        }
+
+        if (filled($data['password'] ?? null)) {
+            StatusPageSetting::updateOrCreate(
+                ['status_page_id' => $pageId, 'key' => self::PASSWORD_KEY],
+                ['value' => Crypt::encryptString((string) $data['password'])],
+            );
+        }
+    }
+
+    /** @return array<string, string> */
+    public function storedPage(): array
+    {
+        $values = [];
+        foreach (self::PAGE_FIELDS as $field => $key) {
+            $values[$field] = trim((string) $this->pageValue($key, ''));
+        }
+
+        return $values;
+    }
+
+    public function pageHasPassword(): bool
+    {
+        return filled($this->pageValue(self::PASSWORD_KEY));
+    }
+
+    /** @return array<string, string> */
+    public function effectivePage(): array
+    {
+        $stored = $this->storedPage();
+        $sender = $this->sender();
+
+        if (($stored['mode'] ?: 'central') === 'custom') {
+            return [
+                'mode' => 'custom',
+                'mailer' => 'smtp',
+                'host' => $stored['host'],
+                'port' => $stored['port'],
+                'from' => $sender['address'],
+                'from_name' => $sender['name'],
+                'reply_to' => $sender['reply_to'],
+            ];
+        }
+
+        return array_merge($this->effective(), [
+            'mode' => 'central',
+            'from' => $sender['address'],
+            'from_name' => $sender['name'],
+            'reply_to' => $sender['reply_to'],
+        ]);
+    }
+
+    /** @return array{address: string, name: string, reply_to: string} */
+    public function sender(): array
+    {
+        $stored = $this->storedPage();
+
+        return [
+            'address' => $stored['from_address'] ?: (string) config('mail.from.address'),
+            'name' => $stored['from_name'] ?: ((string) config('mail.from.name') ?: app(Branding::class)->name()),
+            'reply_to' => $stored['reply_to'],
+        ];
+    }
+
+    public function sendTo(string $address, Mailable $mail): void
+    {
+        if (($this->storedPage()['mode'] ?: 'central') === 'central') {
+            Mail::to($address)->send($mail);
+
+            return;
+        }
+
+        $mailer = 'pharos_page_'.app(PageContext::class)->id();
+        $stored = $this->storedPage();
+        config(["mail.mailers.$mailer" => [
+            'transport' => 'smtp',
+            'scheme' => $stored['encryption'] === 'ssl' ? 'smtps' : 'smtp',
+            'host' => $stored['host'],
+            'port' => (int) $stored['port'],
+            'username' => $stored['username'] ?: null,
+            'password' => $this->pagePassword(),
+            'timeout' => 10,
+            'local_domain' => parse_url((string) config('app.url'), PHP_URL_HOST),
+        ]]);
+
+        Mail::purge($mailer);
+        try {
+            Mail::mailer($mailer)->to($address)->send($mail);
+        } finally {
+            Mail::purge($mailer);
+        }
+    }
+
+    public function pagePassword(): ?string
+    {
+        $encrypted = $this->pageValue(self::PASSWORD_KEY);
+        if (! is_string($encrypted) || $encrypted === '') {
+            return null;
+        }
+
+        try {
+            return Crypt::decryptString($encrypted);
+        } catch (DecryptException) {
+            throw new RuntimeException('Stored page SMTP password cannot be decrypted.');
+        }
+    }
+
+    private function pageValue(string $key, mixed $default = null): mixed
+    {
+        return StatusPageSetting::query()
+            ->where('status_page_id', app(PageContext::class)->id())
+            ->where('key', $key)
+            ->value('value') ?? $default;
     }
 }

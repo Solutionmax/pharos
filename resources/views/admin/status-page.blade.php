@@ -33,7 +33,7 @@
 
 <div class="split">
   <div>
-    <form method="POST" action="{{ route('admin.status-page.update') }}" id="settings-form">
+    <form method="POST" action="{{ \App\Services\PageUrls::route('admin.status-page.update') }}" id="settings-form">
       @csrf @method('PUT')
 
       <div class="panel">
@@ -58,7 +58,7 @@
       <div class="panel">
         <div class="panel-hd">
           <h3>Services</h3>
-          <span class="hint"><a href="{{ route('admin.groups', ['from' => 'status-page']) }}">Rename or add</a></span>
+          <span class="hint"><a href="{{ \App\Services\PageUrls::route('admin.groups', ['from' => 'status-page']) }}">Rename or add</a></span>
         </div>
         <div class="panel-bd">
           @forelse ($groups as $group)
@@ -74,7 +74,7 @@
             </label>
           @empty
             <x-note id="status-page.no-services">
-              No services yet. <a href="{{ route('admin.groups', ['from' => 'status-page']) }}">Add one</a> and it appears here
+              No services yet. <a href="{{ \App\Services\PageUrls::route('admin.groups', ['from' => 'status-page']) }}">Add one</a> and it appears here
               as its own switch.
             </x-note>
           @endforelse

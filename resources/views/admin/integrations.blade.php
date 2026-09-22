@@ -54,11 +54,11 @@
               </td>
               <td>
                 <span class="rowacts">
-                  <form method="POST" action="{{ route('admin.integrations.endpoints.test', $endpoint) }}">
+                  <form method="POST" action="{{ \App\Services\PageUrls::route('admin.integrations.endpoints.test', $endpoint) }}">
                     @csrf
                     <button type="submit">Send test</button>
                   </form>
-                  <form method="POST" action="{{ route('admin.integrations.endpoints.destroy', $endpoint) }}"
+                  <form method="POST" action="{{ \App\Services\PageUrls::route('admin.integrations.endpoints.destroy', $endpoint) }}"
                         data-confirm-title="Stop notifying {{ $endpoint->label }}?"
                         data-confirm="Incidents keep appearing on the status page. <strong>Nobody is told about them</strong> through this channel any more."
                         data-confirm-action="Remove">
@@ -100,7 +100,7 @@
           their URL is the credential.
         </span>
       </div>
-      <form method="POST" action="{{ route('admin.integrations.webhook.rotate') }}"
+      <form method="POST" action="{{ \App\Services\PageUrls::route('admin.integrations.webhook.rotate') }}"
             data-confirm-title="Rotate the signing secret?"
             data-confirm="Generic deliveries are signed with the new secret from the next event on. <strong>The receiving end rejects them</strong> until you paste the new secret there."
             data-confirm-action="Rotate secret">
@@ -132,7 +132,7 @@
           <td class="num">{{ $token->last_used_at?->diffForHumans() ?? 'never' }}</td>
           <td>
             <span class="rowacts">
-              <form method="POST" action="{{ route('admin.integrations.tokens.destroy', $token) }}"
+              <form method="POST" action="{{ \App\Services\PageUrls::route('admin.integrations.tokens.destroy', $token) }}"
                     data-confirm-title="Revoke {{ $token->name }}?"
                     data-confirm="Anything still holding this token <strong>stops working straight away</strong> ; scripts, integrations, monitors. A replacement is always a different token."
                     data-confirm-action="Revoke token">
@@ -148,7 +148,7 @@
   </div>
   @endif
   <div class="panel-bd" style="border-top:1px solid var(--line)">
-    <form method="POST" action="{{ route('admin.integrations.tokens.store') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+    <form method="POST" action="{{ \App\Services\PageUrls::route('admin.integrations.tokens.store') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
       @csrf
       <div class="field" style="flex:1;min-width:220px">
         <label for="t-name">What is this token for?</label>

@@ -11,6 +11,8 @@ use App\Models\Incident;
 use App\Models\IncidentTemplate;
 use App\Models\IncidentUpdate;
 use App\Services\OutgoingWebhook;
+use App\Services\PageContext;
+use App\Services\TokenAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -24,7 +26,8 @@ class IncidentController extends Controller
         // A valid token also sees internal incidents: an integration that opened
         // one for a hidden service has to be able to find it again to resolve it.
         $plain = $request->bearerToken() ?: $request->header('X-Cachet-Token');
-        $trusted = $plain && ApiToken::findByPlaintext($plain) !== null;
+        $token = $plain ? ApiToken::findByPlaintext($plain) : null;
+        $trusted = $token && TokenAccess::allows($token, app(PageContext::class)->id());
 
         $incidents = Incident::query()->when(! $trusted, fn ($q) => $q->public())
             ->with('updates', 'components')
@@ -46,7 +49,7 @@ class IncidentController extends Controller
     {
         $data = $request->validate([
             'name' => ['required_without:template', 'string', 'max:255'],
-            'template' => ['sometimes', 'string', 'exists:incident_templates,slug'],
+            'template' => ['sometimes', 'string', Rule::exists('incident_templates', 'slug')->where('status_page_id', app(PageContext::class)->id())],
             'vars' => ['sometimes', 'array'],
             'vars.*' => ['string', 'max:255'],
             'status' => ['required'],

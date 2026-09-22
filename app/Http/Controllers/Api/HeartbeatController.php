@@ -15,7 +15,7 @@ class HeartbeatController extends Controller
      */
     public function ping(string $token, CheckRunner $runner)
     {
-        $check = Check::with('component')
+        $check = Check::with('component')->whereHas('component')
             ->where('type', CheckType::Heartbeat)->where('target', $token)->first();
 
         if (! $check) {

@@ -164,3 +164,10 @@ their own after 7 days.
   means the host's SMTP and its hourly cap. The batch size of 50 per minute is
   deliberately below most of them.
 - The mail text is fixed in this release. Editable templates are the next phase.
+
+## Multiple pages
+
+Each subscription belongs to one status page. The same email can follow several pages
+and unsubscribe independently. Page branding and optional SMTP are configured through
+the selected page. Confirmation/unsubscribe links stay on the central installation
+host so customer-domain changes do not break them. See [page administration](multiple-status-pages.md).

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Audit;
+use App\Services\PageUrls;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -70,7 +71,7 @@ class AuthController extends Controller
         $request->session()->regenerate();
         Audit::record('auth.login');
 
-        return redirect()->intended(route('admin.components'));
+        return redirect()->intended(PageUrls::landing(auth()->user()));
     }
 
     public function logout(Request $request)
