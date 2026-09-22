@@ -26,6 +26,31 @@
         </div>
       </div>
 
+      @if ($editing && $statusPage->id === \App\Models\StatusPage::defaultId())
+        <div class="field">
+          <label>Page tag</label>
+          <div>@include('partials.page-tag', ['tagPage' => $statusPage])</div>
+          <span class="help">The main page always carries the Default tag.</span>
+        </div>
+      @else
+        <div class="fields">
+          <div class="field">
+            <label for="tag-label">Page tag</label>
+            <input id="tag-label" name="tag_label" value="{{ old('tag_label', $statusPage->tag_label) }}" placeholder="Customer, Demo, Internal…" maxlength="24">
+            <span class="help">A short label for the admin overview. Empty uses “Page”.</span>
+            @error('tag_label')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
+          </div>
+          <div class="field">
+            <label for="tag-color">Tag colour</label>
+            <select id="tag-color" name="tag_color">
+              @foreach (\App\Models\StatusPage::TAG_COLORS as $color => $label)
+                <option value="{{ $color }}" @selected(old('tag_color', $statusPage->tag_color ?: 'teal') === $color)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
+        </div>
+      @endif
+
       <div class="field">
         <label for="page-domain">Custom domain</label>
         <input id="page-domain" name="domain" type="text" value="{{ old('domain', $statusPage->domain) }}" placeholder="status.example.com" maxlength="253">

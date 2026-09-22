@@ -3,11 +3,24 @@
 @section('content')
 @include('partials.pagehead', [
   'title' => 'Page e-mail',
-  'sub' => 'Sender and transport for this status page',
+  'sub' => 'Delivery settings for one selected status page',
 ])
 
+<div class="page-context">
+  <div>
+    @include('partials.page-tag', ['tagPage' => $mailPage])
+    <h2>Email for {{ $mailPage->name }}</h2>
+    <p>Only this page’s subscriber confirmations and incident notifications use these settings.</p>
+    <p class="mono" style="margin-top:4px;overflow-wrap:anywhere">{{ $mailPage->publicUrl() }}</p>
+  </div>
+  <a class="btn ghost" href="{{ route('admin.pages.index') }}">Choose another page</a>
+</div>
+<p class="sub" style="margin-bottom:20px">Account emails always use central mail.
+  Configure the shared server once in <a href="{{ route('admin.settings', ['tab' => 'mail']) }}">Settings → Central mail</a>.
+  This page can use that server with its own sender, or use a separate SMTP server.</p>
+<style>#page-smtp-fields > .fields + .fields{margin-top:16px}</style>
 <div class="panel">
-  <div class="panel-hd"><h3>Delivery</h3><span class="hint">This page only</span></div>
+  <div class="panel-hd"><h3>Delivery for {{ $mailPage->name }}</h3></div>
   <div class="panel-bd">
     <form method="POST" action="{{ \App\Services\PageUrls::route('admin.mail.update') }}" style="display:flex;flex-direction:column;gap:16px">
       @csrf @method('PUT')
@@ -17,9 +30,10 @@
           <option value="central" @selected(old('mode', $mailForm['mode'] ?: 'central') === 'central')>Use central mail transport</option>
           <option value="custom" @selected(old('mode', $mailForm['mode']) === 'custom')>Use custom SMTP</option>
         </select>
-        <span class="help">Central uses the installation mail server. Custom SMTP is isolated to this page.</span>
+        <span class="help">Use the shared server unless this page needs its own provider or SMTP account. Existing custom credentials are kept when switching to central.</span>
       </div>
 
+      <div id="page-smtp-fields" @if(old('mode', $mailForm['mode'] ?: 'central') !== 'custom') hidden @endif>
       <div class="fields">
         <div class="field">
           <label for="host">SMTP host</label>
@@ -54,15 +68,20 @@
         </div>
       </div>
 
+      </div>
+      <div>
+        <h3 style="font-size:15px">Sender for {{ $mailPage->name }}</h3>
+        <p class="help">With central transport, leave the address and name empty to inherit the central sender. A separate SMTP server requires a from address.</p>
+      </div>
       <div class="fields">
         <div class="field">
           <label for="from_address">From address</label>
-          <input id="from_address" name="from_address" type="email" value="{{ old('from_address', $mailForm['from_address']) }}" placeholder="status@example.net">
+          <input id="from_address" name="from_address" type="email" value="{{ old('from_address', $mailForm['from_address']) }}" placeholder="{{ $effective['from'] }}">
           @error('from_address')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
         </div>
         <div class="field">
           <label for="from_name">From name</label>
-          <input id="from_name" name="from_name" type="text" value="{{ old('from_name', $mailForm['from_name']) }}" placeholder="{{ $brandName }}">
+          <input id="from_name" name="from_name" type="text" value="{{ old('from_name', $mailForm['from_name']) }}" placeholder="{{ $effective['from_name'] }}">
         </div>
         <div class="field">
           <label for="reply_to">Reply-to address</label>
@@ -78,7 +97,7 @@
     </form>
 
     <div class="field">
-      <label>Effective</label>
+      <label>Currently saved delivery for {{ $mailPage->name }}</label>
       @php $where = $effective['host'] !== '' ? ' via '.$effective['host'].($effective['port'] !== '' ? ':'.$effective['port'] : '') : ''; @endphp
       <span class="mono" style="font-size:13px">{{ $effective['mailer'].$where }} as {{ $effective['from_name'] }} &lt;{{ $effective['from'] }}&gt;</span>
     </div>
@@ -87,10 +106,20 @@
       @csrf
       <div class="actions">
         <button class="btn ghost" type="submit">Send test e-mail</button>
-        <span class="help" style="align-self:center">Goes to {{ auth()->user()->email }} with this page's sender, branding and transport.</span>
+        <span class="help" style="align-self:center">Goes to {{ auth()->user()->email }} using the saved settings for {{ $mailPage->name }}. Save changes before testing.</span>
       </div>
       @error('mail')<span class="help" style="color:var(--red-ink);display:block;margin-top:8px">{{ $message }}</span>@enderror
     </form>
   </div>
 </div>
+<script>
+(function () {
+  var mode = document.getElementById('mode');
+  var fields = document.getElementById('page-smtp-fields');
+  function update() { fields.hidden = mode.value !== 'custom'; }
+  mode.addEventListener('change', update);
+  mode.form.addEventListener('reset', function () { setTimeout(update, 0); });
+  update();
+})();
+</script>
 @endsection

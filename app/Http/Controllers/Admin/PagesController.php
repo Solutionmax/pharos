@@ -43,6 +43,8 @@ class PagesController extends Controller
             $page = StatusPage::query()->create([
                 'name' => $data['name'],
                 'slug' => $data['slug'],
+                'tag_label' => $data['tag_label'] ?? null,
+                'tag_color' => $data['tag_color'] ?? null,
                 'domain' => $data['domain'] ?? null,
                 'is_published' => $data['is_published'] ?? false,
             ]);
@@ -76,6 +78,8 @@ class PagesController extends Controller
             $statusPage->fill([
                 'name' => $data['name'],
                 'slug' => $data['slug'],
+                'tag_label' => array_key_exists('tag_label', $data) ? $data['tag_label'] : $statusPage->tag_label,
+                'tag_color' => array_key_exists('tag_color', $data) ? $data['tag_color'] : $statusPage->tag_color,
                 'domain' => $data['domain'] ?? null,
                 'is_published' => $statusPage->archived_at !== null && ! $reactivate
                     ? false
@@ -119,6 +123,8 @@ class PagesController extends Controller
 
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'tag_label' => ['nullable', 'string', 'max:24', ...($statusPage?->getKey() === StatusPage::defaultId() ? [] : ['not_regex:/^default$/i'])],
+            'tag_color' => ['nullable', Rule::in(array_keys(StatusPage::TAG_COLORS))],
             'slug' => [
                 'required',
                 'string',
