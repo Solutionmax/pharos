@@ -67,7 +67,14 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .page-switcher>summary{padding:12px 10px;align-items:flex-start}
 .page-switcher>summary .page-name{font-weight:650;font-size:13px;line-height:1.5}
 .page-switcher .page-tag{margin-top:6px}
-.page-switcher .page-options{border-top:1px solid var(--line);border-bottom:0;padding:5px}
+.page-picker-panel{border-top:1px solid var(--line)}
+.page-switcher .page-options{padding:5px;max-height:min(280px,40dvh);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.page-switcher .page-options .nav[hidden]{display:none}
+.page-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.page-search{padding:8px 8px 3px}
+.page-search input{width:100%;min-width:0;font:inherit;font-size:12px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+.page-search-empty{padding:10px 12px}
+.page-menu .page-search-empty[hidden]{display:none}
 .page-switcher .page-options .nav{padding:9px 8px}
 .page-switcher .nav[aria-current="page"]::before{display:none}
 .page-context{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 22px;margin-bottom:20px;border:1px solid var(--line);border-radius:12px;background:var(--bg-tint)}
@@ -76,7 +83,6 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .page-menu>summary::-webkit-details-marker{display:none}
 .page-menu>summary::after{content:'⌄';margin-left:auto;flex:none}
 .page-menu[open]>summary::after{content:'⌃'}
-.page-menu .page-options{padding:4px 0 6px;border-bottom:1px solid var(--line)}
 .page-menu .page-options .nav{font-size:12px;align-items:flex-start}
 .page-menu .page-name{min-width:0;overflow-wrap:anywhere}
 .page-menu .page-note{display:block;font-size:11px;color:var(--ink-3);font-weight:400}
@@ -373,7 +379,7 @@ pre .k{color:var(--brand)}
     <span class="brand">@include('partials.logo', ['size' => 26])</span>
 
     <span class="lbl">Manage a page</span>
-    @include('partials.page-selector')
+    @include('partials.page-selector', ['viewPages' => false])
 
     @if(auth()->user()->isAdmin())
       <a class="nav" href="{{ route('admin.pages.index') }}" @if(request()->routeIs('admin.pages.*')) aria-current="page" @endif>
@@ -428,22 +434,7 @@ pre .k{color:var(--brand)}
     @endif
 
     <span class="bottom">
-      <details class="page-menu" aria-label="View a published status page">
-        <summary class="nav">@include('partials.icon', ['name' => 'external']) View status page</summary>
-        <div class="page-options">
-          @forelse ($selectorPages->where('is_published', true) as $publicPage)
-            <a class="nav" href="{{ $publicPage->publicUrl() }}" target="_blank" rel="noopener">
-              <span class="page-name">{{ $publicPage->name }}
-                @if ($publicPage->id === $selectedPageId)<span class="page-note">Currently selected</span>@endif
-              </span>
-              @include('partials.icon', ['name' => 'external', 'size' => 14])
-            </a>
-          @empty
-            <span class="nav">No published pages</span>
-          @endforelse
-          <span class="page-note" style="padding:4px 12px">Opens in a new tab. Drafts must be published first.</span>
-        </div>
-      </details>
+      @include('partials.page-selector', ['viewPages' => true])
 
       <a class="whorow" href="{{ route('admin.profile') }}" title="Your profile"
          @if(request()->routeIs('admin.profile', 'page.admin.profile')) aria-current="page" @endif>
@@ -472,6 +463,20 @@ pre .k{color:var(--brand)}
 {{-- Where a note's dismiss form actually lives; see components/note.blade.php. --}}
 @stack('deferred-forms')
 <script>
+// Each picker filters only its own already-authorized choices.
+document.addEventListener('input', function (event) {
+  if (!event.target.matches('[data-page-filter]')) return;
+  var menu = event.target.closest('.page-menu');
+  var term = event.target.value.trim().toLocaleLowerCase();
+  var matches = 0;
+  menu.querySelectorAll('[data-page-choice]').forEach(function (link) {
+    link.hidden = !link.dataset.pageSearch.toLocaleLowerCase().includes(term);
+    if (!link.hidden) matches++;
+  });
+  menu.querySelector('[data-page-empty]').hidden = matches !== 0;
+  menu.querySelector('.page-options').scrollTop = 0;
+});
+
 // "Got it" on a note: tell the server over fetch and take the box away at once.
 // Without JavaScript the form around the button posts and the page comes back without it.
 document.addEventListener('click', function (event) {

@@ -270,6 +270,23 @@ class PageManagementTest extends TestCase
             ->assertDontSee('href="'.route('page.admin.components', ['statusPage' => $default->id]).'"', false);
     }
 
+    public function test_large_page_menus_offer_search_and_all_available_choices(): void
+    {
+        for ($number = 1; $number <= 9; $number++) {
+            StatusPage::create(['name' => 'Customer '.$number, 'slug' => 'customer-'.$number, 'is_published' => true]);
+        }
+        $response = $this->actingAs($this->admin)->get('/admin/pages')->assertOk();
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        foreach (['Choose a page to manage', 'View a published status page'] as $label) {
+            $menu = $xpath->query('//details[@aria-label="'.$label.'"]')->item(0);
+            $this->assertNotNull($menu);
+            $this->assertCount(10, $xpath->query('.//a', $menu));
+            $this->assertCount(1, $xpath->query('.//input[@type="search"]', $menu));
+        }
+    }
+
     public function test_public_page_menu_only_offers_published_pages_the_user_can_manage(): void
     {
         $member = User::factory()->create(['role' => UserRole::User]);
