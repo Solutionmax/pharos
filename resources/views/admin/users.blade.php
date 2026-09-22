@@ -10,16 +10,32 @@
   <div class="panel-hd"><h3>Accounts</h3></div>
   <div class="scroll">
     <table>
-      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Added</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Page access</th><th>Added</th><th></th></tr></thead>
       <tbody>
       @foreach ($users as $user)
         <tr>
           <td>{{ $user->name }}@if($user->is(auth()->user())) <span class="sub">— you</span>@endif</td>
           <td class="mono" style="font-size:13px">{{ $user->email }}</td>
           <td>{{ $user->role->label() }}</td>
+          <td>
+            @if ($user->isAdmin())
+              <span class="pill">All pages</span>
+            @else
+              @php($assignedPages = $user->statusPages->whereNull('archived_at'))
+              @forelse ($assignedPages->take(3) as $assignedPage)
+                <div style="margin-bottom:5px;font-size:12px">{{ $assignedPage->name }} @include('partials.page-tag', ['tagPage' => $assignedPage])</div>
+              @empty
+                <span class="sub">No pages assigned</span>
+              @endforelse
+              @if ($assignedPages->count() > 3)<span class="sub">+{{ $assignedPages->count() - 3 }} more</span>@endif
+            @endif
+          </td>
           <td class="num">{{ $user->created_at?->format('d M Y') }}</td>
           <td>
-            <span class="rowacts">
+            <span class="rowacts" style="flex-wrap:wrap">
+              @unless ($user->isAdmin())
+                <a href="{{ route('admin.users.pages.edit', $user) }}">Page access</a>
+              @endunless
               <form method="POST" action="{{ route('admin.users.role', $user) }}"
                     @if ($user->is(auth()->user()) && $user->isAdmin())
                       data-confirm-title="Give up your own admin rights?"
@@ -49,7 +65,7 @@
 </div>
 
 <div class="panel">
-  <div class="panel-hd"><h3>Add someone</h3><span class="hint">A user runs the status page; an administrator also manages accounts, tokens, updates and branding</span></div>
+  <div class="panel-hd"><h3>Add someone</h3><span class="hint">Users manage assigned pages; administrators manage the entire installation</span></div>
   <div class="panel-bd">
     <form method="POST" action="{{ route('admin.users.store') }}" style="display:flex;flex-direction:column;gap:16px">
       @csrf
@@ -85,6 +101,7 @@
           <span class="help">Administrators can manage accounts, API tokens, updates and branding.</span>
         </div>
       </div>
+      @include('admin.partials.user-page-assignments', ['selectedPageIds' => []])
       <div class="actions">
         <button class="btn" type="submit">Add user</button>
         <button class="btn ghost" type="reset">Clear</button>

@@ -30,13 +30,13 @@ class IntegrationController extends Controller
             'destinationProfiles' => $profiles,
             'selectedFormat' => $format,
             'manualComponents' => $components->filter(fn ($component) => $component->enabled && ! $component->check?->enabled),
-            'tokens' => ApiToken::where('status_page_id', app(PageContext::class)->id())->orderByDesc('created_at')->get(),
+            'tokens' => ApiToken::where('status_page_id', app(PageContext::class)->id())->orderByDesc('id')->paginate(10, ['*'], 'tokens_page')->withQueryString()->fragment('integration-tokens'),
             'newToken' => session('new_token'),
-            'deliveries' => WebhookDelivery::whereHas('endpoint')->with('endpoint')->latest('id')->limit(20)->get(),
-            'endpoints' => WebhookEndpoint::orderBy('id')->get(),
+            'deliveries' => WebhookDelivery::where('status_page_id', app(PageContext::class)->id())->whereHas('endpoint')->with('endpoint')->latest('id')->paginate(5, ['*'], 'deliveries_page')->withQueryString()->fragment('delivery-history'),
+            'endpoints' => WebhookEndpoint::orderBy('id')->paginate(5, ['*'], 'endpoints_page')->withQueryString()->fragment('outgoing-integrations'),
             'webhookSecret' => Setting::get('integrations.webhook_secret'),
             'heartbeats' => Component::whereHas('check', fn ($q) => $q->where('type', 'heartbeat'))
-                ->with('check')->get(),
+                ->with('check')->orderBy('id')->paginate(5, ['*'], 'heartbeats_page')->withQueryString()->fragment('guide-heartbeats'),
             'components' => $components,
         ]);
     }

@@ -31,6 +31,11 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
   'sub' => 'What subscribers receive',
 ])
 
+@include('partials.page-context', [
+  'contextTitle' => 'Mail templates for',
+  'contextHelp' => 'These templates are used only for this page’s subscribers. Account emails remain separate. Switch page to edit another set.',
+])
+
 @php
   $sectionItems = [];
   foreach ($labels as $tabKey => $label) {

@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\StatusPage;
 use App\Models\User;
+use App\Services\Audit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -14,7 +17,10 @@ class UserController extends Controller
 {
     public function index()
     {
-        return view('admin.users', ['users' => User::orderBy('name')->get()]);
+        return view('admin.users', [
+            'users' => User::with('statusPages')->orderBy('name')->get(),
+            'pages' => StatusPage::whereNull('archived_at')->orderBy('name')->get(),
+        ]);
     }
 
     public function store(Request $request)
@@ -24,16 +30,55 @@ class UserController extends Controller
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(12)],
             'role' => ['sometimes', Rule::enum(UserRole::class)],
+            ...$this->pageRules(),
         ]);
 
-        User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role' => $data['role'] ?? UserRole::User,
-        ]);
+        DB::transaction(function () use ($data) {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'role' => $data['role'] ?? UserRole::User,
+            ]);
+            if (! $user->isAdmin()) {
+                $user->statusPages()->sync($data['status_page_ids'] ?? []);
+            }
+        });
 
         return redirect()->route('admin.users')->with('status', "{$data['name']} can now sign in.");
+    }
+
+    public function editPages(User $user)
+    {
+        abort_if($user->isAdmin(), 403, 'Administrators can access every page. Use the User role for restricted access.');
+
+        return view('admin.user-pages', [
+            'member' => $user,
+            'pages' => StatusPage::whereNull('archived_at')->orderBy('name')->get(),
+            'selectedPageIds' => $user->statusPages()->pluck('status_pages.id')->all(),
+        ]);
+    }
+
+    public function updatePages(Request $request, User $user)
+    {
+        abort_if($user->isAdmin(), 403, 'Administrators can access every page. Use the User role for restricted access.');
+        $data = $request->validate($this->pageRules());
+        DB::transaction(function () use ($user, $data) {
+            $before = $user->statusPages()->pluck('status_pages.id')->all();
+            $ids = $data['status_page_ids'] ?? [];
+            $user->statusPages()->sync($ids);
+            Audit::record('user.page_access_changed', $user, ['pages' => ['from' => $before, 'to' => $ids]]);
+        });
+
+        return redirect()->route('admin.users')->with('status', "Page access for {$user->name} saved.");
+    }
+
+    private function pageRules(): array
+    {
+        return [
+            'status_page_ids' => ['sometimes', 'array'],
+            'status_page_ids.*' => ['integer', 'distinct', Rule::exists('status_pages', 'id')->whereNull('archived_at')],
+        ];
     }
 
     public function updateRole(Request $request, User $user)

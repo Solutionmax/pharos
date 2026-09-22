@@ -75,7 +75,7 @@
       </div>
     </details>
 
-    <details class="integration-guide" id="guide-heartbeats">
+    <details class="integration-guide" id="guide-heartbeats" @if(request()->has('heartbeats_page')) open @endif>
       <summary><span class="integration-guide-mark">↗</span><span><strong>Heartbeats from your jobs</strong><small>A successful job checks in; silence triggers the check</small></span><span class="guide-toggle" aria-hidden="true">+</span></summary>
       <div class="integration-guide-body">
         <p>Create a component with source <b>Heartbeat</b>. Have the job POST to its URL only after a successful run, within the configured interval. The secret in the URL authorizes the request; no API header is needed. Keep the minute scheduler running to detect a missed heartbeat.</p>
@@ -87,6 +87,7 @@
           <x-note id="integrations.no-heartbeats">No heartbeat components yet. Add a component with source <b>Heartbeat</b> and its push URL appears here.</x-note>
           <a class="integration-link" href="{{ \App\Services\PageUrls::route('admin.components.create') }}">Add a heartbeat component</a>
         @endforelse
+        {{ $heartbeats->links('vendor.pagination.pharos', ['previousLabel' => 'Previous', 'nextLabel' => 'Next']) }}
       </div>
     </details>
   </div>
