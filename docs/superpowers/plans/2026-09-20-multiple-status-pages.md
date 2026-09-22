@@ -89,9 +89,20 @@ Files: tests for migration backup fixture, `docs/multiple-status-pages.md`, upda
 - [x] Run `vendor/bin/phpunit`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse --memory-limit=1G`, `git diff --check`.
 - [x] Rehearse upgrade from populated 0.6.0 SQLite and MySQL with fake transports; verify ids/history, old links/tokens and page-unique email behavior.
 - [x] Serve isolated local preview with two synthetic brands; browser-check creation/navigation/branding/service separation at desktop and mobile sizes.
-- [ ] Compare CT106 application to base, take consistent backup before any authorized test deployment; no scheduler or external delivery enabled in rehearsal.
-- [ ] Provide internal test location, verification evidence and limitations. Keep branch local, do not push or publish.
+- [x] Compare CT106 application to base, take consistent backup before any authorized test deployment; no scheduler or external delivery enabled in rehearsal.
+- [x] Provide internal test location, verification evidence and limitations. Keep branch local, do not push or publish.
 
 ## Review decisions
 
 No global scope on derived Check/IncidentUpdate models: callers resolving them directly must scope through parent or explicit page context. Background queries that intentionally span pages must say withoutGlobalScope and then enter correct context before relationships/mutations. All interactions involving public page data require regression tests, not source-text assertions. PageContext has no static mutable state.
+
+## Completion evidence — 22 September 2026
+
+- Full SQLite suite: 705 tests / 2928 assertions passed.
+- MySQL page ownership/routes/management/delivery suites: 53 tests / 258 assertions passed, including populated legacy migration rehearsal.
+- Pint passed; PHPStan passed with zero errors; diff whitespace check passed.
+- Independent final review approved internal integration; desktop/mobile browser checks passed.
+- CT106 upgraded after full application/database backup and staged migration. Historical row counts, APP_KEY/environment and uploaded files verified preserved; SQLite integrity check passed.
+- Public/API and authenticated page administration return 200. Existing scheduler resumed and new check results confirmed.
+- Domain-bound five-page internal test licence expires 22 October 2026. Original licence remains in the pre-upgrade backup.
+- No external SMTP test, payment portal changes, GitHub push or public release. FreeScout feasibility documented; module deferred.
