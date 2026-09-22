@@ -230,6 +230,50 @@ class PageManagementTest extends TestCase
             ->assertDontSee('href="'.route('page.admin.components', ['statusPage' => $default->id]).'"', false);
     }
 
+    public function test_public_page_menu_only_offers_published_pages_the_user_can_manage(): void
+    {
+        $member = User::factory()->create(['role' => UserRole::User]);
+        $public = StatusPage::create(['name' => 'Public customer', 'slug' => 'public-customer', 'is_published' => true]);
+        $draft = StatusPage::create(['name' => 'Draft customer', 'slug' => 'draft-customer']);
+        $archived = StatusPage::create(['name' => 'Archived customer', 'slug' => 'archived-customer', 'is_published' => true, 'archived_at' => now()]);
+        $member->statusPages()->attach([$public->id, $draft->id, $archived->id]);
+
+        $response = $this->actingAs($member)->get('/admin/pages/'.$public->id.'/components')->assertOk();
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $links = $xpath->query('//*[@aria-label="View a published status page"]//a');
+        $this->assertCount(1, $links);
+        $this->assertSame($public->publicUrl(), $links->item(0)->getAttribute('href'));
+        $this->assertStringContainsString($public->name, $links->item(0)->textContent);
+        $response->assertDontSee($archived->name)->assertSee($draft->name);
+    }
+
+    public function test_page_overview_has_manage_links_and_canonical_public_addresses(): void
+    {
+        $page = StatusPage::create(['name' => 'Customer site', 'slug' => 'customer-site', 'is_published' => true, 'domain' => 'status.customer.test']);
+        $draft = StatusPage::create(['name' => 'Draft site', 'slug' => 'draft-site']);
+        $response = $this->actingAs($this->admin)->get('/admin/pages')->assertOk();
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $rows = $xpath->query('//table/tbody/tr');
+        foreach ($rows as $row) {
+            $html = $dom->saveHTML($row);
+            if (str_contains($row->textContent, $page->name)) {
+                $this->assertStringContainsString('href="'.$page->publicUrl().'"', $html);
+                $this->assertStringContainsString('href="'.route('page.admin.components', ['statusPage' => $page->id]).'"', $html);
+                $this->assertStringContainsString('Manage', $row->textContent);
+            }
+            if (str_contains($row->textContent, $draft->name)) {
+                $this->assertStringContainsString($draft->publicUrl(), $row->textContent);
+                $this->assertStringNotContainsString('href="'.$draft->publicUrl().'"', $html);
+            }
+        }
+        $this->assertCount(3, $rows);
+        $response->assertSee(StatusPage::default()->publicUrl());
+    }
+
     public function test_the_page_selector_has_an_empty_state_for_an_unassigned_user(): void
     {
         $member = User::create([

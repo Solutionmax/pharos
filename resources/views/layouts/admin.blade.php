@@ -23,7 +23,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 /* ---------- chrome ---------- */
 .shell{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
-.side{background:var(--card);border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh}
+.side{overflow-y:auto;background:var(--card);border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh}
 /* mobile drawer: on wide screens the topbar, toggle and scrim do not exist */
 .topbar{display:none}
 .navtoggle{display:none}
@@ -57,6 +57,15 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 /* "off" next to Subscribers: the switch is on that screen, so the item stays. */
 .nav .navhint{margin-left:auto;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);background:var(--bg-tint);padding:2px 7px;border-radius:999px}
 .nav[aria-current="page"]::before{content:"";position:absolute;left:-12px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--brand)}
+.page-menu{min-width:0}
+.page-menu>summary{list-style:none;cursor:pointer}
+.page-menu>summary::-webkit-details-marker{display:none}
+.page-menu>summary::after{content:'⌄';margin-left:auto;flex:none}
+.page-menu[open]>summary::after{content:'⌃'}
+.page-menu .page-options{padding:4px 0 6px;border-bottom:1px solid var(--line)}
+.page-menu .page-options .nav{font-size:12px;align-items:flex-start}
+.page-menu .page-name{min-width:0;overflow-wrap:anywhere}
+.page-menu .page-note{display:block;font-size:11px;color:var(--ink-3);font-weight:400}
 .side .bottom{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:12px;border-top:1px solid var(--line)}
 .dot-new{width:7px;height:7px;border-radius:50%;background:currentColor;color:var(--amber);position:relative;margin-left:auto;flex:none}
 .whorow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;
@@ -332,6 +341,14 @@ pre .k{color:var(--brand)}
 </head>
 <body>
 @auth
+@php
+  $selectorUser = auth()->user();
+  $selectorPages = $selectorUser->isAdmin()
+      ? \App\Models\StatusPage::query()->whereNull('archived_at')->orderBy('name')->get()
+      : $selectorUser->statusPages()->whereNull('archived_at')->orderBy('name')->get();
+  $selectedPageId = app(\App\Services\PageContext::class)->id();
+  $selectedPage = $selectorPages->firstWhere('id', $selectedPageId);
+@endphp
 <div class="shell">
   <div class="topbar">
     <input type="checkbox" id="navtoggle" class="navtoggle" aria-label="Menu">
@@ -341,11 +358,31 @@ pre .k{color:var(--brand)}
   <aside class="side">
     <span class="brand">@include('partials.logo', ['size' => 26])</span>
 
-    <span class="lbl">Status page</span>
+    <span class="lbl">Manage a page</span>
     @include('partials.page-selector')
+      <details class="page-menu" aria-label="View a published status page">
+        <summary class="nav">@include('partials.icon', ['name' => 'external']) View status page</summary>
+        <div class="page-options">
+          @forelse ($selectorPages->where('is_published', true) as $publicPage)
+            <a class="nav" href="{{ $publicPage->publicUrl() }}" target="_blank" rel="noopener">
+              <span class="page-name">{{ $publicPage->name }}
+                @if ($publicPage->id === $selectedPageId)<span class="page-note">Currently selected</span>@endif
+              </span>
+              @include('partials.icon', ['name' => 'external', 'size' => 14])
+            </a>
+          @empty
+            <span class="nav">No published pages</span>
+          @endforelse
+          <span class="page-note" style="padding:4px 12px">Opens in a new tab. Drafts must be published first.</span>
+        </div>
+      </details>
     @if(auth()->user()->isAdmin())
-      <a class="nav" href="{{ route('admin.pages.index') }}">Status pages</a>
-      <a class="nav" href="{{ \App\Services\PageUrls::route('admin.mail.edit') }}">Page email</a>
+      <a class="nav" href="{{ route('admin.pages.index') }}" @if(request()->routeIs('admin.pages.*')) aria-current="page" @endif>
+        @include('partials.icon', ['name' => 'pages']) Status pages
+      </a>
+      <a class="nav" href="{{ \App\Services\PageUrls::route('admin.mail.edit') }}" @if(request()->routeIs('admin.mail.*', 'page.admin.mail.*')) aria-current="page" @endif>
+        @include('partials.icon', ['name' => 'mail']) Page email
+      </a>
     @endif
     <a class="nav" href="{{ \App\Services\PageUrls::route('admin.groups') }}" @if(request()->routeIs('admin.groups*', 'page.admin.groups*')) aria-current="page" @endif>
       @include('partials.icon', ['name' => 'services']) Services
@@ -392,7 +429,7 @@ pre .k{color:var(--brand)}
     @endif
 
     <span class="bottom">
-      <a class="nav" href="{{ \App\Services\PageUrls::route('status') }}">@include('partials.icon', ['name' => 'external']) View status page</a>
+
       <a class="whorow" href="{{ route('admin.profile') }}" title="Your profile"
          @if(request()->routeIs('admin.profile', 'page.admin.profile')) aria-current="page" @endif>
         <span class="avatar" aria-hidden="true">{{ mb_substr(auth()->user()->name, 0, 1) }}</span>
