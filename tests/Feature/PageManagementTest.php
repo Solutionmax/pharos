@@ -35,6 +35,46 @@ class PageManagementTest extends TestCase
         ]);
     }
 
+    public function test_page_tags_are_saved_and_default_remains_the_main_page(): void
+    {
+        $this->license(limit: 3);
+        $this->actingAs($this->admin)->post('/admin/pages', [
+            'name' => 'Tagged customer', 'slug' => 'tagged-customer',
+            'tag_label' => 'Customer', 'tag_color' => 'violet',
+        ])->assertRedirect('/admin/pages');
+        $page = StatusPage::where('slug', 'tagged-customer')->sole();
+        $this->assertSame('Customer', $page->tagLabel());
+        $this->assertSame('violet', $page->tagColor());
+        $this->actingAs($this->admin)->get('/admin/pages')->assertOk()->assertSee('page-tag--violet', false);
+
+        $default = StatusPage::default();
+        $this->actingAs($this->admin)->put('/admin/pages/'.$default->id, [
+            'name' => $default->name, 'slug' => $default->slug,
+            'tag_label' => 'Other', 'tag_color' => 'rose',
+        ])->assertRedirect('/admin/pages');
+        $this->assertSame('Default', $default->fresh()->tagLabel());
+        $this->assertSame('blue', $default->fresh()->tagColor());
+    }
+
+    public function test_page_tags_reject_unsupported_colours_and_reserved_default_label(): void
+    {
+        $this->license(limit: 3);
+        $this->actingAs($this->admin)->post('/admin/pages', [
+            'name' => 'Bad tag', 'slug' => 'bad-tag',
+            'tag_label' => 'dEfAuLt', 'tag_color' => 'unknown',
+        ])->assertSessionHasErrors(['tag_label', 'tag_color']);
+        $this->assertSame(1, StatusPage::count());
+    }
+
+    public function test_page_mail_identifies_its_owner_and_explains_central_inheritance(): void
+    {
+        $page = StatusPage::create(['name' => 'Harbor test', 'slug' => 'harbor-test']);
+        $this->actingAs($this->admin)->get('/admin/pages/'.$page->id.'/mail')
+            ->assertOk()->assertSee('Email for Harbor test')
+            ->assertSee('Account emails always use central mail')
+            ->assertSee(route('admin.settings', ['tab' => 'mail']), false);
+    }
+
     public function test_a_free_installation_cannot_create_a_second_page(): void
     {
         $this->actingAs($this->admin)->post('/admin/pages', [

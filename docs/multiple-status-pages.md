@@ -16,6 +16,10 @@ being edited. **View status page** offers the published pages you can manage and
 the chosen public page in a new tab. Draft and archived pages are not offered as public
 links. The **Status pages** overview shows each full public URL, **Manage**, **View**
 (for published pages) and **Edit** (name, publication, domain and assignments).
+The main page has a fixed blue **Default** tag. Additional pages can have a short
+custom label and one of six tag colours, set when creating or editing the page.
+These tags appear in administration only, including the page switcher and email
+context card; they do not change public branding or publication status.
 
 Administrators can access all pages. Assign ordinary users to pages on the page edit
 screen. Assignment does not grant administrator privileges: installation settings,
@@ -50,7 +54,9 @@ so changing a customer's domain does not invalidate old subscription messages.
 
 ## Mail
 
-**Page email** selects central transport or custom SMTP. The sender name, sender
+**Settings → Central mail** is the shared installation transport for account recovery
+and pages that inherit it. **Page email** names the selected page and its public URL,
+then selects central transport or custom SMTP. The sender name, sender
 address and reply-to can be set per page. Custom SMTP credentials are encrypted with
 the installation APP_KEY; keep that key in backups. Empty password input preserves
 an existing password. Custom transport failure does not fall back to another sender.

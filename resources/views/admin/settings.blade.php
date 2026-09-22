@@ -17,8 +17,8 @@
       $sectionItems[] = [
           'url' => route('admin.settings', ['tab' => $tabKey]),
           'active' => $tabKey === $tab,
-          'label' => ['general' => 'General', 'mail' => 'Mail', 'sso' => 'Single sign-on'][$tabKey],
-          'description' => ['general' => 'Time, retention and updates', 'mail' => 'Delivery and sender settings', 'sso' => 'Identity provider and access'][$tabKey],
+          'label' => ['general' => 'General', 'mail' => 'Central mail', 'sso' => 'Single sign-on'][$tabKey],
+          'description' => ['general' => 'Time, retention and updates', 'mail' => 'Account emails and shared page transport', 'sso' => 'Identity provider and access'][$tabKey],
           'icon' => ['general' => 'settings', 'mail' => 'mail', 'sso' => 'users'][$tabKey],
           'hint' => $hint,
       ];
@@ -83,10 +83,13 @@
 @if ($tab === 'mail')
 <div class="panel" id="mail">
   <div class="panel-hd">
-    <h3>Mail</h3>
-    <span class="hint">Notifications and account recovery</span>
+    <h3>Central mail</h3>
+    <span class="hint">Installation-wide</span>
   </div>
   <div class="panel-bd">
+    <p class="sub" style="margin-bottom:20px">This is the shared mail server for account recovery and all status pages using central transport.
+      Pages with custom SMTP keep their own server. To change one page’s sender or SMTP, select that page and open <strong>Page email</strong>.
+      Changing these central settings affects every page that inherits them.</p>
     <form method="POST" action="{{ route('admin.settings.mail') }}" style="display:flex;flex-direction:column;gap:16px">
       @csrf @method('PUT')
       <input type="hidden" name="_tab" value="mail">

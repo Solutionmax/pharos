@@ -1,13 +1,17 @@
-<details class="page-menu" aria-label="Choose a page to manage">
+<details class="page-menu page-switcher" aria-label="Choose a page to manage">
   <summary class="nav">
     @include('partials.icon', ['name' => 'pages'])
-    <span class="page-name">{{ $selectedPage?->name ?? 'Choose a page' }}<span class="page-note">Switch page</span></span>
+    <span class="page-name">{{ $selectedPage?->name ?? 'Choose a page' }}
+      @if ($selectedPage)<br>@include('partials.page-tag', ['tagPage' => $selectedPage])@endif
+      <span class="page-note">Switch page</span>
+    </span>
   </summary>
   <div class="page-options">
     @forelse ($selectorPages as $selectorPage)
       <a class="nav" href="{{ route('page.admin.components', ['statusPage' => $selectorPage->id]) }}"
          @if ($selectedPageId === $selectorPage->id) aria-current="page" @endif>
-        <span class="page-name">{{ $selectorPage->name }}
+        <span class="page-name">{{ $selectorPage->name }}<br>
+          @include('partials.page-tag', ['tagPage' => $selectorPage])
           <span class="page-note">{{ $selectorPage->is_published ? 'Published' : 'Draft — not public' }}</span>
         </span>
       </a>

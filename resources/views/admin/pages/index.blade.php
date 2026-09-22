@@ -25,7 +25,7 @@
         <tr>
           <td>
             <strong>{{ $page->name }}</strong>
-            @if ($page->id === $defaultPageId)<span class="sub">— default</span>@endif
+            <div style="margin-top:6px">@include('partials.page-tag', ['tagPage' => $page])</div>
           </td>
           <td class="mono" style="font-size:13px">
             @if ($page->is_published && ! $page->archived_at)

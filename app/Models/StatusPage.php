@@ -15,6 +15,21 @@ class StatusPage extends Model
 
     public const FALLBACK_DEFAULT_ID = 1;
 
+    public const TAG_COLORS = [
+        'blue' => 'Blue', 'teal' => 'Teal', 'violet' => 'Violet',
+        'amber' => 'Amber', 'rose' => 'Rose', 'slate' => 'Slate',
+    ];
+
+    public function tagLabel(): string
+    {
+        return $this->getKey() === self::defaultId() ? 'Default' : ($this->tag_label ?: 'Page');
+    }
+
+    public function tagColor(): string
+    {
+        return $this->getKey() === self::defaultId() ? 'blue' : ($this->tag_color ?: 'teal');
+    }
+
     protected $guarded = [];
 
     protected $attributes = ['is_published' => false];

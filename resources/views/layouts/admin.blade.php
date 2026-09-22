@@ -57,7 +57,21 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 /* "off" next to Subscribers: the switch is on that screen, so the item stays. */
 .nav .navhint{margin-left:auto;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);background:var(--bg-tint);padding:2px 7px;border-radius:999px}
 .nav[aria-current="page"]::before{content:"";position:absolute;left:-12px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--brand)}
+.page-tag{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 9px;font-size:10px;line-height:1.4;font-weight:700;letter-spacing:.025em;white-space:nowrap;background:var(--tag-bg);color:var(--tag-ink)}
+.page-tag::before{content:'';width:5px;height:5px;background:currentColor;border-radius:50%;flex:none}
+.page-tag--blue{--tag-bg:#e8f0ff;--tag-ink:#1d4ed8}.page-tag--teal{--tag-bg:#dff5ee;--tag-ink:#0f766e}
+.page-tag--violet{--tag-bg:#f0eaff;--tag-ink:#6d28d9}.page-tag--amber{--tag-bg:#fff0ce;--tag-ink:#92400e}
+.page-tag--rose{--tag-bg:#ffe5ed;--tag-ink:#be123c}.page-tag--slate{--tag-bg:#e9edf2;--tag-ink:#475569}
 .page-menu{min-width:0}
+.page-switcher{margin:0 4px 10px;border:1px solid var(--line);border-radius:12px;background:var(--bg-tint);box-shadow:0 2px 5px #10182805}
+.page-switcher>summary{padding:12px 10px;align-items:flex-start}
+.page-switcher>summary .page-name{font-weight:650;font-size:13px;line-height:1.5}
+.page-switcher .page-tag{margin-top:6px}
+.page-switcher .page-options{border-top:1px solid var(--line);border-bottom:0;padding:5px}
+.page-switcher .page-options .nav{padding:9px 8px}
+.page-switcher .nav[aria-current="page"]::before{display:none}
+.page-context{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 22px;margin-bottom:20px;border:1px solid var(--line);border-radius:12px;background:var(--bg-tint)}
+.page-context h2{font-size:18px;margin:6px 0}.page-context p{font-size:13px;color:var(--ink-3)}
 .page-menu>summary{list-style:none;cursor:pointer}
 .page-menu>summary::-webkit-details-marker{display:none}
 .page-menu>summary::after{content:'⌄';margin-left:auto;flex:none}
@@ -360,22 +374,7 @@ pre .k{color:var(--brand)}
 
     <span class="lbl">Manage a page</span>
     @include('partials.page-selector')
-      <details class="page-menu" aria-label="View a published status page">
-        <summary class="nav">@include('partials.icon', ['name' => 'external']) View status page</summary>
-        <div class="page-options">
-          @forelse ($selectorPages->where('is_published', true) as $publicPage)
-            <a class="nav" href="{{ $publicPage->publicUrl() }}" target="_blank" rel="noopener">
-              <span class="page-name">{{ $publicPage->name }}
-                @if ($publicPage->id === $selectedPageId)<span class="page-note">Currently selected</span>@endif
-              </span>
-              @include('partials.icon', ['name' => 'external', 'size' => 14])
-            </a>
-          @empty
-            <span class="nav">No published pages</span>
-          @endforelse
-          <span class="page-note" style="padding:4px 12px">Opens in a new tab. Drafts must be published first.</span>
-        </div>
-      </details>
+
     @if(auth()->user()->isAdmin())
       <a class="nav" href="{{ route('admin.pages.index') }}" @if(request()->routeIs('admin.pages.*')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'pages']) Status pages
@@ -429,6 +428,22 @@ pre .k{color:var(--brand)}
     @endif
 
     <span class="bottom">
+      <details class="page-menu" aria-label="View a published status page">
+        <summary class="nav">@include('partials.icon', ['name' => 'external']) View status page</summary>
+        <div class="page-options">
+          @forelse ($selectorPages->where('is_published', true) as $publicPage)
+            <a class="nav" href="{{ $publicPage->publicUrl() }}" target="_blank" rel="noopener">
+              <span class="page-name">{{ $publicPage->name }}
+                @if ($publicPage->id === $selectedPageId)<span class="page-note">Currently selected</span>@endif
+              </span>
+              @include('partials.icon', ['name' => 'external', 'size' => 14])
+            </a>
+          @empty
+            <span class="nav">No published pages</span>
+          @endforelse
+          <span class="page-note" style="padding:4px 12px">Opens in a new tab. Drafts must be published first.</span>
+        </div>
+      </details>
 
       <a class="whorow" href="{{ route('admin.profile') }}" title="Your profile"
          @if(request()->routeIs('admin.profile', 'page.admin.profile')) aria-current="page" @endif>

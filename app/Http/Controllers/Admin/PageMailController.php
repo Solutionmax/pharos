@@ -19,6 +19,7 @@ class PageMailController extends Controller
     public function edit(MailConfig $mailConfig)
     {
         return view('admin.page-mail', [
+            'mailPage' => app(PageContext::class)->page(),
             'mailForm' => $mailConfig->storedPage(),
             'effective' => $mailConfig->effectivePage(),
             'mailHasPassword' => $mailConfig->pageHasPassword(),
