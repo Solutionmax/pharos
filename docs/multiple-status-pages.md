@@ -13,8 +13,10 @@ subscribers or branding and default to unpublished. The page selector opens expl
 
 Use **Manage a page → Switch page** to select the services, branding and email settings
 being edited. **View status page** offers the published pages you can manage and opens
-the chosen public page in a new tab. Draft and archived pages are not offered as public
-links. The **Status pages** overview shows each full public URL, **Manage**, **View**
+the chosen public page in a new tab. Both pickers use the same compact card layout,
+with a scrollable list capped at 280 pixels (or 40% of a short viewport). When a menu
+has more than five choices, search filters its names and tags. Opening one closes
+the other. Draft and archived pages are not offered as public links. The **Status pages** overview shows each full public URL, **Manage**, **View**
 (for published pages) and **Edit** (name, publication, domain and assignments).
 The main page has a fixed blue **Default** tag. Additional pages can have a short
 custom label and one of six tag colours, set when creating or editing the page.
