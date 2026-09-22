@@ -128,6 +128,8 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         Route::middleware(EnsureAdmin::class)->group(function () {
             Route::get('users', [UserController::class, 'index'])->name('users');
             Route::post('users', [UserController::class, 'store'])->name('users.store');
+            Route::get('users/{user}/pages', [UserController::class, 'editPages'])->name('users.pages.edit');
+            Route::put('users/{user}/pages', [UserController::class, 'updatePages'])->name('users.pages.update');
             Route::put('users/{user}/role', [UserController::class, 'updateRole'])->name('users.role');
             Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 

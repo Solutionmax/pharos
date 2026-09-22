@@ -6,6 +6,11 @@
   'sub' => 'How other systems tell this page what is going on, and how it tells them back',
 ])
 
+@include('partials.page-context', [
+  'contextTitle' => 'Integrations for',
+  'contextHelp' => 'Destinations, delivery history, tokens and heartbeat URLs belong only to this page. Switch page to manage another set.',
+])
+
 @if ($newToken)
   <div class="panel" style="border-color:var(--brand)">
     <div class="panel-hd"><h3>Your new token</h3><span class="hint">Shown once</span></div>
@@ -27,7 +32,7 @@
   <div class="panel-hd"><h3>Notifications</h3><span class="hint">Pharos → your tools</span></div>
   <div class="panel-bd">
 
-    @if ($endpoints->isEmpty())
+    @if ($endpoints->total() === 0)
       <p class="modal-say">No outgoing destinations yet. Add one below to send incident events to a chat or workflow. Subscriber email is configured separately.</p>
     @else
       <div class="scroll" style="border-radius:0">
@@ -74,18 +79,22 @@
       </div>
     @endif
 
+    {{ $endpoints->links('vendor.pagination.pharos', ['previousLabel' => 'Previous', 'nextLabel' => 'Next']) }}
+
     @include('admin.partials.integration-destination')
 
     <x-note id="integrations.delivery">Incident notifications are queued and sent by the minute scheduler. Temporary failures retry up to six attempts with backoff; Send test makes one immediate attempt.</x-note>
-    @if ($deliveries->isNotEmpty())
+    @if ($deliveries->total() > 0)
+    <h3 id="delivery-history" style="font-size:15px;margin:18px 0 10px;scroll-margin-top:20px">Delivery history <span class="sub">· {{ $deliveries->total() }} records</span></h3>
     <div class="scroll"><table>
-      <thead><tr><th>Destination</th><th>Attempts</th><th>Delivery</th></tr></thead>
+      <thead><tr><th>Created</th><th>Destination</th><th>Attempts</th><th>Delivery</th></tr></thead>
       <tbody>@foreach ($deliveries as $delivery)
-      <tr><td>{{ $delivery->endpoint?->label ?? 'Removed' }}</td><td>{{ $delivery->attempts }}</td>
+      <tr><td class="num">{{ $delivery->created_at?->setTimezone(\App\Services\Clock::timezone())->format('d M H:i') }}</td><td>{{ $delivery->endpoint?->label ?? 'Removed' }}</td><td>{{ $delivery->attempts }}</td>
       <td>{{ $delivery->sent_at ? 'Delivered' : ($delivery->attempts >= 6 ? 'Stopped ; check destination' : 'Queued for retry') }}
       @if ($delivery->error)<span class="help">{{ $delivery->error }}</span>@endif</td></tr>
       @endforeach</tbody>
     </table></div>
+    {{ $deliveries->links() }}
     @endif
 
     @if ($webhookSecret && auth()->user()->isAdmin())
@@ -118,7 +127,7 @@
 @if (auth()->user()->isAdmin())
 <div class="panel" id="integration-tokens">
   <div class="panel-hd"><h3>API tokens</h3><span class="hint">For n8n, scripts, anything that posts</span></div>
-  @if ($tokens->isEmpty())
+  @if ($tokens->total() === 0)
     <div class="empty">No tokens yet. Create one to let something else set a status.</div>
   @else
   <div class="scroll">
@@ -147,6 +156,7 @@
     </table>
   </div>
   @endif
+  <div class="panel-bd">{{ $tokens->links() }}</div>
   <div class="panel-bd" style="border-top:1px solid var(--line)">
     <form method="POST" action="{{ \App\Services\PageUrls::route('admin.integrations.tokens.store') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
       @csrf

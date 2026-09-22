@@ -23,8 +23,10 @@ custom label and one of six tag colours, set when creating or editing the page.
 These tags appear in administration only, including the page switcher and email
 context card; they do not change public branding or publication status.
 
-Administrators can access all pages. Assign ordinary users to pages on the page edit
-screen. Assignment does not grant administrator privileges: installation settings,
+Administrators can access all pages. Assign ordinary users from **Users → Page access**
+or when creating an account; the page edit screen also supports assignments. Choose one
+or several active pages. An empty selection removes all page access. Changes apply to
+existing sessions and owned API tokens immediately. Assignment does not grant administrator privileges: installation settings,
 licences, user administration, branding and mail administration retain their existing
 administrator requirement. The central Status pages screen manages assignments. New users without assignments see a no-pages screen.
 Existing users receive access to the default page during upgrade.
@@ -71,6 +73,19 @@ including when the same address follows more than one page.
 
 The existing `pharos:check` and `pharos:notify` cron commands process all applicable pages.
 No extra cron entry is needed. Outgoing webhook queues also retain their page owner.
+
+## Integrations and delivery history
+
+The Integrations and Mail templates screens show the selected page name, tag and URL.
+Notification destinations (including Slack), signing secrets, tokens, heartbeats and
+subscriber templates belong to that page only. Connecting Slack on the default page
+does not connect it on another page.
+
+Delivery history, notification destinations and heartbeat lists use five records per
+page; token lists use ten. Each list has its own pagination parameter, retaining the
+selected status page and the other lists' positions. Older records remain available;
+pagination does not delete delivery history. No external test message is sent by viewing
+these lists or assigning users.
 
 ## API tokens
 
