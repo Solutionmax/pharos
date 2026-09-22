@@ -11,6 +11,12 @@ Open **Status pages** to create or edit a page. New pages have no copied service
 subscribers or branding and default to unpublished. The page selector opens explicit
 `/admin/pages/{id}/...` URLs, so separate browser tabs can manage different pages.
 
+Use **Manage a page → Switch page** to select the services, branding and email settings
+being edited. **View status page** offers the published pages you can manage and opens
+the chosen public page in a new tab. Draft and archived pages are not offered as public
+links. The **Status pages** overview shows each full public URL, **Manage**, **View**
+(for published pages) and **Edit** (name, publication, domain and assignments).
+
 Administrators can access all pages. Assign ordinary users to pages on the page edit
 screen. Assignment does not grant administrator privileges: installation settings,
 licences, user administration, branding and mail administration retain their existing
