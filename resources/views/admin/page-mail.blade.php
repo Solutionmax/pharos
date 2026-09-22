@@ -13,10 +13,10 @@
     <p>Only this page’s subscriber confirmations and incident notifications use these settings.</p>
     <p class="mono" style="margin-top:4px;overflow-wrap:anywhere">{{ $mailPage->publicUrl() }}</p>
   </div>
-  <a class="btn ghost" href="{{ route('admin.pages.index') }}">Choose another page</a>
+  @if (auth()->user()->isAdmin())<a class="btn ghost" href="{{ route('admin.pages.index') }}">Choose another page</a>@endif
 </div>
 <p class="sub" style="margin-bottom:20px">Account emails always use central mail.
-  Configure the shared server once in <a href="{{ route('admin.settings', ['tab' => 'mail']) }}">Settings → Central mail</a>.
+  @if (auth()->user()->isAdmin())Configure the shared server once in <a href="{{ route('admin.settings', ['tab' => 'mail']) }}">Settings → Central mail</a>.@else An installation administrator configures the shared server.@endif
   This page can use that server with its own sender, or use a separate SMTP server.</p>
 <style>#page-smtp-fields > .fields + .fields{margin-top:16px}</style>
 <div class="panel">

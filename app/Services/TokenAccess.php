@@ -8,8 +8,11 @@ use App\Models\User;
 
 class TokenAccess
 {
-    public static function allows(ApiToken $token, int $pageId): bool
+    public static function allows(ApiToken $token, int $pageId, bool $write = false): bool
     {
+        if (! in_array($token->scope, ['read', 'write'], true) || ($write && $token->scope !== 'write')) {
+            return false;
+        }
         if ((int) $token->status_page_id !== $pageId) {
             return false;
         }
@@ -17,6 +20,8 @@ class TokenAccess
             return $pageId === StatusPage::default()->id;
         }
 
-        return User::find($token->user_id)?->canAccessPage($pageId) ?? false;
+        $owner = User::find($token->user_id);
+
+        return $write ? ($owner?->canEditPage($pageId) ?? false) : ($owner?->canAccessPage($pageId) ?? false);
     }
 }

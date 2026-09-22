@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
+/** @property string $scope */
 class ApiToken extends Model
 {
     use Auditable, LocalTimestamps;
@@ -29,12 +30,16 @@ class ApiToken extends Model
     ];
 
     /** Returns [model, plaintext]. The plaintext is shown once and never stored. */
-    public static function issue(string $name, ?User $user = null, ?int $statusPageId = null): array
+    public static function issue(string $name, ?User $user = null, ?int $statusPageId = null, string $scope = 'write'): array
     {
+        if (! in_array($scope, ['read', 'write'], true)) {
+            throw new \InvalidArgumentException('Token scope must be read or write.');
+        }
         $plain = Str::random(40);
 
         return [self::create([
             'name' => $name,
+            'scope' => $scope,
             'token_hash' => hash('sha256', $plain),
             'user_id' => $user?->id,
             'status_page_id' => $statusPageId ?? StatusPage::defaultId(),

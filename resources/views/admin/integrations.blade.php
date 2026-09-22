@@ -26,7 +26,9 @@
 
 <div class="integration-overview">
   <a href="#outgoing-integrations"><span class="integration-eyebrow">SEND OUT</span><strong>Notify your team</strong><span>Pharos incidents → chat or workflow</span><small>Slack, Teams, Discord, Telegram, Signal and Generic JSON</small></a>
+  @if ($canEditIntegrations)
   <a href="#incoming-integrations"><span class="integration-eyebrow">BRING IN</span><strong>Connect your monitoring</strong><span>Your monitor or job → Pharos</span><small>n8n, Uptime Kuma, scripts and heartbeats</small></a>
+  @endif
 </div>
 <div class="panel" id="outgoing-integrations">
   <div class="panel-hd"><h3>Notifications</h3><span class="hint">Pharos → your tools</span></div>
@@ -43,7 +45,7 @@
             <tr>
               <td>
                 <span style="font-weight:600">{{ $endpoint->label }}</span>
-                <div class="sub mono">{{ $endpoint->maskedUrl() }}</div>
+                @if ($canEditIntegrations)<div class="sub mono">{{ $endpoint->maskedUrl() }}</div>@endif
               </td>
               <td class="sub">{{ $endpoint->formatLabel() }}</td>
               <td class="sub">
@@ -51,14 +53,14 @@
                   never tried
                 @elseif ($endpoint->last_error)
                   <span class="pill b" style="font-size:10px;padding:1px 8px">failed</span>
-                  <div class="sub">{{ $endpoint->last_error }}</div>
+                  @if ($canEditIntegrations)<div class="sub">{{ $endpoint->last_error }}</div>@endif
                 @else
                   <span class="pill" style="font-size:10px;padding:1px 8px">HTTP {{ $endpoint->last_status }}</span>
                   <div class="sub">{{ $endpoint->last_attempt_at->diffForHumans() }}</div>
                 @endif
               </td>
               <td>
-                <span class="rowacts">
+                @if ($canEditIntegrations)<span class="rowacts">
                   <form method="POST" action="{{ \App\Services\PageUrls::route('admin.integrations.endpoints.test', $endpoint) }}">
                     @csrf
                     <button type="submit">Send test</button>
@@ -70,7 +72,7 @@
                     @csrf @method('DELETE')
                     <button type="submit">Remove</button>
                   </form>
-                </span>
+                </span>@endif
               </td>
             </tr>
           @endforeach
@@ -81,23 +83,33 @@
 
     {{ $endpoints->links('vendor.pagination.pharos', ['previousLabel' => 'Previous', 'nextLabel' => 'Next']) }}
 
+    @if ($canEditIntegrations)
     @include('admin.partials.integration-destination')
+    @endif
 
     <x-note id="integrations.delivery">Incident notifications are queued and sent by the minute scheduler. Temporary failures retry up to six attempts with backoff; Send test makes one immediate attempt.</x-note>
-    @if ($deliveries->total() > 0)
     <h3 id="delivery-history" style="font-size:15px;margin:18px 0 10px;scroll-margin-top:20px">Delivery history <span class="sub">· {{ $deliveries->total() }} records</span></h3>
+    <form method="GET" action="{{ \App\Services\PageUrls::route('admin.integrations') }}#delivery-history" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+      @foreach (request()->except(['delivery_endpoint', 'delivery_channel', 'delivery_status', 'deliveries_page']) as $key => $value)
+        @if (is_scalar($value))<input type="hidden" name="{{ $key }}" value="{{ $value }}">@endif
+      @endforeach
+      <div class="field"><label for="delivery-endpoint">Destination</label><select id="delivery-endpoint" name="delivery_endpoint"><option value="">All destinations</option>@foreach ($deliveryEndpoints as $choice)<option value="{{ $choice->id }}" @selected((string) ($deliveryFilters['delivery_endpoint'] ?? '') === (string) $choice->id)>{{ $choice->label }}</option>@endforeach</select></div>
+      <div class="field"><label for="delivery-channel">Channel</label><select id="delivery-channel" name="delivery_channel"><option value="">All channels</option>@foreach (\App\Models\WebhookEndpoint::FORMATS as $value => $label)<option value="{{ $value }}" @selected(($deliveryFilters['delivery_channel'] ?? '') === $value)>{{ $label }}</option>@endforeach</select></div>
+      <div class="field"><label for="delivery-status">Status</label><select id="delivery-status" name="delivery_status"><option value="">All statuses</option>@foreach (['delivered', 'pending', 'failed'] as $status)<option value="{{ $status }}" @selected(($deliveryFilters['delivery_status'] ?? '') === $status)>{{ ucfirst($status) }}</option>@endforeach</select></div>
+      <button class="btn ghost" type="submit">Filter</button>
+    </form>
+    @if ($deliveries->isEmpty())<p class="sub">No deliveries match these filters.</p>@endif
     <div class="scroll"><table>
       <thead><tr><th>Created</th><th>Destination</th><th>Attempts</th><th>Delivery</th></tr></thead>
       <tbody>@foreach ($deliveries as $delivery)
       <tr><td class="num">{{ $delivery->created_at?->setTimezone(\App\Services\Clock::timezone())->format('d M H:i') }}</td><td>{{ $delivery->endpoint?->label ?? 'Removed' }}</td><td>{{ $delivery->attempts }}</td>
       <td>{{ $delivery->sent_at ? 'Delivered' : ($delivery->attempts >= 6 ? 'Stopped ; check destination' : 'Queued for retry') }}
-      @if ($delivery->error)<span class="help">{{ $delivery->error }}</span>@endif</td></tr>
+      @if ($canEditIntegrations && $delivery->error)<span class="help">{{ $delivery->error }}</span>@endif</td></tr>
       @endforeach</tbody>
     </table></div>
     {{ $deliveries->links() }}
-    @endif
 
-    @if ($webhookSecret && auth()->user()->isAdmin())
+    @if ($webhookSecret && $canAdministerIntegrations)
       <details class="integration-example"><summary>Verify Generic JSON deliveries</summary>
       <div class="field">
         <label>Signing secret</label>
@@ -122,9 +134,11 @@
 </div>
 
 
+@if ($canEditIntegrations)
 @include('admin.partials.integration-guides')
+@endif
 
-@if (auth()->user()->isAdmin())
+@if ($canAdministerIntegrations)
 <div class="panel" id="integration-tokens">
   <div class="panel-hd"><h3>API tokens</h3><span class="hint">For n8n, scripts, anything that posts</span></div>
   @if ($tokens->total() === 0)
@@ -132,11 +146,11 @@
   @else
   <div class="scroll">
     <table>
-      <thead><tr><th>Name</th><th>Created</th><th>Last used</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Scope</th><th>Created</th><th>Last used</th><th></th></tr></thead>
       <tbody>
       @foreach ($tokens as $token)
         <tr>
-          <td>{{ $token->name }}</td>
+          <td>{{ $token->name }}</td><td>{{ ucfirst($token->scope) }}</td>
           <td class="num">{{ $token->created_at->format('d M Y') }}</td>
           <td class="num">{{ $token->last_used_at?->diffForHumans() ?? 'never' }}</td>
           <td>
@@ -164,6 +178,7 @@
         <label for="t-name">What is this token for?</label>
         <input id="t-name" name="name" type="text" placeholder="n8n" required maxlength="60">
       </div>
+      <div class="field"><label for="t-scope">Scope</label><select id="t-scope" name="scope"><option value="read" @selected(old('scope', 'read') === 'read')>Read — includes private incidents</option><option value="write" @selected(old('scope') === 'write')>Write — allows changes</option></select></div>
       <button class="btn" type="submit">Create token</button>
       <button class="btn ghost" type="reset">Clear</button>
     </form>

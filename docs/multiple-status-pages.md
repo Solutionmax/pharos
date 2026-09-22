@@ -26,10 +26,20 @@ context card; they do not change public branding or publication status.
 Administrators can access all pages. Assign ordinary users from **Users → Page access**
 or when creating an account; the page edit screen also supports assignments. Choose one
 or several active pages. An empty selection removes all page access. Changes apply to
-existing sessions and owned API tokens immediately. Assignment does not grant administrator privileges: installation settings,
-licences, user administration, branding and mail administration retain their existing
-administrator requirement. The central Status pages screen manages assignments. New users without assignments see a no-pages screen.
-Existing users receive access to the default page during upgrade.
+existing sessions and owned API tokens immediately. Each assignment has its own role:
+
+| Page role | Access |
+| --- | --- |
+| Read only | View assigned page dashboards and delivery history; no changes or integration credentials. |
+| Editor | Manage components, services, incidents, subscribers and notification destinations. |
+| Page administrator | Editor rights plus page branding, email, mail templates and page API-token management. |
+
+Installation settings, licences, user administration and creating/publishing/archiving
+pages remain reserved for global administrators. A page administrator cannot assign
+other users or increase their own rights. New users without assignments see a no-pages
+screen. Existing assignments become **Editor** during upgrade. Use **Users → Page
+access** to choose a different role for each page. Page access controls administration;
+it does not make a published status page private.
 
 The default page retains `/` and existing API/subscribe addresses. Other pages use
 `/status/{slug}`. Choose the slug carefully: it is immutable after creation to preserve
@@ -87,6 +97,11 @@ selected status page and the other lists' positions. Older records remain availa
 pagination does not delete delivery history. No external test message is sent by viewing
 these lists or assigning users.
 
+Delivery history can be filtered by destination, channel and delivery result. Delivered
+means a successful send; pending includes scheduled retries; failed means delivery
+stopped after its retry limit. Filters stay selected while browsing older results.
+Every result and destination choice remains limited to the selected status page.
+
 ## API tokens
 
 Legacy `/api/v1/...` endpoints operate on the default page. Other pages use
@@ -100,12 +115,18 @@ retain default-page access only, preserving existing integrations.
 CLI issuance now requires an explicit owner and page:
 
 ```sh
-php artisan pharos:token "FreeScout readout" --user=admin@example.net --page=2
+php artisan pharos:token "FreeScout readout" --user=admin@example.net --page=2 --scope=read
 ```
 
-Current tokens use the existing API operation rights; there is no new read-only token
-scope in this update. For a future FreeScout module, add a read-only capability before
-handing a token to an integration that only needs status information.
+Choose **Read only** for integrations that only fetch status and private incident
+information, such as a future FreeScout module. **Read and write** also permits API
+changes, bounded by the owner's current page rights. Reducing an owner to read-only
+immediately blocks writes from their existing tokens. Tokens cannot change their own
+scope or grant access to another page.
+
+New tokens created in the interface default to read-only. Existing tokens retain their
+write access for compatibility. Public API reads remain available without a token and
+continue to omit private incidents.
 
 ## Licensing
 
@@ -159,7 +180,6 @@ from `GET /api/v1/pages/{slug}/components` and `/incidents` without an API token
 Use short caching and a timeout so Pharos downtime does not block ticket handling.
 Keep the Pharos base URL administrator-controlled and credentials server-side.
 
-Private incident access requires a separate read-only token capability first; current
-tokens also allow writes. Customer-specific mapping and incident creation can follow
-only if needed. Confirm available sidebar hooks and compatibility against the actual
+Private incident access can use a page-bound **Read only** token. Customer-specific
+mapping and incident creation can follow only if needed. Confirm available sidebar hooks and compatibility against the actual
 FreeScout version before implementing the module. No FreeScout installation was changed.

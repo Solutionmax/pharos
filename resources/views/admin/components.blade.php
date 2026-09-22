@@ -1,10 +1,11 @@
 @extends('layouts.admin')
 @section('title', 'Components')
 @section('content')
+@php $canEditPage = auth()->user()->canEditPage(app(\App\Services\PageContext::class)->id()); @endphp
 @include('partials.pagehead', [
   'title' => 'Components',
   'sub' => 'The individual things a service is made of',
-  'action' => ['url' => \App\Services\PageUrls::route('admin.components.create'), 'label' => 'Add a component'],
+  'action' => $canEditPage ? ['url' => \App\Services\PageUrls::route('admin.components.create'), 'label' => 'Add a component'] : null,
 ])
 
 @if ($summary['total'] > 0)
@@ -42,7 +43,7 @@
       @include('partials.icon', ['name' => 'empty', 'size' => 28])
       <p><b>Nothing on the status page yet.</b></p>
       <p>Add a component and it appears for your customers straight away.</p>
-      <a class="btn" href="{{ \App\Services\PageUrls::route('admin.components.create') }}">Add a component</a>
+      @if ($canEditPage)<a class="btn" href="{{ \App\Services\PageUrls::route('admin.components.create') }}">Add a component</a>@endif
     </div>
   @else
   <div class="scroll">
@@ -59,7 +60,7 @@
           </td>
           <td>
             <span class="src">{{ $component->source }}</span>
-            @if ($component->check)
+            @if ($canEditPage && $component->check)
               <div class="sub mono" style="margin-top:3px">{{ \Illuminate\Support\Str::limit($component->check->target, 26) }}</div>
             @endif
           </td>
@@ -78,7 +79,7 @@
             @unless ($component->enabled)<div class="sub">disabled</div>@endunless
           </td>
           <td>
-            <span class="rowacts">
+            @if ($canEditPage)<span class="rowacts">
               <a href="{{ \App\Services\PageUrls::route('admin.components.edit', $component) }}">Edit</a>
               <form method="POST" action="{{ \App\Services\PageUrls::route('admin.components.destroy', $component) }}"
                     data-confirm-title="Delete {{ $component->name }}?"
@@ -87,7 +88,7 @@
                 @csrf @method('DELETE')
                 <button type="submit">Delete</button>
               </form>
-            </span>
+            </span>@endif
           </td>
         </tr>
       @endforeach

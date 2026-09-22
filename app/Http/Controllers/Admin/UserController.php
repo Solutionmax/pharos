@@ -41,7 +41,11 @@ class UserController extends Controller
                 'role' => $data['role'] ?? UserRole::User,
             ]);
             if (! $user->isAdmin()) {
-                $user->statusPages()->sync($data['status_page_ids'] ?? []);
+                $this->syncPages($user, $data);
+                Audit::record('user.page_access_changed', $user, ['pages' => [
+                    'from' => [],
+                    'to' => $user->statusPages()->pluck('status_page_user.role', 'status_pages.id')->all(),
+                ]]);
             }
         });
 
@@ -56,6 +60,7 @@ class UserController extends Controller
             'member' => $user,
             'pages' => StatusPage::whereNull('archived_at')->orderBy('name')->get(),
             'selectedPageIds' => $user->statusPages()->pluck('status_pages.id')->all(),
+            'selectedPageRoles' => $user->statusPages()->pluck('status_page_user.role', 'status_pages.id')->all(),
         ]);
     }
 
@@ -64,18 +69,30 @@ class UserController extends Controller
         abort_if($user->isAdmin(), 403, 'Administrators can access every page. Use the User role for restricted access.');
         $data = $request->validate($this->pageRules());
         DB::transaction(function () use ($user, $data) {
-            $before = $user->statusPages()->pluck('status_pages.id')->all();
-            $ids = $data['status_page_ids'] ?? [];
-            $user->statusPages()->sync($ids);
-            Audit::record('user.page_access_changed', $user, ['pages' => ['from' => $before, 'to' => $ids]]);
+            $before = $user->statusPages()->pluck('status_page_user.role', 'status_pages.id')->all();
+            $this->syncPages($user, $data);
+            $after = $user->statusPages()->pluck('status_page_user.role', 'status_pages.id')->all();
+            Audit::record('user.page_access_changed', $user, ['pages' => ['from' => $before, 'to' => $after]]);
         });
 
         return redirect()->route('admin.users')->with('status', "Page access for {$user->name} saved.");
     }
 
+    private function syncPages(User $user, array $data): void
+    {
+        $existing = $user->statusPages()->pluck('status_page_user.role', 'status_pages.id')->all();
+        $assignments = [];
+        foreach ($data['status_page_ids'] ?? [] as $id) {
+            $assignments[$id] = ['role' => $data['page_roles'][$id] ?? $existing[$id] ?? 'editor'];
+        }
+        $user->statusPages()->sync($assignments);
+    }
+
     private function pageRules(): array
     {
         return [
+            'page_roles' => ['sometimes', 'array'],
+            'page_roles.*' => ['required', Rule::in(['viewer', 'editor', 'admin'])],
             'status_page_ids' => ['sometimes', 'array'],
             'status_page_ids.*' => ['integer', 'distinct', Rule::exists('status_pages', 'id')->whereNull('archived_at')],
         ];

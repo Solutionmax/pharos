@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\StatusPageController;
 use App\Http\Controllers\SubscribeController;
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsurePageCapability;
 use App\Http\Middleware\NoStore;
 use App\Http\Middleware\ResolveStatusPage;
 use App\Models\Incident;
@@ -202,6 +203,9 @@ foreach ($originalRoutes as $original) {
         continue;
     }
     $original->middleware(ResolveStatusPage::class);
+    if ($adminPageRoute) {
+        $original->withoutMiddleware(EnsureAdmin::class)->middleware(EnsurePageCapability::class);
+    }
     $uri = $adminPageRoute
         ? 'admin/pages/{statusPage}/'.substr($original->uri(), 6)
         : 'status/{slug}'.($original->uri() === '/' ? '' : '/'.$original->uri());
@@ -224,7 +228,7 @@ Route::prefix('admin/pages')->name('admin.pages.')->middleware(['web', 'auth', A
 Route::get('admin/no-pages', fn () => view('admin.no-pages'))->middleware(['auth', AuthenticateSession::class, NoStore::class])->name('admin.no-pages');
 
 foreach (['admin' => 'admin.', 'admin/pages/{statusPage}' => 'page.admin.'] as $prefix => $names) {
-    Route::prefix($prefix)->name($names)->middleware(['auth', AuthenticateSession::class, NoStore::class, EnsureAdmin::class, ResolveStatusPage::class])->group(function () {
+    Route::prefix($prefix)->name($names)->middleware(['auth', AuthenticateSession::class, NoStore::class, ResolveStatusPage::class, EnsurePageCapability::class])->group(function () {
         Route::get('mail', [PageMailController::class, 'edit'])->name('mail.edit');
         Route::put('mail', [PageMailController::class, 'update'])->name('mail.update');
         Route::post('mail-test', [PageMailController::class, 'test'])->name('mail.test');

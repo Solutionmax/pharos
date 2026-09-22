@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\ApiTokenAuth;
 use App\Http\Middleware\CentralAdministration;
+use App\Http\Middleware\EnsurePageCapability;
 use App\Http\Middleware\ResolveStatusPage;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -38,6 +39,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // without a token gets a 404 that tells a stranger which ids exist.
         $middleware->prependToPriorityList(SubstituteBindings::class, ApiTokenAuth::class);
         $middleware->prependToPriorityList(ApiTokenAuth::class, ResolveStatusPage::class);
+        $middleware->appendToPriorityList(ResolveStatusPage::class, EnsurePageCapability::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['setup_key', 'signal_token', 'telegram_token', 'url']);

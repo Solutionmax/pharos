@@ -21,7 +21,7 @@
       <div class="integration-guide-body">
         <div class="integration-flow"><span>Workflow trigger</span><b aria-hidden="true">→</b><span>HTTP Request</span><b aria-hidden="true">→</b><span>Pharos component</span></div>
         <ol class="integration-steps">
-          <li>Create a Pharos API token below, or ask an administrator for one.</li>
+          <li>Create a Pharos API token with write scope below, or ask an administrator for one.</li>
           <li>Add an <b>HTTP Request</b> node to n8n. Set the method to <b>PUT</b> and use this component URL.</li>
           <li>Choose a Header Auth credential: name <code>Authorization</code>, value <code>Bearer YOUR_PHAROS_TOKEN</code>. Send a JSON body with a numeric component status.</li>
         </ol>
@@ -47,7 +47,7 @@
       <div class="integration-guide-body">
         <div class="integration-flow"><span>Kuma monitor</span><b aria-hidden="true">→</b><span>Webhook notification</span><b aria-hidden="true">→</b><span>Pharos component</span></div>
         <ol class="integration-steps">
-          <li>Create a Pharos API token and choose the component above. Use one notification endpoint per component mapping.</li>
+          <li>Create a Pharos API token with write scope and choose the component above. Use one notification endpoint per component mapping.</li>
           <li>In Kuma, add a <b>Webhook</b> notification with method <b>POST</b> and the default <b>application/json</b> body. Paste this URL.</li>
           <li>Add the authorization header below, replace the token placeholder, save the notification and attach it to the relevant monitor.</li>
         </ol>

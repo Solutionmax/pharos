@@ -64,12 +64,22 @@ class User extends Authenticatable
     /** @return BelongsToMany<StatusPage, $this> */
     public function statusPages(): BelongsToMany
     {
-        return $this->belongsToMany(StatusPage::class);
+        return $this->belongsToMany(StatusPage::class)->withPivot('role');
     }
 
     public function canAccessPage(int $pageId): bool
     {
         return $this->isAdmin() || $this->statusPages()->whereKey($pageId)->exists();
+    }
+
+    public function canEditPage(int $pageId): bool
+    {
+        return $this->isAdmin() || $this->statusPages()->whereKey($pageId)->wherePivotIn('role', ['editor', 'admin'])->exists();
+    }
+
+    public function canAdministerPage(int $pageId): bool
+    {
+        return $this->isAdmin() || $this->statusPages()->whereKey($pageId)->wherePivot('role', 'admin')->exists();
     }
 
     /** @return HasMany<RecoveryCode, $this> */
