@@ -1,6 +1,7 @@
 @extends('layouts.admin')
 @section('title', 'Subscribers')
 @section('content')
+@php $canEditPage = auth()->user()->canEditPage(app(\App\Services\PageContext::class)->id()); @endphp
 <style>.pill.off{color:var(--ink-3);background:var(--bg-tint)}</style>
 @include('partials.pagehead', [
   'title' => 'Subscribers',
@@ -19,7 +20,7 @@
     <span class="hint">{{ $enabled ? 'On' : 'Off' }}</span>
   </div>
   <div class="panel-bd">
-    <form method="POST" action="{{ \App\Services\PageUrls::route('admin.subscribers.toggle') }}">
+    @if ($canEditPage)<form method="POST" action="{{ \App\Services\PageUrls::route('admin.subscribers.toggle') }}">
       @csrf
       <input type="hidden" name="enabled" value="{{ $enabled ? '0' : '1' }}">
       <div class="switchrow">
@@ -34,7 +35,7 @@
         </span>
         <button class="btn {{ $enabled ? 'ghost' : '' }}" type="submit" style="margin-left:auto">{{ $enabled ? 'Switch off' : 'Switch on' }}</button>
       </div>
-    </form>
+    </form>@endif
   </div>
 </div>
 
@@ -54,7 +55,7 @@
       @if ($search !== '')
         <a class="btn ghost" href="{{ \App\Services\PageUrls::route('admin.subscribers') }}">Clear</a>
       @endif
-      @if ($summary['active'] > 0)
+      @if ($canEditPage && $summary['active'] > 0)
         <a class="btn ghost" style="margin-left:auto" href="{{ \App\Services\PageUrls::route('admin.subscribers.export') }}"
            title="Every active address, as CSV">Export CSV</a>
       @endif
@@ -91,7 +92,7 @@
               @endif
             </td>
             <td>
-              <span class="rowacts">
+              @if ($canEditPage)<span class="rowacts">
                 @if ($s->isPending())
                   <form method="POST" action="{{ \App\Services\PageUrls::route('admin.subscribers.resend', $s) }}">
                     @csrf
@@ -105,7 +106,7 @@
                   @csrf @method('DELETE')
                   <button type="submit">Delete</button>
                 </form>
-              </span>
+              </span>@endif
             </td>
           </tr>
         @endforeach

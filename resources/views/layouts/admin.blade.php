@@ -1,4 +1,8 @@
-@php $branding = app(\App\Services\Branding::class); @endphp
+@php
+$branding = app(\App\Services\Branding::class);
+$canEditPage = auth()->user()?->canEditPage(app(\App\Services\PageContext::class)->id()) ?? false;
+$canAdministerPage = auth()->user()?->canAdministerPage(app(\App\Services\PageContext::class)->id()) ?? false;
+@endphp
 <!doctype html>
 <html lang="en" @if ($branding->theme() !== 'system') data-theme="{{ $branding->theme() }}" @endif>
 <head>
@@ -385,6 +389,8 @@ pre .k{color:var(--brand)}
       <a class="nav" href="{{ route('admin.pages.index') }}" @if(request()->routeIs('admin.pages.*')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'pages']) Status pages
       </a>
+    @endif
+    @if ($canAdministerPage)
       <a class="nav" href="{{ \App\Services\PageUrls::route('admin.mail.edit') }}" @if(request()->routeIs('admin.mail.*', 'page.admin.mail.*')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'mail']) Page email
       </a>
@@ -398,9 +404,11 @@ pre .k{color:var(--brand)}
     <a class="nav" href="{{ \App\Services\PageUrls::route('admin.incidents') }}" @if(request()->routeIs('admin.incident*', 'page.admin.incident*')) aria-current="page" @endif>
       @include('partials.icon', ['name' => 'incidents']) Incidents
     </a>
+    @if ($canEditPage)
     <a class="nav" href="{{ \App\Services\PageUrls::route('admin.status-page') }}" @if(request()->routeIs('admin.status-page*', 'page.admin.status-page*')) aria-current="page" @endif>
       @include('partials.icon', ['name' => 'sliders']) Status page
     </a>
+    @endif
     <a class="nav" href="{{ \App\Services\PageUrls::route('admin.subscribers') }}" @if(request()->routeIs('admin.subscribers*', 'page.admin.subscribers*')) aria-current="page" @endif>
       @include('partials.icon', ['name' => 'mail']) Subscribers
       @unless (\App\Services\Subscriptions::enabled())<span class="navhint">off</span>@endunless
@@ -415,12 +423,16 @@ pre .k{color:var(--brand)}
       <a class="nav" href="{{ route('admin.settings') }}" @if(request()->routeIs('admin.settings', 'page.admin.settings')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'settings']) Settings
       </a>
+    @endif
+    @if ($canAdministerPage)
       <a class="nav" href="{{ \App\Services\PageUrls::route('admin.branding') }}" @if(request()->routeIs('admin.branding', 'page.admin.branding')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'branding']) Branding
       </a>
       <a class="nav" href="{{ \App\Services\PageUrls::route('admin.mail-templates') }}" @if(request()->routeIs('admin.mail-templates*', 'page.admin.mail-templates*')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'mail']) Mail templates
       </a>
+    @endif
+    @if (auth()->user()->isAdmin())
       <a class="nav" href="{{ route('admin.users') }}" @if(request()->routeIs('admin.users', 'page.admin.users')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'users']) Users
       </a>

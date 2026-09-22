@@ -19,22 +19,44 @@ use Illuminate\Validation\ValidationException;
 
 class IntegrationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $pageId = app(PageContext::class)->id();
+        $canEdit = $request->user()->canEditPage($pageId);
+        $canAdminister = $request->user()->canAdministerPage($pageId);
+        $filters = $request->validate([
+            'delivery_endpoint' => ['nullable', 'integer'],
+            'delivery_channel' => ['nullable', Rule::in(array_keys(WebhookEndpoint::FORMATS))],
+            'delivery_status' => ['nullable', Rule::in(['delivered', 'pending', 'failed'])],
+        ]);
+        $deliveries = WebhookDelivery::where('status_page_id', $pageId)
+            ->whereHas('endpoint', fn ($q) => $q->where('status_page_id', $pageId))
+            ->when($filters['delivery_endpoint'] ?? null, fn ($q, $id) => $q->where('webhook_endpoint_id', $id))
+            ->when($filters['delivery_channel'] ?? null, fn ($q, $format) => $q->whereHas('endpoint', fn ($e) => $e->where('format', $format)));
+        match ($filters['delivery_status'] ?? '') {
+            'delivered' => $deliveries->whereNotNull('sent_at'),
+            'pending' => $deliveries->whereNull('sent_at')->where('attempts', '<', 6),
+            'failed' => $deliveries->whereNull('sent_at')->where('attempts', '>=', 6),
+            default => null,
+        };
         $profiles = config('integrations.destinations');
         $format = old('format', request()->query('destination', 'generic'));
         $format = is_string($format) && isset($profiles[$format]) ? $format : 'generic';
         $components = Component::with('check')->orderBy('position')->get();
 
         return view('admin.integrations', [
+            'canEditIntegrations' => $canEdit,
+            'canAdministerIntegrations' => $canAdminister,
+            'deliveryFilters' => $filters,
+            'deliveryEndpoints' => WebhookEndpoint::where('status_page_id', $pageId)->orderBy('label')->get(['id', 'label']),
             'destinationProfiles' => $profiles,
             'selectedFormat' => $format,
             'manualComponents' => $components->filter(fn ($component) => $component->enabled && ! $component->check?->enabled),
             'tokens' => ApiToken::where('status_page_id', app(PageContext::class)->id())->orderByDesc('id')->paginate(10, ['*'], 'tokens_page')->withQueryString()->fragment('integration-tokens'),
-            'newToken' => session('new_token'),
-            'deliveries' => WebhookDelivery::where('status_page_id', app(PageContext::class)->id())->whereHas('endpoint')->with('endpoint')->latest('id')->paginate(5, ['*'], 'deliveries_page')->withQueryString()->fragment('delivery-history'),
+            'newToken' => $canAdminister && session('new_token_page') === $pageId ? session('new_token') : null,
+            'deliveries' => $deliveries->with('endpoint')->latest('id')->paginate(5, ['*'], 'deliveries_page')->withQueryString()->fragment('delivery-history'),
             'endpoints' => WebhookEndpoint::orderBy('id')->paginate(5, ['*'], 'endpoints_page')->withQueryString()->fragment('outgoing-integrations'),
-            'webhookSecret' => Setting::get('integrations.webhook_secret'),
+            'webhookSecret' => $canAdminister ? Setting::get('integrations.webhook_secret') : null,
             'heartbeats' => Component::whereHas('check', fn ($q) => $q->where('type', 'heartbeat'))
                 ->with('check')->orderBy('id')->paginate(5, ['*'], 'heartbeats_page')->withQueryString()->fragment('guide-heartbeats'),
             'components' => $components,
@@ -43,14 +65,13 @@ class IntegrationController extends Controller
 
     public function storeToken(Request $request)
     {
-        $data = $request->validate(['name' => ['required', 'string', 'max:60']]);
+        $data = $request->validate(['name' => ['required', 'string', 'max:60'], 'scope' => ['sometimes', Rule::in(['read', 'write'])]]);
 
-        [$token, $plain] = ApiToken::issue($data['name']);
-        $token->forceFill(['status_page_id' => app(PageContext::class)->id(), 'user_id' => $request->user()->id])->save();
+        [$token, $plain] = ApiToken::issue($data['name'], $request->user(), app(PageContext::class)->id(), $data['scope'] ?? 'read');
 
         // Passed through the session because it is the only moment it exists in
         // plaintext; only a hash is stored.
-        return redirect()->to(PageUrls::route('admin.integrations'))->with('new_token', $plain);
+        return redirect()->to(PageUrls::route('admin.integrations'))->with(['new_token' => $plain, 'new_token_page' => app(PageContext::class)->id()]);
     }
 
     public function destroyToken(ApiToken $token)

@@ -1,10 +1,11 @@
 @extends('layouts.admin')
 @section('title', 'Incidents')
 @section('content')
+@php $canEditPage = auth()->user()->canEditPage(app(\App\Services\PageContext::class)->id()); @endphp
 @include('partials.pagehead', [
   'title' => 'Incidents',
   'sub' => 'What you told customers, and when',
-  'action' => ['url' => \App\Services\PageUrls::route('admin.incidents.create'), 'label' => 'Report an incident'],
+  'action' => $canEditPage ? ['url' => \App\Services\PageUrls::route('admin.incidents.create'), 'label' => 'Report an incident'] : null,
 ])
 
 <div class="tiles">
@@ -49,7 +50,7 @@
       <article class="incident-card status-{{ $incident->status->value }}">
         <div class="incident-card-head">
           <div>
-            <h3><a href="{{ \App\Services\PageUrls::route('admin.incidents.update-form', $incident) }}">{{ $incident->name }}</a></h3>
+            <h3>@if ($canEditPage)<a href="{{ \App\Services\PageUrls::route('admin.incidents.update-form', $incident) }}">{{ $incident->name }}</a>@else{{ $incident->name }}@endif</h3>
             <div class="sub">{{ $incident->impact->label() }} impact · {{ $incident->updates->count() }} {{ \Illuminate\Support\Str::plural('update', $incident->updates->count()) }}
               @if ($incident->updates->count() <= 1 && $incident->isOpen()) · <span class="pill w">Awaiting an update</span>@endif
               @if ($incident->grouping_key && ($repeats[$incident->grouping_key] ?? 0) > 1) · <span class="pill b">{{ $repeats[$incident->grouping_key] }} occurrences in 30 days</span>@endif
@@ -65,7 +66,7 @@
           <span>{{ $incident->components->pluck('name')->join(', ') ?: 'No affected components' }}</span>
           <span class="src">{{ $incident->source }}</span>
           <span class="src">{{ $incident->visibility }}</span>
-          <span class="rowacts">
+          @if ($canEditPage)<span class="rowacts">
               <a href="{{ \App\Services\PageUrls::route('admin.incidents.update-form', $incident) }}">Add update</a>
               <form method="POST" action="{{ \App\Services\PageUrls::route('admin.incidents.destroy', $incident) }}"
                     data-confirm-title="Delete {{ $incident->name }}?"
@@ -74,7 +75,7 @@
                 @csrf @method('DELETE')
                 <button type="submit">Delete</button>
               </form>
-            </span>
+            </span>@endif
         </div>
       </article>
     @endforeach

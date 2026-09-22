@@ -1,10 +1,11 @@
 @extends('layouts.admin')
 @section('title', 'Services')
 @section('content')
+@php $canEditPage = auth()->user()->canEditPage(app(\App\Services\PageContext::class)->id()); @endphp
 @include('partials.pagehead', array_filter([
   'title' => 'Services',
   'sub' => 'The headings your customers read. Components live inside them.',
-  'action' => ['url' => \App\Services\PageUrls::route('admin.groups.create', array_filter(['from' => $from])), 'label' => 'Add a service'],
+  'action' => $canEditPage ? ['url' => \App\Services\PageUrls::route('admin.groups.create', array_filter(['from' => $from])), 'label' => 'Add a service'] : null,
   'back' => $origin,
 ]))
 
@@ -15,7 +16,7 @@
       @include('partials.icon', ['name' => 'empty', 'size' => 28])
       <p><b>No services yet.</b></p>
       <p>Add a service, then put components in it.</p>
-      <a class="btn" href="{{ \App\Services\PageUrls::route('admin.groups.create', array_filter(['from' => $from])) }}">Add a service</a>
+      @if ($canEditPage)<a class="btn" href="{{ \App\Services\PageUrls::route('admin.groups.create', array_filter(['from' => $from])) }}">Add a service</a>@endif
     </div>
   @else
   <div class="scroll">
@@ -34,7 +35,7 @@
             <span class="pill {{ $group->visible ? 'ok' : 'w' }}">{{ $group->visible ? 'Visible' : 'Hidden' }}</span>
           </td>
           <td>
-            <span class="rowacts" style="justify-content:flex-start">
+            @if ($canEditPage)<span class="rowacts" style="justify-content:flex-start">
               <form method="POST" action="{{ \App\Services\PageUrls::route('admin.groups.move', $group) }}">
                 @csrf <input type="hidden" name="direction" value="up">
                 <button type="submit" @disabled($loop->first) aria-label="Move up">↑</button>
@@ -43,10 +44,10 @@
                 @csrf <input type="hidden" name="direction" value="down">
                 <button type="submit" @disabled($loop->last) aria-label="Move down">↓</button>
               </form>
-            </span>
+            </span>@endif
           </td>
           <td>
-            <span class="rowacts">
+            @if ($canEditPage)<span class="rowacts">
               <a href="{{ \App\Services\PageUrls::route('admin.groups.edit', array_filter(['group' => $group->id, 'from' => $from])) }}">Edit</a>
               <form method="POST" action="{{ \App\Services\PageUrls::route('admin.groups.destroy', $group) }}"
                     data-confirm-title="Delete {{ $group->name }}?"
@@ -55,7 +56,7 @@
                 @csrf @method('DELETE')
                 <button type="submit">Delete</button>
               </form>
-            </span>
+            </span>@endif
           </td>
         </tr>
       @endforeach

@@ -26,7 +26,7 @@ class ApiTokenAuth
             return response()->json(['error' => 'Invalid API token'], 401);
         }
 
-        if (! TokenAccess::allows($token, app(PageContext::class)->id())) {
+        if (! TokenAccess::allows($token, app(PageContext::class)->id(), ! $request->isMethodSafe())) {
             return response()->json(['error' => 'Token has no access to this page'], 403);
         }
 

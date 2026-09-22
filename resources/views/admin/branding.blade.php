@@ -98,6 +98,7 @@
   </div>
 </form>
 
+@if (auth()->user()->isAdmin())
 <div class="panel">
   <div class="panel-hd">
     <h3>Licence</h3>
@@ -151,4 +152,5 @@
     @endif
   </div>
 </div>
+@endif
 @endsection
