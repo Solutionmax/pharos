@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\Branding;
 use App\Services\License;
+use App\Services\PageContext;
+use App\Services\PageUrls;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -54,7 +56,7 @@ class BrandingController extends Controller
         // Everything below is the paid half. Gated server side; hiding the inputs
         // alone would only be decoration.
         if (! $this->license->has(License::FEATURE_BRAND_PACK)) {
-            return redirect()->route('admin.branding')->with('status', 'Branding saved.');
+            return redirect()->to(PageUrls::route('admin.branding'))->with('status', 'Branding saved.');
         }
 
         Setting::put('brand.credit_hidden', ($data['credit_hidden'] ?? false) ? '1' : '0');
@@ -65,7 +67,7 @@ class BrandingController extends Controller
 
         if ($request->hasFile('logo')) {
             $this->deleteStored('brand.logo_path');
-            Setting::put('brand.logo_path', $request->file('logo')->store('brand', 'public'));
+            Setting::put('brand.logo_path', $request->file('logo')->store('brand/pages/'.app(PageContext::class)->id(), 'public'));
         }
 
         // A dark logo on its own would leave the light theme with the built-in mark
@@ -76,15 +78,15 @@ class BrandingController extends Controller
 
         if ($request->hasFile('logo_dark')) {
             $this->deleteStored('brand.logo_dark_path');
-            Setting::put('brand.logo_dark_path', $request->file('logo_dark')->store('brand', 'public'));
+            Setting::put('brand.logo_dark_path', $request->file('logo_dark')->store('brand/pages/'.app(PageContext::class)->id(), 'public'));
         }
 
         if ($request->hasFile('favicon')) {
             $this->deleteStored('brand.favicon_path');
-            Setting::put('brand.favicon_path', $request->file('favicon')->store('brand', 'public'));
+            Setting::put('brand.favicon_path', $request->file('favicon')->store('brand/pages/'.app(PageContext::class)->id(), 'public'));
         }
 
-        return redirect()->route('admin.branding')->with('status', 'Branding saved.');
+        return redirect()->to(PageUrls::route('admin.branding'))->with('status', 'Branding saved.');
     }
 
     public function activate(Request $request)
@@ -95,7 +97,7 @@ class BrandingController extends Controller
             return back()->withErrors(['key' => $this->license->whyNot($data['key']) ?? 'That key is not valid for this product.']);
         }
 
-        return redirect()->route('admin.branding')
+        return redirect()->to(PageUrls::route('admin.branding'))
             ->with('status', 'Brand pack activated for '.$this->license->issuedTo().'.');
     }
 
@@ -104,7 +106,7 @@ class BrandingController extends Controller
     {
         $this->license->forget();
 
-        return redirect()->route('admin.branding')->with('status', 'Key removed. Branding is back to the free defaults; paste the key again to restore it.');
+        return redirect()->to(PageUrls::route('admin.branding'))->with('status', 'Key removed. Branding is back to the free defaults; paste the key again to restore it.');
     }
 
     /** Replacing an upload must not leave the old file behind on disk. */

@@ -12,6 +12,7 @@ use App\Models\Component;
 use App\Models\Incident;
 use App\Models\IncidentUpdate;
 use App\Models\Setting;
+use App\Models\StatusPage;
 use App\Models\Subscriber;
 use App\Models\User;
 use App\Services\License;
@@ -45,6 +46,7 @@ class MailTemplatesTest extends TestCase
             'name' => 'Tom', 'email' => 'tom@example.net',
             'password' => Hash::make('correct-horse-battery'), 'role' => UserRole::User,
         ]);
+        $this->member->statusPages()->attach(StatusPage::default());
     }
 
     protected function subscriber(string $email = 'ann.smith@example.net'): Subscriber

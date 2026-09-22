@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ComponentGroup;
 use App\Models\Setting;
 use App\Services\Branding;
+use App\Services\PageUrls;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -51,6 +52,6 @@ class StatusPageSettingsController extends Controller
             $group->update(['visible' => isset($data['groups'][$group->id])]);
         }
 
-        return redirect()->route('admin.status-page')->with('status', 'Settings saved.');
+        return redirect()->to(PageUrls::route('admin.status-page'))->with('status', 'Settings saved.');
     }
 }

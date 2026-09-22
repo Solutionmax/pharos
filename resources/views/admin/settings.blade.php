@@ -183,7 +183,7 @@
         @else
           <b>Subscriptions are off.</b> No button on the status page and no new mail; existing addresses are kept.
         @endif
-        The switch is on the <a href="{{ route('admin.subscribers') }}">Subscribers</a> screen.
+        The switch is on the <a href="{{ \App\Services\PageUrls::route('admin.subscribers') }}">Subscribers</a> screen.
       </span>
     </div>
   </div>

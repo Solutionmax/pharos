@@ -342,54 +342,59 @@ pre .k{color:var(--brand)}
     <span class="brand">@include('partials.logo', ['size' => 26])</span>
 
     <span class="lbl">Status page</span>
-    <a class="nav" href="{{ route('admin.groups') }}" @if(request()->routeIs('admin.groups*')) aria-current="page" @endif>
+    @include('partials.page-selector')
+    @if(auth()->user()->isAdmin())
+      <a class="nav" href="{{ route('admin.pages.index') }}">Status pages</a>
+      <a class="nav" href="{{ \App\Services\PageUrls::route('admin.mail.edit') }}">Page email</a>
+    @endif
+    <a class="nav" href="{{ \App\Services\PageUrls::route('admin.groups') }}" @if(request()->routeIs('admin.groups*', 'page.admin.groups*')) aria-current="page" @endif>
       @include('partials.icon', ['name' => 'services']) Services
     </a>
-    <a class="nav" href="{{ route('admin.components') }}" @if(request()->routeIs('admin.component*')) aria-current="page" @endif>
+    <a class="nav" href="{{ \App\Services\PageUrls::route('admin.components') }}" @if(request()->routeIs('admin.component*', 'page.admin.component*')) aria-current="page" @endif>
       @include('partials.icon', ['name' => 'components']) Components
     </a>
-    <a class="nav" href="{{ route('admin.incidents') }}" @if(request()->routeIs('admin.incident*')) aria-current="page" @endif>
+    <a class="nav" href="{{ \App\Services\PageUrls::route('admin.incidents') }}" @if(request()->routeIs('admin.incident*', 'page.admin.incident*')) aria-current="page" @endif>
       @include('partials.icon', ['name' => 'incidents']) Incidents
     </a>
-    <a class="nav" href="{{ route('admin.status-page') }}" @if(request()->routeIs('admin.status-page*')) aria-current="page" @endif>
+    <a class="nav" href="{{ \App\Services\PageUrls::route('admin.status-page') }}" @if(request()->routeIs('admin.status-page*', 'page.admin.status-page*')) aria-current="page" @endif>
       @include('partials.icon', ['name' => 'sliders']) Status page
     </a>
-    <a class="nav" href="{{ route('admin.subscribers') }}" @if(request()->routeIs('admin.subscribers*')) aria-current="page" @endif>
+    <a class="nav" href="{{ \App\Services\PageUrls::route('admin.subscribers') }}" @if(request()->routeIs('admin.subscribers*', 'page.admin.subscribers*')) aria-current="page" @endif>
       @include('partials.icon', ['name' => 'mail']) Subscribers
       @unless (\App\Services\Subscriptions::enabled())<span class="navhint">off</span>@endunless
     </a>
 
     <span class="lbl">Configuration</span>
-    <a class="nav" href="{{ route('admin.integrations') }}" @if(request()->routeIs('admin.integrations')) aria-current="page" @endif>
+    <a class="nav" href="{{ \App\Services\PageUrls::route('admin.integrations') }}" @if(request()->routeIs('admin.integrations', 'page.admin.integrations')) aria-current="page" @endif>
       @include('partials.icon', ['name' => 'integrations']) Integrations
     </a>
     {{-- Hidden rather than shown-and-refused: a 403 you did not see coming reads as a fault. --}}
     @if (auth()->user()->isAdmin())
-      <a class="nav" href="{{ route('admin.settings') }}" @if(request()->routeIs('admin.settings')) aria-current="page" @endif>
+      <a class="nav" href="{{ route('admin.settings') }}" @if(request()->routeIs('admin.settings', 'page.admin.settings')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'settings']) Settings
       </a>
-      <a class="nav" href="{{ route('admin.branding') }}" @if(request()->routeIs('admin.branding')) aria-current="page" @endif>
+      <a class="nav" href="{{ \App\Services\PageUrls::route('admin.branding') }}" @if(request()->routeIs('admin.branding', 'page.admin.branding')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'branding']) Branding
       </a>
-      <a class="nav" href="{{ route('admin.mail-templates') }}" @if(request()->routeIs('admin.mail-templates*')) aria-current="page" @endif>
+      <a class="nav" href="{{ \App\Services\PageUrls::route('admin.mail-templates') }}" @if(request()->routeIs('admin.mail-templates*', 'page.admin.mail-templates*')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'mail']) Mail templates
       </a>
-      <a class="nav" href="{{ route('admin.users') }}" @if(request()->routeIs('admin.users')) aria-current="page" @endif>
+      <a class="nav" href="{{ route('admin.users') }}" @if(request()->routeIs('admin.users', 'page.admin.users')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'users']) Users
       </a>
-      <a class="nav" href="{{ route('admin.audit') }}" @if(request()->routeIs('admin.audit')) aria-current="page" @endif>
+      <a class="nav" href="{{ route('admin.audit') }}" @if(request()->routeIs('admin.audit', 'page.admin.audit')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'audit']) Audit log
       </a>
-      <a class="nav" href="{{ route('admin.updates') }}" @if(request()->routeIs('admin.updates')) aria-current="page" @endif>
+      <a class="nav" href="{{ route('admin.updates') }}" @if(request()->routeIs('admin.updates', 'page.admin.updates')) aria-current="page" @endif>
         @include('partials.icon', ['name' => 'update']) Updates
         @if (app(\App\Services\Updater::class)->updateAvailable())<span class="dot-new" aria-label="Update available"></span>@endif
       </a>
     @endif
 
     <span class="bottom">
-      <a class="nav" href="{{ route('status') }}">@include('partials.icon', ['name' => 'external']) View status page</a>
+      <a class="nav" href="{{ \App\Services\PageUrls::route('status') }}">@include('partials.icon', ['name' => 'external']) View status page</a>
       <a class="whorow" href="{{ route('admin.profile') }}" title="Your profile"
-         @if(request()->routeIs('admin.profile')) aria-current="page" @endif>
+         @if(request()->routeIs('admin.profile', 'page.admin.profile')) aria-current="page" @endif>
         <span class="avatar" aria-hidden="true">{{ mb_substr(auth()->user()->name, 0, 1) }}</span>
         <span class="whotext">
           <strong>{{ auth()->user()->name }}</strong>

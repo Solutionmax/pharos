@@ -6,7 +6,6 @@ use App\Mail\IncidentNoticeMail;
 use App\Models\IncidentUpdate;
 use App\Models\Subscriber;
 use App\Models\SubscriberNotification;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * Subscriber mail in two halves, deliberately apart: an incident update *queues*
@@ -28,9 +27,11 @@ class SubscriberNotifier
     /** Returns how many subscribers were queued. */
     public function queue(IncidentUpdate $update): int
     {
+        $page = app(PageContext::class)->page();
+
         // Silent on purpose: an internal or authenticated incident is not the
         // subscribers' business, and neither is an incident nobody published.
-        if ($update->incident?->visibility !== 'public') {
+        if ($update->incident?->visibility !== 'public' || ! $page->is_published || $page->archived_at !== null) {
             return 0;
         }
 
@@ -45,6 +46,7 @@ class SubscriberNotifier
 
         Subscriber::active()->select('id')->chunkById(self::INSERT_CHUNK, function ($subscribers) use ($update, $now, &$queued) {
             $rows = $subscribers->map(fn ($s) => [
+                'status_page_id' => app(PageContext::class)->id(),
                 'subscriber_id' => $s->id,
                 'incident_update_id' => $update->id,
                 'created_at' => $now,
@@ -65,14 +67,18 @@ class SubscriberNotifier
         $sent = 0;
         $failed = 0;
 
-        $due = SubscriberNotification::due(self::MAX_ATTEMPTS)
-            ->with(['subscriber', 'incidentUpdate.incident.components'])
+        $due = SubscriberNotification::withoutGlobalScope('status_page')->due(self::MAX_ATTEMPTS)
             ->orderBy('id')
             ->limit(self::BATCH_SIZE)
             ->get();
 
         foreach ($due as $notification) {
-            $this->send($notification) ? $sent++ : $failed++;
+            $ok = app(PageContext::class)->run($notification->status_page_id, function () use ($notification) {
+                $owned = SubscriberNotification::with(['subscriber', 'incidentUpdate.incident.components'])->find($notification->id);
+
+                return $owned ? $this->send($owned) : false;
+            });
+            $ok ? $sent++ : $failed++;
         }
 
         return [$sent, $failed];
@@ -82,20 +88,25 @@ class SubscriberNotifier
     {
         $subscriber = $notification->subscriber;
         $update = $notification->incidentUpdate;
+        $page = app(PageContext::class)->page();
 
         // Unsubscribed between queueing and sending, or the update was deleted:
         // close the row rather than retry it three times.
-        if (! $subscriber?->isActive() || $update?->incident === null) {
+        if (! $subscriber?->isActive()
+            || $update?->incident === null
+            || $update->incident->visibility !== 'public'
+            || ! $page->is_published
+            || $page->archived_at !== null) {
             $notification->forceFill([
                 'attempts' => self::MAX_ATTEMPTS,
-                'error' => 'Skipped: subscriber no longer active or update gone',
+                'error' => 'Skipped: notification is no longer public or deliverable',
             ])->save();
 
             return false;
         }
 
         try {
-            Mail::to($subscriber->email)->send(new IncidentNoticeMail($update, $subscriber));
+            app(MailConfig::class)->sendTo($subscriber->email, new IncidentNoticeMail($update, $subscriber));
 
             $notification->forceFill([
                 'sent_at' => now(),
@@ -118,7 +129,7 @@ class SubscriberNotifier
     public function prunePending(): int
     {
         // updated_at, not created_at: a fresh confirmation mail restarts the clock.
-        return Subscriber::pending()
+        return Subscriber::withoutGlobalScope('status_page')->pending()
             ->where('updated_at', '<', now()->subDays(Subscriber::PENDING_DAYS))
             ->delete();
     }

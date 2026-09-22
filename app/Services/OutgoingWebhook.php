@@ -20,12 +20,21 @@ class OutgoingWebhook
 
     public function incidentChanged(Incident $incident, string $event): void
     {
+        $page = app(PageContext::class)->page();
+        if (! $page->is_published || $page->archived_at !== null) {
+            return;
+        }
+
         $endpoints = WebhookEndpoint::where('enabled', true)->get();
 
         foreach ($endpoints as $endpoint) {
             $key = hash('sha256', implode(':', [$incident->id, $event, $incident->updates()->max('id') ?? 0, $incident->status->value, $incident->updated_at?->format('U.u')]));
             WebhookDelivery::firstOrCreate(['webhook_endpoint_id' => $endpoint->id, 'event_key' => $key],
-                ['payload' => $this->payload($endpoint->format, $incident, $event), 'next_attempt_at' => now()]);
+                [
+                    'status_page_id' => $endpoint->status_page_id,
+                    'payload' => $this->payload($endpoint->format, $incident, $event),
+                    'next_attempt_at' => now(),
+                ]);
         }
     }
 
@@ -38,27 +47,38 @@ class OutgoingWebhook
         }
         $sent = 0;
         try {
-            $due = WebhookDelivery::with('endpoint')->whereNull('sent_at')->where('attempts', '<', 6)
+            $due = WebhookDelivery::whereNull('sent_at')->where('attempts', '<', 6)
                 ->where('next_attempt_at', '<=', now())->oldest('id')->limit(10)->get();
             foreach ($due as $delivery) {
-                $endpoint = $delivery->endpoint;
-                if (! $endpoint?->enabled) {
-                    $delivery->update(['attempts' => 6, 'error' => 'Destination disabled or removed']);
+                $sent += app(PageContext::class)->run($delivery->status_page_id, function () use ($delivery) {
+                    $page = app(PageContext::class)->page();
+                    if (! $page->is_published || $page->archived_at !== null) {
+                        $delivery->update(['attempts' => 6, 'error' => 'Destination page is unpublished or archived']);
 
-                    continue;
-                }
-                $delivery->increment('attempts');
-                $ok = $this->deliver($endpoint, $delivery->payload);
-                $status = $endpoint->last_status;
-                $permanent = $status >= 400 && $status < 500 && ! in_array($status, [408, 429], true);
-                $delivery->update([
-                    'sent_at' => $ok ? now() : null,
-                    'attempts' => $permanent ? 6 : $delivery->attempts,
-                    'last_status' => $status,
-                    'error' => $endpoint->last_error,
-                    'next_attempt_at' => now()->addSeconds($this->retryAfter ?? min(3600, 60 * (2 ** $delivery->attempts))),
-                ]);
-                $sent += (int) $ok;
+                        return 0;
+                    }
+
+                    $delivery->load('endpoint');
+                    $endpoint = $delivery->endpoint;
+                    if (! $endpoint?->enabled) {
+                        $delivery->update(['attempts' => 6, 'error' => 'Destination disabled or removed']);
+
+                        return 0;
+                    }
+                    $delivery->increment('attempts');
+                    $ok = $this->deliver($endpoint, $delivery->payload);
+                    $status = $endpoint->last_status;
+                    $permanent = $status >= 400 && $status < 500 && ! in_array($status, [408, 429], true);
+                    $delivery->update([
+                        'sent_at' => $ok ? now() : null,
+                        'attempts' => $permanent ? 6 : $delivery->attempts,
+                        'last_status' => $status,
+                        'error' => $endpoint->last_error,
+                        'next_attempt_at' => now()->addSeconds($this->retryAfter ?? min(3600, 60 * (2 ** $delivery->attempts))),
+                    ]);
+
+                    return (int) $ok;
+                });
             }
             WebhookDelivery::where('created_at', '<', now()->subDays(30))->where(fn ($q) => $q->whereNotNull('sent_at')->orWhere('attempts', '>=', 6))->delete();
         } finally {
@@ -89,9 +109,9 @@ class OutgoingWebhook
         return match ($format) {
             'slack' => $this->slack($incident, $event),
             'teams' => $this->teams($incident, $event),
-            'discord' => ['content' => Str::limit(($incident->resolved_at ? 'Resolved: ' : 'Incident: ').$incident->name, 1800)."\n".route('status'), 'allowed_mentions' => ['parse' => []]],
-            'telegram' => ['text' => Str::limit($incident->status->label().': '.$incident->name, 1800)."\n".route('status')],
-            'signal' => ['message' => Str::limit(($incident->resolved_at ? 'Resolved: ' : 'Incident: ').$incident->name, 1800)."\n".route('status')],
+            'discord' => ['content' => Str::limit(($incident->resolved_at ? 'Resolved: ' : 'Incident: ').$incident->name, 1800)."\n".PageUrls::route('status'), 'allowed_mentions' => ['parse' => []]],
+            'telegram' => ['text' => Str::limit($incident->status->label().': '.$incident->name, 1800)."\n".PageUrls::route('status')],
+            'signal' => ['message' => Str::limit(($incident->resolved_at ? 'Resolved: ' : 'Incident: ').$incident->name, 1800)."\n".PageUrls::route('status')],
             default => $this->generic($incident, $event),
         };
     }

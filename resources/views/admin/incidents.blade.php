@@ -4,7 +4,7 @@
 @include('partials.pagehead', [
   'title' => 'Incidents',
   'sub' => 'What you told customers, and when',
-  'action' => ['url' => route('admin.incidents.create'), 'label' => 'Report an incident'],
+  'action' => ['url' => \App\Services\PageUrls::route('admin.incidents.create'), 'label' => 'Report an incident'],
 ])
 
 <div class="tiles">
@@ -30,7 +30,7 @@
     <input type="text" name="q" value="{{ $search }}" placeholder="Search by title">
     <span class="seg">
       @foreach (['' => 'All', 'open' => 'Open', 'resolved' => 'Resolved'] as $value => $label)
-        <a href="{{ route('admin.incidents', array_filter(['q' => $search, 'state' => $value])) }}"
+        <a href="{{ \App\Services\PageUrls::route('admin.incidents', array_filter(['q' => $search, 'state' => $value])) }}"
            @if((string) $state === (string) $value) aria-current="page" @endif>{{ $label }}</a>
       @endforeach
     </span>
@@ -49,7 +49,7 @@
       <article class="incident-card status-{{ $incident->status->value }}">
         <div class="incident-card-head">
           <div>
-            <h3><a href="{{ route('admin.incidents.update-form', $incident) }}">{{ $incident->name }}</a></h3>
+            <h3><a href="{{ \App\Services\PageUrls::route('admin.incidents.update-form', $incident) }}">{{ $incident->name }}</a></h3>
             <div class="sub">{{ $incident->impact->label() }} impact · {{ $incident->updates->count() }} {{ \Illuminate\Support\Str::plural('update', $incident->updates->count()) }}
               @if ($incident->updates->count() <= 1 && $incident->isOpen()) · <span class="pill w">Awaiting an update</span>@endif
               @if ($incident->grouping_key && ($repeats[$incident->grouping_key] ?? 0) > 1) · <span class="pill b">{{ $repeats[$incident->grouping_key] }} occurrences in 30 days</span>@endif
@@ -66,8 +66,8 @@
           <span class="src">{{ $incident->source }}</span>
           <span class="src">{{ $incident->visibility }}</span>
           <span class="rowacts">
-              <a href="{{ route('admin.incidents.update-form', $incident) }}">Add update</a>
-              <form method="POST" action="{{ route('admin.incidents.destroy', $incident) }}"
+              <a href="{{ \App\Services\PageUrls::route('admin.incidents.update-form', $incident) }}">Add update</a>
+              <form method="POST" action="{{ \App\Services\PageUrls::route('admin.incidents.destroy', $incident) }}"
                     data-confirm-title="Delete {{ $incident->name }}?"
                     data-confirm="It disappears from the public page along with its {{ $incident->updates->count() }} {{ \Illuminate\Support\Str::plural('update', $incident->updates->count()) }}. Delete a false alarm; <strong>resolve</strong> a real one instead, so customers keep the record."
                     data-confirm-action="Delete incident">

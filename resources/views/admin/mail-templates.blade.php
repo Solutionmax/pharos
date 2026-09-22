@@ -35,7 +35,7 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
   $sectionItems = [];
   foreach ($labels as $tabKey => $label) {
       $sectionItems[] = [
-          'url' => route('admin.mail-templates', ['template' => $tabKey]),
+          'url' => \App\Services\PageUrls::route('admin.mail-templates', ['template' => $tabKey]),
           'active' => $tabKey === $key,
           'label' => $label,
           'description' => ['subscribe_confirm' => 'Confirm a new subscription', 'incident_opened' => 'Announce a new incident', 'incident_updated' => 'Share the latest progress', 'incident_resolved' => 'Confirm service recovery'][$tabKey],
@@ -47,7 +47,7 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
 
 <div class="split">
   <div>
-    <form method="POST" action="{{ route('admin.mail-templates.update') }}" id="template-form">
+    <form method="POST" action="{{ \App\Services\PageUrls::route('admin.mail-templates.update') }}" id="template-form">
       @csrf @method('PUT')
       <input type="hidden" name="template" value="{{ $key }}">
 
@@ -104,13 +104,13 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
     @if ($licensed)
       {{-- Two small forms beside the main one, so Save stays a plain PUT. The
            test form carries the unsaved wording: the script copies it in on submit. --}}
-      <form method="POST" action="{{ route('admin.mail-templates.test') }}" id="test-form">
+      <form method="POST" action="{{ \App\Services\PageUrls::route('admin.mail-templates.test') }}" id="test-form">
         @csrf
         <input type="hidden" name="template" value="{{ $key }}">
         <input type="hidden" name="subject" value="{{ old('subject', $subject) }}">
         <input type="hidden" name="body" value="{{ old('body', $body) }}">
       </form>
-      <form method="POST" action="{{ route('admin.mail-templates.reset') }}" id="reset-form"
+      <form method="POST" action="{{ \App\Services\PageUrls::route('admin.mail-templates.reset') }}" id="reset-form"
             data-confirm-title="Reset {{ strtolower($label ?? 'this template') }} to the default?"
             data-confirm="Your wording for this template is thrown away and the built-in text comes back. The other templates are untouched."
             data-confirm-action="Reset to default">

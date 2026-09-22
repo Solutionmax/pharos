@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Mail\SubscribeConfirmMail;
 use App\Models\Subscriber;
+use App\Services\MailConfig;
+use App\Services\PageUrls;
 use App\Services\Subscriptions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -49,13 +51,13 @@ class SubscribeController extends Controller
         ]);
 
         try {
-            Mail::to($subscriber->email)->send(new SubscribeConfirmMail($subscriber));
+            app(MailConfig::class)->sendTo($subscriber->email, new SubscribeConfirmMail($subscriber));
         } catch (\Throwable $e) {
             // A host that cannot send (no SMTP host yet, wrong password, port closed) is the
             // operator's problem, not the visitor's: say so plainly and leave the details in the log.
             Log::error('Subscribe confirmation mail failed', ['email' => $subscriber->email, 'error' => $e->getMessage()]);
 
-            return redirect()->route('status')
+            return redirect()->to(PageUrls::route('status'))
                 ->withInput()
                 ->withErrors(['email' => 'The confirmation e-mail could not be sent right now. Please try again later.']);
         }
@@ -104,7 +106,7 @@ class SubscribeController extends Controller
 
     protected function reply()
     {
-        return redirect()->route('status')->with('subscribed', self::REPLY);
+        return redirect()->to(PageUrls::route('status'))->with('subscribed', self::REPLY);
     }
 
     protected function page(string $outcome, Subscriber $subscriber)

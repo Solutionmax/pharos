@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Middleware\ApiTokenAuth;
+use App\Http\Middleware\CentralAdministration;
+use App\Http\Middleware\ResolveStatusPage;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,17 +25,19 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo(fn () => route('admin.components'));
 
         $middleware->web(append: SecurityHeaders::class);
+        $middleware->appendToGroup('web', CentralAdministration::class);
 
         // Proxy trust is read by Laravel from config/trustedproxy.php after
         // environment/config loading, including when config is cached.
 
         // One-click unsubscribe is a POST from a mail provider's server, with
         // no session and no form. The signed URL is its credential.
-        $middleware->validateCsrfTokens(except: ['unsubscribe/*']);
+        $middleware->validateCsrfTokens(except: ['unsubscribe/*', 'status/*/unsubscribe/*']);
 
         // The token check has to run before route-model binding, or a request
         // without a token gets a 404 that tells a stranger which ids exist.
         $middleware->prependToPriorityList(SubstituteBindings::class, ApiTokenAuth::class);
+        $middleware->prependToPriorityList(ApiTokenAuth::class, ResolveStatusPage::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['setup_key', 'signal_token', 'telegram_token', 'url']);

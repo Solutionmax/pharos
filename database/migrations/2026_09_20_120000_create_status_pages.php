@@ -143,15 +143,33 @@ return new class extends Migration
             $table->dropConstrainedForeignId('user_id');
             $table->dropConstrainedForeignId('status_page_id');
         });
+        // MySQL may use these composite indexes to satisfy the status-page
+        // foreign keys, so the constraints must go before the indexes.
+        Schema::table('subscribers', function (Blueprint $table) {
+            $table->dropForeign(['status_page_id']);
+        });
         Schema::table('subscribers', function (Blueprint $table) {
             $table->dropUnique(['status_page_id', 'email']);
             $table->unique('email');
+        });
+        Schema::table('subscribers', function (Blueprint $table) {
+            $table->dropColumn('status_page_id');
+        });
+        Schema::table('incident_templates', function (Blueprint $table) {
+            $table->dropForeign(['status_page_id']);
         });
         Schema::table('incident_templates', function (Blueprint $table) {
             $table->dropUnique(['status_page_id', 'slug']);
             $table->unique('slug');
         });
+        Schema::table('incident_templates', function (Blueprint $table) {
+            $table->dropColumn('status_page_id');
+        });
         foreach (array_reverse($this->ownedTables) as $tableName) {
+            if (in_array($tableName, ['subscribers', 'incident_templates'], true)) {
+                continue;
+            }
+
             Schema::table($tableName, fn (Blueprint $table) => $table->dropConstrainedForeignId('status_page_id'));
         }
 

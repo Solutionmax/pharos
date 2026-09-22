@@ -3,10 +3,10 @@
 @section('content')
 @include('partials.pagehead', [
   'title' => 'Report an incident',
-  'back' => ['url' => route('admin.incidents'), 'label' => 'Incidents'],
+  'back' => ['url' => \App\Services\PageUrls::route('admin.incidents'), 'label' => 'Incidents'],
 ])
 
-<form method="POST" action="{{ route('admin.incidents.store') }}">
+<form method="POST" action="{{ \App\Services\PageUrls::route('admin.incidents.store') }}">
   @csrf
   <div class="panel">
     <div class="panel-hd"><h3>What happened</h3>
@@ -92,7 +92,7 @@
 
       <div class="actions">
         <button class="btn" type="submit">Publish incident</button>
-        <a class="btn ghost" href="{{ route('admin.incidents') }}">Cancel</a>
+        <a class="btn ghost" href="{{ \App\Services\PageUrls::route('admin.incidents') }}">Cancel</a>
       </div>
     </div>
   </div>

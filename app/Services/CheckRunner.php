@@ -30,7 +30,7 @@ class CheckRunner
         $now ??= now();
         $ran = 0;
 
-        foreach (Check::with('component')->where('enabled', true)->get() as $check) {
+        foreach (Check::with('component')->whereHas('component')->where('enabled', true)->get() as $check) {
             if (! $check->isDue($now) || ! $check->component?->enabled) {
                 continue;
             }

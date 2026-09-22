@@ -3,7 +3,9 @@
 namespace App\Mail\Concerns;
 
 use App\Services\Branding;
+use App\Services\MailConfig;
 use App\Services\MailTemplates;
+use App\Services\PageContext;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 
@@ -13,6 +15,18 @@ use Illuminate\Mail\Mailables\Content;
  */
 trait Branded
 {
+    protected ?int $brandPageId = null;
+
+    protected function captureBrandContext(): void
+    {
+        $this->brandPageId = app(PageContext::class)->id();
+    }
+
+    protected function inBrandContext(callable $callback): mixed
+    {
+        return app(PageContext::class)->run($this->brandPageId ?? app(PageContext::class)->id(), $callback);
+    }
+
     protected function branding(): Branding
     {
         return app(Branding::class);
@@ -21,10 +35,17 @@ trait Branded
     /** The sender. MAIL_FROM_NAME left blank means the brand name, not "Laravel". */
     protected function brandedFrom(): Address
     {
-        return new Address(
-            (string) config('mail.from.address'),
-            (string) (config('mail.from.name') ?: $this->branding()->name()),
-        );
+        $sender = app(MailConfig::class)->sender();
+
+        return new Address($sender['address'], $sender['name']);
+    }
+
+    /** @return list<Address> */
+    protected function brandedReplyTo(): array
+    {
+        $replyTo = app(MailConfig::class)->sender()['reply_to'];
+
+        return $replyTo !== '' ? [new Address($replyTo)] : [];
     }
 
     /**

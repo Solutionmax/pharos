@@ -17,6 +17,9 @@ use App\Models\User;
 use App\Services\PageContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class PageOwnershipTest extends TestCase
@@ -215,5 +218,192 @@ class PageOwnershipTest extends TestCase
         $this->assertSame('https://status.example.net', $default->publicUrl());
         $this->assertSame('https://status.example.net/status/second', $second->publicUrl());
         $this->assertSame('https://status.customer.test', $custom->publicUrl());
+    }
+
+    public function test_the_migration_upgrades_a_populated_single_page_database(): void
+    {
+        $this->runOnIsolatedUpgradeDatabase(fn () => $this->assertPopulatedDatabaseUpgrade());
+    }
+
+    private function assertPopulatedDatabaseUpgrade(): void
+    {
+        $legacyMigrations = $this->migrateLegacySchema();
+        $migration = require database_path('migrations/2026_09_20_120000_create_status_pages.php');
+
+        try {
+            $this->exercisePopulatedDatabaseUpgrade($migration);
+        } finally {
+            if (Schema::hasTable('status_pages')) {
+                $migration->down();
+            }
+
+            foreach (array_reverse($legacyMigrations) as $legacyMigration) {
+                $legacyMigration->down();
+            }
+        }
+    }
+
+    private function exercisePopulatedDatabaseUpgrade(object $migration): void
+    {
+
+        DB::table('users')->insert([
+            'id' => 41,
+            'name' => 'Existing operator',
+            'email' => 'existing@example.net',
+            'password' => 'hash',
+            'role' => UserRole::User->value,
+        ]);
+        DB::table('component_groups')->insert(['id' => 42, 'name' => 'Existing group']);
+        DB::table('components')->insert(['id' => 43, 'name' => 'Existing component']);
+        DB::table('incident_templates')->insert([
+            'id' => 44,
+            'name' => 'Existing template',
+            'slug' => 'existing',
+            'title_template' => 'Existing title',
+            'body_template' => 'Existing body',
+        ]);
+        DB::table('incidents')->insert([
+            'id' => 45,
+            'name' => 'Existing incident',
+            'occurred_at' => now(),
+        ]);
+        DB::table('incident_updates')->insert([
+            'id' => 46,
+            'incident_id' => 45,
+            'status' => 1,
+            'message' => 'Existing update',
+        ]);
+        DB::table('subscribers')->insert([
+            'id' => 47,
+            'email' => 'existing@example.net',
+            'token' => str_repeat('a', 40),
+        ]);
+        DB::table('subscriber_notifications')->insert([
+            'id' => 48,
+            'subscriber_id' => 47,
+            'incident_update_id' => 46,
+        ]);
+        DB::table('webhook_endpoints')->insert([
+            'id' => 49,
+            'label' => 'Existing hook',
+            'url' => Crypt::encryptString('https://hooks.example.net/pharos'),
+        ]);
+        DB::table('api_tokens')->insert([
+            'id' => 50,
+            'name' => 'Existing token',
+            'token_hash' => str_repeat('b', 64),
+        ]);
+        DB::table('settings')->insert([
+            ['key' => 'brand.name', 'value' => 'Existing brand'],
+            ['key' => 'integrations.webhook_secret', 'value' => 'existing-secret'],
+            ['key' => 'app.timezone', 'value' => 'Europe/Amsterdam'],
+        ]);
+
+        $migration->up();
+        $defaultId = (int) DB::table('settings')->where('key', StatusPage::DEFAULT_ID_SETTING)->value('value');
+
+        $this->assertSame('Existing brand', StatusPage::findOrFail($defaultId)->name);
+        foreach ([
+            'component_groups' => 42,
+            'components' => 43,
+            'incident_templates' => 44,
+            'incidents' => 45,
+            'subscribers' => 47,
+            'subscriber_notifications' => 48,
+            'webhook_endpoints' => 49,
+        ] as $table => $id) {
+            $this->assertSame(
+                $defaultId,
+                (int) DB::table($table)->where('id', $id)->value('status_page_id'),
+                "$table was not backfilled",
+            );
+        }
+        $this->assertDatabaseHas('status_page_user', ['status_page_id' => $defaultId, 'user_id' => 41]);
+        $this->assertDatabaseHas('api_tokens', [
+            'id' => 50,
+            'status_page_id' => $defaultId,
+            'user_id' => null,
+        ]);
+        $this->assertDatabaseHas('status_page_settings', [
+            'status_page_id' => $defaultId,
+            'key' => 'brand.name',
+            'value' => 'Existing brand',
+        ]);
+        $this->assertDatabaseHas('status_page_settings', [
+            'status_page_id' => $defaultId,
+            'key' => 'integrations.webhook_secret',
+            'value' => 'existing-secret',
+        ]);
+        $this->assertDatabaseMissing('settings', ['key' => 'brand.name']);
+        $this->assertDatabaseHas('settings', ['key' => 'app.timezone', 'value' => 'Europe/Amsterdam']);
+
+        $migration->down();
+
+        $this->assertFalse(Schema::hasTable('status_pages'));
+        $this->assertFalse(Schema::hasColumn('components', 'status_page_id'));
+        $this->assertDatabaseHas('components', ['id' => 43, 'name' => 'Existing component']);
+        $this->assertDatabaseHas('settings', ['key' => 'brand.name', 'value' => 'Existing brand']);
+    }
+
+    /** @return list<object> */
+    private function migrateLegacySchema(): array
+    {
+        $paths = glob(database_path('migrations/*.php')) ?: [];
+        sort($paths);
+        $migrations = [];
+
+        foreach ($paths as $path) {
+            if (basename($path) >= '2026_09_20_120000_create_status_pages.php') {
+                break;
+            }
+
+            $migration = require $path;
+            $migration->up();
+            $migrations[] = $migration;
+        }
+
+        return $migrations;
+    }
+
+    private function runOnIsolatedUpgradeDatabase(callable $callback): mixed
+    {
+        $original = DB::getDefaultConnection();
+        $connectionName = 'ownership_upgrade_'.bin2hex(random_bytes(3));
+        $connection = config("database.connections.$original");
+        $provisionConnection = null;
+        $temporaryDatabase = null;
+
+        if (($connection['driver'] ?? null) === 'sqlite') {
+            $connection['database'] = ':memory:';
+            $connection['prefix'] = '';
+        } else {
+            $provisionConnection = $connectionName.'_provision';
+            $temporaryDatabase = 'pharos_ownership_'.bin2hex(random_bytes(4));
+            config(["database.connections.$provisionConnection" => $connection]);
+            DB::purge($provisionConnection);
+            DB::connection($provisionConnection)->statement("CREATE DATABASE `$temporaryDatabase`");
+
+            $connection['url'] = null;
+            $connection['database'] = $temporaryDatabase;
+            $connection['prefix'] = '';
+        }
+
+        config(["database.connections.$connectionName" => $connection]);
+        DB::purge($connectionName);
+        DB::setDefaultConnection($connectionName);
+
+        try {
+            return $callback();
+        } finally {
+            DB::setDefaultConnection($original);
+            DB::purge($connectionName);
+            config(["database.connections.$connectionName" => null]);
+
+            if ($provisionConnection !== null && $temporaryDatabase !== null) {
+                DB::connection($provisionConnection)->statement("DROP DATABASE `$temporaryDatabase`");
+                DB::purge($provisionConnection);
+                config(["database.connections.$provisionConnection" => null]);
+            }
+        }
     }
 }

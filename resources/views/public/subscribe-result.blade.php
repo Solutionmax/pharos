@@ -40,13 +40,13 @@ p{margin:0}a{color:inherit}
       <h1>You're subscribed</h1>
       <p><span class="mail">{{ $subscriber->email }}</span> will get an e-mail when an incident is
         reported on the {{ $branding->name() }} status page, and when it is resolved.</p>
-      <a class="btn" href="{{ route('status') }}">Back to the status page</a>
+      <a class="btn" href="{{ \App\Services\PageUrls::route('status') }}">Back to the status page</a>
       <p class="small">Changed your mind? <a href="{{ $subscriber->unsubscribeUrl() }}">Unsubscribe</a> — the same link sits at the bottom of every mail.</p>
     @else
       <h1>Unsubscribed</h1>
       <p><span class="mail">{{ $subscriber->email }}</span> will get no more incident e-mails from
         the {{ $branding->name() }} status page.</p>
-      <a class="btn" href="{{ route('status') }}">Back to the status page</a>
+      <a class="btn" href="{{ \App\Services\PageUrls::route('status') }}">Back to the status page</a>
       <p class="small">Subscribed by mistake? Use "Get notified" on the status page and confirm again.</p>
     @endif
   </section>

@@ -4,13 +4,13 @@
 @include('partials.pagehead', [
   'title' => $incident->name,
   'sub' => 'Opened '.$incident->occurred_at->format('d M Y H:i').' · '.$incident->status->label(),
-  'back' => ['url' => route('admin.incidents'), 'label' => 'Incidents'],
+  'back' => ['url' => \App\Services\PageUrls::route('admin.incidents'), 'label' => 'Incidents'],
 ])
 
 <div class="panel composer-panel">
   <div class="panel-hd"><h3>Post an update</h3></div>
   <div class="panel-bd">
-    <form method="POST" action="{{ route('admin.incidents.update', $incident) }}" style="display:flex;flex-direction:column;gap:16px">
+    <form method="POST" action="{{ \App\Services\PageUrls::route('admin.incidents.update', $incident) }}" style="display:flex;flex-direction:column;gap:16px">
       @csrf
       <div class="field">
         @include('partials.incident-status-choice', ['selectedStatus' => $incident->status->value])
@@ -23,7 +23,7 @@
       </div>
       <div class="actions">
         <button class="btn" type="submit">Post update</button>
-        <a class="btn ghost" href="{{ route('admin.incidents') }}">Back</a>
+        <a class="btn ghost" href="{{ \App\Services\PageUrls::route('admin.incidents') }}">Back</a>
       </div>
     </form>
   </div>

@@ -10,8 +10,8 @@
 ])
 
 <form method="POST" action="{{ $group->exists
-        ? route('admin.groups.update', array_filter(['group' => $group->id, 'from' => $from]))
-        : route('admin.groups.store', array_filter(['from' => $from])) }}">
+        ? \App\Services\PageUrls::route('admin.groups.update', array_filter(['group' => $group->id, 'from' => $from]))
+        : \App\Services\PageUrls::route('admin.groups.store', array_filter(['from' => $from])) }}">
   @csrf
   @if ($group->exists) @method('PUT') @endif
 

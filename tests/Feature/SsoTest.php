@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\AuditEntry;
 use App\Models\RecoveryCode;
 use App\Models\Setting;
+use App\Models\StatusPage;
 use App\Models\User;
 use App\Services\SafeHttp;
 use App\Services\Sso;
@@ -303,6 +304,7 @@ class SsoTest extends TestCase
             'password' => Hash::make('correct-horse-battery'), 'role' => UserRole::User,
         ]);
 
+        $member->statusPages()->attach(StatusPage::default());
         $this->actingAs($member)->get('/admin/components')
             ->assertOk()
             ->assertDontSee(route('admin.settings'), false);

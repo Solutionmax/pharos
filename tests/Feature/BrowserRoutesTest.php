@@ -25,6 +25,7 @@ class BrowserRoutesTest extends TestCase
 
         // PHP sees the internal HTTP origin, while the browser uses public HTTPS.
         // A subdirectory must survive when omitting that internal origin.
+        config(['app.url' => 'http://internal.example.test/pharos']);
         URL::forceRootUrl('http://internal.example.test/pharos');
         try {
             $component = $this->get('http://internal.example.test/admin/components/create')->assertOk();
@@ -59,7 +60,7 @@ class BrowserRoutesTest extends TestCase
     public function test_configured_proxy_headers_generate_https_form_actions(): void
     {
         User::create(['name' => 'Admin', 'email' => 'owner@example.test', 'password' => 'local-test-password']);
-        config(['trustedproxy.proxies' => '10.10.0.0/24']);
+        config(['trustedproxy.proxies' => '10.10.0.0/24', 'app.url' => 'https://status.example.test']);
         $this->withServerVariables([
             'REMOTE_ADDR' => '10.10.0.2',
             'HTTP_X_FORWARDED_PROTO' => 'https',
@@ -72,7 +73,7 @@ class BrowserRoutesTest extends TestCase
     public function test_an_untrusted_client_cannot_override_the_form_origin(): void
     {
         User::create(['name' => 'Admin', 'email' => 'owner@example.test', 'password' => 'local-test-password']);
-        config(['trustedproxy.proxies' => '10.10.0.0/24']);
+        config(['trustedproxy.proxies' => '10.10.0.0/24', 'app.url' => 'http://internal.example.test']);
         $this->withServerVariables([
             'REMOTE_ADDR' => '192.0.2.15',
             'HTTP_X_FORWARDED_PROTO' => 'https',

@@ -11,6 +11,7 @@ use App\Models\AuditEntry;
 use App\Models\Incident;
 use App\Models\IncidentUpdate;
 use App\Models\Setting;
+use App\Models\StatusPage;
 use App\Models\Subscriber;
 use App\Models\SubscriberNotification;
 use App\Models\User;
@@ -405,6 +406,7 @@ class SubscribersTest extends TestCase
             'name' => 'Tom', 'email' => 'tom@example.net',
             'password' => Hash::make('correct-horse-battery'), 'role' => UserRole::User,
         ]);
+        $member->statusPages()->attach(StatusPage::default());
 
         $this->actingAs($member)->post('/admin/subscribers/enabled', ['enabled' => '0'])
             ->assertRedirect('/admin/subscribers');
@@ -527,6 +529,7 @@ class SubscribersTest extends TestCase
             'name' => 'Tom', 'email' => 'tom@example.net',
             'password' => Hash::make('correct-horse-battery'), 'role' => UserRole::User,
         ]);
+        $member->statusPages()->attach(StatusPage::default());
 
         $this->actingAs($member)->get('/admin/subscribers')->assertOk();
     }

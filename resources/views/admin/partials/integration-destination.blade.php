@@ -1,6 +1,6 @@
 @php $destination = $destinationProfiles[$selectedFormat]; @endphp
 <div class="integration-setup" id="add-notification">
-  <form method="POST" action="{{ route('admin.integrations.endpoints.store') }}" id="destination-form">
+  <form method="POST" action="{{ \App\Services\PageUrls::route('admin.integrations.endpoints.store') }}" id="destination-form">
     @csrf
     <div class="field">
       <label for="format">Destination</label>
@@ -9,7 +9,7 @@
           <option value="{{ $value }}" @selected($selectedFormat === $value)>{{ $formatLabel }}</option>
         @endforeach
       </select>
-      <noscript><p class="help">Load the form for your destination: @foreach ($destinationProfiles as $value => $profile)<a href="{{ route('admin.integrations', ['destination' => $value]) }}#add-notification">{{ $profile['title'] }}</a> @endforeach</p></noscript>
+      <noscript><p class="help">Load the form for your destination: @foreach ($destinationProfiles as $value => $profile)<a href="{{ \App\Services\PageUrls::route('admin.integrations', ['destination' => $value]) }}#add-notification">{{ $profile['title'] }}</a> @endforeach</p></noscript>
     </div>
     <div class="field">
       <label for="label">Name in Pharos</label>

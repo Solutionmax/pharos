@@ -211,7 +211,7 @@ class MailTemplates
             'brand' => $branding->name(),
             'accent' => $branding->accent(),
             'logo' => $logo ? url($logo) : null,
-            'link' => route('status'),
+            'link' => PageUrls::route('status'),
             'unsubscribe' => $unsubscribe ?: null,
         ];
     }
@@ -247,7 +247,7 @@ class MailTemplates
             'status' => $status->label(),
             'message' => "We are seeing **delays of up to 20 minutes** on outbound mail while the queue drains.\n\n- Incoming mail is not affected\n- No messages are lost",
             'components' => 'Mail, Outbound queue',
-            'link' => route('status'),
+            'link' => PageUrls::route('status'),
             'unsubscribe' => url('/unsubscribe/preview'),
             'when' => Clock::now()->format('j F Y, H:i'), // the customer's zone, like a real notice
             'name' => $name,

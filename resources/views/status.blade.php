@@ -153,7 +153,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 <div class="adminbar">
   <div class="in">
     <span>Signed in as {{ auth()->user()->name }}</span>
-    <a href="{{ route('admin.components') }}" style="margin-left:auto">← Back to admin</a>
+    <a href="{{ \App\Services\PageUrls::route('admin.components') }}" style="margin-left:auto">← Back to admin</a>
   </div>
 </div>
 @endif
@@ -171,7 +171,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
             @if (session('subscribed'))
               <p>{{ session('subscribed') }}</p>
             @else
-              <form method="POST" action="{{ route('subscribe') }}">
+              <form method="POST" action="{{ \App\Services\PageUrls::route('subscribe') }}">
                 @csrf
                 <p>Get an e-mail when an incident is reported, and when it is resolved.</p>
                 <label for="sub-email" style="display:block;margin-top:8px">E-mail address</label>
@@ -310,8 +310,8 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
       @endforelse
       @if ($chrome && ($page > 1 || $hasOlder))
         <nav class="pager" aria-label="Incident history">
-          @if ($page > 1)<a href="{{ $page === 2 ? url('/') : url('/?page='.($page - 1)) }}">&larr; Newer incidents</a>@endif
-          @if ($hasOlder)<a class="older" href="{{ url('/?page='.($page + 1)) }}">Older incidents &rarr;</a>@endif
+          @if ($page > 1)<a href="{{ \App\Services\PageUrls::route('status', $page === 2 ? [] : ['page' => $page - 1]) }}">&larr; Newer incidents</a>@endif
+          @if ($hasOlder)<a class="older" href="{{ \App\Services\PageUrls::route('status', ['page' => $page + 1]) }}">Older incidents &rarr;</a>@endif
         </nav>
       @endif
     </section>
@@ -319,7 +319,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 
   </div>
   <footer class="foot">
-    @if ($modules['page.show_api_link'])<a href="{{ url('/api/v1/components') }}">API</a>@endif
+    @if ($modules['page.show_api_link'])<a href="{{ \App\Services\PageUrls::api('components') }}">API</a>@endif
     @unless ($branding->creditHidden())<a class="cr" href="https://pharos.solutionmax.net" rel="noopener">Powered by Pharos</a>@endunless
   </footer>
 </div>

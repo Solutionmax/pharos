@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ComponentGroup;
+use App\Services\PageUrls;
 use App\Services\Uptime;
 use Illuminate\Http\Request;
 
@@ -20,14 +21,14 @@ class GroupController extends Controller
     protected function origin(Request $request): ?array
     {
         return $request->query('from') === 'status-page'
-            ? ['url' => route('admin.status-page'), 'label' => 'Status page']
+            ? ['url' => PageUrls::route('admin.status-page'), 'label' => 'Status page']
             : null;
     }
 
     /** Keeps ?from= alive across redirects so the trail does not break on save. */
     protected function back(Request $request): string
     {
-        return route('admin.groups', $request->query('from') ? ['from' => $request->query('from')] : []);
+        return PageUrls::route('admin.groups', $request->query('from') ? ['from' => $request->query('from')] : []);
     }
 
     public function index(Request $request)

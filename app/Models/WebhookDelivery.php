@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/** @property int $status_page_id */
 class WebhookDelivery extends Model
 {
     protected $guarded = [];

@@ -12,6 +12,8 @@ use App\Models\ComponentGroup;
 use App\Models\Incident;
 use App\Models\IncidentUpdate;
 use App\Services\CheckHistory;
+use App\Services\PageContext;
+use App\Services\PageUrls;
 use App\Services\Uptime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -116,7 +118,7 @@ class ComponentController extends Controller
             return $component;
         });
 
-        return redirect()->route('admin.components')
+        return redirect()->to(PageUrls::route('admin.components'))
             ->with('status', "Component {$component->name} added.");
     }
 
@@ -129,7 +131,7 @@ class ComponentController extends Controller
             $this->syncCheck($component, $data);
         });
 
-        return redirect()->route('admin.components')
+        return redirect()->to(PageUrls::route('admin.components'))
             ->with('status', "Component {$component->name} saved.");
     }
 
@@ -139,7 +141,7 @@ class ComponentController extends Controller
         $this->closeAutoIncidents($component);
         $component->delete();
 
-        return redirect()->route('admin.components')
+        return redirect()->to(PageUrls::route('admin.components'))
             ->with('status', "Component {$name} deleted, along with its history.");
     }
 
@@ -169,7 +171,7 @@ class ComponentController extends Controller
             // a bare "url" rule lets a javascript: URL through on some inputs.
             'link' => ['nullable', 'url:http,https', 'max:255'],
             'tags' => ['nullable', 'string', 'max:255'],
-            'component_group_id' => ['nullable', 'exists:component_groups,id'],
+            'component_group_id' => ['nullable', Rule::exists('component_groups', 'id')->where('status_page_id', app(PageContext::class)->id())],
             'status' => ['required', 'integer', 'min:1', 'max:5'],
             'enabled' => ['sometimes', 'boolean'],
             'show_uptime' => ['sometimes', 'boolean'],

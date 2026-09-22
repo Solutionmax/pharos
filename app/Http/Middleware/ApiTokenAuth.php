@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Models\ApiToken;
+use App\Services\PageContext;
+use App\Services\TokenAccess;
 use Closure;
 use Illuminate\Http\Request;
 
@@ -22,6 +24,10 @@ class ApiTokenAuth
 
         if (! $token) {
             return response()->json(['error' => 'Invalid API token'], 401);
+        }
+
+        if (! TokenAccess::allows($token, app(PageContext::class)->id())) {
+            return response()->json(['error' => 'Token has no access to this page'], 403);
         }
 
         $token->forceFill(['last_used_at' => now()])->save();

@@ -184,3 +184,13 @@ dat onderzoek verifiëren tegen de dan gebruikte FreeScout-installatie.
 
 Alleen gezamenlijk vormen deze fasen een bruikbare update. Tussentijdse schemawijzigingen
 gaan niet naar de actieve installatie. GitHub-push en publieke release blijven aparte acties.
+
+## Uitvoeringsbesluiten na review — 22 september 2026
+
+- Slugs zijn na aanmaken onveranderlijk; namen blijven aanpasbaar. Bevestigings- en
+  afmeldlinks gebruiken centraal APP_URL met vaste slug, ook bij een klantdomein.
+- API-verkeer gebruikt uitsluitend de centrale installatiehost. Een publieke
+  weergavealias voor een pagina met eigen domein verwijst naar dat domein.
+- Nieuwe CLI-tokens vereisen --user en --page. Bestaande gemigreerde systeemtokens
+  blijven uitsluitend op de standaardpagina werken.
+- Gestreamde exports houden paginacontext vast tot het verzenden van hun inhoud.
