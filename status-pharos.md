@@ -135,6 +135,13 @@ Bijgewerkt: 23 september 2026. Deze notitie beschrijft de multi-page uitbreiding
 
 Niet geïmplementeerd of toegezegd voor deze update: gedeelde services tussen pagina’s, automatisch DNS/TLS provisionen, privé-klantportalen of een volledige FreeScout-koppeling.
 
+## Menu/UI-mockup (23 sep, alleen ontwerp, niets gebouwd)
+
+- Bronnen + build: `/root/pharos-mockup-20260923` (`python3 build_integrations.py && python3 build_people.py && python3 build_mock.py`). Laatste versie: `http://192.168.18.161:3003/files/1790148757131-pharos-menu-mockup-v4.html`.
+- Richting akkoord: menugroepen *This page* / *Installation*, uitklapbare subitems (geen tabknoppen), visuele Overview, Integrations gesplitst in Send out / Bring in / API tokens / Delivery log, nieuwe Users (zijpaneel) en Profiel.
+- Besluiten: talen later. Officiële brand kits (Slack, Microsoft Teams) pas ophalen nadat Raymon de mockup goedkeurt; Discord/Telegram/Signal/n8n/Uptime Kuma via Simple Icons (CC0, merkrichtlijnen checken).
+- Nieuw t.o.v. huidige code (bij bouwen): Page health, uptime-ring/-lijn op Overview, events-keuze per bestemming, aparte Kuma-endpoint, uitnodigingsmail, sessielijst, voorkeur thema/tijdzone per gebruiker.
+
 ## Documentatie en lokale ontwikkelomgeving
 
 - `docs/multiple-status-pages.md`: beheer, API, mail, licenties, herstel en FreeScout-vervolg.
