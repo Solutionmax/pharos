@@ -255,7 +255,7 @@ class License
     {
         $days = $this->daysLeft();
 
-        return $days !== null && $days <= $withinDays;
+        return $days !== null && $days >= 0 && $days <= $withinDays;
     }
 
     protected function hasPassed(string $date): bool
