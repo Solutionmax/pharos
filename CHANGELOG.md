@@ -6,8 +6,14 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+### Fixed
+- The test mail says where it was sent from (Settings, Central mail or Email, Delivery for the page) and which transport it used (the central mail transport or the page's own SMTP server) in plain words. It no longer shows the internal mailer name.
+- The user invitation and the password reset mail use the installation branding like every other mail: brand name, logo, accent and footer. Before, they used the default layout and signed with the application name.
+
 ### Security
 - Choosing TLS (STARTTLS) for central or page SMTP now requires STARTTLS. Before, a server that did not offer it got the mail and the SMTP password in plain text. An install set to TLS whose server has no STARTTLS now fails with a clear error; pick None or SSL there.
+- Opening an unsubscribe link no longer unsubscribes at once. It shows a confirmation page with an Unsubscribe button, so a mail security scanner that follows links cannot unsubscribe anyone. The one click unsubscribe of mail clients (List-Unsubscribe-Post) and links in mails sent earlier keep working.
+- A page administrator can no longer point the page's own SMTP server at an internal address: hosts that are, or resolve to, loopback, private, link local, CGNAT or other non public addresses are refused, and Send test checks the host again. Global administrators can still use an internal relay. Send test on the Delivery screen is limited to 5 per minute per user.
 
 ## [0.7.0] — 2026-09-23
 
