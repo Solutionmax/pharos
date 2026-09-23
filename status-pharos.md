@@ -6,7 +6,7 @@ Bijgewerkt: 23 september 2026. Deze notitie beschrijft de multi-page uitbreiding
 
 - **Actieve werkmap:** `/root/pharos-multipage-20260920`
 - **Branch:** `feature/multiple-status-pages`
-- **Laatste implementatiecommit:** `2e9256a` — Add page roles, scoped API tokens and delivery filters.
+- **Laatste implementatiecommit:** `2e9256a` (page roles, scoped tokens, delivery filters); QA-fix `33f5de6` (23 sep).
 - Oorspronkelijke repository: `/root/projects/pharos`; basis van deze uitbreiding: `007c0c9` (v0.6.0).
 - Werk verder in de actieve werkmap. Niet opnieuw beginnen in de oorspronkelijke checkout.
 - **Niet naar GitHub gepusht.** Gebruiker wil eerst intern testen en pas publiceren wanneer alles af is. Geen release, merge of push uitvoeren zonder die vervolginstructie.
@@ -123,6 +123,8 @@ Bijgewerkt: 23 september 2026. Deze notitie beschrijft de multi-page uitbreiding
 - Screenshots lokaal: `/tmp/pharos-page-roles-mobile.png`, `/tmp/pharos-delivery-filters-mobile.png`.
 
 ## Nog open
+
+0. **QA-ronde 23 sep:** zie `docs/qa-rapport-2026-09-23.md`. Fix `33f5de6` (Users-lijst 500 bij onbekende rol) staat nog NIET op `.166`: één bladebestand + `php artisan view:clear`.
 
 1. **Gebruikersacceptatie:** laatste rollen, tokenkeuzes en filters zelf testen op de interne installatie. Eventuele workflow-/vormgevingsfeedback verwerken.
 2. **Releasevoorbereiding:** pas na akkoord versie, changelog, release-instructies en definitieve GitHub-publicatie voorbereiden. Er is nog niets gepusht.
