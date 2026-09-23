@@ -75,11 +75,11 @@ class NotesTest extends TestCase
 
         $this->actingAs($this->admin)->postJson('/admin/notes/integrations.delivery/dismiss')->assertNoContent();
 
-        $this->actingAs($this->admin)->get('/admin/integrations')
+        $this->actingAs($this->admin)->get('/admin/integrations/log')
             ->assertDontSee('data-note="integrations.delivery"', false);
         // AuthenticateSession would treat the second person as a hijack of the first's session.
         $this->flushSession();
-        $this->actingAs($other)->get('/admin/integrations')
+        $this->actingAs($other)->get('/admin/integrations/log')
             ->assertSee('data-note="integrations.delivery"', false);
     }
 
@@ -103,7 +103,7 @@ class NotesTest extends TestCase
             ->assertSessionHas('status', 'All notes are back.');
 
         $this->assertFalse($this->admin->fresh()->hasDismissed('updates.backups'));
-        $this->actingAs($this->admin)->get('/admin/integrations')
+        $this->actingAs($this->admin)->get('/admin/integrations/log')
             ->assertSee('data-note="integrations.delivery"', false);
     }
 

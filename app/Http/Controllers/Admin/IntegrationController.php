@@ -19,18 +19,79 @@ use Illuminate\Validation\ValidationException;
 
 class IntegrationController extends Controller
 {
+    /** The old single screen. Bookmarks and links from older mails land on the part they meant. */
     public function index(Request $request)
     {
+        $query = $request->query();
+        $target = match (true) {
+            (bool) array_intersect(array_keys($query), ['delivery_endpoint', 'delivery_channel', 'delivery_status', 'deliveries_page']) => 'admin.integrations.log',
+            array_key_exists('tokens_page', $query) => 'admin.integrations.tokens',
+            array_key_exists('heartbeats_page', $query) => 'admin.integrations.in',
+            default => 'admin.integrations.out',
+        };
+
+        return redirect()->to(PageUrls::route($target, $query));
+    }
+
+    /** Send out: destinations that tell your team. */
+    public function out(Request $request)
+    {
         $pageId = app(PageContext::class)->id();
-        $canEdit = $request->user()->canEditPage($pageId);
+        $profiles = config('integrations.destinations');
+        $format = old('format', $request->query('destination', 'slack'));
+        $format = is_string($format) && isset($profiles[$format]) ? $format : 'slack';
+
+        return view('admin.integrations.out', $this->common($request) + [
+            'destinationProfiles' => $profiles,
+            'selectedFormat' => $format,
+            'endpoints' => WebhookEndpoint::orderBy('id')->paginate(5, ['*'], 'endpoints_page')->withQueryString()->fragment('destinations'),
+            'endpointCount' => WebhookEndpoint::count(),
+            'webhookSecret' => $request->user()->canAdministerPage($pageId) ? Setting::get('integrations.webhook_secret') : null,
+        ]);
+    }
+
+    /** Bring in: what keeps components up to date without a person. */
+    public function in(Request $request)
+    {
+        $pageId = app(PageContext::class)->id();
+        $components = Component::with(['check', 'group'])->orderBy('position')->get();
+
+        return view('admin.integrations.in', $this->common($request) + [
+            'components' => $components,
+            'manualComponents' => $components->filter(fn ($component) => $component->enabled && ! $component->check?->enabled)->values(),
+            'writeTokens' => $request->user()->canAdministerPage($pageId)
+                ? ApiToken::where('status_page_id', $pageId)->where('scope', 'write')->orderBy('name')->get(['id', 'name']) : collect(),
+            'heartbeats' => Component::whereHas('check', fn ($q) => $q->where('type', 'heartbeat'))
+                ->with('check')->orderBy('id')->paginate(5, ['*'], 'heartbeats_page')->withQueryString()->fragment('heartbeats'),
+        ]);
+    }
+
+    /** API tokens: page administrators issue and revoke; everyone else is told who can. */
+    public function tokens(Request $request)
+    {
+        $pageId = app(PageContext::class)->id();
         $canAdminister = $request->user()->canAdministerPage($pageId);
+
+        return view('admin.integrations.tokens', $this->common($request) + [
+            'tokens' => $canAdminister
+                ? ApiToken::with('user:id,name')->where('status_page_id', $pageId)->orderByDesc('id')->paginate(10, ['*'], 'tokens_page')->withQueryString()
+                : null,
+            'newToken' => $canAdminister && session('new_token_page') === $pageId ? session('new_token') : null,
+        ]);
+    }
+
+    /** Delivery log: every message sent to a destination of this page, and what came back. */
+    public function log(Request $request)
+    {
+        $pageId = app(PageContext::class)->id();
         $filters = $request->validate([
             'delivery_endpoint' => ['nullable', 'integer'],
             'delivery_channel' => ['nullable', Rule::in(array_keys(WebhookEndpoint::FORMATS))],
             'delivery_status' => ['nullable', Rule::in(['delivered', 'pending', 'failed'])],
         ]);
-        $deliveries = WebhookDelivery::where('status_page_id', $pageId)
-            ->whereHas('endpoint', fn ($q) => $q->where('status_page_id', $pageId))
+        $owned = fn () => WebhookDelivery::where('status_page_id', $pageId)
+            ->whereHas('endpoint', fn ($q) => $q->where('status_page_id', $pageId));
+        $deliveries = $owned()
             ->when($filters['delivery_endpoint'] ?? null, fn ($q, $id) => $q->where('webhook_endpoint_id', $id))
             ->when($filters['delivery_channel'] ?? null, fn ($q, $format) => $q->whereHas('endpoint', fn ($e) => $e->where('format', $format)));
         match ($filters['delivery_status'] ?? '') {
@@ -39,28 +100,30 @@ class IntegrationController extends Controller
             'failed' => $deliveries->whereNull('sent_at')->where('attempts', '>=', 6),
             default => null,
         };
-        $profiles = config('integrations.destinations');
-        $format = old('format', request()->query('destination', 'generic'));
-        $format = is_string($format) && isset($profiles[$format]) ? $format : 'generic';
-        $components = Component::with('check')->orderBy('position')->get();
+        $week = now()->subDays(7);
 
-        return view('admin.integrations', [
-            'canEditIntegrations' => $canEdit,
-            'canAdministerIntegrations' => $canAdminister,
+        return view('admin.integrations.log', $this->common($request) + [
             'deliveryFilters' => $filters,
-            'deliveryEndpoints' => WebhookEndpoint::where('status_page_id', $pageId)->orderBy('label')->get(['id', 'label']),
-            'destinationProfiles' => $profiles,
-            'selectedFormat' => $format,
-            'manualComponents' => $components->filter(fn ($component) => $component->enabled && ! $component->check?->enabled),
-            'tokens' => ApiToken::where('status_page_id', app(PageContext::class)->id())->orderByDesc('id')->paginate(10, ['*'], 'tokens_page')->withQueryString()->fragment('integration-tokens'),
-            'newToken' => $canAdminister && session('new_token_page') === $pageId ? session('new_token') : null,
-            'deliveries' => $deliveries->with('endpoint')->latest('id')->paginate(5, ['*'], 'deliveries_page')->withQueryString()->fragment('delivery-history'),
-            'endpoints' => WebhookEndpoint::orderBy('id')->paginate(5, ['*'], 'endpoints_page')->withQueryString()->fragment('outgoing-integrations'),
-            'webhookSecret' => $canAdminister ? Setting::get('integrations.webhook_secret') : null,
-            'heartbeats' => Component::whereHas('check', fn ($q) => $q->where('type', 'heartbeat'))
-                ->with('check')->orderBy('id')->paginate(5, ['*'], 'heartbeats_page')->withQueryString()->fragment('guide-heartbeats'),
-            'components' => $components,
+            'deliveryEndpoints' => WebhookEndpoint::orderBy('label')->get(['id', 'label']),
+            'deliveries' => $deliveries->with('endpoint')->latest('id')->paginate(10, ['*'], 'deliveries_page')->withQueryString(),
+            'counters' => [
+                'delivered' => $owned()->whereNotNull('sent_at')->where('sent_at', '>=', $week)->count(),
+                'pending' => $owned()->whereNull('sent_at')->where('attempts', '<', 6)->count(),
+                'failed' => $owned()->whereNull('sent_at')->where('attempts', '>=', 6)->where('created_at', '>=', $week)->count(),
+            ],
         ]);
+    }
+
+    /** @return array<string, mixed> */
+    protected function common(Request $request): array
+    {
+        $pageId = app(PageContext::class)->id();
+
+        return [
+            'canEditIntegrations' => $request->user()->canEditPage($pageId),
+            'canAdministerIntegrations' => $request->user()->canAdministerPage($pageId),
+            'contextPage' => app(PageContext::class)->page(),
+        ];
     }
 
     public function storeToken(Request $request)
@@ -71,7 +134,7 @@ class IntegrationController extends Controller
 
         // Passed through the session because it is the only moment it exists in
         // plaintext; only a hash is stored.
-        return redirect()->to(PageUrls::route('admin.integrations'))->with(['new_token' => $plain, 'new_token_page' => app(PageContext::class)->id()]);
+        return redirect()->to(PageUrls::route('admin.integrations.tokens'))->with(['new_token' => $plain, 'new_token_page' => app(PageContext::class)->id()]);
     }
 
     public function destroyToken(ApiToken $token)
@@ -80,7 +143,7 @@ class IntegrationController extends Controller
         $name = $token->name;
         $token->delete();
 
-        return redirect()->to(PageUrls::route('admin.integrations'))
+        return redirect()->to(PageUrls::route('admin.integrations.tokens'))
             ->with('status', "Token \"{$name}\" revoked. Anything using it stops working now.");
     }
 
@@ -102,7 +165,11 @@ class IntegrationController extends Controller
             'signal_number' => ['exclude_unless:format,signal', 'required', 'regex:/^\+[1-9][0-9]{6,14}$/'],
             'signal_recipient' => ['exclude_unless:format,signal', 'required', 'regex:/^(\+[1-9][0-9]{6,14}|group\.[A-Za-z0-9+\/_=-]{1,200})$/'],
             'signal_token' => ['exclude_unless:format,signal', 'required', 'string', 'min:16', 'max:512', 'regex:/^[A-Za-z0-9._~+\/-]+={0,2}$/'],
-        ]);
+            // The form marks that it offered a choice; a client that never knew
+            // about events keeps the old meaning of "everything".
+            'events' => ['exclude_unless:events_set,1', 'required', 'array', 'min:1'],
+            'events.*' => ['string', Rule::in(array_keys(WebhookEndpoint::EVENTS))],
+        ], ['events.required' => 'Choose at least one moment to send.']);
 
         if ($data['format'] === 'telegram') {
             $data['url'] = 'https://api.telegram.org/bot'.$data['telegram_token'].'/sendMessage';
@@ -127,7 +194,10 @@ class IntegrationController extends Controller
         if ($data['format'] === 'telegram') {
             $options = ['chat_id' => $data['telegram_chat_id']];
         }
-        WebhookEndpoint::create(['label' => $data['label'], 'url' => $data['url'], 'format' => $data['format'], 'enabled' => true, 'options' => $options]);
+        $endpoint = WebhookEndpoint::create([
+            'label' => $data['label'], 'url' => $data['url'], 'format' => $data['format'], 'enabled' => true, 'options' => $options,
+            'events' => isset($data['events']) ? array_values(array_unique($data['events'])) : null,
+        ]);
 
         // The signature only means anything to a generic receiver, but the secret
         // has to exist before the first one fires.
@@ -135,8 +205,12 @@ class IntegrationController extends Controller
             Setting::put('integrations.webhook_secret', Str::random(32));
         }
 
-        return redirect()->to(PageUrls::route('admin.integrations'))
-            ->with('status', "Notification to \"{$data['label']}\" added. Send a test to be sure it arrives.");
+        if ($request->boolean('send_test')) {
+            return $this->sendTest($endpoint, app(OutgoingWebhook::class), "Destination \"{$endpoint->label}\" saved. ");
+        }
+
+        return redirect()->to(PageUrls::route('admin.integrations.out'))
+            ->with('status', "Destination \"{$data['label']}\" saved. Send a test to be sure it arrives.");
     }
 
     public function destroyEndpoint(WebhookEndpoint $endpoint)
@@ -144,20 +218,37 @@ class IntegrationController extends Controller
         $label = $endpoint->label;
         $endpoint->delete();
 
-        return redirect()->to(PageUrls::route('admin.integrations'))
-            ->with('status', "Notification to \"{$label}\" removed.");
+        return redirect()->to(PageUrls::route('admin.integrations.out'))
+            ->with('status', "Destination \"{$label}\" removed.");
+    }
+
+    public function updateEvents(Request $request, WebhookEndpoint $endpoint)
+    {
+        $data = $request->validate([
+            'events' => ['required', 'array', 'min:1'],
+            'events.*' => ['string', Rule::in(array_keys(WebhookEndpoint::EVENTS))],
+        ], ['events.required' => 'Choose at least one moment to send.']);
+        $endpoint->update(['events' => array_values(array_unique($data['events']))]);
+
+        return redirect()->to(PageUrls::route('admin.integrations.out'))
+            ->with('status', "\"{$endpoint->label}\" now receives: ".collect($endpoint->events)->map(fn ($e) => WebhookEndpoint::EVENTS[$e])->join(', ').'.');
     }
 
     public function testEndpoint(WebhookEndpoint $endpoint, OutgoingWebhook $webhook)
     {
+        return $this->sendTest($endpoint, $webhook);
+    }
+
+    protected function sendTest(WebhookEndpoint $endpoint, OutgoingWebhook $webhook, string $prefix = '')
+    {
         $ok = $webhook->test($endpoint);
         $endpoint->refresh();
 
-        return redirect()->to(PageUrls::route('admin.integrations'))->with(
+        return redirect()->to(PageUrls::route('admin.integrations.out'))->with(
             'status',
-            $ok
+            $prefix.($ok
                 ? "Test sent to \"{$endpoint->label}\" and accepted (HTTP {$endpoint->last_status}). Check the channel."
-                : "Test to \"{$endpoint->label}\" failed: ".($endpoint->last_error ?: 'no response').'.',
+                : "Test to \"{$endpoint->label}\" failed: ".($endpoint->last_error ?: 'no response').'.'),
         );
     }
 
@@ -165,7 +256,7 @@ class IntegrationController extends Controller
     {
         Setting::put('integrations.webhook_secret', Str::random(32));
 
-        return redirect()->to(PageUrls::route('admin.integrations'))
+        return redirect()->to(PageUrls::route('admin.integrations.out'))
             ->with('status', 'Signing secret rotated. Update the receiving end.');
     }
 }

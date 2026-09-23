@@ -95,15 +95,17 @@ class RolesTest extends TestCase
         // The whole point of the role: everything operational stays open.
         $this->actingAs($this->member)->get('/admin/components')->assertOk();
         $this->actingAs($this->member)->get('/admin/incidents')->assertOk();
-        $this->actingAs($this->member)->get('/admin/integrations')->assertOk();
+        foreach (['send-out', 'bring-in', 'tokens', 'log'] as $screen) {
+            $this->actingAs($this->member)->get('/admin/integrations/'.$screen)->assertOk();
+        }
     }
 
     public function test_the_integrations_page_hides_tokens_from_a_user(): void
     {
-        $this->actingAs($this->admin)->get('/admin/integrations')->assertSee('API tokens');
+        $this->actingAs($this->admin)->get('/admin/integrations/tokens')->assertSee('Create token');
 
         $this->flushSession();
-        $this->actingAs($this->member)->get('/admin/integrations')->assertDontSee('API tokens');
+        $this->actingAs($this->member)->get('/admin/integrations/tokens')->assertDontSee('Create token')->assertSee('Page administrators create and revoke API tokens');
     }
 
     public function test_a_user_can_still_change_their_own_password(): void

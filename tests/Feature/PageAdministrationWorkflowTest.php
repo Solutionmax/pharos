@@ -61,17 +61,23 @@ class PageAdministrationWorkflowTest extends TestCase
                 ApiToken::issue('Beta token '.$i, $admin, $page->id);
             }
         });
-        $response = $this->actingAs($admin)->get('/admin/pages/'.$page->id.'/integrations?deliveries_page=2&endpoints_page=2')->assertOk();
-        $response->assertSee('Integrations for Beta integration');
-        foreach (['deliveries', 'endpoints'] as $list) {
-            $this->assertSame(12, $response->viewData($list)->total());
-            $this->assertCount(5, $response->viewData($list));
-            $this->assertSame(2, $response->viewData($list)->currentPage());
-        }
-        $this->assertCount(10, $response->viewData('tokens'));
-        $this->assertStringContainsString('endpoints_page=2', $response->viewData('deliveries')->nextPageUrl());
-        $this->assertStringContainsString('/admin/pages/'.$page->id.'/integrations?', $response->viewData('deliveries')->nextPageUrl());
-        $default = $this->get('/admin/integrations')->assertOk();
+        $base = '/admin/pages/'.$page->id.'/integrations';
+        $out = $this->actingAs($admin)->get($base.'/send-out?endpoints_page=2')->assertOk();
+        $out->assertSee('Pharos · Beta integration');
+        $this->assertSame(12, $out->viewData('endpoints')->total());
+        $this->assertCount(5, $out->viewData('endpoints'));
+        $this->assertSame(2, $out->viewData('endpoints')->currentPage());
+        $log = $this->get($base.'/log?deliveries_page=2&delivery_status=delivered')->assertOk();
+        $this->assertSame(12, $log->viewData('deliveries')->total());
+        $this->assertCount(2, $log->viewData('deliveries'));
+        $this->assertSame(2, $log->viewData('deliveries')->currentPage());
+        $this->assertStringContainsString('delivery_status=delivered', $log->viewData('deliveries')->previousPageUrl());
+        $this->assertStringContainsString($base.'/log?', $log->viewData('deliveries')->previousPageUrl());
+        $this->assertCount(10, $this->get($base.'/tokens')->viewData('tokens'));
+        // The old single screen sends each list's parameters to the part that shows it.
+        $this->get($base.'?deliveries_page=2')->assertRedirect(url($base.'/log?deliveries_page=2'));
+        $this->get($base.'?tokens_page=2')->assertRedirect(url($base.'/tokens?tokens_page=2'));
+        $default = $this->get('/admin/integrations/log')->assertOk();
         $this->assertSame(0, $default->viewData('deliveries')->total());
         $default->assertDontSee('Beta destination');
     }
