@@ -70,8 +70,43 @@ Doel: de interne installatie `http://192.168.18.166:8130` (CT 106) volledig door
 ## Nog open
 
 1. **Fix live op `.166`** (23 sep): bladebestand gekopieerd, `view:clear` gedraaid, hash gelijk aan de repo.
-2. Aanbevelingen, geen bugs:
-   - HSTS toevoegen zodra de app achter TLS draait.
-   - Een eigen domein wordt niet met DNS geverifieerd; het is een checkbox, en een Page admin mag het domein zetten.
-   - Aparte securityronde voor 2FA en wachtwoordherstel.
+2. Aanbevelingen uitgevoerd (23 sep, zie hieronder). Deze commits staan nog niet op `.166`.
 3. Nog steeds niet gepusht naar GitHub. De QA-branches `qa/functional` en `qa/security` kunnen weg na akkoord.
+
+## Vervolg: aanbevelingen uitgevoerd
+
+### HSTS
+- `Strict-Transport-Security: max-age=31536000` wordt alleen verstuurd over HTTPS, zonder `includeSubDomains` en zonder `preload`. Over HTTP verandert er niets. Achter een TLS-proxy werkt het alleen als `TRUSTED_PROXIES` is ingesteld. Een header die de proxy zelf al zet, heeft voorrang.
+- Commit `c2a3d54`, test `SecurityHeadersTest::test_hsts_is_sent_over_https_only`.
+
+### Eigen domein
+- De eerdere aanbeveling klopte niet. Een eigen domein instellen kan alleen via `admin/pages`, en daar zit `EnsureAdmin` op: alleen globale beheerders dus, geen Page admin.
+- DNS-verificatie is niet gebouwd. Het risico is alleen een typefout door een vertrouwde beheerder, en DNS en TLS worden bewust buiten Pharos ingericht. Toevoegen als er ooit klanten zelf domeinen gaan instellen.
+
+### Securityronde 2FA, wachtwoordherstel en login
+Alleen lokaal getest, `.166` is niet aangeraakt.
+
+| Controle | Resultaat |
+|---|---|
+| Admin bereikbaar na de wachtwoordstap maar vóór 2FA | OK |
+| Brute force op de 2FA-code | OK. 5 pogingen per 300 s per gebruiker en IP; test toegevoegd |
+| TOTP-replay | OK. Een al gebruikte stap wordt geweigerd |
+| Recoverycodes eenmalig en gehasht | OK |
+| 2FA aan- en uitzetten | OK. Aanzetten vereist een code, uitzetten het huidige wachtwoord |
+| Remember-me omzeilt 2FA | OK |
+| Wachtwoordherstel: enumeration, eenmalige token, verlopen, Host-header, rate limit | OK |
+| Andere sessies na wachtwoordherstel | OK. Worden uitgelogd |
+| 2FA na wachtwoordherstel | OK. Blijft vereist |
+| Open redirect, CSRF bij uitloggen | OK |
+| **Session fixation bij de wachtwoordstap** | **Hersteld** |
+
+- **Session fixation (medium):** met 2FA aan werd het sessie-ID na een juist wachtwoord niet vernieuwd. Iemand die vooraf een sessie-ID had vastgezet, kwam zo in dezelfde halfingelogde sessie terecht. Voor volledige toegang was nog steeds de 2FA-code nodig. Fix: `session()->regenerate()` direct na de wachtwoordcheck. Commit `f0ad4ef`, test `AdminTest::test_the_session_id_is_rotated_as_soon_as_the_password_checks_out`.
+- 2FA-rate-limit had nog geen test. Toegevoegd in `ba9c59f`.
+- Bewust niet opgelost:
+  - Brute force verspreid over veel IP's. Een limiet per gebruiker zou buitensluiten van het slachtoffer mogelijk maken, en dat is erger.
+  - Een theoretische race bij gelijktijdige TOTP-replay. Die levert geen extra rechten op.
+  - `pharos:2fa:disable` wordt niet gelogd. Dat is ontwerp: alleen acties met een actor worden gelogd.
+
+**Na deze commits:** 737 tests, 3.163 assertions geslaagd; PHPStan 0; Pint ok.
+
+**Valkuil (belangrijker dan eerst gedacht):** in de QA-worktrees wijst de classmap van Composer via de `vendor/`-symlink naar de hoofdwerkmap. Ook met `APP_BASE_PATH` testte `php artisan test` daar de code van de hoofdwerkmap. Alle eindcijfers in dit rapport zijn daarom opnieuw gedraaid in `/root/pharos-multipage-20260920` zelf.
