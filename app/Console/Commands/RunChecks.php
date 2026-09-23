@@ -16,6 +16,13 @@ class RunChecks extends Command
 
     protected $description = 'Run all due checks and update component status';
 
+    /**
+     * The same fact as checks.last_run_at, as a file. The web installer polls it
+     * while it shows the cron line, and it cannot boot the app for every poll.
+     * Relative to storage_path(); keep in step with pharos-install.php.
+     */
+    public const SCHEDULER_MARKER = 'framework/pharos-scheduler-last-run';
+
     public function handle(CheckRunner $runner): int
     {
         // Two runners at once open two incidents for one outage, and fire two
@@ -41,6 +48,7 @@ class RunChecks extends Command
                 }
             }
             Setting::put('checks.last_run_at', now()->toIso8601String());
+            self::stampSchedulerRun();
             Setting::put('checks.php_version', PHP_VERSION);
             Setting::put('checks.php_binary', PHP_BINARY);
             Setting::put('checks.last_error', null);
@@ -52,6 +60,12 @@ class RunChecks extends Command
         } finally {
             $lock->release();
         }
+    }
+
+    public static function stampSchedulerRun(): void
+    {
+        // Losing this stamp costs the installer its green light, never a check run.
+        @file_put_contents(storage_path(self::SCHEDULER_MARKER), now()->toIso8601String(), LOCK_EX);
     }
 
     protected function runAll(CheckRunner $runner): int

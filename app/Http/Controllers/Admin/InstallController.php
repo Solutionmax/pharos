@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\InitialSetup;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -67,8 +68,33 @@ class InstallController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('admin.components')
-            ->with('status', 'Pharos is installed. Add your first component to put something on the status page.');
+        // Step 7 of the install journey. Flashed, so it shows once and a reload
+        // simply lands on the overview.
+        return redirect()->route('admin.install.done')->with('pharos.installed', true);
+    }
+
+    public function done(Request $request)
+    {
+        if (! $request->session()->get('pharos.installed')) {
+            return redirect()->route('admin.overview');
+        }
+
+        $stamp = Setting::get('checks.last_run_at');
+        $url = (string) config('app.url');
+
+        return view('admin.install-done', [
+            'site' => (string) Setting::get('brand.name', 'Your status page'),
+            'version' => (string) config('pharos.version'),
+            'address' => parse_url($url, PHP_URL_HOST) ?: $request->getHost(),
+            'database' => match (config('database.default')) {
+                'sqlite' => 'SQLite',
+                'mysql' => 'MySQL',
+                'mariadb' => 'MariaDB',
+                'pgsql' => 'PostgreSQL',
+                default => (string) config('database.default'),
+            },
+            'schedulerRunning' => $stamp && Carbon::parse($stamp)->gt(now()->subMinutes(5)),
+        ]);
     }
 
     /**

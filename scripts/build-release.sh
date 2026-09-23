@@ -55,6 +55,7 @@ rsync -a --delete \
   --exclude '/vendor' --exclude '.env' --exclude '.env.*.local' --exclude 'phpstan.neon' --exclude 'phpunit.xml' \
   --exclude 'storage/app/*' --exclude 'storage/logs/*' --exclude 'storage/framework/cache/*' \
   --exclude 'storage/framework/sessions/*' --exclude 'storage/framework/views/*' --exclude 'storage/framework/phpstan' \
+  --exclude 'storage/framework/pharos-scheduler-last-run' \
   --exclude 'database/*.sqlite*' --exclude 'bootstrap/cache/*.php' --exclude 'public/storage' \
   --exclude 'public/brand/uploads' --exclude 'scripts/build-release.sh' --exclude 'scripts/release-page.py' \
   --exclude '.phpunit.result.cache' \

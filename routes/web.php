@@ -82,6 +82,8 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         Route::get('/', fn () => redirect()->to(PageUrls::landing(auth()->user())));
 
         Route::get('overview', [OverviewController::class, 'show'])->name('overview');
+        // The last screen of the install journey, shown once right after the first account.
+        Route::get('install/done', [InstallController::class, 'done'])->name('install.done');
         // Only what the signed in user may open; see App\Services\AdminSearch.
         Route::get('search', SearchController::class)->middleware('throttle:60,1')->name('search');
 
