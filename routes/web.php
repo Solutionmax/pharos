@@ -79,6 +79,7 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         Route::delete('components/tags/{tag}', [ComponentController::class, 'destroyTag'])->name('components.tags.destroy');
         Route::get('components/{component}/edit', [ComponentController::class, 'edit'])->name('components.edit');
         Route::put('components/{component}', [ComponentController::class, 'update'])->name('components.update');
+        Route::put('components/{component}/status', [ComponentController::class, 'updateStatus'])->name('components.status');
         Route::delete('components/{component}', [ComponentController::class, 'destroy'])->name('components.destroy');
 
         Route::get('services', [GroupController::class, 'index'])->name('groups');
