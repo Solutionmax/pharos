@@ -6,6 +6,56 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+Several status pages from one installation, each with its own roles and API tokens; a rebuilt admin with an Overview and global search; scheduled maintenance; and a new installer journey.
+
+### Added
+- Multiple status pages from one installation. Each page has its own services, components, incidents, subscribers, branding, email settings, mail templates and notification destinations. The first page keeps `/` and every existing API and subscription link; extra pages live at `/status/{slug}` and can be draft, published or archived. Archiving keeps the data and stops publishing, monitoring and notifications for that page. A page can have its own domain; DNS and TLS are set up outside Pharos.
+- Page roles: give a user Read only, Editor or Page admin on each page, next to global administrators. Read only users never see check targets or integration credentials. Lowering or removing a role takes effect at once, also in sessions that are already open.
+- API tokens belong to one owner and one page and have Read or Write access. Page scoped routes live under `/api/v1/pages/{slug}/`; the existing `/api/v1/` routes keep serving the first page. Write tokens also need the owner's current edit rights, and revoking page access revokes the token's rights with it.
+- Page limit per plan: Free and Brand pack run 1 status page, Supported up to 5, the Commercial licence has no limit. The Status pages overview says how many pages are in use before you reach the limit. When a yearly key lapses, branding and the pages that are already active keep working; creating or reactivating pages beyond 1 is blocked.
+- New admin navigation grouped into This page and Installation, with expandable sections that only list what you may open, breadcrumbs, and a page selector that shows each page's current status in words. Status pages are shown as cards with live status, 90 day uptime, open incidents and subscribers.
+- Overview, the new landing screen per page: live status, key figures, 90 day availability, services, the open incident, page health and a Get this page ready checklist.
+- Global search as a command palette (Ctrl K or Cmd K): pages, services, components, incidents, maintenance windows, users (administrators only), admin screens by keyword and quick actions, grouped with status and limited to the pages you hold a role on. It remembers recent searches per account and opens as a full screen sheet on phones.
+- Scheduled maintenance per page with affected components. Subscribers and destinations get an announcement a chosen time ahead, the components switch to Under maintenance at the start and go back to their previous status at the end, unless someone changed them in the meantime. Cancelling a running window restores them too. Failing checks do not open outages during a running window. The public page lists upcoming and ongoing maintenance, and a new mail template carries the announcement.
+- Incidents workspace: open incidents lead as cards with status, impact, affected components and the latest updates, with Post update inline and a one click Resolve; resolved incidents follow as searchable history. Reporting an incident takes three steps with a live preview of the public card and can start from a template. Incident templates can be created, edited and deleted in the admin and share their slug with the API.
+- Components grouped by service, with 30 day cells, uptime and who sets each status: checked by Pharos (HTTP, TCP or heartbeat) or set from outside (Uptime Kuma, API, upstream). Editors change a status right in the row; every change is recorded in the audit log.
+- Integrations split into four screens: Send out, Bring in, API tokens and Delivery log. Send out adds a destination in numbered steps with save and test and shows the health of each destination; Bring in has ready to copy instructions for n8n, Uptime Kuma, scripts and heartbeats that follow the chosen component and status; a new token is shown once; the Delivery log has counters and filters by destination, channel and result. The old Integrations address redirects to the matching screen.
+- Choose which events each destination receives: incident opened, update posted, resolved, and maintenance. Destinations saved before this release keep receiving every event, maintenance included.
+- Uptime Kuma endpoint `POST /api/v1/integrations/kuma/{component}` (plus a page scoped variant) that maps Kuma's states: up to Operational, down to Major outage, maintenance to Under maintenance; pending leaves the component alone. The previous Kuma address keeps working.
+- Official partner logos: the Slack and Microsoft Teams marks are shown unaltered, and Discord, Telegram, Signal, n8n and Uptime Kuma get their real glyphs.
+- Users screen with search, filter chips, role, two factor state, page roles and last seen. New accounts can be invited by email with a set password link that is valid for three days and can be resent; typing a password yourself still works. Administrators can require an account to turn on two factor at its first sign in.
+- Profile with the devices you are signed in on: sign out one session or all others. Plus a Light, System or Dark theme preference and a personal time zone for the admin screens; public pages, emails, webhooks and the API keep the installation time zone.
+- New sign in and two factor screens: floating labels, show password, a stay signed in switch, six digit code boxes and a recovery code toggle. Without JavaScript every form posts as before, and nothing from your status data is shown on these public screens.
+- Branding screen with a live preview of the browser tab, the page header in light and dark and the email header, drop zones for logos and the favicon, and a plan card that shows what this installation has and where to buy a plan or request a commercial quote. Locked Brand pack sections say what unlocks them.
+- The web installer follows a seven step journey (Unlock, Check the server, Download, Configure, Scheduler, Your account, Done) with live progress. Pharos itself now finishes steps 6 and 7: name the page and create the first administrator with a password strength meter, then a done screen with version, address, database and scheduler state. The installer notices the first scheduler run by itself.
+- Audit log filters by person, page and action; the CSV export follows the same filters, and each change reads as the old value, an arrow and the new value.
+
+### Changed
+- Settings, Subscribers and Updates follow the new navigation and use the shared cards, counters and state pills; Settings sections moved from tabs into the sidebar.
+- New pages start with subscriptions off; existing pages keep their setting. The Subscribers switch names the page it applies to.
+- Tokens created in the admin default to Read. Existing tokens and tokens made with `php artisan pharos:token` keep Write, and tokens without an owner only work on the first page.
+- Interface text, default email subjects and default email bodies no longer use dashes or hyphenated words (email, sign in, two factor, built in).
+- Signing in, or opening the sign in page while signed in, lands on the Overview.
+
+### Fixed
+- An ICO favicon was always refused on upload.
+- An expired licence no longer shows as running out soon with a negative number of days.
+- Activating a key names the plan it unlocks instead of always saying Brand pack activated.
+- The quick theme toggle no longer flashes the system theme before applying your choice, on the admin, installer and public status pages.
+
+### Security
+- HSTS: `Strict-Transport-Security` with a one year max age is sent on HTTPS requests only, without `includeSubDomains` or `preload`. Behind a TLS proxy this needs `TRUSTED_PROXIES`; a header the proxy sets itself still wins.
+- Session fixation: with two factor on, the session id is now renewed right after the password step instead of only after the code.
+- Signing out other sessions also rotates the remember token, and sessions are addressed by a hash, never by their raw id.
+- Page scope is enforced on routes, model binding, background jobs, notifications and API tokens, not only in the interface.
+
+### Upgrade
+- Ten new database migrations: status pages, page tags, page roles, token scopes, delivery page and events per destination, maintenance windows, user theme, time zone and two factor requirement, and invitation tokens. Existing data moves to a published default page; ids, monitoring history, users, legacy API tokens and subscription links are kept.
+- Updating from the Updates screen (or with the `get` script, which hands over to the same updater) runs `php artisan migrate --force` by itself and puts the previous version back if a migration fails. The Docker image migrates on start. After a manual update (git pull or unpacking the zip by hand), run `php artisan migrate --force` yourself.
+- Back up files, database, uploads and APP_KEY together first. Rolling back means restoring the matching backups; do not run a down migration after creating extra pages.
+- Keep the scheduler running every minute: it now also announces, starts and ends maintenance windows.
+- The sessions list and last seen need `SESSION_DRIVER=database`, the default in `.env.example`. Optional new settings: `PHAROS_PORTAL_BUY_URL` and `PHAROS_QUOTE_URL`.
+
 ## [0.6.0] — 2026-09-09
 
 ### Added
