@@ -5,7 +5,7 @@ Bijgewerkt: 23 september 2026, na de release van **0.7.0**.
 ## Belangrijk voor de volgende sessie
 
 - **Werk in `/root/projects/pharos`, branch `main`.** Alles is samengevoegd en gepusht (`v0.7.0`, laatste commits na release: CI-fixes en deze notitie). De oude werkmap `/root/pharos-multipage-20260920` en alle QA/UI-worktrees zijn verwijderd; hun branches bestaan nog lokaal maar zijn samengevoegd.
-- **Uitgebracht: Pharos 0.7.0** (zie sectie "0.7.0 uitgebracht"). Website, portaal en GitHub zijn bijgewerkt.
+- **Uitgebracht: Pharos 0.7.1** (0.7.0 dezelfde dag) (zie sectie "0.7.0 uitgebracht"). Website, portaal en GitHub zijn bijgewerkt.
 - Nieuwe release: `/pharos-release <versie>` vanuit `/root/projects/pharos` (skill). `CHANGELOG.md` heeft een lege `## [Unreleased]`.
 - **Interne installatie `.166:8130` (CT106)** draait de feature-build van vóór de release (functioneel gelijk aan 0.7.0) plus WAL. Raymon updatet die zelf; niet zelf `pharos:update` draaien. De vriend (enige gebruiker, oude versie) updatet zelf via Updates.
 - Werkafspraken: eerst vragen "Kan ik dit doorvoeren?" vóór wijzigingen; zichtbare teksten zonder em/en dash en zonder koppeltekens tussen woorden; bestanden voor Raymon via uploadpagina `192.168.18.161:3003`.
@@ -116,7 +116,6 @@ Bijgewerkt: 23 september 2026, na de release van **0.7.0**.
 
 ## Nog open
 
-1. **Release 0.7.1 (voorstel):** STARTTLS-fix staat op main onder `## [Unreleased]` (beveiliging: TLS gekozen zonder STARTTLS stuurde mail en SMTP-wachtwoord onversleuteld). Plus kleine punten uit de e2e-mailtest: testmail noemt interne mailernaam `pharos_page_2` en "Settings → Mail"; uitnodigingsmail gebruikt APP_NAME ("Pharos") in kop/afsluiting i.p.v. paginanaam; GET op unsubscribe-link schrijft direct uit (mailscanners); page admin kan via Page email + Test email interne host:poort aftasten (blind, 10 s).
 2. **FreeScout-module (later).**
 3. **Talen (later):** eerst publieke statuspagina per pagina (EN, NL, ES, DE, FR), daarna admin per gebruiker.
 4. **Thuisnetwerk 03:00 CEST:** elke nacht ~30 s stall van nieuwe uitgaande verbindingen (CGNAT/ISP of UCG-taak: Radio AI cron 03:00, auto upgrade hour 3). Zabbix-trigger 33481 is aangepast (2x op rij), dus geen valse incidenten meer. Oorzaak zelf nog niet vastgesteld: 1 s loop vanaf CT105 rond 02:59:30 tot 03:01:30 naar edge-01 IP, 1.1.1.1 en 192.168.17.1.
@@ -141,6 +140,12 @@ Niet geïmplementeerd: gedeelde services tussen pagina's, automatisch DNS/TLS, p
 - Open: talen later · paginanaam "Harbor Logistics — demo" bevat een em dash (data, zelf aanpassen) · één keer een niet reproduceerbare testfout gezien (8 volgende runs groen).
 
 - Branding-pagina (live voorbeeld, pakkettenkaart, 4 bugfixes), paginalimiet-melding, installer stap 6/7 + scheduler-marker, guest redirect naar Overview: live op `.166` 23 sep (back-up `/root/pharos-ui-backup.202609231113`). 906 tests.
+
+## 0.7.1 uitgebracht (23 sep 2026)
+
+- Mail security: STARTTLS afgedwongen bij TLS; uitschrijflink toont eerst bevestiging (one click POST blijft); page admins kunnen page SMTP niet naar interne hosts zetten (globale admins wel, `mail.host_trusted`), Send test 5 per minuut; testmail zonder interne mailernaam; uitnodiging en wachtwoordherstel met installatiebranding.
+- Let op: page SMTP die vóór 0.7.1 door een globale admin op een interne relay is gezet, geldt als niet vertrouwd tot een globale admin die Delivery-instellingen één keer opslaat.
+- Release: tag `v0.7.1`, GitHub Release met 4 assets, manifest geverifieerd, site live (CI groen), 958 tests.
 
 ## 0.7.0 uitgebracht (23 sep 2026)
 
