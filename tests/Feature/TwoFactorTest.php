@@ -232,7 +232,7 @@ class TwoFactorTest extends TestCase
 
     public function test_the_profile_shows_the_state_of_your_second_factor(): void
     {
-        $this->actingAs($this->user)->get('/admin/profile')->assertOk()->assertSee('Two-factor');
+        $this->actingAs($this->user)->get('/admin/profile')->assertOk()->assertSee('Two factor authentication');
 
         $this->enrol();
         $this->actingAs($this->user)->get('/admin/profile')->assertOk()->assertSee('10 unused');

@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\RecoveryCode;
+use App\Models\User;
 use App\Services\Audit;
 use App\Services\Notes;
 use App\Services\Totp;
+use App\Services\UserSessions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -21,12 +23,17 @@ class ProfileController extends Controller
 {
     public function __construct(protected Totp $totp) {}
 
-    public function show(Request $request)
+    public function show(Request $request, UserSessions $sessions)
     {
         $user = $request->user();
+        $current = $request->session()->getId();
 
         return view('admin.profile', [
             'user' => $user,
+            'sessions' => $sessions->forUser($user, $current),
+            'sessionsKnown' => UserSessions::available(),
+            'thisDevice' => UserSessions::describe((string) $request->userAgent()),
+            'pageCount' => $user->isAdmin() ? null : $user->statusPages()->whereNull('archived_at')->count(),
             // Present only between "start setting up" and confirming a code.
             'pendingSecret' => $user->totp_secret && ! $user->hasTwoFactor() ? $user->totp_secret : null,
             'otpauthUri' => $user->totp_secret && ! $user->hasTwoFactor()
@@ -72,6 +79,20 @@ class ProfileController extends Controller
         $user->update($data);
 
         return redirect()->route('admin.profile')->with('status', 'Your details have been saved.');
+    }
+
+    /**
+     * Display preferences for this account only. The theme applies to the admin;
+     * the status pages keep the theme their own settings choose.
+     */
+    public function updatePreferences(Request $request)
+    {
+        $data = $request->validate(['theme' => ['required', Rule::in(User::THEMES)]]);
+        $request->user()->forceFill(['theme' => $data['theme']])->save();
+
+        return redirect()->route('admin.profile')
+            ->with('status', 'Your preferences have been saved.')
+            ->with('theme_saved', true);
     }
 
     /** Hands out a secret. Nothing changes for signing in until a code confirms it. */
