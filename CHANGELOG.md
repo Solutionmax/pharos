@@ -6,6 +6,8 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-09-23
+
 Several status pages from one installation, each with its own roles and API tokens; a rebuilt admin with an Overview and global search; scheduled maintenance; and a new installer journey.
 
 ### Added
