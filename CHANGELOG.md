@@ -6,6 +6,9 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+### Security
+- Choosing TLS (STARTTLS) for central or page SMTP now requires STARTTLS. Before, a server that did not offer it got the mail and the SMTP password in plain text. An install set to TLS whose server has no STARTTLS now fails with a clear error; pick None or SSL there.
+
 ## [0.7.0] — 2026-09-23
 
 Several status pages from one installation, each with its own roles and API tokens; a rebuilt admin with an Overview and global search; scheduled maintenance; and a new installer journey.
