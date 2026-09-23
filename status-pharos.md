@@ -151,17 +151,22 @@ Niet geïmplementeerd of toegezegd voor deze update: gedeelde services tussen pa
 
 - Branding-pagina (live voorbeeld, pakkettenkaart, 4 bugfixes), paginalimiet-melding, installer stap 6/7 + scheduler-marker, guest redirect naar Overview: live op `.166` 23 sep (back-up `/root/pharos-ui-backup.202609231113`). 906 tests.
 
-## Klaar voor release (wacht op "push" van Raymon)
+## Klaar voor release 0.7.0 (wacht op "push" van Raymon)
 
-Alles hieronder staat klaar op branches, niets is gepusht of live. Volgorde bij de release:
-1. **App**: `feature/multiple-status-pages` mergen naar main, versie + CHANGELOG, release via `/pharos-release <versie>` (tag, GitHub Release, signed manifest, site /releases). Installer-werk (`ui/installer`, agent bezig) eerst mergen.
-2. **Website** (`/root/pharos-site-pricing`, branch `feat/pricing-multi-page` op pharos-site): prijzen €79 / €149 per jaar / Commercial vanaf €599 op offerte, 4 pakketten met pagina's, FAQ, JSON-LD, sales-es, docs.html, llms, `legal.html` + `assets/pharos-terms-2026-09-23.txt`. Installer (`feat/installer-v2`) apart mergen. Pas live na stap 1.
-3. **Portaal** (`/root/pharos-portal-plans`, branch `feat/multi-page-plans` op pharos-portal): Supported = brand_pack + supported + multi_pages met limiet 5, Commercial onbeperkt, voorwaarden 2026-09-23. Deploy op edge-01 na stap 1. Stripe ongewijzigd.
-4. **GitHub**: README (plans-tabel staat al in app-repo), repo-beschrijving/topics, eventuele GitHub Pages controleren.
-5. **Docs**: `docs/licensing.md`, `docs/multiple-status-pages.md` (staan in app-repo), docs-site regenereren (`scripts/build-docs.py` in pharos-site).
-6. Vriend (enige gebruiker, oude versie) updatet zelf daarna.
+Niets gepusht of live. Versie **0.7.0**. Stand 23 sep:
+- **App** `feature/multiple-status-pages`: alles samengevoegd (UI, installer stap 6/7, branding, plannen, demo, screenshots, README, CHANGELOG onder `## [Unreleased]`). 911 tests groen.
+- **Website** `/root/pharos-site-pricing` (branch `feat/pricing-multi-page` op pharos-site): prijzen €79 / €149 / Commercial op offerte, voorwaarden 2026-09-23, nieuwe installer, 0.7.0 overal, nieuwe screenshots en replica. `tests/site-content.py` faalt bewust alleen op `releases/index.html` tot die uit het 0.7.0-manifest is gegenereerd. Restricted-hosting test alleen draaien zoals CI (`-d open_basedir=... -d disable_functions=...`).
+- **Portaal** `/root/pharos-portal-plans` (branch `feat/multi-page-plans`): Supported 5 pagina's, Commercial onbeperkt, voorwaarden 2026-09-23. 117 tests.
 
-Let op: voorwaarden-txt (2026-09-08, portaal) en `legal.html` verschilden al vóór deze wijziging over herroepingsrecht bij Supported; alleen de pakketpassages zijn bijgewerkt.
+Volgorde op releasedag:
+1. `/root/projects/pharos` naar main (staat nu op `docs/multiple-status-pages-design`), feature branch mergen.
+2. pharos-site: `feat/pricing-multi-page` mergen naar main (niet pushen), zodat `build-release.sh` de nieuwe `pharos-install.php` pint.
+3. CHANGELOG: `## [Unreleased]` wordt `## [0.7.0] — <datum>` (em dash moet, scripts matchen erop), nieuwe lege Unreleased erboven, commit `release: 0.7.0`.
+4. `scripts/build-release.sh 0.7.0 --notes "Several status pages on one install, planned maintenance, a new admin with Overview and search."` (deze zin staat al in de terminal-screenshot `install-ssh-get.webp`). Bouwt, ondertekent, uploadt manifest + `pharos-install-0.7.0.php`, tag + GitHub Release.
+5. App pushen. Site: `latest.json` + `content/release-index.json`, `scripts/build-release-preview.py`, `build-docs.py`, datum in `content/release.json`, dan pushen (CI deployt).
+6. Portaal deployen op edge-01. Stripe ongewijzigd.
+7. GitHub: README install-voorbeelden (`--version`), repobeschrijving en topics, ghcr-package public.
+8. :8130 niet zelf updaten; vriend updatet zelf.
 
 ## Documentatie en lokale ontwikkelomgeving
 
