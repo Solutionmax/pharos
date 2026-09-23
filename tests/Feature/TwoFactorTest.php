@@ -143,6 +143,24 @@ class TwoFactorTest extends TestCase
         $this->assertGuest();
     }
 
+    /** A 6-digit code is guessable if the challenge lets you keep guessing forever. */
+    public function test_the_challenge_is_throttled(): void
+    {
+        $secret = $this->enrol();
+
+        $this->post('/admin/login', ['email' => 'raymon@example.com', 'password' => 'correct-horse-battery']);
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/admin/two-factor', ['code' => '000000']);
+        }
+
+        // The sixth attempt is refused even with the right code once the limiter trips.
+        $response = $this->post('/admin/two-factor', ['code' => $this->code($secret)]);
+
+        $this->assertGuest();
+        $response->assertSessionHasErrors('code');
+    }
+
     public function test_a_code_cannot_be_used_twice(): void
     {
         $secret = $this->enrol();
