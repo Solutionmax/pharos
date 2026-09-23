@@ -38,9 +38,13 @@ return [
             'database' => env('DB_DATABASE', database_path('database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
-            'busy_timeout' => null,
-            'journal_mode' => null,
-            'synchronous' => null,
+            // Wait up to 5 s for another writer (a check, an API call) instead of
+            // failing with "database is locked" at once.
+            'busy_timeout' => (int) env('DB_BUSY_TIMEOUT', 5000),
+            // WAL lets readers and a writer work at the same time. Opt in only on a
+            // local disk: on network file systems (some shared hosts) it can corrupt.
+            'journal_mode' => env('DB_JOURNAL_MODE'),
+            'synchronous' => env('DB_SYNCHRONOUS'),
             'transaction_mode' => 'DEFERRED',
         ],
 
