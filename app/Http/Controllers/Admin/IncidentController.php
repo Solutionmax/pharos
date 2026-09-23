@@ -10,6 +10,7 @@ use App\Models\Incident;
 use App\Models\IncidentTemplate;
 use App\Models\IncidentUpdate;
 use App\Services\OutgoingWebhook;
+use App\Services\PageContext;
 use App\Services\PageUrls;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,21 +22,18 @@ class IncidentController extends Controller
 
     public function index(Request $request)
     {
-        $query = Incident::with('components', 'updates')->latest('occurred_at');
+        $search = trim((string) $request->query('q'));
+        $state = $request->query('state');
+        $state = in_array($state, ['open', 'resolved'], true) ? $state : null;
+        $matching = fn () => Incident::with(['components', 'updates'])
+            ->when($search !== '', fn ($q) => $q->where('name', 'like', "%{$search}%"));
 
-        if ($search = trim((string) $request->query('q'))) {
-            $query->where('name', 'like', "%{$search}%");
-        }
-
-        if ($state = $request->query('state')) {
-            match ($state) {
-                'open' => $query->whereNull('resolved_at'),
-                'resolved' => $query->whereNotNull('resolved_at'),
-                default => null,
-            };
-        }
-
-        $incidents = $query->paginate(25)->withQueryString();
+        // Open incidents lead: they are the ones that need a hand today. The
+        // filters decide which of the two sections are shown.
+        $open = $state === 'resolved' ? collect() : $matching()->whereNull('resolved_at')->latest('occurred_at')->get();
+        $incidents = $state === 'open'
+            ? $matching()->whereRaw('1 = 0')->paginate(25)
+            : $matching()->whereNotNull('resolved_at')->latest('occurred_at')->paginate(25)->withQueryString();
 
         // Repeat outages on the same target are counted so a weekly failure reads
         // as a pattern instead of four unrelated rows.
@@ -52,6 +50,7 @@ class IncidentController extends Controller
 
         $summary = [
             'open' => (clone $all)->whereNull('resolved_at')->count(),
+            'total' => (clone $all)->count(),
             'month' => (clone $all)->where('occurred_at', '>=', now()->subDays(30))->count(),
             'automatic' => (clone $all)->where('source', 'check')
                 ->where('occurred_at', '>=', now()->subDays(30))->count(),
@@ -61,7 +60,7 @@ class IncidentController extends Controller
             ),
         ];
 
-        return view('admin.incidents', compact('incidents', 'repeats', 'search', 'state', 'summary'));
+        return view('admin.incidents', compact('open', 'incidents', 'repeats', 'search', 'state', 'summary'));
     }
 
     public function create()
@@ -69,6 +68,7 @@ class IncidentController extends Controller
         return view('admin.incident-form', [
             'templates' => IncidentTemplate::orderBy('name')->get(),
             'components' => Component::with('group')->orderBy('position')->get(),
+            'canUseTemplates' => request()->user()->canEditPage(app(PageContext::class)->id()),
         ]);
     }
 
@@ -149,13 +149,30 @@ class IncidentController extends Controller
             'message' => ['required', 'string'],
         ]);
 
-        $status = IncidentStatus::from((int) $data['status']);
+        $this->postUpdate($incident, IncidentStatus::from((int) $data['status']), $data['message']);
 
-        DB::transaction(function () use ($incident, $status, $data) {
+        return redirect()->to(PageUrls::route('admin.incidents'))->with('status', 'Update posted.');
+    }
+
+    /** The one button for the common ending: resolved, with a sensible line if none is given. */
+    public function resolve(Request $request, Incident $incident)
+    {
+        $data = $request->validate(['message' => ['nullable', 'string', 'max:20000']]);
+        $message = trim((string) ($data['message'] ?? '')) ?: 'This incident has been resolved. Everything is working normally again.';
+
+        $this->postUpdate($incident, IncidentStatus::Resolved, $message);
+
+        return redirect()->to(PageUrls::route('admin.incidents'))
+            ->with('status', "Incident \"{$incident->name}\" resolved. Its components are operational again.");
+    }
+
+    protected function postUpdate(Incident $incident, IncidentStatus $status, string $message): void
+    {
+        DB::transaction(function () use ($incident, $status, $message) {
             IncidentUpdate::create([
                 'incident_id' => $incident->id,
                 'status' => $status,
-                'message' => $data['message'],
+                'message' => $message,
             ]);
 
             $incident->update([
@@ -173,8 +190,6 @@ class IncidentController extends Controller
         });
 
         $this->webhook->incidentChanged($incident->fresh('components'), 'incident.updated');
-
-        return redirect()->to(PageUrls::route('admin.incidents'))->with('status', 'Update posted.');
     }
 
     /**
