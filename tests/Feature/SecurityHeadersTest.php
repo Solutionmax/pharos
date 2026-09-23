@@ -23,6 +23,16 @@ class SecurityHeadersTest extends TestCase
         }
     }
 
+    public function test_hsts_is_sent_over_https_only(): void
+    {
+        $this->get('https://localhost/admin/login')
+            ->assertHeader('Strict-Transport-Security', 'max-age=31536000');
+
+        // Over plain HTTP the header is meaningless and would be ignored anyway.
+        $this->get('http://localhost/admin/login')
+            ->assertHeaderMissing('Strict-Transport-Security');
+    }
+
     public function test_a_header_the_proxy_already_set_is_left_alone(): void
     {
         // A reverse proxy in front may carry its own policy; ours fills gaps only.

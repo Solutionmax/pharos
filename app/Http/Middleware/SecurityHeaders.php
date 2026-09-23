@@ -26,7 +26,12 @@ class SecurityHeaders
     {
         $response = $next($request);
 
-        foreach (self::HEADERS as $name => $value) {
+        // HSTS only means something over TLS; behind a proxy this relies on TRUSTED_PROXIES.
+        $headers = $request->isSecure()
+            ? self::HEADERS + ['Strict-Transport-Security' => 'max-age=31536000']
+            : self::HEADERS;
+
+        foreach ($headers as $name => $value) {
             // A reverse proxy in front may carry its own policy; that one wins.
             if (! $response->headers->has($name)) {
                 $response->headers->set($name, $value);
