@@ -2,195 +2,170 @@
 
 namespace Database\Seeders;
 
-use App\Enums\CheckType;
-use App\Enums\ComponentStatus;
-use App\Enums\Impact;
-use App\Enums\IncidentStatus;
+use App\Enums\UserRole;
 use App\Models\ApiToken;
-use App\Models\Check;
-use App\Models\Component;
-use App\Models\ComponentGroup;
-use App\Models\Incident;
-use App\Models\IncidentTemplate;
-use App\Models\IncidentUpdate;
-use App\Models\Setting;
-use App\Models\UptimeDay;
+use App\Models\AuditEntry;
+use App\Models\StatusPage;
+use App\Models\User;
+use App\Services\PageContext;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
-/** Shaped like a real hosting company's status page, so the demo is not a toy.
- *  Every name here is invented — web-01.example.net and friends. */
+/**
+ * Demo data shaped like a real hosting company, so the screens are not a toy:
+ * three status pages, a few people with page roles, API tokens and an audit
+ * trail. What sits on each page (components, incidents, maintenance,
+ * subscribers, destinations) lives in DemoPageContent.
+ *
+ * Every name is invented and every address is on example.net. Running it again
+ * updates the same rows instead of adding new ones. It never sends mail and
+ * never makes an HTTP request: destinations point at example URLs and their
+ * delivery history is written straight into the log.
+ */
 class DemoSeeder extends Seeder
 {
+    public const ADMIN_EMAIL = 'ops@example.net';
+
     public function run(): void
     {
-        Setting::put('brand.name', 'Pharos');
-        Setting::put('brand.accent', '#0079d2');
-        Setting::put('brand.credit_hidden', '0');
+        $pages = $this->pages();
+        $content = new DemoPageContent;
 
-        $hosting = ComponentGroup::create(['name' => 'Shared hosting', 'position' => 1, 'collapsed' => true]);
-        $email = ComponentGroup::create(['name' => 'Email', 'position' => 2, 'collapsed' => false]);
-        $network = ComponentGroup::create(['name' => 'Network & DNS', 'position' => 3, 'collapsed' => true]);
-
-        $servers = ['web-01', 'web-02', 'web-03', 'web-04', 'web-05', 'web-06', 'web-07', 'web-08'];
-        foreach ($servers as $i => $name) {
-            $component = Component::create([
-                'component_group_id' => $hosting->id,
-                'name' => $name,
-                'description' => "Availability of {$name}.example.net",
-                'link' => "https://{$name}.example.net",
-                'tags' => 'shared, cpanel',
-                'status' => ComponentStatus::Operational,
-                'source' => 'check',
-                'position' => $i,
-            ]);
-
-            Check::create([
-                'component_id' => $component->id,
-                'type' => CheckType::Http,
-                'target' => "https://{$name}.example.net/",
-                'interval_seconds' => 60,
-                'retries' => 2,
-            ]);
-
-            $this->fakeHistory($component, failureDays: $name === 'web-08' ? [35, 58, 71] : ($name === 'web-06' ? [12] : []));
+        foreach ($pages as $key => $page) {
+            app(PageContext::class)->run($page->id, fn () => $content->{$key}());
         }
 
-        $queue = Component::create([
-            'component_group_id' => $email->id,
-            'name' => 'Outbound queue',
-            'description' => 'Delivery to external providers',
-            'tags' => 'mail',
-            'status' => ComponentStatus::PartialOutage,
-            'source' => 'webhook',
-            'position' => 1,
-        ]);
-        $this->fakeHistory($queue, failureDays: [0, 26, 44]);
-
-        $imap = Component::create([
-            'component_group_id' => $email->id,
-            'name' => 'IMAP / SMTP',
-            'description' => 'mail.example.net',
-            'status' => ComponentStatus::Operational,
-            'source' => 'check',
-            'position' => 2,
-        ]);
-        Check::create([
-            'component_id' => $imap->id,
-            'type' => CheckType::Tcp,
-            'target' => 'mail.example.net:993',
-            'interval_seconds' => 60,
-        ]);
-        $this->fakeHistory($imap, failureDays: []);
-
-        $ns = Component::create([
-            'component_group_id' => $network->id,
-            'name' => 'Nameservers',
-            'description' => 'ns1 / ns2',
-            'status' => ComponentStatus::Operational,
-            'source' => 'check',
-            'position' => 1,
-        ]);
-        $this->fakeHistory($ns, failureDays: []);
-
-        $backups = Component::create([
-            'component_group_id' => $network->id,
-            'name' => 'Backups',
-            'description' => 'Nightly restic run',
-            'status' => ComponentStatus::Operational,
-            'source' => 'heartbeat',
-            'show_uptime' => false,
-            'position' => 2,
-        ]);
-        Check::create([
-            'component_id' => $backups->id,
-            'type' => CheckType::Heartbeat,
-            'target' => 'hb_'.str_repeat('a', 8),
-            'interval_seconds' => 86400,
-            'last_run_at' => now()->subHours(3),
-        ]);
-
-        IncidentTemplate::create([
-            'name' => 'Server unreachable',
-            'slug' => 'server-unreachable',
-            'title_template' => '{{server}} unreachable',
-            'body_template' => 'We identified an outage on **{{server}}**, starting at {{started_at}}. '
-                .'We are investigating and will post an update within 30 minutes.',
-        ]);
-
-        $open = Incident::create([
-            'name' => 'Outbound email delayed',
-            'status' => IncidentStatus::Watching,
-            'impact' => Impact::Major,
-            'source' => 'api',
-            'occurred_at' => now()->setTime(10, 52),
-        ]);
-        $open->components()->attach($queue->id, ['status' => ComponentStatus::PartialOutage->value]);
-
-        foreach ([
-            [IncidentStatus::Investigating, '10:52', 'Queue length above threshold (> 500 messages).', true],
-            [IncidentStatus::Identified, '11:20', 'One of our outbound IP addresses was listed on a blocklist. Traffic now runs through a backup IP and a delisting request is in progress.', false],
-            [IncidentStatus::Watching, '12:48', 'The queue is draining, 1,240 messages left. We will keep this open until it reaches zero.', false],
-        ] as [$status, $time, $message, $auto]) {
-            IncidentUpdate::create([
-                'incident_id' => $open->id,
-                'status' => $status,
-                'message' => $message,
-                'automatic' => $auto,
-                'created_at' => Carbon::today()->setTimeFromTimeString($time),
-                'updated_at' => Carbon::today()->setTimeFromTimeString($time),
-            ]);
-        }
-
-        $resolved = Incident::create([
-            'name' => 'web-06 unreachable',
-            'status' => IncidentStatus::Resolved,
-            'impact' => Impact::Major,
-            'source' => 'check',
-            'auto_resolve' => true,
-            'grouping_key' => 'check:7',
-            'occurred_at' => now()->subDays(2)->setTime(16, 53),
-            'resolved_at' => now()->subDays(2)->setTime(17, 27),
-        ]);
-        $resolved->components()->attach(
-            Component::where('name', 'web-06')->first()->id,
-            ['status' => ComponentStatus::MajorOutage->value],
-        );
-        foreach ([
-            [IncidentStatus::Investigating, '16:53', 'Automatic check failed: no response on HTTP.', true],
-            [IncidentStatus::Resolved, '17:27', 'The component responded normally again for 3 consecutive checks.', true],
-        ] as [$status, $time, $message, $auto]) {
-            IncidentUpdate::create([
-                'incident_id' => $resolved->id,
-                'status' => $status,
-                'message' => $message,
-                'automatic' => $auto,
-                'created_at' => now()->subDays(2)->setTimeFromTimeString($time),
-                'updated_at' => now()->subDays(2)->setTimeFromTimeString($time),
-            ]);
-        }
-
-        [$token, $plain] = ApiToken::issue('demo');
-        $this->command->info("Demo API token: {$plain}");
+        $users = $this->users($pages);
+        $this->tokens($pages, $users);
+        $this->audit($pages);
     }
 
-    /** Fills 90 days of roll-up data so the bars have something to show. */
-    protected function fakeHistory(Component $component, array $failureDays): void
+    /** @return array<string, StatusPage> keyed by the DemoPageContent method that fills it */
+    protected function pages(): array
     {
-        $perDay = 86400;
+        $default = StatusPage::default();
+        $default->update(['name' => 'Northwind Hosting', 'is_published' => true]);
 
-        for ($i = 0; $i < 90; $i++) {
-            $down = in_array($i, $failureDays, true) ? random_int(300, 5400) : 0;
+        $harbor = StatusPage::query()->updateOrCreate(['slug' => 'harbor'], [
+            'name' => 'Harbor Logistics',
+            'is_published' => true,
+            'tag_label' => 'Customer',
+            'tag_color' => 'teal',
+        ]);
 
-            UptimeDay::create([
-                'component_id' => $component->id,
-                'day' => Carbon::today()->subDays($i)->format('Y-m-d'),
-                'up_seconds' => $perDay - $down,
-                'down_seconds' => $down,
-                'worst_status' => $down > 0
-                    ? ComponentStatus::MajorOutage->value
-                    : ComponentStatus::Operational->value,
-            ]);
+        $internal = StatusPage::query()->updateOrCreate(['slug' => 'internal'], [
+            'name' => 'Northwind Internal',
+            'is_published' => false,
+            'tag_label' => 'Internal',
+            'tag_color' => 'violet',
+        ]);
+
+        return ['northwind' => $default, 'harbor' => $harbor, 'internal' => $internal];
+    }
+
+    /**
+     * One administrator of the installation and three people with page roles.
+     * Passwords are random and printed once, when the account is first made.
+     *
+     * @param  array<string, StatusPage>  $pages
+     * @return array<string, User>
+     */
+    protected function users(array $pages): array
+    {
+        $people = [
+            'ops' => ['Northwind Ops', self::ADMIN_EMAIL, UserRole::Admin, []],
+            'support' => ['Support desk', 'support@example.net', UserRole::User, ['northwind' => 'editor', 'internal' => 'editor']],
+            'noc' => ['NOC wall screen', 'noc@example.net', UserRole::User, ['northwind' => 'viewer', 'harbor' => 'viewer']],
+            'harbor' => ['Harbor IT', 'it@harbor.example.net', UserRole::User, ['harbor' => 'admin']],
+        ];
+
+        $users = [];
+        foreach ($people as $key => [$name, $email, $role, $roles]) {
+            $user = User::query()->where('email', $email)->first();
+            if ($user === null) {
+                $password = (string) (getenv('PHAROS_DEMO_PASSWORD') ?: Str::random(20));
+                $user = User::query()->create(['name' => $name, 'email' => $email, 'password' => $password, 'role' => $role]);
+                $this->command->info("Demo account {$email}, password: {$password}");
+            }
+
+            $pivot = [];
+            foreach ($roles as $pageKey => $pageRole) {
+                $pivot[$pages[$pageKey]->id] = ['role' => $pageRole];
+            }
+            $user->statusPages()->syncWithoutDetaching($pivot);
+            $users[$key] = $user;
+        }
+
+        return $users;
+    }
+
+    /**
+     * @param  array<string, StatusPage>  $pages
+     * @param  array<string, User>  $users
+     */
+    protected function tokens(array $pages, array $users): void
+    {
+        $tokens = [
+            ['Uptime Kuma bridge', 'northwind', 'write', 'ops', 4],
+            ['Grafana status panel', 'northwind', 'read', 'ops', 1],
+            ['Dispatch board', 'harbor', 'read', 'harbor', 12],
+            ['Warehouse monitor', 'harbor', 'write', 'harbor', null],
+        ];
+
+        foreach ($tokens as [$name, $pageKey, $scope, $userKey, $usedMinutesAgo]) {
+            $pageId = $pages[$pageKey]->id;
+            $token = ApiToken::query()->where('name', $name)->where('status_page_id', $pageId)->first();
+            if ($token === null) {
+                // The plaintext is thrown away: a demo token is there to be looked at, not used.
+                [$token] = ApiToken::issue($name, $users[$userKey], $pageId, $scope);
+            }
+            $token->forceFill(['last_used_at' => $usedMinutesAgo === null ? null : now()->subMinutes($usedMinutesAgo)])->save();
+        }
+    }
+
+    /**
+     * The trail a few weeks of use would leave. Written directly: the seeder has
+     * no signed in actor, so the model events record nothing on their own.
+     *
+     * @param  array<string, StatusPage>  $pages
+     */
+    protected function audit(array $pages): void
+    {
+        $ops = User::query()->where('email', self::ADMIN_EMAIL)->first();
+        $support = User::query()->where('email', 'support@example.net')->first();
+        $harborIt = User::query()->where('email', 'it@harbor.example.net')->first();
+
+        $lines = [
+            [$ops, null, 'auth.login', null, null, 10],
+            [$ops, 'northwind', 'incident.updated', 'Incident', 'Outbound email delayed', 25, ['status' => ['from' => 'Identified', 'to' => 'Watching']]],
+            [null, 'northwind', 'incident_update.created', 'IncidentUpdate', 'Update on "Outbound email delayed"', 26, null, 'API token: Uptime Kuma bridge'],
+            [$support, 'northwind', 'incident.created', 'Incident', 'Outbound email delayed', 118],
+            [$ops, 'northwind', 'maintenance.created', 'Maintenance', 'Storage upgrade on web-03 and web-04', 60 * 20],
+            [$harborIt, 'harbor', 'maintenance.created', 'Maintenance', 'Driver app API migration', 60 * 26],
+            [$harborIt, 'harbor', 'setting.updated', 'StatusPageSetting', 'brand.accent', 60 * 30, ['value' => ['from' => '#0079d2', 'to' => '#0f766e']]],
+            [$ops, 'northwind', 'notification.created', 'WebhookEndpoint', 'Slack #ops alerts', 60 * 50],
+            [$ops, 'northwind', 'api_token.created', 'ApiToken', 'Grafana status panel', 60 * 52],
+            [$ops, 'harbor', 'status_page.created', 'StatusPage', 'Harbor Logistics', 60 * 24 * 6],
+            [$ops, null, 'user.created', 'User', 'Harbor IT', 60 * 24 * 6 - 5],
+            [$support, 'northwind', 'component.updated', 'Component', 'web-06', 60 * 24 * 2, ['status' => ['from' => 'Major outage', 'to' => 'Operational']]],
+        ];
+
+        foreach ($lines as $line) {
+            [$user, $pageKey, $action, $type, $label, $minutesAgo] = $line;
+            $changes = $line[6] ?? null;
+            $actor = $line[7] ?? ($user ? $user->name.' ('.$user->email.')' : 'System');
+
+            AuditEntry::query()->updateOrCreate(
+                ['action' => $action, 'subject_label' => $label, 'actor' => $actor],
+                [
+                    'user_id' => $user?->id,
+                    'status_page_id' => $pageKey ? $pages[$pageKey]->id : null,
+                    'subject_type' => $type,
+                    'changes' => $changes,
+                    'ip' => '198.51.100.24',
+                    'created_at' => now()->subMinutes($minutesAgo),
+                ],
+            );
         }
     }
 }
