@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\PagesController;
 use App\Http\Controllers\Admin\PasswordResetController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\SearchController;
+use App\Http\Controllers\Admin\SessionController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SsoController;
 use App\Http\Controllers\Admin\StatusPageSettingsController;
@@ -130,6 +131,10 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         Route::post('profile/two-factor/confirm', [ProfileController::class, 'confirmTwoFactor'])->name('profile.two-factor.confirm');
         Route::delete('profile/two-factor', [ProfileController::class, 'disableTwoFactor'])->name('profile.two-factor.disable');
         Route::post('profile/recovery-codes', [ProfileController::class, 'regenerateRecoveryCodes'])->name('profile.recovery-codes');
+        Route::put('profile/preferences', [ProfileController::class, 'updatePreferences'])->name('profile.preferences');
+        // Your own sessions only: the controller never reads another account's rows.
+        Route::delete('profile/sessions', [SessionController::class, 'destroyOthers'])->name('profile.sessions.others');
+        Route::delete('profile/sessions/{session}', [SessionController::class, 'destroy'])->where('session', '[a-f0-9]{64}')->name('profile.sessions.destroy');
         // Hiding a "Good to know" note is personal, so it sits with the profile and needs no admin.
         Route::post('notes/{id}/restore', [ProfileController::class, 'restoreNote'])->where('id', '[a-z0-9.-]+')->name('notes.restore-one');
         Route::post('notes/restore', [ProfileController::class, 'restoreNotes'])->name('notes.restore');

@@ -1,8 +1,10 @@
 @php
 $branding = app(\App\Services\Branding::class);
+// A signed in person's own choice (Profile, Preferences) wins over the installation default.
+$adminTheme = in_array(auth()->user()?->theme, \App\Models\User::THEMES, true) ? auth()->user()->theme : $branding->theme();
 @endphp
 <!doctype html>
-<html lang="en" @if ($branding->theme() !== 'system') data-theme="{{ $branding->theme() }}" @endif>
+<html lang="en" @if ($adminTheme !== 'system') data-theme="{{ $adminTheme }}" @endif>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -451,7 +453,11 @@ document.addEventListener('click', function (event) {
      full-bleed split and a centred column would fight it. --}}
 @yield('content')
 @endauth
-@include('partials.theme-script')
+@if (session('theme_saved'))
+{{-- A saved preference replaces whatever the quick toggle remembered in this browser. --}}
+<script>try { localStorage.removeItem('pharos-theme'); } catch (e) {}</script>
+@endif
+@include('partials.theme-script', ['theme' => $adminTheme])
 <script defer src="{{ asset('assets/pharos-v06.js') }}?v=0.6.0"></script>
 @auth<script defer src="{{ asset('assets/pharos-ui.js') }}?v={{ @filemtime(public_path('assets/pharos-ui.js')) }}"></script>@endauth
 </body>
