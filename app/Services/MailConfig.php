@@ -46,7 +46,7 @@ class MailConfig
 
     public const MAILERS = ['smtp', 'sendmail', 'log'];
 
-    /** none = plain (STARTTLS still taken when offered); tls = STARTTLS on 587; ssl = implicit TLS on 465. */
+    /** none = plain (STARTTLS still taken when offered); tls = STARTTLS required, on 587; ssl = implicit TLS on 465. */
     public const ENCRYPTIONS = ['none', 'tls', 'ssl'];
 
     public function apply(): void
@@ -77,7 +77,12 @@ class MailConfig
         // Laravel picks the transport from the scheme: smtps is implicit TLS,
         // smtp is plain with STARTTLS whenever the server offers it.
         if ($stored['encryption'] !== '') {
-            config(['mail.mailers.smtp.scheme' => $stored['encryption'] === 'ssl' ? 'smtps' : 'smtp']);
+            config([
+                'mail.mailers.smtp.scheme' => $stored['encryption'] === 'ssl' ? 'smtps' : 'smtp',
+                // TLS (STARTTLS) is a promise: without it a server that does not
+                // offer STARTTLS would get the password in plain text.
+                'mail.mailers.smtp.require_tls' => $stored['encryption'] === 'tls',
+            ]);
         }
 
         if ($password !== null) {
@@ -289,6 +294,7 @@ class MailConfig
         config(["mail.mailers.$mailer" => [
             'transport' => 'smtp',
             'scheme' => $stored['encryption'] === 'ssl' ? 'smtps' : 'smtp',
+            'require_tls' => $stored['encryption'] === 'tls',
             'host' => $stored['host'],
             'port' => (int) $stored['port'],
             'username' => $stored['username'] ?: null,
