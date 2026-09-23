@@ -149,6 +149,18 @@ Niet geïmplementeerd of toegezegd voor deze update: gedeelde services tussen pa
 - Inlogscherm "Pulse" live 23 sep (back-up `/root/pharos-ui-backup.202609230954`): fetch met echte uitkomst (goed, fout, 2FA met zes vakjes of recovery), zonder JS gewone POST; geen status of componentdata op publieke auth-schermen. Plus fix lege sparkline op Overview. 870 tests.
 - Open: talen later · paginanaam "Harbor Logistics — demo" bevat een em dash (data, zelf aanpassen) · één keer een niet reproduceerbare testfout gezien (8 volgende runs groen).
 
+## Klaar voor release (wacht op "push" van Raymon)
+
+Alles hieronder staat klaar op branches, niets is gepusht of live. Volgorde bij de release:
+1. **App**: `feature/multiple-status-pages` mergen naar main, versie + CHANGELOG, release via `/pharos-release <versie>` (tag, GitHub Release, signed manifest, site /releases). Installer-werk (`ui/installer`, agent bezig) eerst mergen.
+2. **Website** (`/root/pharos-site-pricing`, branch `feat/pricing-multi-page` op pharos-site): prijzen €79 / €149 per jaar / Commercial vanaf €599 op offerte, 4 pakketten met pagina's, FAQ, JSON-LD, sales-es, docs.html, llms, `legal.html` + `assets/pharos-terms-2026-09-23.txt`. Installer (`feat/installer-v2`) apart mergen. Pas live na stap 1.
+3. **Portaal** (`/root/pharos-portal-plans`, branch `feat/multi-page-plans` op pharos-portal): Supported = brand_pack + supported + multi_pages met limiet 5, Commercial onbeperkt, voorwaarden 2026-09-23. Deploy op edge-01 na stap 1. Stripe ongewijzigd.
+4. **GitHub**: README (plans-tabel staat al in app-repo), repo-beschrijving/topics, eventuele GitHub Pages controleren.
+5. **Docs**: `docs/licensing.md`, `docs/multiple-status-pages.md` (staan in app-repo), docs-site regenereren (`scripts/build-docs.py` in pharos-site).
+6. Vriend (enige gebruiker, oude versie) updatet zelf daarna.
+
+Let op: voorwaarden-txt (2026-09-08, portaal) en `legal.html` verschilden al vóór deze wijziging over herroepingsrecht bij Supported; alleen de pakketpassages zijn bijgewerkt.
+
 ## Documentatie en lokale ontwikkelomgeving
 
 - `docs/multiple-status-pages.md`: beheer, API, mail, licenties, herstel en FreeScout-vervolg.
