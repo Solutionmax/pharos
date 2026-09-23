@@ -1,5 +1,6 @@
 {{-- The page behind a confirmation or unsubscribe link. Same tokens and type as
-     the status page, with only the rules this one card needs. --}}
+     the status page, with only the rules this one card needs. Opening an
+     unsubscribe link only asks (confirm-unsubscribe); the button does it. --}}
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
       @if ($branding->theme() !== 'system') data-theme="{{ $branding->theme() }}" @endif>
@@ -7,7 +8,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>{{ $outcome === 'subscribed' ? "You're subscribed" : 'Unsubscribed' }} · {{ $branding->name() }} Status</title>
+<title>{{ ['subscribed' => "You're subscribed", 'confirm-unsubscribe' => 'Unsubscribe'][$outcome] ?? 'Unsubscribed' }} · {{ $branding->name() }} Status</title>
 <link rel="icon" href="{{ $branding->faviconUrl() }}">
 @if ($branding->name() === 'Pharos' && ! $branding->logoUrl())
 <link rel="apple-touch-icon" href="{{ $branding->builtInAssetUrl('apple-touch-icon.png') }}">
@@ -26,6 +27,10 @@ p{margin:0}a{color:inherit}
 .card p{color:var(--ink-2)}
 .card .mail{font-weight:600;color:var(--ink)}
 .btn{display:inline-block;margin-top:6px;background:var(--brand);color:var(--brand-ink);font-weight:600;font-size:13.5px;padding:10px 18px;border-radius:10px;text-decoration:none;align-self:flex-start}
+button.btn{border:0;font-family:inherit;line-height:inherit;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+form{margin:0;display:flex}
 .small{font-size:12.5px;color:var(--ink-3)}
 .small a{color:var(--ink-3)}
 </style>
@@ -42,9 +47,17 @@ p{margin:0}a{color:inherit}
         reported on the {{ $branding->name() }} status page, and when it is resolved.</p>
       <a class="btn" href="{{ \App\Services\PageUrls::route('status') }}">Back to the status page</a>
       <p class="small">Changed your mind? <a href="{{ $subscriber->unsubscribeUrl() }}">Unsubscribe</a>. The same link sits at the bottom of every mail.</p>
+    @elseif ($outcome === 'confirm-unsubscribe')
+      <h1>Unsubscribe from {{ $branding->name() }} status updates?</h1>
+      <p><span class="mail">{{ $subscriber->email }}</span> gets an email when an incident is reported
+        on the {{ $branding->name() }} status page, and when it is resolved. Unsubscribe to stop them.</p>
+      <form method="post" action="{{ $action }}">
+        <button class="btn" type="submit">Unsubscribe</button>
+      </form>
+      <p class="small">Opened this link by mistake? Nothing changes until you press the button. <a href="{{ \App\Services\PageUrls::route('status') }}">Back to the status page</a>.</p>
     @else
       <h1>Unsubscribed</h1>
-      <p><span class="mail">{{ $subscriber->email }}</span> will get no more incident e-mails from
+      <p><span class="mail">{{ $subscriber->email }}</span> will get no more incident emails from
         the {{ $branding->name() }} status page.</p>
       <a class="btn" href="{{ \App\Services\PageUrls::route('status') }}">Back to the status page</a>
       <p class="small">Subscribed by mistake? Use "Get notified" on the status page and confirm again.</p>

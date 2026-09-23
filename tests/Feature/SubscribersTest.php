@@ -18,6 +18,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Tests\TestCase;
 
@@ -215,18 +216,41 @@ class SubscribersTest extends TestCase
 
     // ---------- unsubscribe ----------
 
-    public function test_the_unsubscribe_link_works_and_is_idempotent(): void
+    public function test_opening_the_unsubscribe_link_only_asks_for_confirmation(): void
+    {
+        $subscriber = $this->active();
+        $url = $subscriber->unsubscribeUrl();
+        $path = substr($url, strlen(rtrim(config('app.url'), '/')));
+
+        // A mail scanner follows every link: a GET must change nothing.
+        $this->get($url)->assertOk()
+            ->assertSee('Unsubscribe from')
+            ->assertSee($subscriber->email)
+            ->assertSee('method="post"', false)
+            ->assertSee('action="'.e($path).'"', false)
+            ->assertSee('>Unsubscribe</button>', false)
+            ->assertDontSee('will get no more');
+        $this->assertNull($subscriber->fresh()->unsubscribed_at);
+        $this->assertTrue($subscriber->fresh()->isActive());
+    }
+
+    public function test_the_confirmation_button_unsubscribes_and_is_idempotent(): void
     {
         $subscriber = $this->active();
 
-        $this->get($subscriber->unsubscribeUrl())->assertOk()->assertSee('Unsubscribed');
+        // The button on the confirmation page: a plain form POST to the same signed URL.
+        $this->post($subscriber->unsubscribeUrl())->assertOk()->assertSee('Unsubscribed')->assertSee('will get no more');
         $first = $subscriber->fresh()->unsubscribed_at;
         $this->assertNotNull($first);
 
         $this->travel(5)->minutes();
-        $this->get($subscriber->unsubscribeUrl())->assertOk();
+        $this->post($subscriber->unsubscribeUrl())->assertOk();
         $this->assertTrue($first->equalTo($subscriber->fresh()->unsubscribed_at));
         $this->assertFalse($subscriber->fresh()->isActive());
+
+        // Opening the link again says it is done, and offers no button.
+        $this->get($subscriber->unsubscribeUrl())->assertOk()->assertSee('will get no more')->assertDontSee('</button>', false);
+        $this->assertTrue($first->equalTo($subscriber->fresh()->unsubscribed_at));
     }
 
     public function test_one_click_unsubscribe_accepts_a_post_without_a_session(): void
@@ -236,6 +260,19 @@ class SubscribersTest extends TestCase
         // What Gmail sends: a bare POST with this exact body, no cookies, no CSRF token.
         $this->post($subscriber->unsubscribeUrl(), ['List-Unsubscribe' => 'One-Click'])->assertOk();
 
+        $this->assertNotNull($subscriber->fresh()->unsubscribed_at);
+    }
+
+    public function test_a_legacy_unsubscribe_link_confirms_on_get_and_unsubscribes_on_post(): void
+    {
+        $subscriber = $this->active();
+        // The link in mails sent before pages had their own paths.
+        $legacy = URL::signedRoute('unsubscribe', ['subscriber' => $subscriber->id, 'token' => $subscriber->token], null, false);
+
+        $this->get($legacy)->assertOk()->assertSee('>Unsubscribe</button>', false);
+        $this->assertNull($subscriber->fresh()->unsubscribed_at);
+
+        $this->post($legacy)->assertOk()->assertSee('will get no more');
         $this->assertNotNull($subscriber->fresh()->unsubscribed_at);
     }
 
@@ -341,7 +378,8 @@ class SubscribersTest extends TestCase
         $this->assertNull($pending->fresh()->verified_at);
 
         // Leaving must always work: the mails already sent carry these links.
-        $this->get($active->unsubscribeUrl())->assertOk()->assertSee('Unsubscribed');
+        $this->get($active->unsubscribeUrl())->assertOk()->assertSee('>Unsubscribe</button>', false);
+        $this->post($active->unsubscribeUrl())->assertOk()->assertSee('Unsubscribed');
         $this->assertNotNull($active->fresh()->unsubscribed_at);
         $this->post($this->active('one-click@example.net')->unsubscribeUrl(), ['List-Unsubscribe' => 'One-Click'])->assertOk();
 
