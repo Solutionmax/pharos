@@ -18,7 +18,9 @@
   var stack = [];
 
   function focusables(el) {
+    // tabindex="-1" (like the search options) is reachable by script, never by Tab.
     return Array.prototype.filter.call(el.querySelectorAll(FOCUSABLE), function (node) {
+      if (node.getAttribute('tabindex') === '-1') return false;
       return node.offsetParent !== null || node === document.activeElement;
     });
   }
@@ -51,6 +53,20 @@
   // A form that came back with errors reopens in its own dialog or drawer.
   var reopen = document.querySelector('[data-modal][data-autoopen]');
   if (reopen) open(reopen, document.querySelector('[data-dialog="' + reopen.id + '"]'));
+
+  // A link ending in #some-dialog-id opens that dialog on arrival (the search
+  // palette's "Invite someone" lands on Users with #user-add). The hash is
+  // dropped again so a reload or a second click behaves the same way.
+  function openFromHash() {
+    var id = window.location.hash.slice(1);
+    if (!/^[A-Za-z][\w-]*$/.test(id)) return;
+    var el = document.getElementById(id);
+    if (!el || !el.hasAttribute('data-modal')) return;
+    open(el, document.querySelector('[data-dialog="' + id + '"]'));
+    if (window.history.replaceState) window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
+  openFromHash();
+  window.addEventListener('hashchange', openFromHash);
 
   document.addEventListener('click', function (event) {
     var opener = event.target.closest('[data-dialog]');
@@ -145,99 +161,5 @@
   });
   window.addEventListener('scroll', hideTip, { passive: true });
 
-  /* ---------- global search ---------- */
-  var dialog = document.getElementById('pharos-search');
-  if (!dialog) return;
-  var input = dialog.querySelector('input');
-  var list = dialog.querySelector('[role=listbox]');
-  var status = dialog.querySelector('[data-search-status]');
-  var endpoint = input.getAttribute('data-endpoint');
-  var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-  document.querySelectorAll('[data-search-key]').forEach(function (k) { k.textContent = mac ? '⌘ K' : 'Ctrl K'; });
-  var timer = null, controller = null, active = -1, lastTerm = null;
-
-  function options() { return Array.prototype.slice.call(list.querySelectorAll('[role=option]')); }
-  function select(index) {
-    var all = options();
-    if (!all.length) { active = -1; input.removeAttribute('aria-activedescendant'); return; }
-    active = (index + all.length) % all.length;
-    all.forEach(function (o, i) { o.setAttribute('aria-selected', i === active ? 'true' : 'false'); });
-    input.setAttribute('aria-activedescendant', all[active].id);
-    all[active].scrollIntoView({ block: 'nearest' });
-  }
-  function render(results, term) {
-    list.textContent = '';
-    active = -1;
-    results.forEach(function (r, i) {
-      var li = document.createElement('li');
-      li.id = 'pharos-search-' + i;
-      li.setAttribute('role', 'option');
-      li.setAttribute('aria-selected', 'false');
-      var a = document.createElement('a');
-      a.href = r.url;
-      a.tabIndex = -1;
-      var kind = document.createElement('span');
-      kind.className = 'search-kind';
-      kind.textContent = r.type;
-      var label = document.createElement('b');
-      label.textContent = r.label;
-      var sub = document.createElement('span');
-      sub.className = 'search-sub';
-      sub.textContent = r.context || '';
-      a.append(kind, label, sub);
-      li.appendChild(a);
-      list.appendChild(li);
-    });
-    input.setAttribute('aria-expanded', results.length ? 'true' : 'false');
-    status.textContent = results.length
-      ? results.length + (results.length === 1 ? ' result' : ' results')
-      : (term.length < 2 ? 'Type at least two letters.' : 'Nothing matches “' + term + '”.');
-    if (results.length) select(0);
-  }
-  function search() {
-    var term = input.value.trim();
-    if (term === lastTerm) return;
-    lastTerm = term;
-    if (term.length < 2) { render([], term); return; }
-    if (controller) controller.abort();
-    controller = window.AbortController ? new AbortController() : null;
-    status.textContent = 'Searching…';
-    fetch(endpoint + '?q=' + encodeURIComponent(term), {
-      credentials: 'same-origin', headers: { Accept: 'application/json' }, signal: controller ? controller.signal : undefined
-    }).then(function (response) {
-      if (!response.ok) throw new Error('search failed');
-      return response.json();
-    }).then(function (data) {
-      if (input.value.trim() === term) render(data.results || [], term);
-    }).catch(function (error) {
-      if (error.name !== 'AbortError') status.textContent = 'Search is not available right now.';
-    });
-  }
-  input.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(search, 160); });
-  input.addEventListener('keydown', function (event) {
-    if (event.key === 'ArrowDown') { event.preventDefault(); select(active + 1); }
-    else if (event.key === 'ArrowUp') { event.preventDefault(); select(active - 1); }
-    else if (event.key === 'Enter') {
-      var all = options();
-      if (active >= 0 && all[active]) { event.preventDefault(); window.location.href = all[active].querySelector('a').href; }
-    }
-  });
-  list.addEventListener('mousemove', function (event) {
-    var li = event.target.closest('[role=option]');
-    if (li) select(options().indexOf(li));
-  });
-  document.addEventListener('keydown', function (event) {
-    if ((event.ctrlKey || event.metaKey) && !event.altKey && (event.key === 'k' || event.key === 'K')) {
-      event.preventDefault();
-      if (dialog.hidden) open(dialog, document.activeElement); else close(dialog);
-    }
-  });
-  document.addEventListener('click', function (event) {
-    var opener = event.target.closest('[data-search-open]');
-    if (!opener) return;
-    var toggle = document.getElementById('navtoggle');
-    if (toggle) toggle.checked = false;
-    open(dialog, opener);
-  });
-  dialog.addEventListener('pui:open', function () { input.select(); });
+  /* ---------- global search: see pharos-search.js ---------- */
 })();
