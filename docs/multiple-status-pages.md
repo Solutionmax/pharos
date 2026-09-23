@@ -152,14 +152,16 @@ continue to omit private incidents.
 Without `multi_pages`, an installation can create only its default page. A signed
 `multi_pages` feature enables additional pages. Optional `limits.status_pages` is a
 positive integer limiting nonarchived pages; absent means unlimited for a valid
-Multi-page key. A commercial whitelabel bundle includes both `brand_pack` and
-`multi_pages`. Existing Brand Pack keys retain their current rights.
+Multi-page key. Plans map to this as follows: Free and Brand pack have 1 page (no
+`multi_pages`); Supported carries `brand_pack`, `multi_pages` and `limits.status_pages` = 5;
+the Commercial licence carries `brand_pack` and `multi_pages` without a limit (unlimited).
+Existing Brand Pack keys retain their current rights. See [licensing](licensing.md#plans).
 
 Vendor-side signing example (never put the private signing key on customer installs):
 
 ```sh
 php artisan pharos:license:sign customer@example.net \
-  --features=brand_pack,multi_pages --status-pages=5 \
+  --features=brand_pack,multi_pages --status-pages=5 --months=12 \
   --domain=status.example.net --key=/secure/vendor-signing-key.hex
 ```
 
@@ -168,8 +170,9 @@ removal or downgrade blocks creation/reactivation above the current limit. Exist
 pages, incident operations, monitoring and subscriptions continue; no data is deleted.
 Brand Pack retains the existing perpetual-feature rules.
 
-Prices, sales-portal products and payment-provider settings have not been changed.
-Those remain release-preparation work; the application and signer support the rights.
+Prices in Stripe are unchanged (Brand pack € 49 one time, Supported € 119 per year,
+Commercial licence from € 599 per year). The sales portal must sign Supported and
+Commercial keys with the features and limits above.
 
 ## Upgrade and recovery
 

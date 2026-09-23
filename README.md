@@ -358,17 +358,20 @@ short contributor licence agreement that makes the dual licence possible.
 
 | | |
 |---|---|
-| **Brand pack** | One-time. Your logo and favicon, editable mail templates, the "Powered by Pharos" credit removed. |
-| **Supported** | Yearly. Support by e-mail from the person who wrote the code, your bug reports first, the Brand pack included and yours to keep. |
-| **Commercial licence** | Yearly. The AGPL publication requirement lifted for one organisation. Includes Supported. |
+| **Free** | Every feature of the core, 1 status page, a "Powered by Pharos" footer credit. |
+| **Brand pack** | € 49, one time. Your own logo (light and dark), favicon, your logo in email and editable mail templates, the footer credit removed. Keeps working forever. 1 status page. |
+| **Supported** | € 119 per year. The Brand pack included and yours to keep, support by email, one click signed updates, and up to 5 status pages, each with its own components, subscribers, branding, email, integrations and user roles per page. |
+| **Commercial licence** | From € 599 per year. Everything in Supported, unlimited status pages, and the AGPL publication requirement lifted. |
 
-None of it is required to run Pharos. Every feature — including signed one-click updates —
-is in the free version; the only gated part is the branding (logo, favicon, mail wording,
-credit). What you are paying for is your own branding, support, and not having to publish
-your own changes. Prices are on [pharos.solutionmax.net](https://pharos.solutionmax.net/#pricing).
+If a yearly key lapses, the branding stays and existing status pages keep running, but no
+new or reactivated pages beyond 1 can be added.
 
-Licences are verified locally with an Ed25519 signature and tied to the status page domain
-given at checkout. Pharos never phones home to ask
+None of it is required to run Pharos. Monitoring, incidents, notifications and updates work
+in the free version; the gated parts are the branding (logo, favicon, mail wording, credit)
+and status pages beyond the first. Prices are on [pharos.solutionmax.net](https://pharos.solutionmax.net/#pricing).
+
+Licences are verified locally with an Ed25519 signature and may be tied to the domain of
+the installation given at checkout. Pharos never phones home to ask
 whether you are allowed to run it.
 
 ---
