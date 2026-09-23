@@ -93,13 +93,14 @@ class SubscriberController extends Controller
         Audit::record('subscribers.exported', null, ['active' => ['from' => '', 'to' => (string) $count]]);
 
         // The body streams after the request's middleware has finished, so the
-        // zone of the person downloading is captured now and named in the header.
+        // zone of the person downloading is captured now. The header stays plain
+        // "subscribed_at" (people import this file elsewhere); ISO 8601 carries the offset.
         $zone = Clock::timezone();
 
-        return response()->streamDownload(fn () => Clock::withZone($zone, function () use ($zone) {
+        return response()->streamDownload(fn () => Clock::withZone($zone, function () {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF"); // BOM: Excel then reads the arrows and dashes as UTF-8
-            fputcsv($out, ['email', "subscribed_at ($zone)"]);
+            fputcsv($out, ['email', 'subscribed_at']);
 
             Subscriber::active()->chunkById(500, function ($rows) use ($out) {
                 foreach ($rows as $s) {
