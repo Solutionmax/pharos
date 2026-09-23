@@ -6,6 +6,8 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [0.7.1] — 2026-09-23
+
 ### Fixed
 - The test mail says where it was sent from (Settings, Central mail or Email, Delivery for the page) and which transport it used (the central mail transport or the page's own SMTP server) in plain words. It no longer shows the internal mailer name.
 - The user invitation and the password reset mail use the installation branding like every other mail: brand name, logo, accent and footer. Before, they used the default layout and signed with the application name.
