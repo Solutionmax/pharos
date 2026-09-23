@@ -11,8 +11,8 @@ Open **Status pages** to create or edit a page. New pages have no copied service
 subscribers or branding and default to unpublished. The page selector opens explicit
 `/admin/pages/{id}/...` URLs, so separate browser tabs can manage different pages.
 
-Use **Manage a page → Switch page** to select the services, branding and email settings
-being edited. **View status page** offers the published pages you can manage and opens
+Use the page selector under **This page** in the sidebar to select the page whose services,
+branding and email settings are being edited. Choosing a page opens its **Overview**. **View status page** offers the published pages you can manage and opens
 the chosen public page in a new tab. Both pickers use the same compact card layout,
 with a scrollable list capped at 280 pixels (or 40% of a short viewport). When a menu
 has more than five choices, search filters its names and tags. Opening one closes
@@ -53,7 +53,7 @@ customer portal.
 
 ## Branding and domains
 
-Select the page before opening **Branding**, **Status page** or **Mail templates**.
+Select the page before opening **Appearance** (Layout, Branding) or **Email** (Delivery, Templates).
 Each page has its own settings and uploaded images. Existing Brand Pack rights apply
 installation-wide; new pages start with Pharos defaults, not another customer's identity.
 
@@ -69,7 +69,7 @@ so changing a customer's domain does not invalidate old subscription messages.
 ## Mail
 
 **Settings → Central mail** is the shared installation transport for account recovery
-and pages that inherit it. **Page email** names the selected page and its public URL,
+and pages that inherit it. **Email, Delivery** names the selected page and its public URL,
 then selects central transport or custom SMTP. The sender name, sender
 address and reply-to can be set per page. Custom SMTP credentials are encrypted with
 the installation APP_KEY; keep that key in backups. Empty password input preserves
@@ -86,7 +86,7 @@ No extra cron entry is needed. Outgoing webhook queues also retain their page ow
 
 ## Integrations and delivery history
 
-The Integrations and Mail templates screens show the selected page name, tag and URL.
+The Integrations and Email Templates screens show the selected page name, tag and URL.
 Notification destinations (including Slack), signing secrets, tokens, heartbeats and
 subscriber templates belong to that page only. Connecting Slack on the default page
 does not connect it on another page.
