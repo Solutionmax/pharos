@@ -14,15 +14,15 @@ incident update →  one outbox row per active subscriber  →  pharos:notify  �
 ```
 
 1. A visitor enters an address on the status page. The reply is always the same
-   sentence — *If that address is new, a confirmation is on its way* — whether the
+   sentence (*If that address is new, a confirmation is on its way*) whether the
    address is new, pending or already confirmed, so the form cannot be used to
    find out who subscribed. Five sign-ups per ten minutes per IP; a hidden field
    catches bots.
 2. The confirmation mail carries a **signed link, good for 24 hours**. Asking again
    sends a fresh link and voids the old one. An address that never clicks is
    **forgotten after 7 days**.
-3. Every update on a **public** incident — posted by hand, through the API, or by a
-   check that opened or resolved one — queues one row per active subscriber in
+3. Every update on a **public** incident (posted by hand, through the API, or by a
+   check that opened or resolved one) queues one row per active subscriber in
    `subscriber_notifications`. The request that posts the update never talks to
    a mail server.
 4. `pharos:notify`, run every minute by the scheduler, sends **up to 50 mails per
@@ -66,7 +66,7 @@ transport's own error text when it fails.
 
 **The switch.** The **Subscribers** screen has a master switch. Off means no
 "Get notified" button, sign-up and confirmation links answer 404, and no new
-mail is queued — but anything queued before the flip still goes out on the next
+mail is queued, but anything queued before the flip still goes out on the next
 `pharos:notify`, unsubscribe links keep working, and every address is kept.
 It is a pause, not a purge; the sidebar shows a small "off" next to Subscribers
 until it is switched back on.
@@ -76,8 +76,8 @@ because a cron run has no request to read the host from.
 
 ## The mail
 
-By default (see **Templates** below) the subject is `[Brand] Incident name — Status` and the body is: the status label, the update
-text (Markdown rendered with the same escaping as the status page — anything that
+By default (see **Templates** below) the subject is `[Brand] Incident name: Status` and the body is: the status label, the update
+text (Markdown rendered with the same escaping as the status page: anything that
 looks like a tag is shown, never run), the affected components, the time in the
 install's time zone, a button to the status page and an unsubscribe link. A
 plain-text alternative goes with it.
@@ -103,15 +103,15 @@ components, comma-separated · `{unsubscribe}` the subscriber's signed unsubscri
 
 **Subject and body are Markdown** (`**bold**`, `*italic*`, `# heading`, `- list`,
 `> quote`, `[text](url)`). A link on a line of its own becomes a button. Tag values
-are printed exactly as typed — a `*` in an incident name stays a `*` — with one
+are printed exactly as typed (a `*` in an incident name stays a `*`), with one
 exception: `{message}` is the operator's own Markdown and is rendered as such, with
 the same escaping as the status page, so anything that looks like an HTML tag is
 shown, never run. `> {message}` quotes the whole message, not just its first line.
 A line whose only tag is empty is left out, so `Affects {components}` disappears
 when no component is affected. A tag that does not exist stays as typed.
 
-**Body, not frame.** The logo, the accent colour, the link to the status page and —
-on every incident mail — the unsubscribe link sit in the frame around the body and
+**Body, not frame.** The logo, the accent colour, the link to the status page and
+(on every incident mail) the unsubscribe link sit in the frame around the body and
 are always there. A template therefore cannot lose the unsubscribe link, and
 `{unsubscribe}` in the body is optional. The plain-text part is derived from the
 same Markdown with the links written out raw.
@@ -138,7 +138,7 @@ Two roads, both signed and both without expiry:
   unsubscribe button. That is a `POST` to the same signed URL with no session
   and no CSRF token; the signature is the credential.
 
-Both are idempotent — a mail scanner opening the link, or a second click, changes
+Both are idempotent: a mail scanner opening the link, or a second click, changes
 nothing further. Someone who unsubscribed can come back through "Get notified"
 and a fresh confirmation.
 
@@ -146,12 +146,12 @@ and a fresh confirmation.
 
 Under **Subscribers** in the admin (open to every account):
 
-- **Export CSV** — active addresses with their confirmation date. Recorded in the
+- **Export CSV**: active addresses with their confirmation date. Recorded in the
   audit log as `subscribers.exported`.
-- **Delete** on a row — removes the address and everything that was sent to it.
+- **Delete** on a row: removes the address and everything that was sent to it.
   Recorded as `subscriber.removed` with the address as the subject. This is the
   "forget me" button.
-- **Resend confirmation** for a pending address — new token, new mail, recorded
+- **Resend confirmation** for a pending address: new token, new mail, recorded
   as `subscriber.confirmation_resent`.
 
 What is stored per subscriber: the address, the confirmation and unsubscribe
