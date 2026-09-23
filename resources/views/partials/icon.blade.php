@@ -77,6 +77,21 @@
     @case('empty')
       <rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18M8 15h5"/>
       @break
+    @case('maintenance')
+      <path d="M14.7 6.3a4 4 0 0 0-5.4 5.1l-5.8 5.8a1.8 1.8 0 0 0 2.5 2.5l5.8-5.8a4 4 0 0 0 5.1-5.4l-2.4 2.4-2.2-.4-.4-2.2Z"/>
+      @break
+    @case('screen')
+      <rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M6.5 6.5h.01M9.5 6.5h.01"/>
+      @break
+    @case('action')
+      <path d="M13 3 5 13.5h6L10 21l8-10.5h-6Z"/>
+      @break
+    @case('recent')
+      <path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 4v4.5H8"/><path d="M12 7.5V12l3 2"/>
+      @break
+    @case('enter')
+      <path d="M20 5v7a3 3 0 0 1-3 3H5"/><path d="m9 11-4 4 4 4"/>
+      @break
     @default
       <circle cx="12" cy="12" r="9"/>
   @endswitch
