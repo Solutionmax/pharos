@@ -149,6 +149,8 @@ Niet geïmplementeerd of toegezegd voor deze update: gedeelde services tussen pa
 - Inlogscherm "Pulse" live 23 sep (back-up `/root/pharos-ui-backup.202609230954`): fetch met echte uitkomst (goed, fout, 2FA met zes vakjes of recovery), zonder JS gewone POST; geen status of componentdata op publieke auth-schermen. Plus fix lege sparkline op Overview. 870 tests.
 - Open: talen later · paginanaam "Harbor Logistics — demo" bevat een em dash (data, zelf aanpassen) · één keer een niet reproduceerbare testfout gezien (8 volgende runs groen).
 
+- Branding-pagina (live voorbeeld, pakkettenkaart, 4 bugfixes), paginalimiet-melding, installer stap 6/7 + scheduler-marker, guest redirect naar Overview: live op `.166` 23 sep (back-up `/root/pharos-ui-backup.202609231113`). 906 tests.
+
 ## Klaar voor release (wacht op "push" van Raymon)
 
 Alles hieronder staat klaar op branches, niets is gepusht of live. Volgorde bij de release:
