@@ -44,6 +44,19 @@ class OverviewTest extends TestCase
         $this->get('/admin')->assertRedirect(route('admin.overview'));
     }
 
+    public function test_a_page_without_uptime_still_draws_a_valid_sparkline(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+        $html = $this->actingAs($admin)->get('/admin/pages/'.$this->other->id.'/overview')->assertOk()->getContent();
+
+        // Every SVG path must open with a moveto, or the browser rejects it.
+        preg_match_all('/<path d="([^"]*)"/', $html, $paths);
+        foreach ($paths[1] as $d) {
+            $this->assertMatchesRegularExpression('/^\s*[Mm]/', $d);
+        }
+    }
+
     public function test_a_user_of_another_page_lands_on_that_pages_overview(): void
     {
         $user = User::factory()->create(['role' => UserRole::User]);

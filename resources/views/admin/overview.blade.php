@@ -52,6 +52,8 @@
       $y = 32 - ($value - $sparkMin) / max(100 - $sparkMin, 0.0001) * 28;
       $sparkPath .= ($i ? 'L' : 'M').number_format($x, 1, '.', '').' '.number_format($y, 1, '.', '').' ';
   }
+  // No uptime yet (a new page): a flat baseline, so the path still starts with a moveto.
+  $sparkPath = $sparkPath !== '' ? $sparkPath : 'M0 32 L220 32 ';
   $cellTip = fn (array $day) => $day['known'] ? Uptime::format($day['pct']).' up' : 'No data';
   $cellDay = fn (array $day) => \Illuminate\Support\Carbon::parse($day['day'])->format('j M Y');
   $good = collect($health)->where('state', 'good')->count();
