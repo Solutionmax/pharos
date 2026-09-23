@@ -3,7 +3,7 @@
        Tailwind its arrows render as full-width SVGs. --}}
   <nav class="pager" aria-label="Pages">
     <span class="pager-count">Page {{ $paginator->currentPage() }} of {{ $paginator->lastPage() }}
-      <span class="sub">· {{ $paginator->firstItem() }}–{{ $paginator->lastItem() }} of {{ $paginator->total() }}</span></span>
+      <span class="sub">· {{ $paginator->firstItem() }} to {{ $paginator->lastItem() }} of {{ $paginator->total() }}</span></span>
     <span class="pager-links">
       @if ($paginator->onFirstPage())
         <span class="btn ghost" aria-disabled="true">&larr; {{ $previousLabel ?? 'Newer' }}</span>

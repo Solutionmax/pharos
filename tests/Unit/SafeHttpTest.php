@@ -38,7 +38,7 @@ class SafeHttpTest extends TestCase
     public function test_a_literal_private_address_is_refused_without_dns(): void
     {
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('link-local');
+        $this->expectExceptionMessage('link local');
 
         (new SafeHttp(allowedHosts: []))->resolve('169.254.169.254');
     }
@@ -65,7 +65,7 @@ class SafeHttpTest extends TestCase
         $safe = new SafeHttp(allowedHosts: ['169.254.169.254']);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('link-local');
+        $this->expectExceptionMessage('link local');
 
         $safe->resolve('169.254.169.254');
     }

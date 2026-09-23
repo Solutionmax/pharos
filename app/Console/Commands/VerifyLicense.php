@@ -29,9 +29,9 @@ class VerifyLicense extends Command
         $expired = $license->hasExpired($data);
 
         $this->table(['field', 'value'], [
-            ['issued_to', $data['issued_to'] ?? '—'],
-            ['features', implode(', ', $data['features'] ?? []) ?: '—'],
-            ['issued_at', $data['issued_at'] ?? '—'],
+            ['issued_to', $data['issued_to'] ?? 'none'],
+            ['features', implode(', ', $data['features'] ?? []) ?: 'none'],
+            ['issued_at', $data['issued_at'] ?? 'none'],
             ['expires_at', $data['expires_at'] ?? 'never'],
             ['status', $expired ? 'expired' : 'valid'],
         ]);

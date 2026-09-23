@@ -311,7 +311,7 @@ class PageDeliveryTest extends TestCase
                 && $mail->envelope()->from->address === 'status@beta.example.test'
                 && $mail->envelope()->from->name === 'Beta sender'
                 && $mail->envelope()->replyTo[0]->address === 'support@beta.example.test'
-                && $mail->envelope()->subject === 'Test e-mail from Beta Status';
+                && $mail->envelope()->subject === 'Test email from Beta Status';
         });
     }
 

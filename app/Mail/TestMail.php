@@ -24,7 +24,7 @@ class TestMail extends Mailable
         return $this->inBrandContext(fn () => new Envelope(
             from: $this->brandedFrom(),
             replyTo: $this->brandedReplyTo(),
-            subject: 'Test e-mail from '.$this->branding()->name(),
+            subject: 'Test email from '.$this->branding()->name(),
         ));
     }
 

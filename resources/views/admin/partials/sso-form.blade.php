@@ -41,7 +41,7 @@
     <div class="field">
       <label for="client_secret">Client secret</label>
       <input id="client_secret" name="client_secret" type="password" autocomplete="new-password"
-             placeholder="{{ $sso->clientSecret() ? 'Stored — leave empty to keep it' : '' }}">
+             placeholder="{{ $sso->clientSecret() ? 'Stored, leave empty to keep it' : '' }}">
       <span class="help">Stored encrypted and never shown again. Empty means unchanged.</span>
       @error('client_secret')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
     </div>
@@ -55,17 +55,17 @@
       Leave empty unless your provider runs on your own network. By default Pharos refuses to
       fetch anything on a private address: an issuer URL is typed by a person, and without that
       rule this server becomes a way to reach networks you cannot. Naming a host here vouches for
-      that one host only — link-local addresses stay blocked whatever you put in this box.
+      that one host only; link local addresses stay blocked whatever you put in this box.
     </span>
     @error('internal_hosts')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
   </div>
 
   <div class="switchrow">
-    <span class="t"><strong>Offer single sign-on</strong><span class="s">Checked on save: a provider that cannot be reached will not switch on.</span></span>
+    <span class="t"><strong>Offer single sign on</strong><span class="s">Checked on save: a provider that cannot be reached will not switch on.</span></span>
     <label class="check"><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $sso->enabled()))> Enabled</label>
   </div>
   <div class="actions">
-    <button class="btn" type="submit">Save single sign-on</button>
+    <button class="btn" type="submit">Save single sign on</button>
     <button class="btn ghost" type="reset">Undo my changes</button>
   </div>
 </form>

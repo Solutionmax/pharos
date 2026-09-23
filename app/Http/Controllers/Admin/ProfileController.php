@@ -101,7 +101,7 @@ class ProfileController extends Controller
         $user = $request->user();
 
         if ($user->hasTwoFactor()) {
-            return back()->withErrors(['code' => 'Two-factor authentication is already on.']);
+            return back()->withErrors(['code' => 'Two factor authentication is already on.']);
         }
 
         $user->forceFill(['totp_secret' => $this->totp->secret(), 'totp_last_step' => null])->save();
@@ -131,7 +131,7 @@ class ProfileController extends Controller
         // Shown once, on the next screen, and never recoverable afterwards.
         return redirect()->route('admin.profile')
             ->with('recovery_codes', RecoveryCode::replaceFor($user))
-            ->with('status', 'Two-factor authentication is on.');
+            ->with('status', 'Two factor authentication is on.');
     }
 
     public function disableTwoFactor(Request $request)
@@ -143,7 +143,7 @@ class ProfileController extends Controller
         $user->recoveryCodes()->delete();
         Audit::record('2fa.disabled', $user);
 
-        return redirect()->route('admin.profile')->with('status', 'Two-factor authentication is off.');
+        return redirect()->route('admin.profile')->with('status', 'Two factor authentication is off.');
     }
 
     public function regenerateRecoveryCodes(Request $request)

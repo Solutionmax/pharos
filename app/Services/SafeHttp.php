@@ -172,7 +172,7 @@ class SafeHttp
         // make the destination unsafe.
         foreach ($candidates as $candidate) {
             if ($this->isNeverReachable($candidate)) {
-                throw new \RuntimeException("{$host} resolves to {$candidate}, which is link-local or this machine. That address is never allowed.");
+                throw new \RuntimeException("{$host} resolves to {$candidate}, which is link local or this machine. That address is never allowed.");
             }
 
             if (! $vouchedFor && ! $this->isPublic($candidate)) {

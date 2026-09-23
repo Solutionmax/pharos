@@ -1,5 +1,5 @@
 @extends('layouts.auth')
-@section('title', 'Two-factor code')
+@section('title', 'Two factor code')
 @section('card')
   <h1>One more step</h1>
   <p class="lede">Your password checked out. Now the code from your authenticator app.</p>

@@ -74,12 +74,12 @@ class MailTemplateController extends Controller
         try {
             app(MailConfig::class)->sendTo($user->email, new TemplatePreviewMail($rendered));
         } catch (\Throwable $e) {
-            return $this->back($key)->withErrors(['mail' => 'Test e-mail failed: '.$e->getMessage()]);
+            return $this->back($key)->withErrors(['mail' => 'Test email failed: '.$e->getMessage()]);
         }
 
         Audit::record('mail.test', $user);
 
-        return $this->back($key)->with('status', "Test e-mail sent to {$user->email}.");
+        return $this->back($key)->with('status', "Test email sent to {$user->email}.");
     }
 
     /**

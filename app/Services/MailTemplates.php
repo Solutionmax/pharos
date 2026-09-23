@@ -52,7 +52,7 @@ class MailTemplates
             'body' => <<<'MD'
             # Confirm your subscription
 
-            You asked to be told about incidents on the {brand} status page. Confirm the address and we will mail you when something happens — and when it is fixed.
+            You asked to be told about incidents on the {brand} status page. Confirm the address and we will mail you when something happens, and when it is fixed.
 
             [Confirm subscription]({link})
 
@@ -62,19 +62,19 @@ class MailTemplates
         'incident_opened' => [
             'label' => 'Incident opened',
             'tags' => self::INCIDENT_TAGS,
-            'subject' => '[{brand}] {incident} — {status}',
+            'subject' => '[{brand}] {incident}: {status}',
             'body' => self::INCIDENT_BODY,
         ],
         'incident_updated' => [
             'label' => 'Incident updated',
             'tags' => self::INCIDENT_TAGS,
-            'subject' => '[{brand}] {incident} — {status}',
+            'subject' => '[{brand}] {incident}: {status}',
             'body' => self::INCIDENT_BODY,
         ],
         'incident_resolved' => [
             'label' => 'Incident resolved',
             'tags' => self::INCIDENT_TAGS,
-            'subject' => '[{brand}] {incident} — {status}',
+            'subject' => '[{brand}] {incident}: {status}',
             'body' => self::INCIDENT_BODY,
         ],
         'maintenance_scheduled' => [
@@ -278,7 +278,7 @@ class MailTemplates
 
         return [
             'brand' => self::frame()['brand'],
-            'incident' => 'Outbound e-mail delayed',
+            'incident' => 'Outbound email delayed',
             'status' => $status->label(),
             'message' => "We are seeing **delays of up to 20 minutes** on outbound mail while the queue drains.\n\n- Incoming mail is not affected\n- No messages are lost",
             'components' => 'Mail, Outbound queue',

@@ -180,8 +180,8 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
             @else
               <form method="POST" action="{{ \App\Services\PageUrls::route('subscribe') }}">
                 @csrf
-                <p>Get an e-mail when an incident is reported, and when it is resolved.</p>
-                <label for="sub-email" style="display:block;margin-top:8px">E-mail address</label>
+                <p>Get an email when an incident is reported, and when it is resolved.</p>
+                <label for="sub-email" style="display:block;margin-top:8px">Email address</label>
                 <input id="sub-email" name="email" type="email" value="{{ old('email') }}" required autocomplete="email" style="margin-top:6px">
                 <input class="hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
                 @error('email')<span class="err" style="display:block;margin-top:6px">{{ $message }}</span>@enderror

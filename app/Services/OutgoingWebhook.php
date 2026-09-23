@@ -239,7 +239,7 @@ class OutgoingWebhook
                     'type' => 'section',
                     'text' => [
                         'type' => 'mrkdwn',
-                        'text' => ($resolved ? ':white_check_mark: *Resolved* — ' : ':rotating_light: *'.$incident->status->label().'* — ')
+                        'text' => ($resolved ? ':white_check_mark: *Resolved*: ' : ':rotating_light: *'.$incident->status->label().'*: ')
                             .$incident->name,
                     ],
                 ],
@@ -293,7 +293,7 @@ class OutgoingWebhook
                                 $incident->components->isNotEmpty()
                                     ? ['title' => 'Affected', 'value' => $incident->components->pluck('name')->join(', ')]
                                     : null,
-                                ['title' => 'Since', 'value' => $incident->occurred_at?->toDayDateTimeString() ?? '—'],
+                                ['title' => 'Since', 'value' => $incident->occurred_at?->toDayDateTimeString() ?? 'Not set'],
                                 ['title' => 'Status page', 'value' => Setting::get('brand.name', 'Pharos')],
                             ])),
                         ],

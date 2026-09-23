@@ -57,7 +57,7 @@ class SsoController extends Controller
         $verifier = $request->session()->pull('sso.verifier');
 
         if (! $state || ! $nonce || ! $verifier || ! hash_equals($state, (string) $request->query('state'))) {
-            return $this->refuse('the sign-in did not match the one that was started');
+            return $this->refuse('the sign in did not match the one that was started');
         }
 
         if (! is_string($code = $request->query('code'))) {
@@ -149,8 +149,8 @@ class SsoController extends Controller
 
         return redirect()->route('admin.settings', ['tab' => 'sso'])
             ->with('status', $enabling
-                ? 'Single sign-on is on. Try it in a private window before you rely on it.'
-                : 'Single sign-on is off.');
+                ? 'Single sign on is on. Try it in a private window before you rely on it.'
+                : 'Single sign on is off.');
     }
 
     protected function refuse(string $reason)

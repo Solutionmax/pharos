@@ -38,10 +38,10 @@ p{margin:0}a{color:inherit}
   <section class="card">
     @if ($outcome === 'subscribed')
       <h1>You're subscribed</h1>
-      <p><span class="mail">{{ $subscriber->email }}</span> will get an e-mail when an incident is
+      <p><span class="mail">{{ $subscriber->email }}</span> will get an email when an incident is
         reported on the {{ $branding->name() }} status page, and when it is resolved.</p>
       <a class="btn" href="{{ \App\Services\PageUrls::route('status') }}">Back to the status page</a>
-      <p class="small">Changed your mind? <a href="{{ $subscriber->unsubscribeUrl() }}">Unsubscribe</a> — the same link sits at the bottom of every mail.</p>
+      <p class="small">Changed your mind? <a href="{{ $subscriber->unsubscribeUrl() }}">Unsubscribe</a>. The same link sits at the bottom of every mail.</p>
     @else
       <h1>Unsubscribed</h1>
       <p><span class="mail">{{ $subscriber->email }}</span> will get no more incident e-mails from

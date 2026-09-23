@@ -48,7 +48,7 @@ class UpdateController extends Controller
 
     protected function checkedMessage(array $check): string
     {
-        return 'Checked just now — '.match ($check['state']) {
+        return 'Checked just now: '.match ($check['state']) {
             'ok' => $this->updater->updateAvailable() ? "{$check['manifest']['version']} is available." : 'nothing new.',
             'no_release' => 'nothing new.',
             'unreachable' => 'the release server could not be reached.',
@@ -146,7 +146,7 @@ class UpdateController extends Controller
         // The session store came back with the database, so this session is gone
         // either way. Say it, rather than letting the next click land on a login
         // page with no explanation.
-        $message = $result['message'].' You have been signed out because the session store was restored too — sign in again with the password you had at the time of that backup.';
+        $message = $result['message'].' You have been signed out because the session store was restored too. Sign in again with the password you had at the time of that backup.';
         // Not Auth::logout(): that fires the logout event, whose audit line carries a
         // user_id that may no longer exist in the restored database.
         $request->session()->invalidate();

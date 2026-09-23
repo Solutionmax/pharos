@@ -9,7 +9,7 @@
     @push('deferred-forms')
       <form id="note-dismiss-{{ $id }}" method="POST" action="{{ route('admin.notes.dismiss', $id) }}" hidden>@csrf</form>
     @endpush
-    <button type="submit" form="note-dismiss-{{ $id }}" class="callout-x" aria-label="Got it — hide this note" title="Got it">&times;</button>
+    <button type="submit" form="note-dismiss-{{ $id }}" class="callout-x" aria-label="Got it, hide this note" title="Got it">&times;</button>
   @endif
   {{ $slot }}
 </div>

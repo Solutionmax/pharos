@@ -59,7 +59,7 @@ class SubscribeController extends Controller
 
             return redirect()->to(PageUrls::route('status'))
                 ->withInput()
-                ->withErrors(['email' => 'The confirmation e-mail could not be sent right now. Please try again later.']);
+                ->withErrors(['email' => 'The confirmation email could not be sent right now. Please try again later.']);
         }
 
         return $this->reply();

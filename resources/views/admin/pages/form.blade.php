@@ -69,7 +69,7 @@
 
       @if ($statusPage->archived_at)
         <label class="switchrow">
-          <span class="t"><strong>Reactivate this page</strong><span class="s">Uses one place under the current Multi-page licence.</span></span>
+          <span class="t"><strong>Reactivate this page</strong><span class="s">Uses one place under the current multi page licence.</span></span>
           <span class="check"><input name="reactivate" type="checkbox" value="1" @checked(old('reactivate'))> Reactivate</span>
         </label>
       @endif

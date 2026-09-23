@@ -26,7 +26,7 @@ class Sso
 
     public function providerName(): string
     {
-        return Setting::get('sso.provider_name') ?: 'single sign-on';
+        return Setting::get('sso.provider_name') ?: 'single sign on';
     }
 
     public function issuer(): ?string
@@ -137,7 +137,7 @@ class Sso
         ]);
 
         if (! $response->successful()) {
-            throw new \RuntimeException('The provider refused the sign-in.');
+            throw new \RuntimeException('The provider refused the sign in.');
         }
 
         $idToken = $response->json('id_token');
@@ -164,7 +164,7 @@ class Sso
         return match (true) {
             rtrim((string) ($claims['iss'] ?? ''), '/') !== rtrim($issuer, '/') => throw new \RuntimeException('The token came from a different issuer.'),
             ! in_array($this->clientId(), $audience, true) => throw new \RuntimeException('The token was not meant for this application.'),
-            ! hash_equals($nonce, (string) ($claims['nonce'] ?? '')) => throw new \RuntimeException('The token does not answer this sign-in.'),
+            ! hash_equals($nonce, (string) ($claims['nonce'] ?? '')) => throw new \RuntimeException('The token does not answer this sign in.'),
             ((int) ($claims['exp'] ?? 0)) < time() => throw new \RuntimeException('The token has expired.'),
             ! filter_var($claims['email'] ?? null, FILTER_VALIDATE_EMAIL) => throw new \RuntimeException('The provider sent no usable email address.'),
             // The email decides which account you become, so an unverified one

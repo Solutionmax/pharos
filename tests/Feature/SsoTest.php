@@ -334,7 +334,7 @@ class SsoTest extends TestCase
         Setting::put('sso.internal_hosts', '169.254.169.254');
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('link-local');
+        $this->expectExceptionMessage('link local');
 
         app(SafeHttp::class)->resolve('169.254.169.254');
     }

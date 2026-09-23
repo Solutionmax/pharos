@@ -15,7 +15,7 @@ class Branding
     /** Page modules, with their defaults. Everything on: a new install shows a full page. */
     public const MODULES = [
         'page.show_overall' => ['label' => 'Overall status banner', 'help' => 'The "All systems operational" headline.', 'default' => true],
-        'page.show_uptime' => ['label' => 'Uptime bar and percentage', 'help' => 'The 90-day bar under the headline.', 'default' => true],
+        'page.show_uptime' => ['label' => 'Uptime bar and percentage', 'help' => 'The 90 day bar under the headline.', 'default' => true],
         'page.show_services' => ['label' => 'Services list', 'help' => 'Components grouped into services.', 'default' => true],
         'page.show_component_uptime' => ['label' => 'Uptime bar per component', 'help' => 'The small bar next to each component.', 'default' => true],
         'page.show_incidents' => ['label' => 'Incident history', 'help' => 'Incidents grouped per day.', 'default' => true],
