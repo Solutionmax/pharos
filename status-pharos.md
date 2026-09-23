@@ -124,7 +124,7 @@ Bijgewerkt: 23 september 2026. Deze notitie beschrijft de multi-page uitbreiding
 
 ## Nog open
 
-0. **QA-ronde 23 sep:** zie `docs/qa-rapport-2026-09-23.md`. Fix `33f5de6` (Users-lijst 500 bij onbekende rol) staat nog NIET op `.166`: één bladebestand + `php artisan view:clear`.
+0. **QA-ronde 23 sep:** zie `docs/qa-rapport-2026-09-23.md`. Fix `33f5de6` (Users-lijst 500 bij onbekende rol) staat live op `.166` sinds 23 sep (hash gelijk, views geleegd).
 
 1. **Gebruikersacceptatie:** laatste rollen, tokenkeuzes en filters zelf testen op de interne installatie. Eventuele workflow-/vormgevingsfeedback verwerken.
 2. **Releasevoorbereiding:** pas na akkoord versie, changelog, release-instructies en definitieve GitHub-publicatie voorbereiden. Er is nog niets gepusht.

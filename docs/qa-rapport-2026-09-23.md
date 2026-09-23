@@ -69,7 +69,7 @@ Doel: de interne installatie `http://192.168.18.166:8130` (CT 106) volledig door
 
 ## Nog open
 
-1. **Fix nog niet live op `.166`.** De deploy werd door de permissie-check geblokkeerd. Het gaat om één bestand: `resources/views/admin/users.blade.php` kopiëren naar `/root/pharos-fresh` op CT 106, daarna `php artisan view:clear`. Geen migratie en geen restart nodig.
+1. **Fix live op `.166`** (23 sep): bladebestand gekopieerd, `view:clear` gedraaid, hash gelijk aan de repo.
 2. Aanbevelingen, geen bugs:
    - HSTS toevoegen zodra de app achter TLS draait.
    - Een eigen domein wordt niet met DNS geverifieerd; het is een checkbox, en een Page admin mag het domein zetten.
