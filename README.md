@@ -359,9 +359,9 @@ short contributor licence agreement that makes the dual licence possible.
 | | |
 |---|---|
 | **Free** | Every feature of the core, 1 status page, a "Powered by Pharos" footer credit. |
-| **Brand pack** | € 49, one time. Your own logo (light and dark), favicon, your logo in email and editable mail templates, the footer credit removed. Keeps working forever. 1 status page. |
-| **Supported** | € 119 per year. The Brand pack included and yours to keep, support by email, one click signed updates, and up to 5 status pages, each with its own components, subscribers, branding, email, integrations and user roles per page. |
-| **Commercial licence** | From € 599 per year. Everything in Supported, unlimited status pages, and the AGPL publication requirement lifted. |
+| **Brand pack** | € 79, one time. Your own logo (light and dark), favicon, your logo in email and editable mail templates, the footer credit removed. Keeps working forever. 1 status page. |
+| **Supported** | € 149 per year. The Brand pack included and yours to keep, support by email, and up to 5 status pages, each with its own components, subscribers, branding, email, integrations and user roles per page. |
+| **Commercial licence** | From € 599 per year, quoted individually. Everything in Supported, unlimited status pages, and the AGPL publication requirement lifted. |
 
 If a yearly key lapses, the branding stays and existing status pages keep running, but no
 new or reactivated pages beyond 1 can be added.

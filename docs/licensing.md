@@ -28,15 +28,14 @@ longer running your build.
 | Plan | Price | What the key carries | Pages |
 |---|---|---|---|
 | Free | none | no key | 1 |
-| Brand pack | € 49, one time | `brand_pack`, no `expires_at` | 1 |
-| Supported | € 119 per year | `brand_pack`, `multi_pages`, `limits.status_pages` = 5, `expires_at` one year out | up to 5 |
-| Commercial licence | from € 599 per year | `brand_pack`, `multi_pages`, no page limit, `expires_at` one year out | unlimited |
+| Brand pack | € 79, one time | `brand_pack`, no `expires_at` | 1 |
+| Supported | € 149 per year | `brand_pack`, `multi_pages`, `limits.status_pages` = 5, `expires_at` one year out | up to 5 |
+| Commercial licence | from € 599 per year, by quote | `brand_pack`, `multi_pages`, no page limit, `expires_at` one year out | unlimited |
 
 - **Free**: every feature of the core, 1 status page, the "Powered by Pharos" footer credit.
 - **Brand pack**: own logo (light and dark), favicon, logo in email and editable mail
   templates, footer credit removed. Keeps working forever.
-- **Supported**: the Brand pack included and kept, email support, one click signed updates,
-  and up to 5 status pages, each with its own components, subscribers, branding, email,
+- **Supported**: the Brand pack included and kept, email support, and up to 5 status pages, each with its own components, subscribers, branding, email,
   integrations and user roles per page.
 - **Commercial licence**: everything in Supported, unlimited status pages, and the AGPL
   publication duty lifted (that part is the written agreement, not the key).
@@ -54,9 +53,9 @@ php artisan pharos:license:sign customer@example.net \
 
 For a commercial key, leave `--status-pages` off (no limit means unlimited).
 
-The portal plans (`/account/buy/brand-pack`, `/account/buy/supported`,
-`/account/buy/commercial`) must sign keys with these features and limits; prices stay as
-Stripe price IDs in the portal config.
+The portal plans (`/account/buy/brand-pack`, `/account/buy/supported`) must sign keys with
+these features and limits; prices stay as Stripe price IDs in the portal config. The
+commercial licence is quoted individually and its key is signed by hand.
 
 ## The keys
 

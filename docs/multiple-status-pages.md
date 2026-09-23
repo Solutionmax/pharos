@@ -170,9 +170,9 @@ removal or downgrade blocks creation/reactivation above the current limit. Exist
 pages, incident operations, monitoring and subscriptions continue; no data is deleted.
 Brand Pack retains the existing perpetual-feature rules.
 
-Prices in Stripe are unchanged (Brand pack € 49 one time, Supported € 119 per year,
-Commercial licence from € 599 per year). The sales portal must sign Supported and
-Commercial keys with the features and limits above.
+Prices in Stripe are unchanged (Brand pack € 79 one time, Supported € 149 per year;
+the Commercial licence, from € 599 per year, is quoted individually). Supported keys from
+the sales portal and commercial keys signed by hand must carry the features and limits above.
 
 ## Upgrade and recovery
 
