@@ -7,6 +7,8 @@ use App\Enums\UserRole;
 use App\Models\Component;
 use App\Models\ComponentGroup;
 use App\Models\Incident;
+use App\Models\IncidentUpdate;
+use App\Models\Maintenance;
 use App\Models\StatusPage;
 use App\Models\User;
 use App\Services\PageContext;
@@ -36,9 +38,36 @@ class SearchTest extends TestCase
             app(PageContext::class)->run($page->id, function () use ($page) {
                 ComponentGroup::create(['name' => 'relay services '.$page->slug]);
                 Component::create(['name' => 'relay '.$page->slug]);
-                Incident::create(['name' => 'relay outage '.$page->slug, 'status' => IncidentStatus::Investigating, 'occurred_at' => now()]);
+                $incident = Incident::create(['name' => 'relay outage '.$page->slug, 'status' => IncidentStatus::Investigating, 'occurred_at' => now()->subHours(2)]);
+                IncidentUpdate::create(['incident_id' => $incident->id, 'status' => IncidentStatus::Investigating, 'message' => 'internal note about '.$page->slug]);
+                Maintenance::create([
+                    'title' => 'relay window '.$page->slug, 'message' => 'maintenance note about '.$page->slug,
+                    'starts_at' => now()->addDay(), 'ends_at' => now()->addDay()->addHours(2), 'announce_minutes' => 0,
+                ]);
             });
         }
+    }
+
+    protected function member(StatusPage $page, string $role): User
+    {
+        $user = User::factory()->create(['role' => UserRole::User]);
+        $user->statusPages()->attach($page->id, ['role' => $role]);
+
+        return $user;
+    }
+
+    /** @return list<array<string, mixed>> */
+    protected function results(User $user, string $term, ?StatusPage $page = null): array
+    {
+        return $this->actingAs($user)
+            ->getJson('/admin/search?q='.urlencode($term).($page ? '&page='.$page->id : ''))
+            ->assertOk()->json('results');
+    }
+
+    /** @return list<array<string, mixed>> */
+    protected function ofType(array $results, string $type): array
+    {
+        return array_values(array_filter($results, fn (array $r) => $r['type'] === $type));
     }
 
     /** @return list<string> */
@@ -141,5 +170,171 @@ class SearchTest extends TestCase
             ->assertSee('role="dialog"', false)
             ->assertSee('data-search-open', false)
             ->assertSee(route('admin.search'), false);
+    }
+
+    public function test_rows_carry_their_group_page_and_status_in_words(): void
+    {
+        $viewer = $this->member($this->harbor, 'viewer');
+
+        $component = $this->ofType($this->results($viewer, 'relay harbor'), 'Component')[0];
+        $this->assertSame('Components', $component['group']);
+        $this->assertSame('components', $component['icon']);
+        $this->assertSame(['label' => 'Operational', 'tone' => 'ok'], $component['status']);
+        $this->assertSame('Harbor', $component['page']['name']);
+        $this->assertSame('Open', $component['hint']);
+
+        $incident = $this->ofType($this->results($viewer, 'outage'), 'Incident')[0];
+        $this->assertSame(['label' => 'Investigating', 'tone' => 'b'], $incident['status']);
+        $this->assertStringStartsWith('Started 2 hours ago', $incident['meta']);
+    }
+
+    public function test_results_are_grouped_and_the_current_page_comes_first(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+        User::factory()->create(['name' => 'Relay operator']);
+
+        $groups = array_values(array_unique(array_column($this->results($admin, 'relay'), 'group')));
+        $this->assertSame(['Components', 'Services', 'Incidents', 'Maintenance', 'Users'], array_values(array_intersect($groups, ['Components', 'Services', 'Incidents', 'Maintenance', 'Users'])));
+
+        $this->assertSame('relay secret', $this->ofType($this->results($admin, 'relay', $this->secret), 'Component')[0]['label']);
+        $this->assertTrue($this->ofType($this->results($admin, 'relay', $this->secret), 'Component')[0]['current']);
+        $this->assertSame('relay harbor', $this->ofType($this->results($admin, 'relay', $this->harbor), 'Component')[0]['label']);
+    }
+
+    public function test_a_page_the_user_cannot_open_is_ignored_as_the_current_page(): void
+    {
+        $editor = $this->member($this->harbor, 'editor');
+
+        $results = $this->results($editor, 'relay', $this->secret);
+
+        $this->assertNotEmpty($results);
+        foreach ($results as $row) {
+            $this->assertStringNotContainsString('secret', strtolower($row['label']));
+            $this->assertStringNotContainsString('/pages/'.$this->secret->id.'/', $row['url']);
+        }
+        $report = collect($this->results($editor, 'report incident', $this->secret))->firstWhere('label', 'Report an incident');
+        $this->assertStringEndsWith('/admin/pages/'.$this->harbor->id.'/incidents/create', $report['url']);
+    }
+
+    public function test_maintenance_is_found_per_page_and_opens_by_role(): void
+    {
+        $viewer = $this->member($this->harbor, 'viewer');
+        $editor = $this->member($this->harbor, 'editor');
+
+        $viewerRows = $this->ofType($this->results($viewer, 'relay window'), 'Maintenance');
+        $this->assertSame(['relay window harbor'], array_column($viewerRows, 'label'));
+        $this->assertStringEndsWith('/admin/pages/'.$this->harbor->id.'/maintenance', $viewerRows[0]['url']);
+        $this->assertSame(['label' => 'Scheduled', 'tone' => 'm'], $viewerRows[0]['status']);
+        $this->assertSame([], $this->ofType($this->results($viewer, 'window secret'), 'Maintenance'));
+
+        $editorRow = $this->ofType($this->results($editor, 'relay window'), 'Maintenance')[0];
+        $this->assertMatchesRegularExpression('#/admin/pages/'.$this->harbor->id.'/maintenance/\d+/edit$#', $editorRow['url']);
+        $this->actingAs($editor)->get($editorRow['url'])->assertOk();
+
+        // A finished window cannot be edited, so even an editor lands on the list.
+        app(PageContext::class)->run($this->harbor->id, fn () => Maintenance::query()->update(['cancelled_at' => now()]));
+        $cancelled = $this->ofType($this->results($editor, 'relay window'), 'Maintenance')[0];
+        $this->assertStringEndsWith('/maintenance', $cancelled['url']);
+        $this->assertSame('off', $cancelled['status']['tone']);
+    }
+
+    public function test_messages_behind_incidents_and_maintenance_never_leave_the_server(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+        $body = $this->actingAs($admin)->getJson('/admin/search?q=relay')->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('internal note', $body);
+        $this->assertStringNotContainsString('maintenance note', $body);
+        $this->assertStringNotContainsString('note about', $this->actingAs($admin)->getJson('/admin/search?q=note')->getContent());
+    }
+
+    public function test_screens_are_found_by_name_and_keyword_exactly_as_the_menu_offers_them(): void
+    {
+        $pageAdmin = $this->member($this->harbor, 'admin');
+        $viewer = $this->member($this->harbor, 'viewer');
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+        $tokens = collect($this->ofType($this->results($pageAdmin, 'tokens'), 'Screen'))->firstWhere('label', 'API tokens');
+        $this->assertNotNull($tokens);
+        $this->assertStringEndsWith('/admin/pages/'.$this->harbor->id.'/integrations/tokens', $tokens['url']);
+        $this->actingAs($pageAdmin)->get($tokens['url'])->assertOk();
+        $delivery = collect($this->ofType($this->results($pageAdmin, 'smtp'), 'Screen'))->firstWhere('label', 'Delivery');
+        $this->assertNotNull($delivery);
+        $this->actingAs($pageAdmin)->get($delivery['url'])->assertOk();
+
+        // What the sidebar hides from a read only member, search hides too.
+        $this->assertNotContains('API tokens', array_column($this->ofType($this->results($viewer, 'tokens'), 'Screen'), 'label'));
+        $this->assertSame([], $this->ofType($this->results($viewer, 'smtp'), 'Screen'));
+        $this->assertSame([], $this->ofType($this->results($pageAdmin, 'audit'), 'Screen'));
+        $this->assertSame(['Audit log'], array_column($this->ofType($this->results($admin, 'audit'), 'Screen'), 'label'));
+        $this->assertContains('Your profile', array_column($this->ofType($this->results($viewer, 'password'), 'Screen'), 'label'));
+
+        foreach ($this->ofType($this->results($viewer, 'in'), 'Screen') as $screen) {
+            $this->actingAs($viewer)->get($screen['url'])->assertOk();
+        }
+    }
+
+    public function test_quick_actions_follow_the_page_role(): void
+    {
+        $viewer = $this->member($this->harbor, 'viewer');
+        $editor = $this->member($this->harbor, 'editor');
+        $pageAdmin = $this->member($this->harbor, 'admin');
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+        $this->assertSame([], $this->ofType($this->results($viewer, 'report'), 'Action'));
+        $this->assertSame([], $this->ofType($this->results($viewer, 'schedule maintenance'), 'Action'));
+        $this->assertSame([], $this->ofType($this->results($viewer, 'add a component'), 'Action'));
+
+        foreach (['report' => 'Report an incident', 'schedule' => 'Schedule maintenance', 'add component' => 'Add a component'] as $term => $label) {
+            $action = collect($this->ofType($this->results($editor, $term), 'Action'))->firstWhere('label', $label);
+            $this->assertNotNull($action, $label);
+            $this->actingAs($editor)->get($action['url'])->assertOk();
+        }
+
+        $this->assertSame([], $this->ofType($this->results($pageAdmin, 'invite'), 'Action'));
+        $invite = $this->ofType($this->results($admin, 'invite'), 'Action');
+        $this->assertSame('Invite someone', $invite[0]['label']);
+        $this->assertStringEndsWith('/admin/users#user-add', $invite[0]['url']);
+    }
+
+    public function test_the_empty_palette_offers_only_what_the_user_may_do(): void
+    {
+        $third = StatusPage::create(['name' => 'Third', 'slug' => 'third', 'is_published' => true]);
+        $viewer = $this->member($this->harbor, 'viewer');
+        $viewer->statusPages()->attach($third->id, ['role' => 'viewer']);
+        $editor = $this->member($this->harbor, 'editor');
+
+        $viewerPage = $this->actingAs($viewer)->get('/admin/pages/'.$this->harbor->id.'/overview')->assertOk();
+        $viewerPage->assertSee('data-page="'.$this->harbor->id.'"', false)
+            ->assertSee('data-search-start', false)
+            ->assertSee('Switch to Third')
+            ->assertDontSee('Switch to Secret customer')
+            ->assertDontSee('Report an incident', false)
+            ->assertDontSee('\/incidents\/create', false)
+            ->assertDontSee('Invite someone');
+
+        $this->actingAs($editor)->get('/admin/pages/'.$this->harbor->id.'/overview')->assertOk()
+            ->assertSee('Report an incident')
+            ->assertSee('Schedule maintenance')
+            ->assertSee('Add a component')
+            ->assertDontSee('Invite someone')
+            ->assertDontSee('Switch to Secret customer');
+
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+        $this->actingAs($admin)->get('/admin/pages/'.$this->harbor->id.'/overview')->assertOk()
+            ->assertSee('Invite someone')
+            ->assertSee('Switch to Secret customer');
+    }
+
+    public function test_search_stays_throttled(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+        $this->actingAs($admin);
+
+        for ($i = 0; $i < 60; $i++) {
+            $this->getJson('/admin/search?q=relay'.($i % 3))->assertOk();
+        }
+        $this->getJson('/admin/search?q=relay')->assertStatus(429);
     }
 }
