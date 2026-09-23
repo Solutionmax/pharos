@@ -9,6 +9,7 @@ use App\Models\Check;
 use App\Models\CheckResult;
 use App\Models\Incident;
 use App\Models\IncidentUpdate;
+use App\Models\Maintenance;
 use App\Models\UptimeDay;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -119,6 +120,12 @@ class CheckRunner
     protected function applyStatus(Check $check, ProbeResult $result, \DateTimeInterface $now): void
     {
         $component = $check->component;
+
+        // Planned work: a probe failing inside a running maintenance window is
+        // expected, and must neither flip the component nor open an incident.
+        if (! $result->ok && $component->status === ComponentStatus::UnderMaintenance && Maintenance::holds($component->id)) {
+            return;
+        }
 
         if (! $result->ok && $check->consecutive_failures >= $check->retries) {
             if ($component->status !== ComponentStatus::MajorOutage) {

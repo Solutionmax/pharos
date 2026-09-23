@@ -41,14 +41,14 @@ class AdminTest extends TestCase
     {
         $this->actingAs($this->user)->get('/admin/components')
             ->assertOk()
-            ->assertDontSee('Bars cover 30 days')
+            ->assertDontSee('Cells cover 30 days')
             ->assertSee('Nothing on the status page yet');
 
         Component::create(['name' => 'web-01', 'status' => ComponentStatus::Operational]);
 
         $this->actingAs($this->user)->get('/admin/components')
             ->assertOk()
-            ->assertSee('Bars cover 30 days')
+            ->assertSee('Cells cover 30 days')
             ->assertSee('uptime is measured over 90', false);
     }
 
@@ -61,7 +61,7 @@ class AdminTest extends TestCase
             ->assertOk()
             ->assertSee('data-tip="'.now()->format('j M'), false)
             ->assertDontSee('title="'.now()->format('j M'), false)
-            ->assertSee('class="strip" role="img" tabindex="0" aria-label="web-01, last 30 days:', false)
+            ->assertSee('class="op-mini" role="img" tabindex="0" aria-label="web-01, last 30 days:', false)
             ->assertSee('class="daytip" role="tooltip"', false);
     }
 
@@ -594,7 +594,7 @@ class AdminTest extends TestCase
 
         $this->actingAs($this->user)->get("/admin/components/{$component->id}/edit")->assertOk()
             ->assertSee('Recent checks')
-            ->assertSee('No runs yet — the first one lands within a minute once the cron line is in place.');
+            ->assertSee('No runs yet. The first one lands within a minute once the cron line is in place.');
     }
 
     public function test_a_manual_component_has_no_recent_checks_panel(): void

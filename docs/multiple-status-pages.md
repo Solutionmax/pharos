@@ -87,20 +87,39 @@ No extra cron entry is needed. Outgoing webhook queues also retain their page ow
 ## Integrations and delivery history
 
 The Integrations and Email Templates screens show the selected page name, tag and URL.
+
+Integrations is split into four page scoped screens. **Send out** adds and lists
+notification destinations (Slack, Microsoft Teams, Discord, Telegram, Signal and Generic
+JSON) with their health, and lets editors choose per destination which moments are sent:
+incident opened, update posted, resolved and maintenance. Destinations saved before this
+choice existed receive every event. **Bring in** gives copy ready settings for n8n,
+Uptime Kuma (`POST /api/v1/integrations/kuma/{component}`), scripts and heartbeats.
+**API tokens** issues and revokes page tokens (page administrators). **Delivery log**
+shows counters and every delivery, filterable by destination, channel and result. The old
+`/admin/integrations` address redirects to the matching screen.
+
 Notification destinations (including Slack), signing secrets, tokens, heartbeats and
 subscriber templates belong to that page only. Connecting Slack on the default page
 does not connect it on another page.
 
-Delivery history, notification destinations and heartbeat lists use five records per
-page; token lists use ten. Each list has its own pagination parameter, retaining the
-selected status page and the other lists' positions. Older records remain available;
-pagination does not delete delivery history. No external test message is sent by viewing
-these lists or assigning users.
+Destination and heartbeat lists use five records per page, the delivery log ten and
+token lists ten. Each list has its own pagination parameter. Older records remain
+available; pagination does not delete delivery history. No external test message is
+sent by viewing these lists or assigning users.
 
-Delivery history can be filtered by destination, channel and delivery result. Delivered
-means a successful send; pending includes scheduled retries; failed means delivery
-stopped after its retry limit. Filters stay selected while browsing older results.
+Delivered means a successful send; retrying includes scheduled retries; failed means
+delivery stopped after its retry limit. Filters stay selected while browsing older results.
 Every result and destination choice remains limited to the selected status page.
+
+## Scheduled maintenance
+
+Editors schedule maintenance per page: title, message, start, end, affected components
+and when to announce it (default 24 hours before). The existing minute scheduler
+(`pharos:maintenance`) announces the window to confirmed subscribers (only when
+subscriptions are on and the page is published and not archived) and to destinations that
+chose Maintenance, sets the components to Under maintenance at the start and restores their
+previous status at the end unless someone changed it meanwhile. Cancelling stops the window
+and restores a running one. The public page shows upcoming and ongoing maintenance.
 
 ## API tokens
 

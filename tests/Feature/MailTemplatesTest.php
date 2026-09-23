@@ -70,9 +70,9 @@ class MailTemplatesTest extends TestCase
 
     /* ------------------------------------------------------------------ registry */
 
-    public function test_the_registry_knows_four_templates_and_their_tags(): void
+    public function test_the_registry_knows_five_templates_and_their_tags(): void
     {
-        $this->assertSame(['subscribe_confirm', 'incident_opened', 'incident_updated', 'incident_resolved'], MailTemplates::keys());
+        $this->assertSame(['subscribe_confirm', 'incident_opened', 'incident_updated', 'incident_resolved', 'maintenance_scheduled'], MailTemplates::keys());
         $this->assertSame(['{brand}', '{link}', '{hours}', '{name}'], MailTemplates::tags('subscribe_confirm'));
 
         foreach (['incident_opened', 'incident_updated', 'incident_resolved'] as $key) {

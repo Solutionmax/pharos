@@ -6,6 +6,7 @@ use App\Enums\ComponentStatus;
 use App\Models\Component;
 use App\Models\ComponentGroup;
 use App\Models\Incident;
+use App\Models\Maintenance;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Branding;
@@ -140,6 +141,8 @@ class StatusPageController extends Controller
             'percentages' => $percentages,
             'overall' => $overall,
             'worst' => $worst,
+            // Planned work of this page that is still to come or under way.
+            'maintenances' => Maintenance::visible()->with('components')->orderBy('starts_at')->get(),
             // An incident that is still open when it falls out of the history window
             // is pinned above the days: a component can stay red for longer than the
             // window, and the page must never show a red service without the

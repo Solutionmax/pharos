@@ -5,7 +5,7 @@
 @if ($versionPinned)
   <x-note id="updates.pinned" warn>
     <b>The version is pinned in .env.</b> <span class="mono">PHAROS_VERSION</span> is set there, and
-    an update never replaces <span class="mono">.env</span> — so after installing a release this
+    an update never replaces <span class="mono">.env</span>, so after installing a release this
     screen would keep reporting the old version and offer the same update again. Remove that line;
     the version then comes from the code, which is what an update actually replaces.
   </x-note>
@@ -24,21 +24,21 @@
   $stateText = match ($state) {
     'no_release' => 'No release published yet',
     'unreachable' => 'Release server not reachable',
-    'invalid' => 'Manifest refused — not signed by our key',
+    'invalid' => 'Manifest refused: not signed by our key',
     'disabled' => 'Checking is switched off',
     default => 'No release information',
   };
 @endphp
 
-<div class="tiles">
-  <div class="tile {{ $available ? 'warn' : ($confirmedCurrent ? 'good' : '') }}">
+<div class="op-kpis">
+  <div class="op-kpi {{ $available ? 'warn' : ($confirmedCurrent ? 'good' : '') }}">
     <span class="k">Installed</span>
     <span class="v">{{ $current }}</span>
     <span class="n">{{ $available ? 'An update is available' : ($confirmedCurrent ? 'Up to date' : 'No newer release known') }}</span>
   </div>
-  <div class="tile">
+  <div class="op-kpi">
     <span class="k">Available</span>
-    <span class="v">{{ $state === 'ok' ? $latest['version'] : '—' }}</span>
+    <span class="v">{{ $state === 'ok' ? $latest['version'] : 'Unknown' }}</span>
     <span class="n">
       @if ($state === 'ok')
         {{ isset($latest['released_at']) ? 'Released '.$latest['released_at'] : 'Release date unknown' }}
@@ -47,7 +47,7 @@
       @endif
     </span>
   </div>
-  <div class="tile">
+  <div class="op-kpi">
     <span class="k">How this install updates</span>
     <span class="v" style="font-size:19px">{{ $managed ? 'From the host' : ($writable ? 'By itself' : 'By hand') }}</span>
     <span class="n">{{ $managed ? 'Docker image, pulled outside the app' : ($writable ? 'Downloads and replaces its own files' : 'The directory is not writable') }}@if ($state !== 'disabled' && $manifestHost) · Checks {{ $manifestHost }} every hour @endif</span>
@@ -63,16 +63,16 @@
 </p>
 
 @if ($available && ($latest['notes'] ?? false))
-  <div class="panel">
-    <div class="panel-hd"><h3>What is in {{ $latest['version'] }}</h3></div>
+  <div class="op-card" style="margin-bottom:18px">
+    <header><h3>What is in {{ $latest['version'] }}</h3></header>
     {{-- Same rules as an incident update: Markdown in, HTML escaped, no javascript: links. --}}
     <div class="panel-bd"><div class="md note">{!! Str::markdown($latest['notes'], ['html_input' => 'escape', 'allow_unsafe_links' => false]) !!}</div></div>
   </div>
 @endif
 
-<div class="panel">
-  <div class="panel-hd"><h3>Install</h3></div>
-  <div class="panel-bd">
+<section class="op-card" style="margin-bottom:18px">
+  <header><h3>Install</h3>@if ($available)<span class="ix-state w" style="margin-left:auto">{{ $latest['version'] }} available</span>@else<span class="ix-state ok" style="margin-left:auto">Nothing to install</span>@endif</header>
+  <div class="bd" style="display:flex;flex-direction:column;gap:14px">
     @if (! $available)
       <p class="note">Nothing to do. Pharos checks once an hour, and you can force it with <b>Check again</b>.</p>
     @elseif ($managed)
@@ -88,7 +88,7 @@
         The archive is downloaded, checked against a signature made with our key, and only then
         unpacked. Your <b>.env</b>, database and uploads are left alone, and the version you are
         running now is copied to <span class="mono">storage/app/backups</span> first.
-        @if ($sqlite) Your SQLite database is copied into the backup as well. @else Your database is <b>not</b> in that backup — take a dump before installing, because the update runs migrations. @endif
+        @if ($sqlite) Your SQLite database is copied into the backup as well. @else Your database is <b>not</b> in that backup: take a dump before installing, because the update runs migrations. @endif
       </x-note>
       <form method="POST" action="{{ route('admin.updates.apply') }}"
             data-job="update" data-progress="{{ route('admin.updates.backup.progress') }}"
@@ -108,7 +108,7 @@
 php artisan pharos:update</pre>
     @endif
   </div>
-</div>
+</section>
 
 <x-note id="updates.safe" style="margin-bottom:16px">
   Every release manifest is signed with the key that also signs licences, with a different purpose
@@ -117,17 +117,17 @@ php artisan pharos:update</pre>
   <b>no news</b>, never as an error on your status page.
 </x-note>
 
-<div class="panel">
-  <div class="panel-hd">
-    <h3>Backups kept</h3><span class="hint mono">storage/app/backups</span>
+<section class="op-card" aria-labelledby="backups-title">
+  <header>
+    <h3 id="backups-title">Backups kept</h3><span class="hint mono">storage/app/backups</span>
     <form method="POST" action="{{ route('admin.updates.backup') }}" id="backup-form" data-job="backup" data-progress="{{ route('admin.updates.backup.progress') }}">
       @csrf
-      <button class="btn" type="submit">Back up now</button>
+      <button class="btn op-sm" type="submit">Back up now</button>
     </form>
-  </div>
+  </header>
   @if ($backups)
     <div class="scroll">
-      <table>
+      <table class="op-table">
         <thead><tr><th>Version</th><th>Taken</th><th>Size</th><th></th></tr></thead>
         <tbody>
           @foreach ($backups as $backup)
@@ -141,7 +141,7 @@ php artisan pharos:update</pre>
                   <form method="POST" action="{{ route('admin.updates.backup.rollback', $backup['name']) }}"
                         data-job="rollback" data-progress="{{ route('admin.updates.backup.progress') }}" data-after="{{ route('admin.login', ['after' => 'rollback']) }}"
                         data-confirm-title="Roll back to {{ $backup['version'] }}?"
-                        data-confirm="Pharos replaces its own files with the copy taken on {{ $backup['created_at']->format('j M Y H:i') }} and, on SQLite, puts that copy of the database back too — everything entered since then is lost from the app, but not from the safety backup Pharos makes first. The page is briefly unavailable."
+                        data-confirm="Pharos replaces its own files with the copy taken on {{ $backup['created_at']->format('j M Y H:i') }} and, on SQLite, puts that copy of the database back too. Everything entered since then is lost from the app, but not from the safety backup Pharos makes first. The page is briefly unavailable."
                         data-confirm-action="Roll back">
                     @csrf
                     <button type="submit">Roll back</button>
@@ -162,20 +162,20 @@ php artisan pharos:update</pre>
     </div>
   @endif
   @if (! $backups)
-    <div class="panel-bd">
-      <p class="note">No backups yet — the first update creates one, or press <b>Back up now</b>.</p>
+    <div class="bd">
+      <p class="note">No backups yet. The first update creates one, or press <b>Back up now</b>.</p>
     </div>
   @endif
-</div>
+</section>
 
-<x-note id="updates.backups">
-  @if ($sqlite)The SQLite database is copied into the backup, so putting a folder back puts the data of that moment back too. @else Your database is not in these backups — dump it before an update; the update runs migrations. @endif
+<x-note id="updates.backups" style="margin-top:18px">
+  @if ($sqlite)The SQLite database is copied into the backup, so putting a folder back puts the data of that moment back too. @else Your database is not in these backups: dump it before an update; the update runs migrations. @endif
   Each update copies the version it replaces into <span class="mono">storage/app/backups</span>
-  before writing anything. Pharos keeps the newest {{ \App\Services\InstallSettings::keepBackups() ?: 'all' }} (set under <a href="{{ route('admin.settings') }}">Settings → General</a>); older ones go when a new one is made. <b>Roll back</b> puts a folder back — after copying what it replaces into a
+  before writing anything. Pharos keeps the newest {{ \App\Services\InstallSettings::keepBackups() ?: 'all' }} (set under <a href="{{ route('admin.settings') }}">Settings → General</a>); older ones go when a new one is made. <b>Roll back</b> puts a folder back, after copying what it replaces into a
   backup of its own, so a rollback can be undone too.
 </x-note>
 
-{{-- One dialog for the three jobs that rewrite the install — update, backup, rollback.
+{{-- One dialog for the three jobs that rewrite the install: update, backup, rollback.
      Each shows its steps as the server reports them; without JS the forms post as before. --}}
 <dialog class="modal job" id="job-dialog" aria-labelledby="job-title">
   <div class="panel">
