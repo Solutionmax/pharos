@@ -133,7 +133,7 @@ class TeamAndIntegrationsTest extends TestCase
     {
         $response = $this->actingAs($this->user)
             ->post('/admin/integrations/tokens', ['name' => 'n8n'])
-            ->assertRedirect('/admin/integrations');
+            ->assertRedirect('/admin/integrations/tokens');
 
         $plain = session('new_token');
         $this->assertNotNull($plain);
@@ -146,8 +146,8 @@ class TeamAndIntegrationsTest extends TestCase
 
         // Flash data survives exactly one request: the redirect target shows it,
         // and a reload no longer does.
-        $this->actingAs($this->user)->get('/admin/integrations')->assertSee($plain);
-        $this->actingAs($this->user)->get('/admin/integrations')->assertDontSee($plain);
+        $this->actingAs($this->user)->get('/admin/integrations/tokens')->assertSee($plain);
+        $this->actingAs($this->user)->get('/admin/integrations/tokens')->assertDontSee($plain);
     }
 
     public function test_revoking_a_token_stops_it_working(): void
@@ -300,7 +300,7 @@ class TeamAndIntegrationsTest extends TestCase
 
         $this->actingAs($this->user)
             ->post("/admin/integrations/notifications/{$endpoint->id}/test")
-            ->assertRedirect('/admin/integrations');
+            ->assertRedirect('/admin/integrations/send-out');
 
         $endpoint->refresh();
         $this->assertSame(200, $endpoint->last_status);
@@ -463,7 +463,7 @@ class TeamAndIntegrationsTest extends TestCase
             'target' => 'hb_abcdefghijklmnop',
         ]);
 
-        $this->actingAs($this->user)->get('/admin/integrations')
+        $this->actingAs($this->user)->get('/admin/integrations/bring-in')
             ->assertOk()
             ->assertSee('Backups')
             ->assertSee('/api/v1/heartbeat/hb_abcdefghijklmnop');

@@ -77,6 +77,24 @@ class MailTemplates
             'subject' => '[{brand}] {incident} — {status}',
             'body' => self::INCIDENT_BODY,
         ],
+        'maintenance_scheduled' => [
+            'label' => 'Maintenance scheduled',
+            'tags' => ['brand', 'maintenance', 'message', 'components', 'starts', 'ends', 'link', 'unsubscribe', 'name'],
+            'subject' => '[{brand}] Scheduled maintenance: {maintenance}',
+            'body' => <<<'MD'
+            Scheduled maintenance
+
+            # {maintenance}
+
+            From **{starts}** until **{ends}**
+
+            Affects **{components}**
+
+            > {message}
+
+            [View status page]({link})
+            MD,
+        ],
     ];
 
     /** @return list<string> */
@@ -232,6 +250,23 @@ class MailTemplates
                 'link' => url('/subscribe/confirm/preview'),
                 'hours' => Subscriber::CONFIRM_HOURS,
                 'name' => $name,
+            ];
+        }
+
+        if ($key === 'maintenance_scheduled') {
+            $start = Clock::now()->addDay()->setTime(22, 0);
+
+            return [
+                'brand' => self::frame()['brand'],
+                'maintenance' => 'Database upgrade',
+                'message' => "We upgrade the database cluster. **Expect short interruptions** of up to five minutes.\n\n- Websites stay online\n- Mail is queued, not lost",
+                'components' => 'Database, Control panel',
+                'starts' => $start->format('j F Y, H:i'),
+                'ends' => $start->copy()->addHours(2)->format('j F Y, H:i'),
+                'link' => PageUrls::route('status'),
+                'unsubscribe' => url('/unsubscribe/preview'),
+                'name' => $name,
+                'tone' => 'w',
             ];
         }
 
