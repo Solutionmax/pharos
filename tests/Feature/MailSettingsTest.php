@@ -86,7 +86,7 @@ class MailSettingsTest extends TestCase
     {
         $this->actingAs($this->admin)->post('/admin/settings/mail-test')
             ->assertRedirect('/admin/settings?tab=mail')
-            ->assertSessionHas('status', 'Test e-mail sent to raymon@example.net.');
+            ->assertSessionHas('status', 'Test email sent to raymon@example.net.');
 
         Mail::assertSent(TestMail::class, fn (TestMail $m) => $m->hasTo('raymon@example.net')
             && str_contains($m->render(), 'Mail works'));
@@ -100,14 +100,14 @@ class MailSettingsTest extends TestCase
 
         $this->actingAs($this->admin)->post('/admin/settings/mail-test')
             ->assertRedirect('/admin/settings?tab=mail')
-            ->assertSessionHasErrors(['mail' => 'Test e-mail failed: Connection refused [smtp.example.net:587]']);
+            ->assertSessionHasErrors(['mail' => 'Test email failed: Connection refused [smtp.example.net:587]']);
 
         // Setting the error is not the same as showing it: the Mail tab must
         // actually render it, or a failed test looks identical to a working one.
         // (followingRedirects() so the array session driver used in tests
         // carries the flashed error into the page the redirect lands on.)
         $this->actingAs($this->admin)->followingRedirects()->post('/admin/settings/mail-test')
-            ->assertSee('Test e-mail failed: Connection refused [smtp.example.net:587]');
+            ->assertSee('Test email failed: Connection refused [smtp.example.net:587]');
 
         $this->assertSame(0, AuditEntry::where('action', 'mail.test')->count());
     }

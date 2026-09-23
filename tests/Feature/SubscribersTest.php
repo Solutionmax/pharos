@@ -144,7 +144,7 @@ class SubscribersTest extends TestCase
 
         $this->from('/')->post('/subscribe', ['email' => 'someone@example.com'])
             ->assertRedirect('/')
-            ->assertSessionHasErrors(['email' => 'The confirmation e-mail could not be sent right now. Please try again later.']);
+            ->assertSessionHasErrors(['email' => 'The confirmation email could not be sent right now. Please try again later.']);
 
         // The address is kept pending: the next attempt, once mail works, needs no second sign-up.
         $this->assertNotNull(Subscriber::where('email', 'someone@example.com')->first());

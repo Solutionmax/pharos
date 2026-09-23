@@ -167,7 +167,7 @@ class ComponentController extends Controller
         return $request->validate(
             $this->rules($request),
             [
-                'check_target.required' => 'A built-in check needs something to contact.',
+                'check_target.required' => 'A built in check needs something to contact.',
                 'check_target.url' => 'An HTTP check needs a full URL, starting with http:// or https://.',
                 'check_target.regex' => 'A TCP check needs host:port, for example mail.example.net:993.',
             ],

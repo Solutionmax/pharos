@@ -43,8 +43,8 @@ class PageMailController extends Controller
 
         $mailConfig->savePage($data);
         Audit::record('page.mail_settings_saved', null, [
-            'mode' => ['from' => '—', 'to' => $data['mode']],
-            'host' => ['from' => '—', 'to' => (string) ($data['host'] ?? '')],
+            'mode' => ['from' => '', 'to' => $data['mode']],
+            'host' => ['from' => '', 'to' => (string) ($data['host'] ?? '')],
         ]);
 
         return redirect()->to(PageUrls::route('admin.mail.edit'))->with('status', 'Delivery settings saved.');

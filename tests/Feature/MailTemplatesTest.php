@@ -115,7 +115,7 @@ class MailTemplatesTest extends TestCase
         $mail = new IncidentNoticeMail($update, $subscriber);
         $html = $mail->render();
 
-        $this->assertSame('[Acme Cloud] Mail queue backed up — Identified', $mail->envelope()->subject);
+        $this->assertSame('[Acme Cloud] Mail queue backed up: Identified', $mail->envelope()->subject);
         $this->assertStringContainsString('Identified', $html);
         $this->assertStringContainsString('Mail queue backed up', $html);
         $this->assertStringContainsString('web-01, smtp-01', $html);
@@ -344,7 +344,7 @@ class MailTemplatesTest extends TestCase
         $get->assertOk()
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
             ->assertHeader('Content-Security-Policy', "frame-ancestors 'self'")
-            ->assertSee('Outbound e-mail delayed')
+            ->assertSee('Outbound email delayed')
             ->assertSee('Mail, Outbound queue')
             ->assertSee('<strong>', false)
             ->assertSee('<li>', false);
@@ -357,7 +357,7 @@ class MailTemplatesTest extends TestCase
         ]);
 
         $post->assertOk()
-            ->assertJsonPath('subject', 'Sorted: Outbound e-mail delayed (Resolved)')
+            ->assertJsonPath('subject', 'Sorted: Outbound email delayed (Resolved)')
             ->assertJsonPath('html', fn ($html) => str_contains($html, 'Custom Resolved body for raymon'));
 
         // No licence needed to look: it still renders, nothing was saved.
@@ -371,11 +371,11 @@ class MailTemplatesTest extends TestCase
         $this->actingAs($this->admin)
             ->post('/admin/mail-templates/test', ['template' => 'incident_opened', 'subject' => 'Trial {incident}', 'body' => 'Hello {name}'])
             ->assertRedirect('/admin/mail-templates?template=incident_opened')
-            ->assertSessionHas('status', 'Test e-mail sent to raymon@example.net.');
+            ->assertSessionHas('status', 'Test email sent to raymon@example.net.');
 
         Mail::assertSent(TemplatePreviewMail::class, function ($mail) {
             return $mail->hasTo('raymon@example.net')
-                && $mail->envelope()->subject === 'Trial Outbound e-mail delayed'
+                && $mail->envelope()->subject === 'Trial Outbound email delayed'
                 && str_contains($mail->render(), 'Hello raymon');
         });
         $this->assertSame(1, AuditEntry::where('action', 'mail.test')->count());

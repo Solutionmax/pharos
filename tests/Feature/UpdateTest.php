@@ -549,7 +549,7 @@ class UpdateTest extends TestCase
 
         $this->actingAs($this->user)->get('/admin/updates?refresh=1')
             ->assertRedirect('/admin/updates')
-            ->assertSessionHas('status', 'Checked just now — 1.1.0 is available.');
+            ->assertSessionHas('status', 'Checked just now: 1.1.0 is available.');
         Http::assertSentCount(2);
     }
 
@@ -559,7 +559,7 @@ class UpdateTest extends TestCase
 
         $this->actingAs($this->user)->get('/admin/updates?refresh=1')
             ->assertRedirect('/admin/updates')
-            ->assertSessionHas('status', 'Checked just now — nothing new.');
+            ->assertSessionHas('status', 'Checked just now: nothing new.');
     }
 
     public function test_check_again_reports_an_unreachable_server(): void
@@ -568,7 +568,7 @@ class UpdateTest extends TestCase
 
         $this->actingAs($this->user)->get('/admin/updates?refresh=1')
             ->assertRedirect('/admin/updates')
-            ->assertSessionHas('status', 'Checked just now — the release server could not be reached.');
+            ->assertSessionHas('status', 'Checked just now: the release server could not be reached.');
     }
 
     // ---------- release notes ----------

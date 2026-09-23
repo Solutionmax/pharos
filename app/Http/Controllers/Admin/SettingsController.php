@@ -115,12 +115,12 @@ class SettingsController extends Controller
             Mail::to($user->email)->send(new TestMail($user));
         } catch (\Throwable $e) {
             return redirect()->route('admin.settings', ['tab' => 'mail'])
-                ->withErrors(['mail' => 'Test e-mail failed: '.$e->getMessage()]);
+                ->withErrors(['mail' => 'Test email failed: '.$e->getMessage()]);
         }
 
         Audit::record('mail.test', $user);
 
-        return redirect()->route('admin.settings', ['tab' => 'mail'])->with('status', "Test e-mail sent to {$user->email}.");
+        return redirect()->route('admin.settings', ['tab' => 'mail'])->with('status', "Test email sent to {$user->email}.");
     }
 
     /**

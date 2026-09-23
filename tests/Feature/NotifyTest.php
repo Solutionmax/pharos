@@ -140,7 +140,7 @@ class NotifyTest extends TestCase
         $html = $mail->render();
         $headers = $mail->headers()->text;
 
-        $this->assertSame('[Acme Cloud] Mail queue backed up — Identified', $mail->envelope()->subject);
+        $this->assertSame('[Acme Cloud] Mail queue backed up: Identified', $mail->envelope()->subject);
         $this->assertSame('Acme Cloud', $mail->envelope()->from->name);
         $this->assertStringContainsString('Acme Cloud', $html);
         $this->assertStringContainsString('#ff6600', $html);

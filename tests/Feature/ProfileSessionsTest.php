@@ -33,7 +33,7 @@ class ProfileSessionsTest extends TestCase
     {
         DB::table('sessions')->insert([
             'id' => $id, 'user_id' => $user->id, 'ip_address' => '203.0.113.7',
-            'user_agent' => $agent, 'payload' => '', 'last_activity' => time() - $ago,
+            'user_agent' => $agent, 'payload' => '', 'last_activity' => now()->getTimestamp() - $ago,
         ]);
     }
 
@@ -106,6 +106,8 @@ class ProfileSessionsTest extends TestCase
 
     public function test_last_seen_on_the_users_screen_comes_from_sessions(): void
     {
+        // Frozen clock: a second passing between insert and render would otherwise round to "2 days ago".
+        $this->freezeTime();
         $this->addSession('seen', $this->other, 'Chrome/128.0', ago: 3 * 86400);
 
         $this->actingAs($this->me)->get('/admin/users')->assertOk()->assertSee('Last seen <b>3 days ago</b>', false);

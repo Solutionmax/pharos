@@ -90,7 +90,7 @@ class SubscriberController extends Controller
         $name = 'pharos-subscribers-'.Clock::now()->format('Ymd-Hi').'.csv';
         $count = Subscriber::active()->count();
 
-        Audit::record('subscribers.exported', null, ['active' => ['from' => '—', 'to' => (string) $count]]);
+        Audit::record('subscribers.exported', null, ['active' => ['from' => '', 'to' => (string) $count]]);
 
         return response()->streamDownload(function () {
             $out = fopen('php://output', 'w');
