@@ -1,6 +1,8 @@
 {{-- A brand mark tile. Discord, Telegram, Signal, n8n, Uptime Kuma and Zapier use their
-     Simple Icons glyphs (CC0 data; the marks stay their owners' trademarks). Slack and
-     Microsoft Teams keep letters until their official brand kits are added.
+     Simple Icons glyphs (CC0 data; the marks stay their owners' trademarks). Partners whose
+     guidelines forbid recolouring (Slack, Microsoft Teams) use their official file from
+     public/brand/partners/{mark}.svg, unaltered on a neutral tile; without that file the
+     tile shows letters rather than a homemade logo.
      Usage: @include('partials.brand-mark', ['mark' => 'discord', 'size' => 30]) --}}
 @php
   $markGlyphs = [
@@ -14,5 +16,11 @@
   $markLetters = ['slack' => 'Sl', 'teams' => 'T', 'generic' => '{ }', 'api' => '{ }', 'hb' => '♥', 'check' => '✓', 'manual' => '·'];
   $markKey = $mark ?? 'generic';
   $markPx = (int) round(($size ?? 30) * 0.56);
+  $markFile = in_array($markKey, ['slack', 'teams'], true) && is_file(public_path("brand/partners/{$markKey}.svg"))
+      ? public_path("brand/partners/{$markKey}.svg") : null;
 @endphp
+@if ($markFile)
+<span class="lg lg-official lg-{{ $markKey }}" aria-hidden="true" @isset($size) style="width:{{ $size }}px;height:{{ $size }}px" @endisset><img src="{{ asset("brand/partners/{$markKey}.svg") }}?v={{ substr(md5_file($markFile), 0, 8) }}" alt="" width="{{ $markPx + 2 }}" height="{{ $markPx + 2 }}"></span>
+@else
 <span class="lg lg-{{ $markKey }}" aria-hidden="true" @isset($size) style="width:{{ $size }}px;height:{{ $size }}px" @endisset>@if (isset($markGlyphs[$markKey]))<svg width="{{ $markPx }}" height="{{ $markPx }}" viewBox="0 0 24 24" fill="#fff" focusable="false"><path d="{{ $markGlyphs[$markKey] }}"/></svg>@else{{ $markLetters[$markKey] ?? '·' }}@endif</span>
+@endif
