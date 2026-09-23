@@ -242,7 +242,11 @@ class PageDeliveryTest extends TestCase
         $url = $subscriber->unsubscribeUrl();
 
         $this->assertStringContainsString('/status/beta/unsubscribe/'.$subscriber->id, $url);
-        $this->get($url)->assertOk();
+        // The confirmation posts back to the page's own signed URL, not the legacy one.
+        $this->get($url)->assertOk()->assertSee('>Unsubscribe</button>', false)
+            ->assertSee('action="/status/beta/unsubscribe/'.$subscriber->id.'?', false);
+        $this->assertNull($subscriber->fresh()->unsubscribed_at);
+        $this->post($url, ['List-Unsubscribe' => 'One-Click'])->assertOk();
         $this->assertNotNull($subscriber->fresh()->unsubscribed_at);
     }
 

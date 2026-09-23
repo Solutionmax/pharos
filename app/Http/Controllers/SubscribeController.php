@@ -83,9 +83,26 @@ class SubscribeController extends Controller
     }
 
     /**
-     * GET from the mail footer, POST from a mail client's own one-click button.
-     * Not behind the master switch: the mails already sent carry this link, and
-     * leaving must work whatever the admin has done since.
+     * GET from the mail footer: only a question. Mail security scanners open
+     * every link in a mail, and one of them must not be able to unsubscribe
+     * the reader. The button posts back to this same signed URL.
+     */
+    public function confirmUnsubscribe(Request $request, Subscriber $subscriber)
+    {
+        $this->guardToken($request, $subscriber);
+
+        if ($subscriber->unsubscribed_at !== null) {
+            return $this->page('unsubscribed', $subscriber);
+        }
+
+        return $this->page('confirm-unsubscribe', $subscriber, ['action' => $request->getRequestUri()]);
+    }
+
+    /**
+     * POST from the confirmation button, or from a mail client's own one click
+     * button (RFC 8058, List-Unsubscribe-Post). Not behind the master switch:
+     * the mails already sent carry this link, and leaving must work whatever
+     * the admin has done since.
      */
     public function unsubscribe(Request $request, Subscriber $subscriber)
     {
@@ -109,11 +126,12 @@ class SubscribeController extends Controller
         return redirect()->to(PageUrls::route('status'))->with('subscribed', self::REPLY);
     }
 
-    protected function page(string $outcome, Subscriber $subscriber)
+    /** @param array<string, mixed> $extra */
+    protected function page(string $outcome, Subscriber $subscriber, array $extra = [])
     {
         return view('public.subscribe-result', [
             'outcome' => $outcome,
             'subscriber' => $subscriber,
-        ]);
+        ] + $extra);
     }
 }

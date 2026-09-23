@@ -46,8 +46,10 @@ Route::get('/', [StatusPageController::class, 'show'])->name('status');
 // Laravel cannot break an https link.
 Route::post('subscribe', [SubscribeController::class, 'store'])->middleware('throttle:5,10')->name('subscribe');
 Route::get('subscribe/confirm/{subscriber}', [SubscribeController::class, 'confirm'])->middleware('signed:relative')->name('subscribe.confirm');
-Route::get('unsubscribe/{subscriber}', [SubscribeController::class, 'unsubscribe'])->middleware('signed:relative')->name('unsubscribe');
-// One-click (RFC 8058): the mail client POSTs here with no session, hence no CSRF (see bootstrap/app.php).
+Route::get('unsubscribe/{subscriber}', [SubscribeController::class, 'confirmUnsubscribe'])->middleware('signed:relative')->name('unsubscribe');
+// Opening the link only asks: mail scanners follow links. The answer is a POST
+// to the same signed URL, which is also what a mail client sends for one click
+// (RFC 8058): no session, hence no CSRF (see bootstrap/app.php).
 Route::post('unsubscribe/{subscriber}', [SubscribeController::class, 'unsubscribe'])->middleware('signed:relative');
 
 Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(function () {

@@ -168,7 +168,9 @@ class PageRoutesTest extends TestCase
         $link = $subscriber->unsubscribeUrl();
         $this->assertStringStartsWith(rtrim(config('app.url'), '/').'/status/second/unsubscribe/', $link);
         $b->update(['domain' => 'status.new.test']);
-        $this->get($link)->assertOk();
+        $this->get($link)->assertOk()->assertSee('>Unsubscribe</button>', false);
+        $this->assertNull($subscriber->fresh()->unsubscribed_at);
+        $this->post($link)->assertOk();
         $this->assertNotNull($subscriber->fresh()->unsubscribed_at);
         $this->actingAs($admin)->put('/admin/pages/'.$b->id, ['name' => 'Second renamed', 'slug' => 'new-slug'])->assertSessionHasErrors('slug');
     }
