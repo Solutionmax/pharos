@@ -146,6 +146,7 @@ Niet geïmplementeerd of toegezegd voor deze update: gedeelde services tussen pa
 - Verificatie: 833 tests / 3.775 assertions, PHPStan 0, Pint ok. Repetitie op kopie van live database, daarna live: alle 34 schermen 200, tellingen gelijk (alleen migraties + geleegde cache).
 - Back-up vóór deploy in container 106: `/root/pharos-ui-backup.202609230852` (database.sqlite, source.tar.gz, counts-before/after.json).
 - Vervolg 23 sep (live, back-up `/root/pharos-ui-backup.202609230924`): tijdzone per gebruiker (Profiel, alleen admin; publiek, mail, webhooks en previews blijven installatiezone; subscriber CSV-kop blijft `subscribed_at`), zoeken als commandopalet (acties, recent, schermen op trefwoord), officiële Slack- en Teams-logo's in `public/brand/partners/` (Slack via media kit, EULA door Raymon). 861 tests.
+- Inlogscherm "Pulse" live 23 sep (back-up `/root/pharos-ui-backup.202609230954`): fetch met echte uitkomst (goed, fout, 2FA met zes vakjes of recovery), zonder JS gewone POST; geen status of componentdata op publieke auth-schermen. Plus fix lege sparkline op Overview. 870 tests.
 - Open: talen later · paginanaam "Harbor Logistics — demo" bevat een em dash (data, zelf aanpassen) · één keer een niet reproduceerbare testfout gezien (8 volgende runs groen).
 
 ## Documentatie en lokale ontwikkelomgeving
