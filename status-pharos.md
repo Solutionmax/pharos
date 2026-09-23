@@ -148,7 +148,7 @@ Niet geïmplementeerd: gedeelde services tussen pagina's, automatisch DNS/TLS, p
 - Website live via CI (pharos-site main `a0b3f95`): prijzen €79 / €149 / Commercial op offerte, voorwaarden 2026-09-23, 0.7.0 overal, nieuwe screenshots, installer v2, geen em/en dashes.
 - Portaal live op edge-01 (pharos-portal main `3479e8a`): Supported `multi_pages` limiet 5, Commercial onbeperkt, voorwaarden 2026-09-23.
 - GitHub: README pins 0.7.0, beschrijving en topics bijgewerkt. Na release twee CI-fixes (Larastan broker typing, testdomein), CI groen op `f7ebed7`.
-- `.166` draait sinds 23 sep met WAL en busy_timeout 5000. Open: `.166` en de vriend updaten zelf; terminal-screenshot `install-ssh-get.webp` toont nog een em dash (bij volgende screenshotronde).
+- `.166` draait sinds 23 sep met WAL en busy_timeout 5000. `.166` en de vriend updaten zelf.
 
 ## Documentatie en lokale ontwikkelomgeving
 
