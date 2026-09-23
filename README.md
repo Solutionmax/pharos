@@ -234,8 +234,8 @@ first run.
 
 #### A specific version
 
-Both installers take the newest release unless you pin one: `--version 0.5.0` on the command,
-or `pharos-install.php?version=0.5.0` in the browser. Every release on
+Both installers take the newest release unless you pin one: `--version 0.7.0` on the command,
+or `pharos-install.php?version=0.7.0` in the browser. Every release on
 [the releases page](https://pharos.solutionmax.net/releases/) also has a pre-pinned
 `pharos-install-<version>.php`. Pharos never downgrades by itself; use Roll back under Updates.
 
@@ -252,7 +252,7 @@ php artisan migrate --force && php artisan storage:link
 
 ### Docker
 
-The image is `ghcr.io/solutionmax/pharos`: one tag per release (`:0.5.1`) plus `:latest`,
+The image is `ghcr.io/solutionmax/pharos`: one tag per release (`:0.7.0`) plus `:latest`,
 built for `linux/amd64` and `linux/arm64` by GitHub Actions on every release tag.
 
 ```bash
@@ -278,7 +278,7 @@ after changing these values so generated links and redirects use HTTPS. Leave
 `TRUSTED_PROXIES` empty when connecting directly; do not trust arbitrary forwarded
 headers on a publicly reachable backend.
 
-Pin a release with `PHAROS_VERSION=0.5.1` in `.env`. To build the image from your own checkout
+Pin a release with `PHAROS_VERSION=0.7.0` in `.env`. To build the image from your own checkout
 instead of pulling it, `docker compose up -d --build`; the `build:` block in `compose.yaml` stamps
 the same version into the image.
 
