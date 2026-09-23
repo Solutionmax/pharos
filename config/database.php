@@ -40,11 +40,11 @@ return [
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
             // Wait up to 5 s for another writer (a check, an API call) instead of
             // failing with "database is locked" at once.
-            'busy_timeout' => (int) env('DB_BUSY_TIMEOUT', 5000),
+            'busy_timeout' => (int) (env('DB_BUSY_TIMEOUT') ?: 5000),
             // WAL lets readers and a writer work at the same time. Opt in only on a
             // local disk: on network file systems (some shared hosts) it can corrupt.
-            'journal_mode' => env('DB_JOURNAL_MODE'),
-            'synchronous' => env('DB_SYNCHRONOUS'),
+            'journal_mode' => env('DB_JOURNAL_MODE') ?: null,   // an empty value must mean "not set", not "pragma journal_mode = "
+            'synchronous' => env('DB_SYNCHRONOUS') ?: null,
             'transaction_mode' => 'DEFERRED',
         ],
 
