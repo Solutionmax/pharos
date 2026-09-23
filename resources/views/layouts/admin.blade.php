@@ -459,6 +459,7 @@ document.addEventListener('click', function (event) {
 @endif
 @include('partials.theme-script', ['theme' => $adminTheme])
 <script defer src="{{ asset('assets/pharos-v06.js') }}?v=0.6.0"></script>
-@auth<script defer src="{{ asset('assets/pharos-ui.js') }}?v={{ @filemtime(public_path('assets/pharos-ui.js')) }}"></script>@endauth
+@auth<script defer src="{{ asset('assets/pharos-ui.js') }}?v={{ @filemtime(public_path('assets/pharos-ui.js')) }}"></script>
+<script defer src="{{ asset('assets/pharos-search.js') }}?v={{ @filemtime(public_path('assets/pharos-search.js')) }}"></script>@endauth
 </body>
 </html>
