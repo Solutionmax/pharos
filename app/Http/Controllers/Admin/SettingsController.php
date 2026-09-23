@@ -114,7 +114,7 @@ class SettingsController extends Controller
 
         try {
             // Rendered like every other mail: in the installation zone.
-            Clock::withInstallationZone(fn () => Mail::to($user->email)->send(new TestMail($user)));
+            Clock::withInstallationZone(fn () => Mail::to($user->email)->send(TestMail::central($user)));
         } catch (\Throwable $e) {
             return redirect()->route('admin.settings', ['tab' => 'mail'])
                 ->withErrors(['mail' => 'Test email failed: '.$e->getMessage()]);

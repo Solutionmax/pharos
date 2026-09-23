@@ -91,6 +91,17 @@ class MailSettingsTest extends TestCase
         Mail::assertSent(TestMail::class, fn (TestMail $m) => $m->hasTo('raymon@example.net')
             && str_contains($m->render(), 'Mail works'));
 
+        // Where it came from and how it left, in words: never an internal mailer key.
+        $mail = Mail::sent(TestMail::class)->first();
+        $html = $mail->render();
+        $text = (string) view($mail->textView, $mail->buildViewData());
+        foreach ([$html, $text] as $part) {
+            $this->assertStringContainsString('Settings, Central mail', $part);
+            $this->assertStringContainsString('the central mail transport', $part);
+            $this->assertStringNotContainsString('→', $part);
+            $this->assertStringNotContainsString('mailer', $part);
+        }
+
         $this->assertSame(1, AuditEntry::where('action', 'mail.test')->count());
     }
 

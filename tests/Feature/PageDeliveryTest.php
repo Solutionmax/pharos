@@ -313,6 +313,38 @@ class PageDeliveryTest extends TestCase
                 && $mail->envelope()->replyTo[0]->address === 'support@beta.example.test'
                 && $mail->envelope()->subject === 'Test email from Beta Status';
         });
+
+        $mail = Mail::sent(TestMail::class)->first();
+        $html = $mail->render();
+        $text = (string) view($mail->textView, $mail->buildViewData());
+        foreach ([$html, $text] as $part) {
+            $this->assertStringContainsString('Email, Delivery for Beta page', $part);
+            $this->assertStringContainsString('own SMTP server', $part);
+            $this->assertStringContainsString('smtp.beta.example.test', $part);
+            $this->assertStringNotContainsString('pharos_page_', $part);
+            $this->assertStringNotContainsString('mailer', $part);
+            $this->assertStringNotContainsString('Settings', $part);
+        }
+    }
+
+    public function test_page_mail_test_on_central_delivery_names_the_central_transport(): void
+    {
+        Mail::fake();
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'email' => 'admin@example.test']);
+        $page = StatusPage::create(['name' => 'Gamma page', 'slug' => 'gamma']);
+
+        $this->actingAs($admin)->post('/admin/pages/'.$page->id.'/mail-test')
+            ->assertSessionHas('status', 'Test email sent to admin@example.test.');
+
+        $mail = Mail::sent(TestMail::class)->first();
+        $html = $mail->render();
+        $text = (string) view($mail->textView, $mail->buildViewData());
+        foreach ([$html, $text] as $part) {
+            $this->assertStringContainsString('Email, Delivery for Gamma page', $part);
+            $this->assertStringContainsString('the central mail transport', $part);
+            $this->assertStringNotContainsString('own SMTP server', $part);
+            $this->assertStringNotContainsString('mailer', $part);
+        }
     }
 
     public function test_archived_or_unpublished_pages_do_not_queue_or_send_webhooks(): void
