@@ -10,6 +10,7 @@ use App\Notifications\InviteUser;
 use App\Services\Audit;
 use App\Services\Clock;
 use App\Services\UserSessions;
+use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -91,7 +92,12 @@ class UserController extends Controller
     protected function sendInvitation(Request $request, User $user): bool
     {
         try {
-            $token = Password::broker(InvitationController::BROKER)->createToken($user);
+            $broker = Password::broker(InvitationController::BROKER);
+            // createToken() lives on the concrete broker, not on the contract.
+            if (! $broker instanceof PasswordBroker) {
+                throw new \RuntimeException('The invitations broker is not a token broker.');
+            }
+            $token = $broker->createToken($user);
             // For someone else: the installation zone, not the inviting admin's own.
             Clock::withInstallationZone(fn () => $user->notify(new InviteUser($token, $request->user()->name)));
             Audit::record('user.invited', $user);
