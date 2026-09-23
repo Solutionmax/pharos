@@ -4,6 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+@include('partials.theme-early', ['theme' => $theme ?? $branding->theme(), 'rememberTheme' => $chrome ?? true])
 <title>{{ $branding->name() }} Status</title>
 <link rel="icon" href="{{ $branding->faviconUrl() }}">
 @if ($branding->name() === 'Pharos' && ! $branding->logoUrl())

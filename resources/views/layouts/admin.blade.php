@@ -8,6 +8,7 @@ $adminTheme = in_array(auth()->user()?->theme, \App\Models\User::THEMES, true) ?
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+@include('partials.theme-early', ['theme' => $adminTheme])
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', 'Admin') · {{ $branding->name() }}</title>
 <link rel="icon" href="{{ $branding->faviconUrl() }}">
