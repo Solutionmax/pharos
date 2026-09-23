@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\IncidentStatus;
 use App\Models\Incident;
+use App\Models\Maintenance;
 use App\Models\Setting;
 use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
@@ -25,17 +26,54 @@ class OutgoingWebhook
             return;
         }
 
-        $endpoints = WebhookEndpoint::where('enabled', true)->get();
+        $category = self::category($incident, $event);
+        $endpoints = WebhookEndpoint::where('enabled', true)->get()->filter(fn (WebhookEndpoint $e) => $e->wants($category));
 
         foreach ($endpoints as $endpoint) {
             $key = hash('sha256', implode(':', [$incident->id, $event, $incident->updates()->max('id') ?? 0, $incident->status->value, $incident->updated_at?->format('U.u')]));
             WebhookDelivery::firstOrCreate(['webhook_endpoint_id' => $endpoint->id, 'event_key' => $key],
                 [
                     'status_page_id' => $endpoint->status_page_id,
+                    'event' => $category,
                     'payload' => $this->payload($endpoint->format, $incident, $event),
                     'next_attempt_at' => now(),
                 ]);
         }
+    }
+
+    /**
+     * Planned work: maintenance.scheduled, .started, .completed or .cancelled.
+     * Only destinations that chose Maintenance receive it; ones saved before the
+     * choice existed receive everything, as they always did.
+     */
+    public function maintenanceChanged(Maintenance $maintenance, string $event): void
+    {
+        $page = app(PageContext::class)->page();
+        if (! $page->is_published || $page->archived_at !== null) {
+            return;
+        }
+
+        foreach (WebhookEndpoint::where('enabled', true)->get()->filter(fn (WebhookEndpoint $e) => $e->wants('maintenance')) as $endpoint) {
+            WebhookDelivery::firstOrCreate(
+                ['webhook_endpoint_id' => $endpoint->id, 'event_key' => hash('sha256', 'maintenance:'.$maintenance->id.':'.$event)],
+                [
+                    'status_page_id' => $endpoint->status_page_id,
+                    'event' => 'maintenance',
+                    'payload' => $this->maintenancePayload($endpoint->format, $maintenance, $event),
+                    'next_attempt_at' => now(),
+                ],
+            );
+        }
+    }
+
+    /** Which WebhookEndpoint::EVENTS entry an incident event belongs to. */
+    public static function category(Incident $incident, string $event): string
+    {
+        if ($event === 'incident.created') {
+            return 'incident.opened';
+        }
+
+        return $incident->resolved_at !== null ? 'incident.resolved' : 'incident.updated';
     }
 
     /** A bounded batch fits inside the lock and shared-hosting execution limits. */
@@ -113,6 +151,61 @@ class OutgoingWebhook
             'telegram' => ['text' => Str::limit($incident->status->label().': '.$incident->name, 1800)."\n".PageUrls::route('status')],
             'signal' => ['message' => Str::limit(($incident->resolved_at ? 'Resolved: ' : 'Incident: ').$incident->name, 1800)."\n".PageUrls::route('status')],
             default => $this->generic($incident, $event),
+        };
+    }
+
+    /** @return array<string, mixed> */
+    protected function maintenancePayload(string $format, Maintenance $maintenance, string $event): array
+    {
+        $headline = match ($event) {
+            'maintenance.started' => 'Maintenance started',
+            'maintenance.completed' => 'Maintenance completed',
+            'maintenance.cancelled' => 'Maintenance cancelled',
+            default => 'Maintenance scheduled',
+        };
+        $when = $maintenance->starts_at->format('j M H:i').' to '.$maintenance->ends_at->format('j M H:i T');
+        $affects = $maintenance->components->pluck('name')->join(', ');
+        $line = Str::limit($headline.': '.$maintenance->title, 1800);
+        $link = PageUrls::route('status');
+
+        return match ($format) {
+            'slack' => [
+                'text' => $line,
+                'blocks' => [
+                    ['type' => 'section', 'text' => ['type' => 'mrkdwn', 'text' => ':wrench: *'.$headline.'*: '.$maintenance->title]],
+                    ['type' => 'context', 'elements' => [['type' => 'mrkdwn', 'text' => implode('  ·  ', array_filter([$when, $affects !== '' ? 'Affects '.$affects : '', Setting::get('brand.name', 'Pharos')]))]]],
+                ],
+            ],
+            'teams' => ['type' => 'message', 'attachments' => [[
+                'contentType' => 'application/vnd.microsoft.card.adaptive',
+                'content' => [
+                    '$schema' => 'http://adaptivecards.io/schemas/adaptive-card.json',
+                    'type' => 'AdaptiveCard',
+                    'version' => '1.4',
+                    'body' => [
+                        ['type' => 'TextBlock', 'size' => 'Medium', 'weight' => 'Bolder', 'wrap' => true, 'color' => 'Accent', 'text' => $line],
+                        ['type' => 'FactSet', 'facts' => array_values(array_filter([
+                            ['title' => 'When', 'value' => $when],
+                            $affects !== '' ? ['title' => 'Affected', 'value' => $affects] : null,
+                            ['title' => 'Status page', 'value' => Setting::get('brand.name', 'Pharos')],
+                        ]))],
+                    ],
+                ],
+            ]]],
+            'discord' => ['content' => $line."\n".$when."\n".$link, 'allowed_mentions' => ['parse' => []]],
+            'telegram' => ['text' => $line."\n".$when."\n".$link],
+            'signal' => ['message' => $line."\n".$when."\n".$link],
+            default => [
+                'event' => $event,
+                'maintenance' => [
+                    'id' => $maintenance->id,
+                    'title' => $maintenance->title,
+                    'message' => $maintenance->message,
+                    'starts_at' => $maintenance->starts_at->toIso8601String(),
+                    'ends_at' => $maintenance->ends_at->toIso8601String(),
+                    'components' => $maintenance->components->pluck('name')->all(),
+                ],
+            ],
         };
     }
 
