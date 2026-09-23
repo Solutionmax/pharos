@@ -8,6 +8,7 @@ use App\Models\Subscriber;
 use App\Services\Audit;
 use App\Services\Clock;
 use App\Services\MailConfig;
+use App\Services\PageContext;
 use App\Services\PageUrls;
 use App\Services\Subscriptions;
 use App\Support\Csv;
@@ -50,10 +51,11 @@ class SubscriberController extends Controller
         $enabled = (bool) $data['enabled'];
 
         Subscriptions::set($enabled);
+        $name = app(PageContext::class)->page()->name;
 
         return redirect()->to(PageUrls::route('admin.subscribers'))->with('status', $enabled
-            ? 'Subscriptions are on: the button is back on the status page and new updates are mailed.'
-            : 'Subscriptions are off: no button, no new mail. Existing addresses are kept, and unsubscribing still works.');
+            ? "Subscriptions are on for {$name}: the button is back on its status page and new updates are mailed."
+            : "Subscriptions are off for {$name}: no button, no new mail. Existing addresses are kept, and unsubscribing still works.");
     }
 
     /** Erasure on request, in one click: the row and its notification history go together. */

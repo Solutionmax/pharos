@@ -6,6 +6,11 @@
   'sub' => 'How your status page introduces itself',
 ])
 
+@include('partials.page-context', [
+  'contextTitle' => 'Branding for',
+  'contextHelp' => 'Logo, colours and texts apply only to this page.',
+])
+
 <form method="POST" action="{{ \App\Services\PageUrls::route('admin.branding.update') }}" enctype="multipart/form-data">
   @csrf @method('PUT')
 
