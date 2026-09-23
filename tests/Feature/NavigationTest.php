@@ -57,6 +57,8 @@ class NavigationTest extends TestCase
             'add a component' => ['/admin/components/create', 'Components'],
             'report an incident' => ['/admin/incidents/create', 'Incidents'],
             'add a service' => ['/admin/services/create', 'Services'],
+            'schedule maintenance' => ['/admin/maintenance/create', 'Scheduled maintenance'],
+            'incident templates' => ['/admin/incidents/templates', 'Incidents'],
         ];
     }
 
@@ -70,7 +72,11 @@ class NavigationTest extends TestCase
             'status page' => ['/admin/status-page'],
             'subscribers' => ['/admin/subscribers'],
             'settings' => ['/admin/settings'],
-            'integrations' => ['/admin/integrations'],
+            'send out' => ['/admin/integrations/send-out'],
+            'bring in' => ['/admin/integrations/bring-in'],
+            'api tokens' => ['/admin/integrations/tokens'],
+            'delivery log' => ['/admin/integrations/log'],
+            'maintenance' => ['/admin/maintenance'],
             'branding' => ['/admin/branding'],
             'mail templates' => ['/admin/mail-templates'],
             'users' => ['/admin/users'],
@@ -116,7 +122,9 @@ class NavigationTest extends TestCase
             'add a service' => ['/admin/services/create'],
             'status page' => ['/admin/status-page'],
             'settings' => ['/admin/settings'],
-            'integrations' => ['/admin/integrations'],
+            'send out' => ['/admin/integrations/send-out'],
+            'api tokens' => ['/admin/integrations/tokens'],
+            'schedule maintenance' => ['/admin/maintenance/create'],
             'branding' => ['/admin/branding'],
             'mail templates' => ['/admin/mail-templates'],
             'users' => ['/admin/users'],

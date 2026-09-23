@@ -42,22 +42,22 @@ class TokenScopesAndDeliveryFiltersTest extends TestCase
         $admin = User::factory()->create(['role' => UserRole::Admin]);
         $page = StatusPage::defaultId();
         $endpoint = WebhookEndpoint::create(['label' => 'Local Slack', 'url' => 'https://example.com/hook', 'format' => 'slack']);
-        foreach (range(1, 7) as $i) {
+        foreach (range(1, 12) as $i) {
             WebhookDelivery::create(['status_page_id' => $page, 'webhook_endpoint_id' => $endpoint->id, 'event_key' => uniqid(), 'payload' => [], 'attempts' => 6]);
         }
         WebhookDelivery::create(['status_page_id' => $page, 'webhook_endpoint_id' => $endpoint->id, 'event_key' => uniqid(), 'payload' => [], 'attempts' => 1, 'sent_at' => now()]);
         $other = StatusPage::create(['name' => 'Other', 'slug' => 'other']);
         app(PageContext::class)->run($other->id, fn () => WebhookEndpoint::create(['label' => 'Foreign secret destination', 'url' => 'https://example.com/foreign', 'format' => 'slack']));
-        $url = '/admin/integrations?delivery_endpoint='.$endpoint->id.'&delivery_channel=slack&delivery_status=failed';
+        $url = '/admin/integrations/log?delivery_endpoint='.$endpoint->id.'&delivery_channel=slack&delivery_status=failed';
         $response = $this->actingAs($admin)->get($url)->assertOk()->assertDontSee('Foreign secret destination');
-        $response->assertViewHas('deliveries', fn ($items) => $items->total() === 7 && $items->count() === 5);
+        $response->assertViewHas('deliveries', fn ($items) => $items->total() === 12 && $items->count() === 10);
         $response->assertSee('delivery_status=failed', false)->assertSee('deliveries_page=2', false);
         $this->get($url.'&deliveries_page=2')->assertViewHas('deliveries', fn ($items) => $items->count() === 2);
-        $this->get('/admin/integrations?delivery_status=delivered')->assertViewHas('deliveries', fn ($items) => $items->total() === 1);
-        $this->get('/admin/integrations?delivery_status=pending')->assertViewHas('deliveries', fn ($items) => $items->total() === 0);
-        $this->get('/admin/integrations?delivery_channel=generic')->assertViewHas('deliveries', fn ($items) => $items->total() === 0);
+        $this->get('/admin/integrations/log?delivery_status=delivered')->assertViewHas('deliveries', fn ($items) => $items->total() === 1);
+        $this->get('/admin/integrations/log?delivery_status=pending')->assertViewHas('deliveries', fn ($items) => $items->total() === 0);
+        $this->get('/admin/integrations/log?delivery_channel=generic')->assertViewHas('deliveries', fn ($items) => $items->total() === 0);
         $foreign = app(PageContext::class)->run($other->id, fn () => WebhookEndpoint::first());
-        $this->get('/admin/integrations?delivery_endpoint='.$foreign->id)->assertViewHas('deliveries', fn ($items) => $items->total() === 0)->assertDontSee('Foreign secret destination');
+        $this->get('/admin/integrations/log?delivery_endpoint='.$foreign->id)->assertViewHas('deliveries', fn ($items) => $items->total() === 0)->assertDontSee('Foreign secret destination');
     }
 
     public function test_write_scope_tracks_owner_role_and_page_membership(): void
@@ -89,9 +89,13 @@ class TokenScopesAndDeliveryFiltersTest extends TestCase
         $component = Component::create(['name' => 'Backups']);
         Check::create(['component_id' => $component->id, 'type' => 'heartbeat', 'target' => 'secret-heartbeat']);
         Setting::put('integrations.webhook_secret', 'secret-signing');
-        $this->actingAs($viewer)->get('/admin/integrations')->assertOk()->assertSee('Operations')->assertSee('Delivery history')
-            ->assertDontSee('secret-hook')->assertDontSee('secret-error')->assertDontSee('secret-heartbeat')->assertDontSee('secret-signing')
-            ->assertDontSee('Create token')->assertDontSee('>Send test<', false)->assertDontSee('id="add-notification"', false);
+        foreach (['send-out', 'bring-in', 'tokens', 'log'] as $screen) {
+            $this->actingAs($viewer)->get('/admin/integrations/'.$screen)->assertOk()
+                ->assertDontSee('secret-hook')->assertDontSee('secret-error')->assertDontSee('secret-heartbeat')->assertDontSee('secret-signing')
+                ->assertDontSee('Create token')->assertDontSee('>Send test<', false)->assertDontSee('id="destination-form"', false);
+        }
+        $this->get('/admin/integrations/send-out')->assertSee('Operations');
+        $this->get('/admin/integrations/log')->assertSee('Delivery history');
     }
 
     public function test_cli_checks_scope_and_current_owner_permissions(): void
@@ -129,6 +133,6 @@ class TokenScopesAndDeliveryFiltersTest extends TestCase
         $other = StatusPage::create(['name' => 'Other', 'slug' => 'other']);
         $this->actingAs($admin)->post('/admin/integrations/tokens', ['name' => 'Reader']);
         $plain = session('new_token');
-        $this->get('/admin/pages/'.$other->id.'/integrations')->assertOk()->assertDontSee($plain);
+        $this->get('/admin/pages/'.$other->id.'/integrations/tokens')->assertOk()->assertDontSee($plain);
     }
 }

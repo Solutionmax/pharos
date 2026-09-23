@@ -6,9 +6,11 @@ use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\ComponentController;
 use App\Http\Controllers\Admin\GroupController;
 use App\Http\Controllers\Admin\IncidentController;
+use App\Http\Controllers\Admin\IncidentTemplateController;
 use App\Http\Controllers\Admin\InstallController;
 use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\MailTemplateController;
+use App\Http\Controllers\Admin\MaintenanceController;
 use App\Http\Controllers\Admin\PageMailController;
 use App\Http\Controllers\Admin\PagesController;
 use App\Http\Controllers\Admin\PasswordResetController;
@@ -88,13 +90,27 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         Route::post('services/{group}/move', [GroupController::class, 'move'])->name('groups.move');
 
         Route::get('incidents', [IncidentController::class, 'index'])->name('incidents');
+        Route::get('incidents/templates', [IncidentTemplateController::class, 'index'])->name('incidents.templates');
+        Route::get('incidents/templates/create', [IncidentTemplateController::class, 'create'])->name('incidents.templates.create');
+        Route::post('incidents/templates', [IncidentTemplateController::class, 'store'])->name('incidents.templates.store');
+        Route::get('incidents/templates/{template}/edit', [IncidentTemplateController::class, 'edit'])->name('incidents.templates.edit');
+        Route::put('incidents/templates/{template}', [IncidentTemplateController::class, 'update'])->name('incidents.templates.update');
+        Route::delete('incidents/templates/{template}', [IncidentTemplateController::class, 'destroy'])->name('incidents.templates.destroy');
         Route::get('incidents/create', [IncidentController::class, 'create'])->name('incidents.create');
         Route::post('incidents', [IncidentController::class, 'store'])->name('incidents.store');
         Route::get('incidents/{incident}/update', fn (Incident $incident) => view('admin.incident-update', [
             'incident' => $incident->load('updates'),
         ]))->name('incidents.update-form');
         Route::post('incidents/{incident}/update', [IncidentController::class, 'addUpdate'])->name('incidents.update');
+        Route::post('incidents/{incident}/resolve', [IncidentController::class, 'resolve'])->name('incidents.resolve');
         Route::delete('incidents/{incident}', [IncidentController::class, 'destroy'])->name('incidents.destroy');
+
+        Route::get('maintenance', [MaintenanceController::class, 'index'])->name('maintenance');
+        Route::get('maintenance/create', [MaintenanceController::class, 'create'])->name('maintenance.create');
+        Route::post('maintenance', [MaintenanceController::class, 'store'])->name('maintenance.store');
+        Route::get('maintenance/{maintenance}/edit', [MaintenanceController::class, 'edit'])->name('maintenance.edit');
+        Route::put('maintenance/{maintenance}', [MaintenanceController::class, 'update'])->name('maintenance.update');
+        Route::post('maintenance/{maintenance}/cancel', [MaintenanceController::class, 'cancel'])->name('maintenance.cancel');
 
         Route::get('status-page', [StatusPageSettingsController::class, 'edit'])->name('status-page');
         Route::get('status-page/preview', [StatusPageController::class, 'preview'])->name('status-page.preview');
@@ -107,8 +123,14 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         Route::post('subscribers/{subscriber}/resend', [SubscriberController::class, 'resend'])->name('subscribers.resend');
         Route::delete('subscribers/{subscriber}', [SubscriberController::class, 'destroy'])->name('subscribers.destroy');
 
+        // The old single Integrations screen redirects to the part a link meant.
         Route::get('integrations', [IntegrationController::class, 'index'])->name('integrations');
+        Route::get('integrations/send-out', [IntegrationController::class, 'out'])->name('integrations.out');
+        Route::get('integrations/bring-in', [IntegrationController::class, 'in'])->name('integrations.in');
+        Route::get('integrations/tokens', [IntegrationController::class, 'tokens'])->name('integrations.tokens');
+        Route::get('integrations/log', [IntegrationController::class, 'log'])->name('integrations.log');
         Route::post('integrations/notifications', [IntegrationController::class, 'storeEndpoint'])->name('integrations.endpoints.store');
+        Route::put('integrations/notifications/{endpoint}/events', [IntegrationController::class, 'updateEvents'])->name('integrations.endpoints.events');
         Route::post('integrations/notifications/{endpoint}/test', [IntegrationController::class, 'testEndpoint'])->name('integrations.endpoints.test');
         Route::delete('integrations/notifications/{endpoint}', [IntegrationController::class, 'destroyEndpoint'])->name('integrations.endpoints.destroy');
 
@@ -190,7 +212,7 @@ Route::get('/storage/{path}', function (string $path) {
 // Register explicit page routes from the same actions, so legacy and page routes
 // cannot drift in validation or middleware. Account/install routes remain central.
 $pageRouteNames = ['status', 'subscribe', 'subscribe.confirm', 'unsubscribe'];
-$pageAdminPrefixes = ['components', 'groups', 'incidents', 'status-page', 'subscribers', 'integrations', 'branding', 'mail-templates', 'mail'];
+$pageAdminPrefixes = ['components', 'groups', 'incidents', 'maintenance', 'status-page', 'subscribers', 'integrations', 'branding', 'mail-templates', 'mail'];
 $originalRoutes = Route::getRoutes()->getRoutes();
 foreach ($originalRoutes as $original) {
     $name = $original->getName();
