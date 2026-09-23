@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use App\Support\IpAddress;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
@@ -18,18 +19,6 @@ use Illuminate\Support\Facades\Http;
  */
 class SafeHttp
 {
-    /**
-     * Shut whatever the allowlist says. Link-local: 169.254.169.254 hands out
-     * instance credentials on most cloud providers, and that is the address this
-     * guard exists for. Loopback and the null address: this very machine, where
-     * things listen that were never meant to be reached over HTTP.
-     */
-    private const NEVER = [
-        '169.254.0.0/16', 'fe80::/10',
-        '127.0.0.0/8', '::1/128',
-        '0.0.0.0/8', '::/128',
-    ];
-
     /**
      * @param  array<int, string>|null  $allowedHosts  hosts an administrator vouched
      *                                                 for; null reads the setting at the moment of
@@ -190,69 +179,19 @@ class SafeHttp
         return in_array(strtolower($host), array_map('strtolower', $allowed), true);
     }
 
+    /** The ranges live in IpAddress, shared with the page SMTP check. */
     public function isNeverReachable(string $ip): bool
     {
-        $ip = $this->canonical($ip);
-
-        foreach (self::NEVER as $range) {
-            if ($this->inRange($ip, $range)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    protected function inRange(string $ip, string $cidr): bool
-    {
-        [$subnet, $bits] = explode('/', $cidr);
-
-        $ipBin = @inet_pton($this->canonical($ip));
-        $subnetBin = @inet_pton($subnet);
-
-        // Different families never overlap; by now a mapped IPv4 is plain IPv4,
-        // so a length mismatch really is a family mismatch and not a disguise.
-        if ($ipBin === false || $subnetBin === false || strlen($ipBin) !== strlen($subnetBin)) {
-            return false;
-        }
-
-        $whole = intdiv((int) $bits, 8);
-        $rest = (int) $bits % 8;
-
-        if (substr($ipBin, 0, $whole) !== substr($subnetBin, 0, $whole)) {
-            return false;
-        }
-
-        if ($rest === 0) {
-            return true;
-        }
-
-        $mask = chr(0xFF << (8 - $rest) & 0xFF);
-
-        return (($ipBin[$whole] ?? "\0") & $mask) === (($subnetBin[$whole] ?? "\0") & $mask);
+        return IpAddress::isNeverReachable($ip);
     }
 
     public function isPublic(string $ip): bool
     {
-        return filter_var(
-            $this->canonical($ip),
-            FILTER_VALIDATE_IP,
-            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE,
-        ) !== false;
+        return IpAddress::isPublic($ip);
     }
 
-    /**
-     * ::ffff:169.254.169.254 is IPv6 to filter_var and inet_pton, and
-     * 169.254.169.254 to the socket. Every check has to see the latter.
-     */
     protected function canonical(string $ip): string
     {
-        $bin = @inet_pton($ip);
-
-        if ($bin !== false && strlen($bin) === 16 && substr($bin, 0, 12) === str_repeat("\0", 10)."\xff\xff") {
-            return inet_ntop(substr($bin, 12)) ?: $ip;
-        }
-
-        return $ip;
+        return IpAddress::canonical($ip);
     }
 }
