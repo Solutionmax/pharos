@@ -48,6 +48,10 @@
 
   window.pharosUi = { open: open, close: close };
 
+  // A form that came back with errors reopens in its own dialog or drawer.
+  var reopen = document.querySelector('[data-modal][data-autoopen]');
+  if (reopen) open(reopen, document.querySelector('[data-dialog="' + reopen.id + '"]'));
+
   document.addEventListener('click', function (event) {
     var opener = event.target.closest('[data-dialog]');
     if (opener) {

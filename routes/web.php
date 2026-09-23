@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\GroupController;
 use App\Http\Controllers\Admin\IncidentController;
 use App\Http\Controllers\Admin\InstallController;
 use App\Http\Controllers\Admin\IntegrationController;
+use App\Http\Controllers\Admin\InvitationController;
 use App\Http\Controllers\Admin\MailTemplateController;
 use App\Http\Controllers\Admin\OverviewController;
 use App\Http\Controllers\Admin\PageMailController;
@@ -62,6 +63,9 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         Route::get('sso/callback', [SsoController::class, 'callback'])->name('sso.callback');
         Route::get('two-factor', [TwoFactorController::class, 'form'])->name('two-factor');
         Route::post('two-factor', [TwoFactorController::class, 'verify'])->name('two-factor.verify');
+        // An invitation is a password link with a longer life and its own token table.
+        Route::get('welcome/{token}', [InvitationController::class, 'show'])->middleware('throttle:30,1')->name('invitation');
+        Route::post('welcome', [InvitationController::class, 'accept'])->middleware('throttle:5,1')->name('invitation.accept');
     });
 
     // AuthenticateSession is what makes a password change actually kick the other
@@ -138,6 +142,8 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
             Route::get('users/{user}/pages', [UserController::class, 'editPages'])->name('users.pages.edit');
             Route::put('users/{user}/pages', [UserController::class, 'updatePages'])->name('users.pages.update');
             Route::put('users/{user}/role', [UserController::class, 'updateRole'])->name('users.role');
+            Route::put('users/{user}/access', [UserController::class, 'updateAccess'])->name('users.access');
+            Route::post('users/{user}/invite', [UserController::class, 'invite'])->middleware('throttle:10,1')->name('users.invite');
             Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
             Route::post('integrations/tokens', [IntegrationController::class, 'storeToken'])->name('integrations.tokens.store');

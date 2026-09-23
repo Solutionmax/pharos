@@ -99,6 +99,14 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        // Invitations for new accounts: a set password link that lasts three days.
+        'invitations' => [
+            'provider' => 'users',
+            'table' => 'invitation_tokens',
+            'expire' => 60 * 24 * 3,
+            'throttle' => 0,
+        ],
     ],
 
     /*

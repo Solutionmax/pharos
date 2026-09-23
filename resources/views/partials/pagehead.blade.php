@@ -2,7 +2,9 @@
      same answer everywhere. $back is optional; pages without a parent omit it.
      $crumbs (optional) adds the breadcrumb above the title; see
      partials/breadcrumb.blade.php. $actions (optional) is a list of extra
-     buttons: ['url' => ..., 'label' => ..., 'ghost' => bool, 'external' => bool]. --}}
+     buttons: ['url' => ..., 'label' => ..., 'ghost' => bool, 'external' => bool],
+     or ['dialog' => 'element-id', 'label' => ...] for a button that opens a
+     data-modal dialog or drawer (see public/assets/pharos-ui.js). --}}
 <div class="head">
   <div style="min-width:0">
     @isset($crumbs)
@@ -16,6 +18,10 @@
   </div>
   <span class="act">
     @foreach ($actions ?? [] as $extra)
+      @if (isset($extra['dialog']))
+      <button type="button" class="btn{{ ($extra['ghost'] ?? false) ? ' ghost' : '' }}" data-dialog="{{ $extra['dialog'] }}" aria-haspopup="dialog">{{ $extra['label'] }}</button>
+      @continue
+      @endif
       <a class="btn{{ ($extra['ghost'] ?? false) ? ' ghost' : '' }}" href="{{ $extra['url'] }}" @if ($extra['external'] ?? false) target="_blank" rel="noopener" @endif>{{ $extra['label'] }}</a>
     @endforeach
     @isset($action)

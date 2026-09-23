@@ -104,7 +104,7 @@ class ProfileController extends Controller
             return back()->withErrors(['code' => 'That code did not match. Check your phone clock and try the next one.']);
         }
 
-        $user->forceFill(['totp_confirmed_at' => now(), 'totp_last_step' => $step])->save();
+        $user->forceFill(['totp_confirmed_at' => now(), 'totp_last_step' => $step, 'require_two_factor' => false])->save();
         Audit::record('2fa.enabled', $user);
 
         // Shown once, on the next screen, and never recoverable afterwards.
