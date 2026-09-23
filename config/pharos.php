@@ -49,8 +49,10 @@ return [
     'license_secret_file' => env('PHAROS_LICENSE_SECRET_FILE'),
 
     'buy_url' => env('PHAROS_BUY_URL', 'https://pharos.solutionmax.net/#pricing'),
-    // Portal checkout per plan: {portal_buy_url}/brand-pack, /supported, /commercial.
+    // Portal checkout per plan: {portal_buy_url}/brand-pack, /supported.
     // Prices live in the shop, never in the app.
     'portal_buy_url' => env('PHAROS_PORTAL_BUY_URL', 'https://pharos.solutionmax.net/account/buy'),
+    // The commercial licence is quoted individually (see legal.html), not sold at checkout.
+    'quote_url' => env('PHAROS_QUOTE_URL', 'mailto:mail@solutionmax.net?subject=Pharos%20commercial%20licence'),
     'docs_url' => env('PHAROS_DOCS_URL', 'https://pharos.solutionmax.net/docs'),
 ];
