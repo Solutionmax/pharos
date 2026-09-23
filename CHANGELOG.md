@@ -42,6 +42,7 @@ Several status pages from one installation, each with its own roles and API toke
 - An expired licence no longer shows as running out soon with a negative number of days.
 - Activating a key names the plan it unlocks instead of always saying Brand pack activated.
 - The quick theme toggle no longer flashes the system theme before applying your choice, on the admin, installer and public status pages.
+- SQLite now waits up to 5 seconds for another writer instead of failing at once with "database is locked" (for example an API call arriving while checks run). Set `DB_BUSY_TIMEOUT` to change it.
 
 ### Security
 - HSTS: `Strict-Transport-Security` with a one year max age is sent on HTTPS requests only, without `includeSubDomains` or `preload`. Behind a TLS proxy this needs `TRUSTED_PROXIES`; a header the proxy sets itself still wins.
@@ -54,7 +55,7 @@ Several status pages from one installation, each with its own roles and API toke
 - Updating from the Updates screen (or with the `get` script, which hands over to the same updater) runs `php artisan migrate --force` by itself and puts the previous version back if a migration fails. The Docker image migrates on start. After a manual update (git pull or unpacking the zip by hand), run `php artisan migrate --force` yourself.
 - Back up files, database, uploads and APP_KEY together first. Rolling back means restoring the matching backups; do not run a down migration after creating extra pages.
 - Keep the scheduler running every minute: it now also announces, starts and ends maintenance windows.
-- The sessions list and last seen need `SESSION_DRIVER=database`, the default in `.env.example`. Optional new settings: `PHAROS_PORTAL_BUY_URL` and `PHAROS_QUOTE_URL`.
+- The sessions list and last seen need `SESSION_DRIVER=database`, the default in `.env.example`. Optional new settings: `PHAROS_PORTAL_BUY_URL`, `PHAROS_QUOTE_URL`, `DB_BUSY_TIMEOUT`, and `DB_JOURNAL_MODE=wal` for installations on a local disk (leave it off on shared hosting with a network file system).
 
 ## [0.6.0] — 2026-09-09
 
