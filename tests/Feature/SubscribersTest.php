@@ -516,7 +516,7 @@ class SubscribersTest extends TestCase
         $csv = $response->streamedContent();
 
         $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
-        $this->assertStringContainsString('email,subscribed_at', $csv);
+        $this->assertStringContainsString('email,"subscribed_at (UTC)"', $csv);
         $this->assertStringContainsString('ann@example.net', $csv);
         $this->assertStringNotContainsString('pat@example.net', $csv);
         $this->assertStringNotContainsString('gone@example.net', $csv);

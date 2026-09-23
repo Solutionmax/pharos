@@ -35,8 +35,9 @@
           <label for="timezone">Time zone</label>
           @include('partials.timezone-select', ['selected' => $timezone])
           <span class="help"><b>{{ $timezone }}, {{ $offset }} now.</b>
-            Times on the status page, in emails and in the admin are shown in this zone.
-            Everything is stored in UTC, so you can change it any time.</span>
+            Times on the status page, in emails, in notifications and in the admin are shown in this zone.
+            Everything is stored in UTC, so you can change it any time.
+            Each user can pick a zone of their own for the admin screens under Profile, Preferences; everything customers see stays in this one.</span>
         </div>
       </div>
 

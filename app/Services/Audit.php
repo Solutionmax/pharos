@@ -116,6 +116,14 @@ class Audit
     /** @return array<string, array{from: mixed, to: mixed}> */
     public static function diff(Model $model): array
     {
+        // A stored diff is read later by everyone: a time in it is written in the
+        // installation zone, never in the personal zone of whoever made the change.
+        return Clock::withInstallationZone(fn () => self::changes($model));
+    }
+
+    /** @return array<string, array{from: mixed, to: mixed}> */
+    protected static function changes(Model $model): array
+    {
         $changes = [];
 
         foreach ($model->getDirty() as $key => $new) {

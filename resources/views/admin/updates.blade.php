@@ -133,7 +133,7 @@ php artisan pharos:update</pre>
           @foreach ($backups as $backup)
             <tr>
               <td><b>{{ $backup['version'] }}</b> <span class="sub mono">{{ $backup['name'] }}</span></td>
-              <td>{{ $backup['created_at']->format('j M Y H:i') }} <span class="sub">{{ $backup['created_at']->diffForHumans() }}</span></td>
+              <td>{{ $backup['created_at']->copy()->setTimezone(\App\Services\Clock::timezone())->format('j M Y H:i') }} <span class="sub">{{ $backup['created_at']->diffForHumans() }}</span></td>
               <td class="num">{{ \App\Support\Bytes::human($backup['size']) }}</td>
               <td>
                 <span class="rowacts">
@@ -141,14 +141,14 @@ php artisan pharos:update</pre>
                   <form method="POST" action="{{ route('admin.updates.backup.rollback', $backup['name']) }}"
                         data-job="rollback" data-progress="{{ route('admin.updates.backup.progress') }}" data-after="{{ route('admin.login', ['after' => 'rollback']) }}"
                         data-confirm-title="Roll back to {{ $backup['version'] }}?"
-                        data-confirm="Pharos replaces its own files with the copy taken on {{ $backup['created_at']->format('j M Y H:i') }} and, on SQLite, puts that copy of the database back too. Everything entered since then is lost from the app, but not from the safety backup Pharos makes first. The page is briefly unavailable."
+                        data-confirm="Pharos replaces its own files with the copy taken on {{ $backup['created_at']->copy()->setTimezone(\App\Services\Clock::timezone())->format('j M Y H:i') }} and, on SQLite, puts that copy of the database back too. Everything entered since then is lost from the app, but not from the safety backup Pharos makes first. The page is briefly unavailable."
                         data-confirm-action="Roll back">
                     @csrf
                     <button type="submit">Roll back</button>
                   </form>
                   <form method="POST" action="{{ route('admin.updates.backup.destroy', $backup['name']) }}"
                         data-confirm-title="Remove backup {{ $backup['name'] }}?"
-                        data-confirm="This is the copy of {{ $backup['version'] }} taken on {{ $backup['created_at']->format('j M Y H:i') }}. Once removed, there is nothing to put back."
+                        data-confirm="This is the copy of {{ $backup['version'] }} taken on {{ $backup['created_at']->copy()->setTimezone(\App\Services\Clock::timezone())->format('j M Y H:i') }}. Once removed, there is nothing to put back."
                         data-confirm-action="Remove backup">
                     @csrf @method('DELETE')
                     <button type="submit">Delete</button>

@@ -12,7 +12,7 @@
   @csrf
   @if ($maintenance->exists) @method('PUT') @endif
   <div class="op-card">
-    <header><h3>The window</h3><span class="hint">Times in {{ \App\Services\Clock::timezone() }} ({{ \App\Services\Clock::offsetLabel() }})</span></header>
+    <header><h3>The window</h3>@include('partials.zone-hint', ['class' => 'hint'])</header>
     <div class="bd">
       <ol class="ix-steps">
         <li><div>

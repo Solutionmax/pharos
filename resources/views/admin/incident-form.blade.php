@@ -55,6 +55,7 @@
               <label for="occurred_at">Started at</label>
               <input id="occurred_at" name="occurred_at" type="datetime-local" value="{{ old('occurred_at', \App\Services\Clock::now()->format('Y-m-d\TH:i')) }}">
               <span class="help">Backdate an incident you log afterwards.</span>
+              @include('partials.zone-hint')
             </div>
           </div>
         </div></li>
@@ -111,13 +112,13 @@
 
   <aside class="op-side op-preview" aria-labelledby="preview-title">
     <div class="op-card">
-      <header><h3 id="preview-title">Live preview</h3><span class="hint">As the status page shows it</span></header>
+      <header><h3 id="preview-title">Live preview</h3><span class="hint">As the status page shows it, in {{ \App\Services\Clock::installationTimezone() }}</span></header>
       <div class="bd" id="incident-preview">
         <div class="frame" aria-hidden="true">
           <div class="pv-inc">
             <div class="pv-hd"><h4 data-pv="title">Your title appears here</h4><span class="pill p" data-pv="status" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--orange-soft);color:var(--orange-ink)">Investigating</span></div>
             <p class="pv-aff" data-pv="affects" hidden>Affects <b></b></p>
-            <div class="pv-tl"><strong data-pv="status-line">Investigating</strong><time>{{ \App\Services\Clock::now()->format('H:i') }}</time><p data-pv="message">What you know, what you are doing, and when you will post again.</p></div>
+            <div class="pv-tl"><strong data-pv="status-line">Investigating</strong><time>{{ \App\Services\Clock::withInstallationZone(fn () => \App\Services\Clock::now()->format('H:i')) }}</time><p data-pv="message">What you know, what you are doing, and when you will post again.</p></div>
           </div>
         </div>
         <div class="ix-note warn pv-private" data-pv="private" style="display:none"><span aria-hidden="true">⚠</span><span>Not public: customers do not see this incident and subscribers are not mailed.</span></div>
