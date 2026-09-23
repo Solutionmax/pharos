@@ -23,6 +23,40 @@ without it cannot forge one, no matter what they patch — they would have to ch
 public key in their own copy, which is legal under the AGPL and also means they are no
 longer running your build.
 
+## Plans
+
+| Plan | Price | What the key carries | Pages |
+|---|---|---|---|
+| Free | none | no key | 1 |
+| Brand pack | € 79, one time | `brand_pack`, no `expires_at` | 1 |
+| Supported | € 149 per year | `brand_pack`, `multi_pages`, `limits.status_pages` = 5, `expires_at` one year out | up to 5 |
+| Commercial licence | from € 599 per year, by quote | `brand_pack`, `multi_pages`, no page limit, `expires_at` one year out | unlimited |
+
+- **Free**: every feature of the core, 1 status page, the "Powered by Pharos" footer credit.
+- **Brand pack**: own logo (light and dark), favicon, logo in email and editable mail
+  templates, footer credit removed. Keeps working forever.
+- **Supported**: the Brand pack included and kept, email support, and up to 5 status pages, each with its own components, subscribers, branding, email,
+  integrations and user roles per page.
+- **Commercial licence**: everything in Supported, unlimited status pages, and the AGPL
+  publication duty lifted (that part is the written agreement, not the key).
+
+When a yearly key lapses, `brand_pack` stays (it is in `License::PERPETUAL`) and existing
+pages keep running, but creating or reactivating pages beyond 1 is blocked.
+
+Signing a Supported key by hand:
+
+```bash
+php artisan pharos:license:sign customer@example.net \
+  --features=brand_pack,multi_pages --status-pages=5 --months=12 \
+  --domain=status.customer.example --key=/root/secrets/pharos-license-secret.hex
+```
+
+For a commercial key, leave `--status-pages` off (no limit means unlimited).
+
+The portal plans (`/account/buy/brand-pack`, `/account/buy/supported`) must sign keys with
+these features and limits; prices stay as Stripe price IDs in the portal config. The
+commercial licence is quoted individually and its key is signed by hand.
+
 ## The keys
 
 | | |
@@ -85,7 +119,8 @@ No phone-home is required. Licence rights are verified locally. Keys may include
 expiry and a central-installation domain binding; see the sections below.
 
 Multiple pages use the signed `multi_pages` feature and optional positive integer
-`limits.status_pages`. The commercial bundle also includes `brand_pack`. Creation
+`limits.status_pages`. Supported keys carry a limit of 5; commercial keys carry no limit.
+Both also include `brand_pack`. Creation
 and reactivation above the active-page limit are blocked; existing pages keep running.
 See [multiple status pages](multiple-status-pages.md) for signing examples and behavior.
 
