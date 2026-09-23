@@ -16,6 +16,8 @@ use Illuminate\Notifications\Notifiable;
 /**
  * @property UserRole $role
  * @property array<int, string>|null $dismissed_notes
+ * @property bool $require_two_factor
+ * @property string|null $theme
  */
 class User extends Authenticatable
 {
@@ -24,7 +26,9 @@ class User extends Authenticatable
 
     protected $fillable = ['name', 'email', 'password', 'role'];
 
-    protected $auditIgnore = ['totp_secret', 'totp_last_step', 'totp_confirmed_at', 'dismissed_notes'];
+    protected $auditIgnore = ['totp_secret', 'totp_last_step', 'totp_confirmed_at', 'dismissed_notes', 'theme'];
+
+    public const THEMES = ['light', 'system', 'dark'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -37,6 +41,7 @@ class User extends Authenticatable
             'totp_secret' => 'encrypted',
             'totp_confirmed_at' => 'datetime',
             'dismissed_notes' => 'array',
+            'require_two_factor' => 'boolean',
             'created_at' => LocalTime::class,
             'updated_at' => LocalTime::class,
         ];
@@ -113,6 +118,12 @@ class User extends Authenticatable
     public function restoreNotes(): void
     {
         $this->forceFill(['dismissed_notes' => null])->save();
+    }
+
+    /** Invited with "turn on two factor first", and not done yet. */
+    public function mustSetUpTwoFactor(): bool
+    {
+        return $this->require_two_factor && ! $this->hasTwoFactor();
     }
 
     /** A secret that was never confirmed with a real code does not count. */

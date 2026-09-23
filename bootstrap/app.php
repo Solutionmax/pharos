@@ -3,6 +3,7 @@
 use App\Http\Middleware\ApiTokenAuth;
 use App\Http\Middleware\CentralAdministration;
 use App\Http\Middleware\EnsurePageCapability;
+use App\Http\Middleware\RequireTwoFactorSetup;
 use App\Http\Middleware\ResolveStatusPage;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -27,6 +28,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: SecurityHeaders::class);
         $middleware->appendToGroup('web', CentralAdministration::class);
+        // Invited with "two factor first": only the profile until it is on.
+        $middleware->appendToGroup('web', RequireTwoFactorSetup::class);
 
         // Proxy trust is read by Laravel from config/trustedproxy.php after
         // environment/config loading, including when config is cached.

@@ -6,40 +6,59 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\StatusPage;
 use App\Models\User;
+use App\Notifications\InviteUser;
 use App\Services\Audit;
+use App\Services\UserSessions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Rules\Password as PasswordRule;
+use Throwable;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request, UserSessions $sessions)
     {
+        $search = $request->query('q');
+
         return view('admin.users', [
             'users' => User::with('statusPages')->orderBy('name')->get(),
             'pages' => StatusPage::whereNull('archived_at')->orderBy('name')->get(),
+            'lastSeen' => $sessions->lastSeen(),
+            'sessionsKnown' => UserSessions::available(),
+            'search' => is_string($search) ? $search : '',
         ]);
     }
 
+    /**
+     * Without a password the new account gets an invitation mail with a link
+     * to choose one. A password typed here still works, as it always did.
+     */
     public function store(Request $request)
     {
+        $this->readAccessMatrix($request);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::min(12)],
+            'password' => ['nullable', 'confirmed', PasswordRule::min(12)],
             'role' => ['sometimes', Rule::enum(UserRole::class)],
+            'require_two_factor' => ['sometimes', 'boolean'],
             ...$this->pageRules(),
         ]);
+        $invite = blank($data['password'] ?? null);
 
-        DB::transaction(function () use ($data) {
+        $user = DB::transaction(function () use ($data, $invite) {
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
-                'password' => Hash::make($data['password']),
+                // Nobody knows this one: the invitation replaces it.
+                'password' => Hash::make($invite ? Str::random(64) : $data['password']),
                 'role' => $data['role'] ?? UserRole::User,
             ]);
+            $user->forceFill(['require_two_factor' => (bool) ($data['require_two_factor'] ?? false)])->save();
             if (! $user->isAdmin()) {
                 $this->syncPages($user, $data);
                 Audit::record('user.page_access_changed', $user, ['pages' => [
@@ -47,9 +66,74 @@ class UserController extends Controller
                     'to' => $user->statusPages()->pluck('status_page_user.role', 'status_pages.id')->all(),
                 ]]);
             }
+
+            return $user;
         });
 
-        return redirect()->route('admin.users')->with('status', "{$data['name']} can now sign in.");
+        if (! $invite) {
+            return redirect()->route('admin.users')->with('status', "{$data['name']} can now sign in.");
+        }
+
+        return $this->sendInvitation($request, $user)
+            ? redirect()->route('admin.users')->with('status', "Invitation sent to {$user->email}.")
+            : redirect()->route('admin.users')->withErrors(['mail' => "{$user->name} was added, but the invitation could not be sent. Check Settings, Central mail, then use Send a new invitation."]);
+    }
+
+    /** A fresh invitation link, for someone who lost or never got the first one. */
+    public function invite(Request $request, User $user)
+    {
+        return $this->sendInvitation($request, $user)
+            ? redirect()->route('admin.users')->with('status', "A new invitation was sent to {$user->email}.")
+            : redirect()->route('admin.users')->withErrors(['mail' => 'The invitation could not be sent. Check Settings, Central mail.']);
+    }
+
+    protected function sendInvitation(Request $request, User $user): bool
+    {
+        try {
+            $token = Password::broker(InvitationController::BROKER)->createToken($user);
+            $user->notify(new InviteUser($token, $request->user()->name));
+            Audit::record('user.invited', $user);
+
+            return true;
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return false;
+        }
+    }
+
+    /**
+     * The side panel's one form: account type and every page role together.
+     * The same guards apply as on the separate forms.
+     */
+    public function updateAccess(Request $request, User $user)
+    {
+        $this->readAccessMatrix($request);
+        $data = $request->validate([
+            'role' => ['required', Rule::enum(UserRole::class)],
+            ...$this->pageRules(),
+        ]);
+        $role = UserRole::from($data['role']);
+
+        if ($role === UserRole::User && $user->isAdmin() && User::where('role', UserRole::Admin)->count() <= 1) {
+            return back()->withErrors(['role' => 'This is the only administrator. Promote someone else first.']);
+        }
+
+        DB::transaction(function () use ($user, $role, $data) {
+            if ($user->role !== $role) {
+                $user->update(['role' => $role]);
+            }
+            if ($role === UserRole::User) {
+                $before = $user->statusPages()->pluck('status_page_user.role', 'status_pages.id')->all();
+                $this->syncPages($user, $data);
+                $after = $user->statusPages()->pluck('status_page_user.role', 'status_pages.id')->all();
+                if ($before !== $after) {
+                    Audit::record('user.page_access_changed', $user, ['pages' => ['from' => $before, 'to' => $after]]);
+                }
+            }
+        });
+
+        return redirect()->route('admin.users')->with('status', "Access for {$user->name} saved.");
     }
 
     public function editPages(User $user)
@@ -86,6 +170,25 @@ class UserController extends Controller
             $assignments[$id] = ['role' => $data['page_roles'][$id] ?? $existing[$id] ?? 'editor'];
         }
         $user->statusPages()->sync($assignments);
+    }
+
+    /**
+     * The side panel posts access[page id] = none|viewer|editor|admin. Turn that
+     * into the status_page_ids + page_roles pair every other form already sends,
+     * so one set of rules validates both.
+     */
+    private function readAccessMatrix(Request $request): void
+    {
+        $matrix = $request->input('access');
+        if (! is_array($matrix)) {
+            return;
+        }
+        $request->validate(['access.*' => ['required', Rule::in(['none', 'viewer', 'editor', 'admin'])]]);
+        $chosen = array_filter($matrix, fn ($role) => $role !== 'none');
+        $request->merge([
+            'status_page_ids' => array_map('intval', array_keys($chosen)),
+            'page_roles' => $chosen,
+        ]);
     }
 
     private function pageRules(): array
