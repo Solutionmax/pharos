@@ -92,10 +92,14 @@ class SubscriberController extends Controller
 
         Audit::record('subscribers.exported', null, ['active' => ['from' => '', 'to' => (string) $count]]);
 
-        return response()->streamDownload(function () {
+        // The body streams after the request's middleware has finished, so the
+        // zone of the person downloading is captured now and named in the header.
+        $zone = Clock::timezone();
+
+        return response()->streamDownload(fn () => Clock::withZone($zone, function () use ($zone) {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF"); // BOM: Excel then reads the arrows and dashes as UTF-8
-            fputcsv($out, ['email', 'subscribed_at']);
+            fputcsv($out, ['email', "subscribed_at ($zone)"]);
 
             Subscriber::active()->chunkById(500, function ($rows) use ($out) {
                 foreach ($rows as $s) {
@@ -104,6 +108,6 @@ class SubscriberController extends Controller
             });
 
             fclose($out);
-        }, $name, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }), $name, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 }

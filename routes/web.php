@@ -32,6 +32,7 @@ use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsurePageCapability;
 use App\Http\Middleware\NoStore;
 use App\Http\Middleware\ResolveStatusPage;
+use App\Http\Middleware\UsePersonalTimezone;
 use App\Models\Incident;
 use App\Services\PageUrls;
 use App\Services\SelfUpdater;
@@ -72,8 +73,10 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
     });
 
     // AuthenticateSession is what makes a password change actually kick the other
-    // sessions out; logoutOtherDevices does nothing without it.
-    Route::middleware(['auth', AuthenticateSession::class])->group(function () {
+    // sessions out; logoutOtherDevices does nothing without it. UsePersonalTimezone
+    // comes last: it needs the user, and it is what makes the admin screens show
+    // and read times in that user's own zone.
+    Route::middleware(['auth', AuthenticateSession::class, UsePersonalTimezone::class])->group(function () {
         Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
         Route::get('/', fn () => redirect()->to(PageUrls::landing(auth()->user())));
@@ -257,7 +260,7 @@ foreach ($originalRoutes as $original) {
     Route::getRoutes()->add($copy);
 }
 
-Route::prefix('admin/pages')->name('admin.pages.')->middleware(['web', 'auth', AuthenticateSession::class, NoStore::class, EnsureAdmin::class])->group(function () {
+Route::prefix('admin/pages')->name('admin.pages.')->middleware(['web', 'auth', AuthenticateSession::class, UsePersonalTimezone::class, NoStore::class, EnsureAdmin::class])->group(function () {
     Route::get('/', [PagesController::class, 'index'])->name('index');
     Route::get('/create', [PagesController::class, 'create'])->name('create');
     Route::post('/', [PagesController::class, 'store'])->name('store');
@@ -265,10 +268,10 @@ Route::prefix('admin/pages')->name('admin.pages.')->middleware(['web', 'auth', A
     Route::put('/{statusPage}', [PagesController::class, 'update'])->name('update');
     Route::post('/{statusPage}/archive', [PagesController::class, 'archive'])->name('archive');
 });
-Route::get('admin/no-pages', fn () => view('admin.no-pages'))->middleware(['auth', AuthenticateSession::class, NoStore::class])->name('admin.no-pages');
+Route::get('admin/no-pages', fn () => view('admin.no-pages'))->middleware(['auth', AuthenticateSession::class, UsePersonalTimezone::class, NoStore::class])->name('admin.no-pages');
 
 foreach (['admin' => 'admin.', 'admin/pages/{statusPage}' => 'page.admin.'] as $prefix => $names) {
-    Route::prefix($prefix)->name($names)->middleware(['auth', AuthenticateSession::class, NoStore::class, ResolveStatusPage::class, EnsurePageCapability::class])->group(function () {
+    Route::prefix($prefix)->name($names)->middleware(['auth', AuthenticateSession::class, UsePersonalTimezone::class, NoStore::class, ResolveStatusPage::class, EnsurePageCapability::class])->group(function () {
         Route::get('mail', [PageMailController::class, 'edit'])->name('mail.edit');
         Route::put('mail', [PageMailController::class, 'update'])->name('mail.update');
         Route::post('mail-test', [PageMailController::class, 'test'])->name('mail.test');

@@ -347,8 +347,12 @@ html.pui-locked{overflow:hidden}
 .pf-pref form{margin:0}
 .pf-prefctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .pf-prefctl .btn{padding:6px 12px;font-size:12.5px}
+.pf-prefs{margin:0}.pf-prefs .pf-pref:first-of-type{border-top:0;padding-top:0}
+.pf-pref label b{cursor:pointer}.pf-pref .pf-zone-now{display:block;margin-top:4px;font-size:12px;color:var(--ink-2)}.pf-pref .err{display:block;margin-top:4px}
+.pf-tzctl select{width:auto;min-width:220px;max-width:300px}
+.pf-prefsave{border-top:0;padding-top:0}
 @media(max-width:1100px){.pf-grid{grid-template-columns:minmax(0,1fr)}}
-@media(max-width:700px){.pf-hero{padding:20px}.pf-hero .right{margin-left:0}.pf-stat{text-align:left}.pf-pref{grid-template-columns:minmax(0,1fr)}.pf-prefctl{justify-content:flex-start}}
+@media(max-width:700px){.pf-hero{padding:20px}.pf-hero .right{margin-left:0}.pf-stat{text-align:left}.pf-pref{grid-template-columns:minmax(0,1fr)}.pf-prefctl{justify-content:flex-start}.pf-tzctl,.pf-tzctl select{width:100%;max-width:none;min-width:0}.pf-prefsave>span:first-child{display:none}}
 .ov .sub{font-size:13px;color:var(--ink-3)}
 .ov-steps .sub{font-size:12px}
 @media(max-width:900px){.navsearch kbd{display:none}}

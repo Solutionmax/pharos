@@ -242,6 +242,13 @@ class MailTemplates
      */
     public function sample(string $key, User $user): array
     {
+        // A preview of a mail subscribers get, so in the zone they get it in.
+        return Clock::withInstallationZone(fn () => $this->sampleVars($key, $user));
+    }
+
+    /** @return array<string, string|int> */
+    protected function sampleVars(string $key, User $user): array
+    {
         $name = self::nameFor($user->email);
 
         if ($key === 'subscribe_confirm') {
