@@ -19,15 +19,12 @@ class BrandMarkTest extends TestCase
         $this->assertMatchesRegularExpression('#<img src="[^"]*/brand/partners/teams\.svg\?v=\w+" alt=""#', $html);
     }
 
-    public function test_a_partner_without_an_official_file_keeps_its_letters(): void
+    public function test_both_official_partner_files_are_used(): void
     {
-        $html = view('partials.brand-mark', ['mark' => 'slack'])->render();
-
-        if (is_file(public_path('brand/partners/slack.svg'))) {
-            $this->markTestSkipped('The official Slack mark has been added.');
+        foreach (['slack', 'teams'] as $mark) {
+            $html = view('partials.brand-mark', ['mark' => $mark])->render();
+            $this->assertStringContainsString("brand/partners/{$mark}.svg", $html, $mark);
+            $this->assertStringContainsString('lg-official', $html, $mark);
         }
-
-        $this->assertStringNotContainsString('<img', $html);
-        $this->assertStringContainsString('>Sl<', $html);
     }
 }
