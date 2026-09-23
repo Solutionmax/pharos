@@ -32,7 +32,7 @@ class AuditController extends Controller
                 ->pluck('action')
                 ->map(fn ($a) => explode('.', $a)[0])
                 ->unique()->sort()->values(),
-            'actions' => AuditEntry::query()->distinct()->orderBy('action')->pluck('action'),
+            'actionOptions' => AuditEntry::query()->distinct()->orderBy('action')->pluck('action'),
             'people' => User::whereIn('id', AuditEntry::query()->whereNotNull('user_id')->distinct()->select('user_id'))->orderBy('name')->get(['id', 'name', 'email']),
             'pages' => StatusPage::orderBy('id')->get(['id', 'name']),
             'retentionDays' => InstallSettings::auditDays(),
