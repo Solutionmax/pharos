@@ -193,4 +193,24 @@ class PageRolesTest extends TestCase
                 ->assertDontSee('sensitive-heartbeat')->assertDontSee('https://user:password');
         }
     }
+
+    /**
+     * The role column only ever gets viewer/editor/admin through the app's own
+     * forms (validated by Rule::in), but a hand-edited row, an import, or a future
+     * migration bug can leave something else in the pivot. The user list must not
+     * 500 on that: it should show the stored value rather than crash the whole screen.
+     */
+    public function test_users_list_survives_an_unrecognised_page_role_value(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+        $page = StatusPage::default();
+        $member = User::factory()->create(['role' => UserRole::User]);
+        // Bypass validation on purpose: this simulates corrupted/legacy data, which
+        // the interface itself can never write.
+        $member->statusPages()->attach($page->id, ['role' => 'read']);
+
+        $this->actingAs($admin)->get('/admin/users')
+            ->assertOk()
+            ->assertSee('read');
+    }
 }
