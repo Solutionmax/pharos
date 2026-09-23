@@ -49,10 +49,14 @@ class AuditController extends Controller
         $filters = $this->filters($request);
         $name = 'pharos-audit-'.Clock::now()->format('Ymd-Hi').'.csv';
 
-        return response()->streamDownload(function () use ($filters) {
+        // The body streams after the request's middleware has finished, so the
+        // zone of the person downloading is captured now and named in the header.
+        $zone = Clock::timezone();
+
+        return response()->streamDownload(fn () => Clock::withZone($zone, function () use ($filters, $zone) {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF"); // BOM: Excel then reads the arrows and dashes as UTF-8
-            fputcsv($out, ['when', 'actor', 'ip', 'action', 'subject', 'changes']);
+            fputcsv($out, ["when ($zone)", 'actor', 'ip', 'action', 'subject', 'changes']);
 
             $this->query($filters)->chunkById(500, function ($rows) use ($out) {
                 foreach ($rows as $e) {
@@ -64,7 +68,7 @@ class AuditController extends Controller
             }, 'id');
 
             fclose($out);
-        }, $name, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }), $name, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     /** @return array{actor: string, subject: string, user: ?int, page_id: ?int, action: string} */

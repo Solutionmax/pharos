@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\Branding;
+use App\Services\DisplayZone;
 use App\Services\MailConfig;
 use App\Services\PageContext;
 use Illuminate\Pagination\Paginator;
@@ -17,6 +18,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(PageContext::class, fn () => new PageContext);
+        // Scoped: a personal zone belongs to one request and is flushed with it.
+        $this->app->scoped(DisplayZone::class, fn () => new DisplayZone);
     }
 
     /**

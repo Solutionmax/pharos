@@ -3,6 +3,7 @@
 namespace App\Mail\Concerns;
 
 use App\Services\Branding;
+use App\Services\Clock;
 use App\Services\MailConfig;
 use App\Services\MailTemplates;
 use App\Services\PageContext;
@@ -22,9 +23,15 @@ trait Branded
         $this->brandPageId = app(PageContext::class)->id();
     }
 
+    /**
+     * The page the mail belongs to, and the installation zone: a mail is read by
+     * someone else, never in the personal zone of the admin who triggered it.
+     */
     protected function inBrandContext(callable $callback): mixed
     {
-        return app(PageContext::class)->run($this->brandPageId ?? app(PageContext::class)->id(), $callback);
+        return Clock::withInstallationZone(
+            fn () => app(PageContext::class)->run($this->brandPageId ?? app(PageContext::class)->id(), $callback),
+        );
     }
 
     protected function branding(): Branding

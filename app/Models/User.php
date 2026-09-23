@@ -18,6 +18,7 @@ use Illuminate\Notifications\Notifiable;
  * @property array<int, string>|null $dismissed_notes
  * @property bool $require_two_factor
  * @property string|null $theme
+ * @property string|null $timezone
  */
 class User extends Authenticatable
 {
@@ -26,7 +27,7 @@ class User extends Authenticatable
 
     protected $fillable = ['name', 'email', 'password', 'role'];
 
-    protected $auditIgnore = ['totp_secret', 'totp_last_step', 'totp_confirmed_at', 'dismissed_notes', 'theme'];
+    protected $auditIgnore = ['totp_secret', 'totp_last_step', 'totp_confirmed_at', 'dismissed_notes', 'theme', 'timezone'];
 
     public const THEMES = ['light', 'system', 'dark'];
 

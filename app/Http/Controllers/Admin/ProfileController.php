@@ -87,8 +87,18 @@ class ProfileController extends Controller
      */
     public function updatePreferences(Request $request)
     {
-        $data = $request->validate(['theme' => ['required', Rule::in(User::THEMES)]]);
-        $request->user()->forceFill(['theme' => $data['theme']])->save();
+        $data = $request->validate([
+            'theme' => ['required', Rule::in(User::THEMES)],
+            // Empty means the installation default. Only zones PHP knows, so a
+            // stored value can never break a page.
+            'timezone' => ['sometimes', 'nullable', 'string', Rule::in(\DateTimeZone::listIdentifiers())],
+        ], ['timezone.in' => 'Choose a time zone from the list.']);
+
+        $changes = ['theme' => $data['theme']];
+        if ($request->has('timezone')) {
+            $changes['timezone'] = $data['timezone'] ?? null;
+        }
+        $request->user()->forceFill($changes)->save();
 
         return redirect()->route('admin.profile')
             ->with('status', 'Your preferences have been saved.')

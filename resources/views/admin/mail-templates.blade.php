@@ -148,6 +148,7 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
       <p class="hint-row" id="preview-error" role="alert" hidden></p>
       <p class="hint-row">
         Rendered from the wording on the left with a sample incident, in the real frame.
+        Times are in {{ \App\Services\Clock::installationTimezone() }}, like the mails subscribers get.
         @if ($licensed)
           Nothing is saved until you press <b>Save</b>.
         @else

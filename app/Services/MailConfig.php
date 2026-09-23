@@ -267,7 +267,16 @@ class MailConfig
         ];
     }
 
+    /**
+     * Mail is for someone else, so it is rendered in the installation zone even
+     * when an admin with a personal zone triggers it.
+     */
     public function sendTo(string $address, Mailable $mail): void
+    {
+        Clock::withInstallationZone(fn () => $this->deliver($address, $mail));
+    }
+
+    protected function deliver(string $address, Mailable $mail): void
     {
         if (($this->storedPage()['mode'] ?: 'central') === 'central') {
             Mail::to($address)->send($mail);

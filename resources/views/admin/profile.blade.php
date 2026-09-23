@@ -4,6 +4,8 @@
 @php
   $palette = ['#0b6bcb', '#7a5af8', '#0e9384', '#e8590c', '#c11574', '#667085'];
   $themeNow = in_array($user->theme, \App\Models\User::THEMES, true) ? $user->theme : app(\App\Services\Branding::class)->theme();
+  $installationZone = \App\Services\Clock::installationTimezone();
+  $zoneNow = \App\Services\Clock::timezone();
   $securityGood = ($user->hasTwoFactor() ? 1 : 0) + 1;
 @endphp
 @include('partials.pagehead', [
@@ -67,17 +69,31 @@
     <section class="ix-card" aria-labelledby="pf-prefs">
       <header><h3 id="pf-prefs">Preferences</h3></header>
       <div class="bd">
-        <form method="POST" action="{{ route('admin.profile.preferences') }}" class="pf-pref">
+        <form method="POST" action="{{ route('admin.profile.preferences') }}" class="pf-prefs">
           @csrf @method('PUT')
-          <span><b id="pf-theme-label">Theme</b><span>For the admin screens. The quick switch at the top of each screen still works for this browser.</span></span>
-          <span class="pf-prefctl">
-            <span class="pp-seg" role="radiogroup" aria-labelledby="pf-theme-label">
-              @foreach (['light' => 'Light', 'system' => 'System', 'dark' => 'Dark'] as $value => $label)
-                <label><input type="radio" name="theme" value="{{ $value }}" @checked($themeNow === $value)><span>{{ $label }}</span></label>
-              @endforeach
+          <div class="pf-pref">
+            <span><b id="pf-theme-label">Theme</b><span>For the admin screens. The quick switch at the top of each screen still works for this browser.</span></span>
+            <span class="pf-prefctl">
+              <span class="pp-seg" role="radiogroup" aria-labelledby="pf-theme-label">
+                @foreach (['light' => 'Light', 'system' => 'System', 'dark' => 'Dark'] as $value => $label)
+                  <label><input type="radio" name="theme" value="{{ $value }}" @checked($themeNow === $value)><span>{{ $label }}</span></label>
+                @endforeach
+              </span>
             </span>
-            <button class="btn ghost" type="submit">Save</button>
-          </span>
+          </div>
+          <div class="pf-pref">
+            <span><label for="pf-timezone"><b>Time zone</b></label>
+              <span id="pf-timezone-help">For you only, in the admin screens: times you read and times you type. Status pages, emails and notifications keep the installation zone, {{ $installationZone }}.
+                <b class="pf-zone-now">Now showing {{ $zoneNow }} ({{ \App\Services\Clock::offsetLabel($zoneNow) }}).</b></span>
+              @error('timezone')<span class="err">{{ $message }}</span>@enderror</span>
+            <span class="pf-prefctl pf-tzctl">
+              @include('partials.timezone-select', ['id' => 'pf-timezone', 'selected' => old('timezone', $user->timezone), 'default' => $installationZone, 'describedBy' => 'pf-timezone-help'])
+            </span>
+          </div>
+          <div class="pf-pref pf-prefsave">
+            <span></span>
+            <span class="pf-prefctl"><button class="btn ghost" type="submit">Save preferences</button></span>
+          </div>
         </form>
         <div class="pf-pref">
           <span><b>"Good to know" notes</b>

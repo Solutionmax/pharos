@@ -35,7 +35,8 @@ class OutgoingWebhook
                 [
                     'status_page_id' => $endpoint->status_page_id,
                     'event' => $category,
-                    'payload' => $this->payload($endpoint->format, $incident, $event),
+                    // Read by someone else: always the installation zone.
+                    'payload' => Clock::withInstallationZone(fn () => $this->payload($endpoint->format, $incident, $event)),
                     'next_attempt_at' => now(),
                 ]);
         }
@@ -59,7 +60,7 @@ class OutgoingWebhook
                 [
                     'status_page_id' => $endpoint->status_page_id,
                     'event' => 'maintenance',
-                    'payload' => $this->maintenancePayload($endpoint->format, $maintenance, $event),
+                    'payload' => Clock::withInstallationZone(fn () => $this->maintenancePayload($endpoint->format, $maintenance, $event)),
                     'next_attempt_at' => now(),
                 ],
             );
@@ -138,7 +139,7 @@ class OutgoingWebhook
         $incident->id = 0;
         $incident->setRelation('components', collect());
 
-        return $this->deliver($endpoint, $this->payload($endpoint->format, $incident, 'incident.test'));
+        return $this->deliver($endpoint, Clock::withInstallationZone(fn () => $this->payload($endpoint->format, $incident, 'incident.test')));
     }
 
     /** @return array<string, mixed> */
