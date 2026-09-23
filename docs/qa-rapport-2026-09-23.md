@@ -70,7 +70,7 @@ Doel: de interne installatie `http://192.168.18.166:8130` (CT 106) volledig door
 ## Nog open
 
 1. **Fix live op `.166`** (23 sep): bladebestand gekopieerd, `view:clear` gedraaid, hash gelijk aan de repo.
-2. Aanbevelingen uitgevoerd (23 sep, zie hieronder). Deze commits staan nog niet op `.166`.
+2. Aanbevelingen uitgevoerd (23 sep, zie hieronder). Live op `.166` sinds 23 sep (hashes gelijk).
 3. Nog steeds niet gepusht naar GitHub. De QA-branches `qa/functional` en `qa/security` kunnen weg na akkoord.
 
 ## Vervolg: aanbevelingen uitgevoerd
