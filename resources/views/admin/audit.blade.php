@@ -34,7 +34,7 @@
       <option value="">Every action</option>
       @foreach ($subjects as $option)
         <optgroup label="{{ ucfirst(str_replace('_', ' ', $option)) }}">
-          @foreach ($actions->filter(fn ($a) => str_starts_with($a, $option.'.') || $a === $option) as $fullAction)
+          @foreach ($actionOptions->filter(fn ($a) => str_starts_with($a, $option.'.') || $a === $option) as $fullAction)
             <option value="{{ $fullAction }}" @selected($filters['action'] === $fullAction)>{{ (new \App\Models\AuditEntry(['action' => $fullAction]))->actionLabel() }}</option>
           @endforeach
         </optgroup>

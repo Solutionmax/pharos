@@ -82,10 +82,10 @@ class AdminMenuTest extends TestCase
         $response = $this->actingAs($viewer)->get('/admin/overview')->assertOk();
         $links = $this->sidebarLinks($response->getContent());
 
-        foreach (['/admin/overview', '/admin/incidents', '/admin/services', '/admin/components', '/admin/subscribers', '/admin/integrations'] as $path) {
+        foreach (['/admin/overview', '/admin/incidents', '/admin/services', '/admin/components', '/admin/subscribers', '/admin/maintenance', '/admin/integrations/send-out', '/admin/integrations/bring-in', '/admin/integrations/log'] as $path) {
             $this->assertContains(url($path), $links, $path);
         }
-        foreach (['/admin/status-page', '/admin/branding', '/admin/mail', '/admin/mail-templates', '/admin/users', '/admin/pages', '/admin/audit', '/admin/updates'] as $path) {
+        foreach (['/admin/integrations/tokens', '/admin/status-page', '/admin/branding', '/admin/mail', '/admin/mail-templates', '/admin/users', '/admin/pages', '/admin/audit', '/admin/updates'] as $path) {
             $this->assertNotContains(url($path), $links, $path);
         }
         // Nothing left in Appearance or Email, so the groups themselves are gone.
