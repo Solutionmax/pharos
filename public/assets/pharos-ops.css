@@ -126,7 +126,7 @@ a.op-kpi:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(16,24,40,.
 .op-name strong{font-size:13.5px;font-weight:650;overflow-wrap:anywhere}
 .op-name span{font-size:12px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .op-src{display:flex;flex-direction:column;gap:3px;min-width:0}
-.op-src-tag{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;font-size:11.5px;font-weight:650;padding:2px 8px;border-radius:7px;white-space:nowrap}
+.op-src-tag{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;max-width:100%;font-size:11.5px;font-weight:650;padding:2px 8px;border-radius:7px;line-height:1.4}
 .op-src-tag.auto{background:var(--brand-soft);color:var(--brand)}
 .op-src-tag.ext{background:var(--bg-tint);color:var(--ink-2);border:1px solid var(--line)}
 .op-src-tag svg{flex:none}
@@ -207,6 +207,7 @@ a.ix-node:hover{border-color:color-mix(in srgb,var(--brand) 45%,var(--line));tra
 .ix-steps > li.done::before{content:"✓";background:var(--green-soft);color:var(--green-ink)}
 .ix-steps h4{font-size:14px;margin:3px 0 4px}
 .ix-steps .sub{font-size:13px;color:var(--ink-3);margin-bottom:10px;display:block}
+.ix-steps p.help,.ix-card p.help,.op-card p.help{font-size:12px;color:var(--ink-3);line-height:1.5}
 .ix-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
 .ix-tile{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);
   cursor:pointer;text-align:left;transition:border-color .15s,background .15s;position:relative;min-width:0}
@@ -265,7 +266,7 @@ a.ix-node:hover{border-color:color-mix(in srgb,var(--brand) 45%,var(--line));tra
 .ix-scope label:has(input:checked){border-color:var(--brand);background:var(--brand-soft)}
 .ix-scope input{margin-top:3px;accent-color:var(--brand)}
 .ix-scope b{display:block;font-size:13.5px}
-.ix-scope small{font-size:12px;color:var(--ink-3);line-height:1.4}
+.ix-scope small{display:block;font-size:12px;color:var(--ink-3);line-height:1.45;margin-top:2px}
 .ix-reveal{border:1px solid var(--green);background:var(--green-soft);border-radius:12px;padding:14px;margin-bottom:18px}
 .ix-reveal p{font-size:12.5px;color:var(--green-ink);margin-bottom:8px;font-weight:600}
 .ix-filters{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line);align-items:center}
@@ -289,7 +290,7 @@ a.ix-node:hover{border-color:color-mix(in srgb,var(--brand) 45%,var(--line));tra
   .op-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 64px;grid-template-areas:"name status status" "src cells pct"}
   .op-row .op-name{grid-area:name}.op-row .op-src{grid-area:src}.op-row .op-mini{grid-area:cells}.op-row .op-pct{grid-area:pct}.op-row .op-status{grid-area:status}}
 @media(max-width:760px){.ix-flow{grid-template-columns:minmax(0,1fr)}.ix-arrow{transform:rotate(90deg);justify-self:center}.ix-row,.ix-scope{grid-template-columns:minmax(0,1fr)}
-  .ix-kpis,.op-kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ix-kpi,.op-kpi{padding:10px}.ix-kpi .v,.op-kpi .v{font-size:19px}
+  .ix-kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.op-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.ix-kpi,.op-kpi{padding:10px}.ix-kpi .v,.op-kpi .v{font-size:19px}
   .ix-table .hide-sm,.op-table .hide-sm{display:none}
   .op-inc-hd{flex-direction:column;padding:16px 16px 10px 20px}.op-inc-msg{padding:0 16px 12px 20px}.op-inc-ft,.op-quick-row{padding:10px 16px 10px 20px}.op-quick-body{padding:14px 16px 16px 20px}
   .op-row{grid-template-columns:minmax(0,1fr) 58px;grid-template-areas:"name name" "status status" "cells pct" "src src";gap:8px 12px;padding:12px 16px}
@@ -298,5 +299,12 @@ a.ix-node:hover{border-color:color-mix(in srgb,var(--brand) 45%,var(--line));tra
   .op-affect{grid-template-columns:minmax(0,1fr)}
   .op-kpis.four{grid-template-columns:repeat(2,minmax(0,1fr))}
   .ix-card > header,.op-card > header{padding:14px 16px}.ix-card > .bd,.op-card > .bd{padding:16px}
-  .ix-steps > li{grid-template-columns:minmax(0,1fr)}.ix-steps > li::before{margin-bottom:-6px}
+  .ix-steps > li{grid-template-columns:26px minmax(0,1fr);gap:10px}.ix-steps > li::before{width:24px;height:24px;font-size:12px}
   .ix-filters form{margin-left:0}}
+@media(max-width:760px){.op-actor span{white-space:normal;overflow-wrap:anywhere}.op-table td,.op-table th{padding:10px 12px}.op-change span{overflow-wrap:anywhere}}
+@media(max-width:760px){
+  .ix-flow{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:16px}.ix-arrow{display:none}
+  .ix-node{flex-direction:column;align-items:flex-start;gap:6px;padding:10px}.ix-node .ic{width:28px;height:28px}.ix-node span span{display:none}.ix-node b{font-size:12px}
+  .ix-table td,.ix-table th{padding:10px 10px}.ix-table td.num{font-size:11.5px}
+  .ix-kpi .k{letter-spacing:.08em}
+}

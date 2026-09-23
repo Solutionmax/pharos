@@ -45,7 +45,7 @@
           [$tone, $word] = $delivery->sent_at ? ['ok', 'Delivered'] : ($delivery->attempts >= 6 ? ['b', 'Failed'] : ['w', 'Retrying']);
         @endphp
         <tr>
-          <td class="num">{{ $delivery->created_at?->setTimezone(\App\Services\Clock::timezone())->format('j M H:i') }}</td>
+          <td class="num" style="white-space:nowrap">{{ $delivery->created_at?->setTimezone(\App\Services\Clock::timezone())->format('j M H:i') }}</td>
           <td>{{ \App\Models\WebhookEndpoint::EVENTS[$delivery->event] ?? 'Incident event' }}</td>
           <td><b>{{ $delivery->endpoint?->label ?? 'Removed' }}</b><div class="op-dim">{{ $channels[$delivery->endpoint?->format] ?? '' }}</div></td>
           <td class="num hide-sm">{{ $delivery->attempts }}</td>

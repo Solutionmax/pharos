@@ -99,7 +99,7 @@
   /* ---------- Components: a status picked in the row is saved at once ---------- */
   $$('form[data-autosubmit]').forEach((form) => {
     const select = $('select', form), button = $('button', form);
-    if (button) button.hidden = true;
+    if (button) button.style.display = 'none';
     select?.addEventListener('change', () => { form.requestSubmit ? form.requestSubmit() : form.submit(); });
   });
 
