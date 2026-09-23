@@ -1,0 +1,93 @@
+/* Pharos setup, steps 6 and 7 of the install journey. The web installer draws
+   steps 1 to 5 with the same rail and cards, so the hand over is seamless.
+   Every class is prefixed pi-; colours come from partials.tokens. */
+
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.pi{
+  --pi-btn:var(--ink); --pi-btn-ink:var(--bg);
+  min-height:100vh;min-height:100dvh;display:grid;grid-template-columns:320px minmax(0,1fr);
+  background:var(--bg);color:var(--ink)
+}
+:root[data-theme="dark"] .pi{--pi-btn:var(--brand);--pi-btn-ink:var(--brand-ink)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pi{--pi-btn:var(--brand);--pi-btn-ink:var(--brand-ink)}}
+
+/* ---- rail ---- */
+.pi-rail{position:sticky;top:0;height:100vh;background:var(--card);border-right:1px solid var(--line);padding:32px 26px;display:flex;flex-direction:column;overflow-y:auto}
+.pi-tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:10px 0 34px}
+.pi-steps{list-style:none;margin:0;padding:0;position:relative}
+.pi-steps::before{content:"";position:absolute;left:15px;top:16px;bottom:16px;width:2px;background:var(--line);border-radius:2px}
+.pi-fill{position:absolute;left:15px;top:16px;width:2px;background:var(--green);border-radius:2px;height:0;transition:height .6s var(--ease)}
+.pi-steps li{position:relative;display:grid;grid-template-columns:32px minmax(0,1fr);gap:12px;align-items:center;padding:9px 0}
+.pi-n{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:700;background:var(--card);border:2px solid var(--line);color:var(--ink-3);position:relative;z-index:1}
+.pi-steps b{display:block;font-size:14px;color:var(--ink-3);font-weight:600}
+.pi-steps small{font-size:12px;color:var(--ink-3)}
+.pi-steps li.now .pi-n{border-color:var(--brand);color:var(--brand);box-shadow:0 0 0 5px var(--brand-soft)}
+.pi-steps li.now b{color:var(--ink)}
+.pi-steps li.done .pi-n{background:var(--green);border-color:var(--green);color:#fff}
+.pi-steps li.done b{color:var(--ink-2)}
+.pi-ekg{margin-top:auto;width:100%;height:40px;overflow:visible;flex:none}
+.pi-ekg path{fill:none;stroke:var(--brand);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:300;stroke-dashoffset:300;animation:pi-trace 3s var(--ease) infinite}
+@keyframes pi-trace{0%{stroke-dashoffset:300}55%{stroke-dashoffset:0}100%{stroke-dashoffset:-300}}
+.pi-foot{font-size:12px;color:var(--ink-3);margin-top:10px;line-height:1.5}
+
+/* ---- main ---- */
+.pi-main{padding:48px clamp(20px,5vw,72px) 96px;max-width:980px;width:100%;min-width:0;animation:pi-in .45s var(--ease)}
+@keyframes pi-in{from{opacity:0;transform:translateY(8px)}}
+.pi-kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--brand);margin-bottom:10px}
+.pi-kicker-ok{color:var(--green-ink)}
+.pi-main h1{margin:0;font-size:clamp(28px,3vw,40px);letter-spacing:-.04em;line-height:1.08;font-weight:800}
+.pi-lede{margin:12px 0 28px;color:var(--ink-2);font-size:15.5px;line-height:1.6;max-width:62ch}
+.pi-card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 1px 2px #1018280a,0 12px 32px -18px #10182826}
+.pi-bd{padding:20px}
+.pi-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 14px}
+.pi-span2{grid-column:1/-1}
+.pi-field{display:flex;flex-direction:column;gap:7px;min-width:0}
+.pi-field label{font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.pi-inp,.pi-tz select{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--bg-tint);border:1px solid transparent;border-radius:12px;padding:12px 14px;min-height:48px}
+.pi-inp:focus,.pi-tz select:focus{outline:none;border-color:var(--brand);background:var(--card);box-shadow:0 0 0 4px var(--brand-soft)}
+.pi-inp[aria-invalid="true"]{border-color:var(--red)}
+.pi-help{font-size:12px;color:var(--ink-3);line-height:1.5}
+.pi-help code{font-family:var(--mono);font-size:11.5px;overflow-wrap:anywhere}
+.pi-err{font-size:12px;color:var(--red-ink);font-weight:600}
+.pi-meter{display:block;height:6px;border-radius:999px;background:var(--bg-tint);overflow:hidden}
+.pi-meter i{display:block;height:100%;width:0;background:var(--red);transition:width .25s var(--ease),background .25s}
+.pi-help.pi-good{color:var(--green-ink)}
+.pi-help.pi-bad{color:var(--red-ink)}
+.pi-note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--bg-tint);font-size:13px;color:var(--ink-2);line-height:1.55;margin-top:16px}
+.pi-note svg{flex:none;margin-top:1px;color:var(--brand)}
+.pi-note-warn{background:var(--amber-soft);color:var(--amber-ink)}
+.pi-note b{flex:none;font-weight:800}
+.pi-actions{display:flex;gap:10px 14px;flex-wrap:wrap;align-items:center;margin-top:22px}
+.pi-sub{font-size:12.5px;color:var(--ink-3)}
+.pi-btn{font:inherit;font-size:15px;font-weight:700;border:0;border-radius:12px;padding:13px 20px;cursor:pointer;background:var(--pi-btn);color:var(--pi-btn-ink);display:inline-flex;align-items:center;gap:10px;text-decoration:none;transition:transform .15s,box-shadow .2s,opacity .2s}
+.pi-btn:hover{transform:translateY(-1px);box-shadow:0 8px 18px -10px #10182866}
+.pi-btn:active{transform:translateY(0)}
+.pi-btn[disabled]{opacity:.6;cursor:progress;transform:none}
+.pi :focus-visible{outline:2px solid var(--brand);outline-offset:3px;border-radius:8px}
+
+/* ---- done ---- */
+.pi-wall{display:grid;grid-template-columns:repeat(40,1fr);gap:3px;margin:6px 0 22px}
+.pi-wall i{aspect-ratio:1/1.8;border-radius:2px;background:var(--green);transition:background .45s}
+.js .pi-wall i{background:var(--bg-tint)}
+.js .pi-wall i.go{background:var(--green)}
+.pi-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0}
+.pi-facts div{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--card)}
+.pi-facts dt{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.pi-facts dd{margin:2px 0 0;font-size:14px;font-weight:700;overflow-wrap:anywhere}
+.pi-facts dd.pi-wait{color:var(--amber-ink)}
+
+@media (max-width:900px){
+  .pi{grid-template-columns:minmax(0,1fr)}
+  .pi-rail{position:static;height:auto;padding:18px 16px;border-right:0;border-bottom:1px solid var(--line);overflow:visible}
+  .pi-tag{margin:6px 0 14px}.pi-ekg,.pi-foot{display:none}
+  .pi-steps{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px}.pi-steps::before,.pi-fill{display:none}
+  .pi-steps li{grid-template-columns:auto;justify-items:center;text-align:center;min-width:64px;flex:1 0 64px;padding:0;gap:6px}
+  .pi-steps small{display:none}.pi-steps b{font-size:11px;line-height:1.25}
+  .pi-steps li.now .pi-n{box-shadow:0 0 0 3px var(--brand-soft)}
+  .pi-main{padding:26px 16px 72px}
+  .pi-grid{grid-template-columns:minmax(0,1fr)}
+  .pi-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pi-wall{grid-template-columns:repeat(20,1fr)}
+}
+@media (prefers-reduced-motion:reduce){.pi *,.pi{animation:none!important;transition:none!important}}

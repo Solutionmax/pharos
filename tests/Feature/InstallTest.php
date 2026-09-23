@@ -55,7 +55,7 @@ class InstallTest extends TestCase
     public function test_it_creates_the_administrator_names_the_page_and_signs_them_in(): void
     {
         $this->post('/admin/install', $this->valid)
-            ->assertRedirect(route('admin.components'));
+            ->assertRedirect(route('admin.install.done'));
 
         $user = User::sole();
 
@@ -124,7 +124,7 @@ class InstallTest extends TestCase
     public function test_the_wizard_stores_the_chosen_time_zone(): void
     {
         $this->post('/admin/install', [...$this->valid, 'timezone' => 'Europe/Amsterdam'])
-            ->assertRedirect(route('admin.components'));
+            ->assertRedirect(route('admin.install.done'));
 
         $this->assertSame('Europe/Amsterdam', Setting::get('app.timezone'));
     }
@@ -135,5 +135,42 @@ class InstallTest extends TestCase
             ->assertSessionHasErrors('timezone');
 
         $this->assertSame(0, User::count());
+    }
+
+    public function test_the_setup_screen_is_step_six_of_the_installer_journey(): void
+    {
+        $this->get('/admin/install')->assertOk()
+            ->assertSee('Step 6 of 7')
+            ->assertSee('Create my account and finish')
+            ->assertSee('name="setup_key"', false)
+            ->assertSee('data-pi-password', false);
+    }
+
+    public function test_after_the_account_it_shows_the_done_screen_once_then_the_overview(): void
+    {
+        Setting::put('checks.last_run_at', now()->toIso8601String());
+
+        $this->followingRedirects()->post('/admin/install', $this->valid)
+            ->assertOk()
+            ->assertSee('Acme Hosting is live.')
+            ->assertSee('SQLite')
+            ->assertSee('Running')
+            ->assertSee(route('admin.overview'), false);
+
+        $this->get('/admin/install/done')->assertRedirect(route('admin.overview'));
+    }
+
+    public function test_the_done_screen_says_when_the_scheduler_has_not_run_yet(): void
+    {
+        $this->followingRedirects()->post('/admin/install', $this->valid)
+            ->assertOk()
+            ->assertSee('Waiting for the first run');
+    }
+
+    public function test_the_done_screen_needs_a_signed_in_administrator(): void
+    {
+        $this->existingAdmin();
+
+        $this->get('/admin/install/done')->assertRedirect(route('admin.login'));
     }
 }
