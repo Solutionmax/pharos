@@ -116,16 +116,15 @@ Bijgewerkt: 23 september 2026, na de release van **0.7.0**.
 
 ## Nog open
 
-1. **FreeScout-module (later):** nog niet gebouwd. Voorstel: mailbox koppelen aan Pharos-pagina, service- en incidentstatus naast tickets; read-only API-token bestaat.
-2. **Talen (later):** eerst publieke statuspagina per pagina (EN, NL, ES, DE, FR), daarna admin per gebruiker.
-3. **Voorwaarden:** `legal.html` en het terms-bestand verschillen over herroepingsrecht bij Supported (al vóór 2026-09-23); Raymon kiest welke klopt.
-4. **Screenshot:** `install-ssh-get.webp` toont nog "Release 0.7.0 — ..." met em dash (volgende screenshotronde, na `get`-script fix).
-5. **Testlicentie `.166`:** verloopt 22 oktober 2026, zo nodig verlengen.
-6. **Portaal-incident om de 4 dagen rond 01:00** ("portal /account does not show the login form", 15/19/23 sep): oorzaak op edge-01 uitzoeken (back-up of herstart?).
-7. **Externe configuratietests indien gewenst:** eigen SMTP-afzender en eigen statusdomeinen/TLS.
-8. **ghcr-package public** blijft een open punt uit eerdere notities.
+1. **Release 0.7.1 (voorstel):** STARTTLS-fix staat op main onder `## [Unreleased]` (beveiliging: TLS gekozen zonder STARTTLS stuurde mail en SMTP-wachtwoord onversleuteld). Plus kleine punten uit de e2e-mailtest: testmail noemt interne mailernaam `pharos_page_2` en "Settings → Mail"; uitnodigingsmail gebruikt APP_NAME ("Pharos") in kop/afsluiting i.p.v. paginanaam; GET op unsubscribe-link schrijft direct uit (mailscanners); page admin kan via Page email + Test email interne host:poort aftasten (blind, 10 s).
+2. **FreeScout-module (later).**
+3. **Talen (later):** eerst publieke statuspagina per pagina (EN, NL, ES, DE, FR), daarna admin per gebruiker.
+4. **Thuisnetwerk 03:00 CEST:** elke nacht ~30 s stall van nieuwe uitgaande verbindingen (CGNAT/ISP of UCG-taak: Radio AI cron 03:00, auto upgrade hour 3). Zabbix-trigger 33481 is aangepast (2x op rij), dus geen valse incidenten meer. Oorzaak zelf nog niet vastgesteld: 1 s loop vanaf CT105 rond 02:59:30 tot 03:01:30 naar edge-01 IP, 1.1.1.1 en 192.168.17.1.
+5. **Echte omgeving nog niet getest:** DNS + TLS voor eigen klantdomeinen, proxy/Cloudflare met custom hosts, STARTTLS/SSL tegen echte provider, SPF/DKIM/DMARC per paginaafzender.
 
-Niet geïmplementeerd: gedeelde services tussen pagina's, automatisch DNS/TLS, privé-klantportalen, volledige FreeScout-koppeling, tijdzone voor publieke pagina's (bewust installatiezone).
+Opgelost 23 sep: herroepingsrecht per pakket in `legal.html` (live), terminal-screenshot zonder em dash (live), testlicentie `.166` vernieuwd tot 2027-09-23 (brand_pack + multi_pages, limiet 5, gebonden aan .166), ghcr was al public, MySQL-testcontainer + volume verwijderd, Zabbix-trigger 33481 naar `min(web.test.fail,#2)>0` met nieuwe titel, e2e SMTP- en domeintests (alles werkt, STARTTLS-bug gefixt).
+
+Niet geïmplementeerd: gedeelde services tussen pagina's, automatisch DNS/TLS, privé-klantportalen, volledige FreeScout-koppeling, tijdzone voor publieke pagina's.
 
 ## Nieuwe admin UI (23 sep, gebouwd en live op `.166`)
 
@@ -158,5 +157,5 @@ Niet geïmplementeerd: gedeelde services tussen pagina's, automatisch DNS/TLS, p
 - `docs/superpowers/plans/2026-09-20-multiple-status-pages.md`: eerste implementatieplan.
 - `docs/superpowers/plans/2026-09-23-page-permissions.md`: rollen/tokens/filters en verificatie.
 - Lokale preview (`:8140`, `database/preview.sqlite`) bestond in de verwijderde werkmap en is weg; opnieuw opzetten met `DB_DATABASE=<scratch>` + `db:seed --class=DemoSeeder`.
-- MySQL-testcontainer: `pharos-multipage-mysql` (draait nog), localhost-poort 13326, database `pharos_test`; uitsluitend testdata. Mag weg als MySQL-tests niet meer nodig zijn.
+- MySQL-testcontainer `pharos-multipage-mysql` is verwijderd (23 sep); voor MySQL-tests opnieuw een `mysql:8.4` container starten.
 - Volgende sessie: lees dit bestand, `cd /root/projects/pharos && git status` (main, schoon), en ga verder met het door Raymon gekozen openstaande punt.
