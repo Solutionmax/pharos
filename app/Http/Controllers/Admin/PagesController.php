@@ -24,11 +24,13 @@ use Illuminate\View\View;
 
 class PagesController extends Controller
 {
-    public function index(Uptime $uptime): View
+    public function index(Uptime $uptime, License $license): View
     {
         $pages = StatusPage::query()->withCount('users')->orderBy('name')->get();
 
         return view('admin.pages.index', [
+            'pageLimit' => $license->statusPageLimit(),
+            'activePages' => $pages->whereNull('archived_at')->count(),
             'pages' => $pages,
             'states' => PageStatus::worstByPage(),
             // One small query per page for the 90 day figure, inside that page's own scope.
@@ -49,8 +51,13 @@ class PagesController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(License $license): View|RedirectResponse
     {
+        // A form the server will refuse on submit helps nobody: explain the limit instead.
+        if ($this->atCapacity($license)) {
+            return redirect()->route('admin.pages.index')->with('status', 'This installation has reached its status page limit. Archive a page, or see Branding for plans with more pages.');
+        }
+
         return view('admin.pages.form', [
             'statusPage' => new StatusPage,
             'users' => $this->assignableUsers(),
@@ -197,10 +204,14 @@ class PagesController extends Controller
 
     protected function ensureCapacity(License $license): void
     {
-        $limit = $license->statusPageLimit();
-        $activePages = StatusPage::query()->whereNull('archived_at')->count();
+        abort_if($this->atCapacity($license), 403, 'The status-page licence limit has been reached.');
+    }
 
-        abort_if($limit !== null && $activePages >= $limit, 403, 'The status-page licence limit has been reached.');
+    protected function atCapacity(License $license): bool
+    {
+        $limit = $license->statusPageLimit();
+
+        return $limit !== null && StatusPage::query()->whereNull('archived_at')->count() >= $limit;
     }
 
     protected function assignableUsers()

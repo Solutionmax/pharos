@@ -5,8 +5,12 @@
   'crumbs' => ['Status pages'],
   'crumbScope' => 'installation',
   'title' => 'Status pages',
-  'sub' => $pages->count().' '.\Illuminate\Support\Str::plural('page', $pages->count()).' on this installation',
-  'action' => ['url' => route('admin.pages.create'), 'label' => 'Create page'],
+  'sub' => $pageLimit === null
+      ? $pages->count().' '.\Illuminate\Support\Str::plural('page', $pages->count()).' on this installation'
+      : $activePages.' of '.$pageLimit.' pages in use',
+  'actions' => $pageLimit !== null && $activePages >= $pageLimit
+      ? [['url' => \App\Services\PageUrls::route('admin.branding').'#plan', 'label' => 'Page limit reached, see plans', 'ghost' => true]]
+      : [['url' => route('admin.pages.create'), 'label' => 'Create page']],
 ])
 
 <p class="sub" style="margin-bottom:20px">Choose <strong>Manage</strong> to work on a page: its overview, services, branding and email.
