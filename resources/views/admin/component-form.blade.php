@@ -17,12 +17,12 @@
       <div class="fields">
         <div class="field">
           <span class="lblrow"><label for="name">Name</label>
-            @include('partials.tip', ['text' => 'The name shown on the public page and in this list. Use whatever your customers will recognise — a service name or a server name, whichever they know.'])</span>
+            @include('partials.tip', ['text' => 'The name shown on the public page and in this list. Use whatever your customers will recognise: a service name or a server name, whichever they know.'])</span>
           <input id="name" name="name" type="text" value="{{ old('name', $component->name) }}" required placeholder="Website">
         </div>
         <div class="field">
           <span class="lblrow"><label for="status">Status</label>
-            @include('partials.tip', ['text' => 'The status shown right now. A built-in check overwrites this on its next run — except Under maintenance, which stays until you clear it. With Manual only it stays exactly as you set it.'])</span>
+            @include('partials.tip', ['text' => 'The status shown right now. A Pharos check overwrites this on its next run, except Under maintenance, which stays until you clear it. With Manual only it stays exactly as you set it.'])</span>
           <select id="status" name="status">
             @foreach (\App\Enums\ComponentStatus::cases() as $case)
               <option value="{{ $case->value }}" @selected(old('status', $component->status?->value ?? 1) == $case->value)>{{ $case->label() }}</option>
@@ -107,16 +107,20 @@
       <div class="fields">
         <div class="field">
           <span class="lblrow"><label for="source">Source</label>
-            @include('partials.tip', ['text' => 'Who sets this status. Built-in check and Heartbeat make Pharos do it; every other option waits for something outside to write it through the API.'])</span>
+            @include('partials.tip', ['text' => 'Who sets this status. Checked by Pharos: Pharos tests it itself, over HTTP, TCP or a heartbeat from your job. Set from outside: Uptime Kuma, n8n or a script writes it through the API. Manual only: you set it here.'])</span>
           <select id="source" name="source">
-            @foreach (['manual' => 'Manual only', 'check' => 'Built-in check', 'kuma' => 'Uptime Kuma', 'webhook' => 'Webhook / API', 'heartbeat' => 'Heartbeat', 'upstream' => 'Upstream provider'] as $value => $label)
-              <option value="{{ $value }}" @selected(old('source', $component->source) === $value)>{{ $label }}</option>
+            @foreach (['Checked by Pharos' => ['check' => 'HTTP or TCP check', 'heartbeat' => 'Heartbeat from your job'], 'Set from outside' => ['kuma' => 'Uptime Kuma', 'webhook' => 'API or webhook (n8n, scripts)', 'upstream' => 'Upstream provider'], 'Set by hand' => ['manual' => 'Manual only']] as $sourceGroup => $sourceOptions)
+              <optgroup label="{{ $sourceGroup }}">
+                @foreach ($sourceOptions as $value => $label)
+                  <option value="{{ $value }}" @selected(old('source', $component->source) === $value)>{{ $label }}</option>
+                @endforeach
+              </optgroup>
             @endforeach
           </select>
         </div>
         <div class="field">
           <span class="lblrow"><label for="check_type">Check</label>
-            @include('partials.tip', ['text' => 'HTTP GET fetches the URL and counts 200 through 399 as up. TCP port only opens a socket — for mail, databases, anything without a web page.'])</span>
+            @include('partials.tip', ['text' => 'HTTP GET fetches the URL and counts 200 through 399 as up. TCP port only opens a socket: for mail, databases, anything without a web page.'])</span>
           <select id="check_type" name="check_type">
             <option value="http" @selected(old('check_type', $check?->type->value) === 'http')>HTTP GET</option>
             <option value="tcp" @selected(old('check_type', $check?->type->value) === 'tcp')>TCP port</option>
@@ -132,7 +136,7 @@
 
       <div class="field wide">
         <span class="lblrow"><label for="check_target">Target</label>
-          @include('partials.tip', ['text' => 'What to contact: a full URL for HTTP, host:port for TCP. Only used by Built-in check — Heartbeat generates its own address, and the other sources ignore this.'])</span>
+          @include('partials.tip', ['text' => 'What to contact: a full URL for HTTP, host:port for TCP. Only used by a Pharos check. Heartbeat generates its own address, and the other sources ignore this.'])</span>
         <input id="check_target" name="check_target" type="text" value="{{ old('check_target', $check?->type?->value === 'heartbeat' ? '' : $check?->target) }}"
                placeholder="https://example.net/ or mail.example.net:993">
         <span class="help">A URL for HTTP, host:port for TCP. Leave empty for the other sources.</span>
@@ -168,7 +172,7 @@
     <div class="panel-hd"><h3>Recent checks</h3><span class="hint">Last {{ $recent['limit'] }} runs, oldest left</span></div>
     <div class="panel-bd">
       @if ($recent['count'] === 0)
-        <span class="help">No runs yet — the first one lands within a minute once the cron line is in place.</span>
+        <span class="help">No runs yet. The first one lands within a minute once the cron line is in place.</span>
       @else
         <span class="beats" role="img" aria-label="{{ $component->name }}, last {{ $recent['count'] }} runs: {{ $recent['failed'] ? $recent['failed'].' failed' : 'all ok' }}">
           @foreach ($recent['beats'] as $beat)<span class="beat{{ $beat['tone'] !== 'ok' ? ' '.$beat['tone'] : '' }}" data-tip="{{ $beat['tip'] }}" tabindex="0"></span>@endforeach
@@ -242,7 +246,7 @@
       window.pharosConfirm({
         title: 'Delete the service ' + name + '?',
         body: count
-          ? 'Its ' + count + ' component' + (count === 1 ? '' : 's') + ' and their uptime history are <strong>kept</strong> — they move to the page without a heading. Only the grouping is lost.'
+          ? 'Its ' + count + ' component' + (count === 1 ? '' : 's') + ' and their uptime history are <strong>kept</strong>: they move to the page without a heading. Only the grouping is lost.'
           : 'It has no components. Nothing else changes.',
         action: 'Delete service',
       }).then(function (agreed) {
@@ -391,7 +395,7 @@
 
       window.pharosConfirm({
         title: 'Remove the tag ' + tag + '?',
-        body: 'It is taken off <strong>every component</strong> that carries it. Tags are only text on a component, so there is nothing else to delete — and nothing else changes.',
+        body: 'It is taken off <strong>every component</strong> that carries it. Tags are only text on a component, so there is nothing else to delete, and nothing else changes.',
         action: 'Remove everywhere',
       }).then(function (agreed) {
         if (!agreed) { return; }

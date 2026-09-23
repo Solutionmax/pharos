@@ -27,10 +27,15 @@ class ComponentController extends Controller
     public function index()
     {
         $components = Component::with('group', 'check')->orderBy('position')->get();
+        $groups = ComponentGroup::orderBy('position')->get();
         $enabled = $components->where('enabled', true);
 
         return view('admin.components', [
             'components' => $components,
+            // Services in their page order, then the components that belong to none.
+            'sections' => $groups->map(fn (ComponentGroup $group) => ['group' => $group, 'components' => $components->where('component_group_id', $group->id)->values()])
+                ->push(['group' => null, 'components' => $components->whereNull('component_group_id')->values()])
+                ->filter(fn ($section) => $section['components']->isNotEmpty())->values(),
             'uptime' => $components->mapWithKeys(fn ($c) => [$c->id => $this->uptime->percentage($c)]),
             // Last 30 days only: at 132px a 90-day strip gives each day 1.4px,
             // which is decoration rather than information.
@@ -42,6 +47,7 @@ class ComponentController extends Controller
                 'down' => $enabled->filter(fn ($c) => $c->status->isDown())->count(),
                 'degraded' => $enabled->where('status', ComponentStatus::PerformanceIssues)->count(),
                 'checked' => $components->filter(fn ($c) => $c->check?->enabled)->count(),
+                'outside' => $components->filter(fn ($c) => ! $c->check?->enabled && in_array($c->source, ['kuma', 'webhook', 'upstream'], true))->count(),
                 'uptime' => Uptime::average($enabled->map(fn ($c) => $this->uptime->percentage($c))),
             ],
         ]);
@@ -133,6 +139,17 @@ class ComponentController extends Controller
 
         return redirect()->to(PageUrls::route('admin.components'))
             ->with('status', "Component {$component->name} saved.");
+    }
+
+    /** The status picked in the list: the one change people make most, without the whole form. */
+    public function updateStatus(Request $request, Component $component)
+    {
+        $data = $request->validate(['status' => ['required', 'integer', 'min:1', 'max:5']]);
+        $component->update(['status' => ComponentStatus::from((int) $data['status'])]);
+
+        return redirect()->back(fallback: PageUrls::route('admin.components'))
+            ->with('status', "{$component->name} is now ".mb_strtolower($component->status->label()).'.'
+                .($component->check?->enabled ? ' Its check can set it again on the next run.' : ''));
     }
 
     public function destroy(Component $component)
