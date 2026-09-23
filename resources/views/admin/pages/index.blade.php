@@ -3,8 +3,8 @@
 @section('content')
 <style>
 .pages-table{table-layout:fixed;min-width:700px}
-.pages-table th:nth-child(1){width:20%}.pages-table th:nth-child(2){width:31%}
-.pages-table th:nth-child(3){width:14%}.pages-table th:nth-child(4){width:10%}
+.pages-table th:nth-child(1){width:19%}.pages-table th:nth-child(2){width:27%}
+.pages-table th:nth-child(3){width:13%}.pages-table th:nth-child(4){width:12%}.pages-table th:nth-child(5){width:9%}
 .pages-table td{overflow-wrap:anywhere}.pages-table .rowacts{flex-wrap:wrap}
 </style>
 @include('partials.pagehead', [
@@ -19,7 +19,7 @@
   <div class="panel-hd"><h3>Pages</h3><span class="hint">Archived pages keep their history and settings</span></div>
   <div class="scroll">
     <table class="pages-table">
-      <thead><tr><th>Name</th><th>Address</th><th>Status</th><th>Assigned</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Address</th><th>Status</th><th>Subscribers</th><th>Assigned</th><th></th></tr></thead>
       <tbody>
       @foreach ($pages as $page)
         <tr>
@@ -42,6 +42,9 @@
             @else
               <span class="pill off">Unpublished</span>
             @endif
+          </td>
+          <td data-subscriptions="{{ $page->id }}">
+            @if (in_array($page->id, $subscriptionsOff, true))<span class="pill off">Off</span>@else<span class="pill ok">On</span>@endif
           </td>
           <td>{{ $page->users_count }}</td>
           <td>

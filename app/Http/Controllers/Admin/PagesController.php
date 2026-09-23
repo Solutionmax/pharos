@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\Setting;
 use App\Models\StatusPage;
+use App\Models\StatusPageSetting;
 use App\Models\User;
 use App\Services\License;
+use App\Services\PageContext;
+use App\Services\Subscriptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +24,10 @@ class PagesController extends Controller
         return view('admin.pages.index', [
             'pages' => StatusPage::query()->withCount('users')->orderBy('name')->get(),
             'defaultPageId' => StatusPage::defaultId(),
+            // A page without its own row falls back to on, so only explicit "off" rows matter.
+            'subscriptionsOff' => StatusPageSetting::query()
+                ->where('key', Subscriptions::KEY)->where('value', '0')
+                ->pluck('status_page_id')->all(),
         ]);
     }
 
@@ -49,6 +57,8 @@ class PagesController extends Controller
                 'is_published' => $data['is_published'] ?? false,
             ]);
             $page->users()->sync($data['user_ids'] ?? []);
+            // Opt in per page: a new page must not start mailing people until someone decides it should.
+            app(PageContext::class)->run($page->id, fn () => Setting::put(Subscriptions::KEY, '0'));
         });
 
         return redirect()->route('admin.pages.index')->with('status', "{$data['name']} created.");

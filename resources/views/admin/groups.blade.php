@@ -9,6 +9,11 @@
   'back' => $origin,
 ]))
 
+@include('partials.page-context', [
+  'contextTitle' => 'Services for',
+  'contextHelp' => 'Services, their order and their bars belong only to this page. Switch page to manage another set.',
+])
+
 <div class="panel">
   <div class="panel-hd"><h3>Your services</h3><span class="hint">30-day bars · 90-day availability</span></div>
   @if ($groups->isEmpty())

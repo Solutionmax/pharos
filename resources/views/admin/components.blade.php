@@ -8,6 +8,11 @@
   'action' => $canEditPage ? ['url' => \App\Services\PageUrls::route('admin.components.create'), 'label' => 'Add a component'] : null,
 ])
 
+@include('partials.page-context', [
+  'contextTitle' => 'Components for',
+  'contextHelp' => 'Components and their checks belong only to this page. Switch page to manage another set.',
+])
+
 @if ($summary['total'] > 0)
   <div class="tiles">
     <div class="tile {{ $summary['down'] > 0 ? 'bad' : ($summary['degraded'] > 0 ? 'warn' : 'good') }}">

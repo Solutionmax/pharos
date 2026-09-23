@@ -7,6 +7,8 @@ use App\Models\Setting;
 use App\Models\StatusPage;
 use App\Models\User;
 use App\Services\License;
+use App\Services\PageContext;
+use App\Services\Subscriptions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -368,6 +370,55 @@ class PageManagementTest extends TestCase
             'slug' => $slug,
             ...$extra,
         ]);
+    }
+
+    public function test_a_new_page_starts_with_subscriptions_off_and_the_default_page_is_untouched(): void
+    {
+        $this->license(limit: 3);
+
+        $this->actingAs($this->admin)->post('/admin/pages', ['name' => 'Fresh', 'slug' => 'fresh'])
+            ->assertRedirect('/admin/pages');
+        $page = StatusPage::where('slug', 'fresh')->sole();
+
+        $this->assertFalse(app(PageContext::class)->run($page->id, fn () => Subscriptions::enabled()));
+        $this->assertTrue(Subscriptions::enabled());
+    }
+
+    public function test_the_subscriptions_switch_names_its_page_and_stays_on_that_page(): void
+    {
+        $this->license(limit: 3);
+        $other = StatusPage::create(['name' => 'Harbor', 'slug' => 'harbor', 'is_published' => true]);
+
+        $this->actingAs($this->admin)->post('/admin/pages/'.$other->id.'/subscribers/enabled', ['enabled' => 0])
+            ->assertSessionHas('status', fn (string $status) => str_contains($status, 'Harbor'));
+
+        $this->get('/admin/pages/'.$other->id.'/subscribers')->assertOk()
+            ->assertSee('Subscribers for Harbor')
+            ->assertSee('Off for Harbor');
+        $this->get('/admin/subscribers')->assertOk()->assertSee('On for '.StatusPage::default()->name);
+    }
+
+    public function test_the_pages_overview_shows_where_subscriptions_are_on(): void
+    {
+        $this->license(limit: 3);
+        $other = StatusPage::create(['name' => 'Harbor', 'slug' => 'harbor', 'is_published' => true]);
+        app(PageContext::class)->run($other->id, fn () => Subscriptions::set(false));
+
+        $body = $this->actingAs($this->admin)->get('/admin/pages')->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/data-subscriptions="'.StatusPage::defaultId().'">\s*<span class="pill ok">On/', $body);
+        $this->assertMatchesRegularExpression('/data-subscriptions="'.$other->id.'">\s*<span class="pill off">Off/', $body);
+    }
+
+    public function test_page_scoped_screens_say_which_page_they_manage(): void
+    {
+        $this->license(limit: 3);
+        $other = StatusPage::create(['name' => 'Harbor', 'slug' => 'harbor', 'is_published' => true]);
+
+        foreach (['services' => 'Services for', 'components' => 'Components for', 'incidents' => 'Incidents for',
+            'status-page' => 'Status page settings for', 'branding' => 'Branding for', 'subscribers' => 'Subscribers for'] as $path => $title) {
+            $this->actingAs($this->admin)->get('/admin/pages/'.$other->id.'/'.$path)->assertOk()->assertSee($title.' Harbor');
+        }
     }
 
     protected function license(?int $limit = null, ?string $expiresAt = null): void

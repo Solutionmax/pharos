@@ -31,6 +31,11 @@
   'sub' => 'What the status page shows, and how it looks',
 ])
 
+@include('partials.page-context', [
+  'contextTitle' => 'Status page settings for',
+  'contextHelp' => 'Layout, theme and modules apply only to this page.',
+])
+
 <div class="split">
   <div>
     <form method="POST" action="{{ \App\Services\PageUrls::route('admin.status-page.update') }}" id="settings-form">

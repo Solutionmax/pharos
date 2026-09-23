@@ -8,6 +8,11 @@
   'action' => $canEditPage ? ['url' => \App\Services\PageUrls::route('admin.incidents.create'), 'label' => 'Report an incident'] : null,
 ])
 
+@include('partials.page-context', [
+  'contextTitle' => 'Incidents for',
+  'contextHelp' => 'Incidents reported here appear only on this page and are mailed only to its subscribers.',
+])
+
 <div class="tiles">
   <div class="tile {{ $summary['open'] > 0 ? 'warn' : 'good' }}">
     <span class="k">Open now</span>

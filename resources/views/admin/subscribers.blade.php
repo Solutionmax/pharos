@@ -1,11 +1,16 @@
 @extends('layouts.admin')
 @section('title', 'Subscribers')
 @section('content')
-@php $canEditPage = auth()->user()->canEditPage(app(\App\Services\PageContext::class)->id()); @endphp
+@php $canEditPage = auth()->user()->canEditPage(app(\App\Services\PageContext::class)->id()); $switchPage = app(\App\Services\PageContext::class)->page()->name; @endphp
 <style>.pill.off{color:var(--ink-3);background:var(--bg-tint)}</style>
 @include('partials.pagehead', [
   'title' => 'Subscribers',
   'sub' => 'Who gets an e-mail when an incident is reported or resolved',
+])
+
+@include('partials.page-context', [
+  'contextTitle' => 'Subscribers for',
+  'contextHelp' => 'The switch and the addresses below belong only to this page. Every page has its own subscribers and its own switch.',
 ])
 
 <div class="tiles">
@@ -26,10 +31,10 @@
       <div class="switchrow">
         <span class="t">
           @if ($enabled)
-            <strong><span class="pill ok">On</span> — visitors can subscribe</strong>
+            <strong><span class="pill ok">On for {{ $switchPage }}</span> — visitors can subscribe</strong>
             <span class="s">The "Get notified" button is on the status page and every public incident update is mailed.</span>
           @else
-            <strong><span class="pill off">Off</span> — no button, no mail, existing addresses kept</strong>
+            <strong><span class="pill off">Off for {{ $switchPage }}</span> — no button, no mail, existing addresses kept</strong>
             <span class="s">Nothing new is queued while this is off; anything queued before still goes out, and unsubscribe links keep working.</span>
           @endif
         </span>
