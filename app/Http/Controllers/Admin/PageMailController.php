@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\TestMail;
+use App\Models\User;
+use App\Rules\PublicMailHost;
 use App\Services\Audit;
 use App\Services\Branding;
 use App\Services\MailConfig;
@@ -29,9 +31,14 @@ class PageMailController extends Controller
 
     public function update(Request $request, MailConfig $mailConfig): RedirectResponse
     {
+        $trusted = $request->user()->isAdmin();
         $data = $request->validate([
             'mode' => ['required', Rule::in(['central', 'custom'])],
-            'host' => ['nullable', 'required_if:mode,custom', 'string', 'max:255'],
+            'host' => [
+                'nullable', 'required_if:mode,custom', 'string', 'max:255',
+                // Only an installation administrator may point a page at an internal relay.
+                Rule::when(! $trusted && $request->input('mode') === 'custom', [new PublicMailHost]),
+            ],
             'port' => ['nullable', 'required_if:mode,custom', 'integer', 'between:1,65535'],
             'encryption' => ['required', Rule::in(MailConfig::ENCRYPTIONS)],
             'username' => ['nullable', 'string', 'max:255'],
@@ -41,7 +48,7 @@ class PageMailController extends Controller
             'reply_to' => ['nullable', 'email:rfc', 'max:254'],
         ]);
 
-        $mailConfig->savePage($data);
+        $mailConfig->savePage($data, $trusted);
         Audit::record('page.mail_settings_saved', null, [
             'mode' => ['from' => '', 'to' => $data['mode']],
             'host' => ['from' => '', 'to' => (string) ($data['host'] ?? '')],
@@ -53,6 +60,13 @@ class PageMailController extends Controller
     public function test(Request $request, MailConfig $mailConfig): RedirectResponse
     {
         $user = $request->user();
+
+        // Checked again on every test: a name can move to a private address
+        // after it was saved, and Send test must not become a probe.
+        $problem = $this->hostProblem($user, $mailConfig);
+        if ($problem !== null) {
+            return redirect()->to(PageUrls::route('admin.mail.edit'))->withErrors(['mail' => $problem]);
+        }
 
         try {
             $mailConfig->sendTo($user->email, new TestMail($user));
@@ -70,5 +84,16 @@ class PageMailController extends Controller
 
         return redirect()->to(PageUrls::route('admin.mail.edit'))
             ->with('status', "Test email sent to {$user->email}.");
+    }
+
+    /** Why this user may not send through the page's own SMTP host, or null. */
+    protected function hostProblem(User $user, MailConfig $mailConfig): ?string
+    {
+        $stored = $mailConfig->storedPage();
+        if ($user->isAdmin() || $stored['mode'] !== 'custom' || $mailConfig->pageHostTrusted()) {
+            return null;
+        }
+
+        return PublicMailHost::problem($stored['host']);
     }
 }

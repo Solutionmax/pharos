@@ -33,6 +33,12 @@ class MailConfig
 
     public const PASSWORD_KEY = 'mail.password';
 
+    /**
+     * Set when an installation administrator saved the page SMTP settings: only
+     * then may the host be internal. Anyone else saving clears it.
+     */
+    public const PAGE_HOST_TRUSTED_KEY = 'mail.host_trusted';
+
     public const PAGE_FIELDS = [
         'mode' => 'mail.mode',
         'host' => 'mail.host',
@@ -199,10 +205,17 @@ class MailConfig
         ];
     }
 
-    /** @param array<string, mixed> $data */
-    public function savePage(array $data): void
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  bool  $hostTrusted  saved by an installation administrator, who may use an internal relay
+     */
+    public function savePage(array $data, bool $hostTrusted = false): void
     {
         $pageId = app(PageContext::class)->id();
+        StatusPageSetting::updateOrCreate(
+            ['status_page_id' => $pageId, 'key' => self::PAGE_HOST_TRUSTED_KEY],
+            ['value' => $hostTrusted ? '1' : '0'],
+        );
         foreach (self::PAGE_FIELDS as $field => $key) {
             StatusPageSetting::updateOrCreate(
                 ['status_page_id' => $pageId, 'key' => $key],
@@ -227,6 +240,12 @@ class MailConfig
         }
 
         return $values;
+    }
+
+    /** Was the page SMTP host set by an installation administrator? */
+    public function pageHostTrusted(): bool
+    {
+        return $this->pageValue(self::PAGE_HOST_TRUSTED_KEY) === '1';
     }
 
     public function pageHasPassword(): bool

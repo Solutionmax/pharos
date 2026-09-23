@@ -278,6 +278,7 @@ foreach (['admin' => 'admin.', 'admin/pages/{statusPage}' => 'page.admin.'] as $
     Route::prefix($prefix)->name($names)->middleware(['auth', AuthenticateSession::class, UsePersonalTimezone::class, NoStore::class, ResolveStatusPage::class, EnsurePageCapability::class])->group(function () {
         Route::get('mail', [PageMailController::class, 'edit'])->name('mail.edit');
         Route::put('mail', [PageMailController::class, 'update'])->name('mail.update');
-        Route::post('mail-test', [PageMailController::class, 'test'])->name('mail.test');
+        // Per user, and apart from every other throttle: each press opens an SMTP connection.
+        Route::post('mail-test', [PageMailController::class, 'test'])->middleware('throttle:5,1,page-mail-test:')->name('mail.test');
     });
 }
