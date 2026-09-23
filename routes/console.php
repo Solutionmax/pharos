@@ -11,6 +11,10 @@ Schedule::command('pharos:check')->everyMinute()->withoutOverlapping();
 // The audit trail is append-only, so age is the only thing that bounds it.
 Schedule::call(fn () => Audit::prune())->dailyAt('03:20')->name('prune-audit-log');
 
+// Planned work: announce, start and complete maintenance windows. Runs before
+// pharos:notify in the same minute, so an announcement is mailed straight away.
+Schedule::command('pharos:maintenance')->everyMinute()->withoutOverlapping();
+
 // The subscriber outbox. An incident update only queues rows; this is what sends them.
 Schedule::command('pharos:notify')->everyMinute()->withoutOverlapping();
 

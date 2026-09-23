@@ -98,6 +98,12 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 .plan .tx{font-size:13.5px;color:var(--ink-2)}
 .plan .tx b{color:var(--ink);font-weight:600}
 .plan time{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.plan{align-items:flex-start;flex-wrap:wrap}
+.plan .tx{flex:1;min-width:0;display:grid;gap:4px}
+.plan .tx .aff{font-size:12.5px;color:var(--ink-3)}
+.plan .tx .md{font-size:13px}
+.plan.live{background:var(--card);border-left:3px solid var(--blue)}
+@media(max-width:640px){.plan time{margin-left:0;flex-basis:100%;white-space:normal}}
 .day+.day{margin-top:8px}
 .day-hd{display:flex;align-items:center;gap:12px;padding:14px 2px 10px}
 .day-hd h3{font-size:13px;font-weight:700;color:var(--ink-2)}
@@ -163,7 +169,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
     <span class="logo">@include('partials.logo', ['size' => 30])</span>
     <span class="right">
       {{-- Three things, all needed: the page module, the master switch on the Subscribers screen,
-           and a mail transport that can actually send — a form that ends in a 500 helps nobody. --}}
+           and a mail transport that can actually send: a form that ends in a 500 helps nobody. --}}
       @if ($modules['page.show_subscribe'] && \App\Services\Subscriptions::enabled() && app(\App\Services\MailConfig::class)->configured())
         <details class="subscribe" @if (session('subscribed') || $errors->has('email')) open @endif>
           <summary class="sub">Get notified</summary>
@@ -229,6 +235,24 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
           <div class="scale"><span>{{ \App\Services\Uptime::WINDOW_DAYS }} days ago</span><span>today</span></div>
         </div>
       @endif
+    </section>
+  @endif
+
+  @if ($maintenances->isNotEmpty())
+    <section class="sec" aria-labelledby="maintenance-heading">
+      <h2 id="maintenance-heading">Maintenance</h2>
+      @foreach ($maintenances as $maintenance)
+        @php $live = $maintenance->starts_at->lte(now()); @endphp
+        <article class="plan @if ($live) live @endif" data-live-key="maintenance-{{ $maintenance->id }}" data-live-value="{{ $live ? 'on' : 'planned' }}:{{ $maintenance->updated_at?->timestamp }}">
+          <span class="pill m">{{ $live ? 'Maintenance in progress' : 'Scheduled maintenance' }}</span>
+          <div class="tx">
+            <b>{{ $maintenance->title }}</b>
+            @if ($maintenance->components->isNotEmpty())<span class="aff">Affects {{ $maintenance->components->pluck('name')->join(', ', ' and ') }}</span>@endif
+            @if ($maintenance->message)<div class="md">{!! \Illuminate\Support\Str::markdown($maintenance->message, \App\Services\MailTemplates::MARKDOWN) !!}</div>@endif
+          </div>
+          <time datetime="{{ $maintenance->starts_at->toIso8601String() }}">{{ $maintenance->starts_at->format('j M H:i') }} to {{ $maintenance->ends_at->isSameDay($maintenance->starts_at) ? $maintenance->ends_at->format('H:i') : $maintenance->ends_at->format('j M H:i') }}</time>
+        </article>
+      @endforeach
     </section>
   @endif
 
