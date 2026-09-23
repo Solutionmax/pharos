@@ -2,12 +2,15 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Concerns\BrandedAccountMail;
 use App\Services\Branding;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class ResetAccountPassword extends ResetPassword
 {
+    use BrandedAccountMail;
+
     protected function resetUrl($notifiable): string
     {
         // Use the configured installation URL, never an untrusted Host header.
@@ -17,12 +20,12 @@ class ResetAccountPassword extends ResetPassword
 
     protected function buildMailMessage($url): MailMessage
     {
-        return (new MailMessage)
+        return $this->branded((new MailMessage)
             ->subject('Reset your password for '.app(Branding::class)->name())
             ->greeting('Reset your password')
             ->line('A password reset was requested for your account.')
             ->action('Choose a new password', $url)
             ->line('This link expires in '.config('auth.passwords.users.expire').' minutes and can only be used once.')
-            ->line('If you did not request this, you can ignore this email. Your password has not changed.');
+            ->line('If you did not request this, you can ignore this email. Your password has not changed.'));
     }
 }

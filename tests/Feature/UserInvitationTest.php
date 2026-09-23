@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\Setting;
 use App\Models\StatusPage;
 use App\Models\User;
 use App\Notifications\InviteUser;
@@ -188,5 +189,56 @@ class UserInvitationTest extends TestCase
             ->assertSee('No page access yet')
             ->assertSee('value="zed"', false)
             ->assertSee('Ask them to turn on two factor');
+    }
+
+    // ---------- branding ----------
+
+    /** @return array{html: string, text: string} the parts of the mail as it actually left */
+    protected function deliveredParts(User $to, object $notification): array
+    {
+        config(['mail.default' => 'array', 'app.name' => 'Pharos']);
+        $to->notify($notification);
+        $sent = app('mailer')->getSymfonyTransport()->messages()->last()->getOriginalMessage();
+
+        return ['html' => (string) $sent->getHtmlBody(), 'text' => (string) $sent->getTextBody()];
+    }
+
+    public function test_the_invitation_carries_the_brand_not_the_app_name(): void
+    {
+        Setting::put('brand.name', 'Acme Cloud');
+        Setting::put('brand.accent', '#aa3300');
+        $anita = User::factory()->create(['name' => 'Anita', 'email' => 'anita@example.net']);
+
+        $html = (new InviteUser('invite-token', 'Raymon'))->toMail($anita)->render();
+        $parts = $this->deliveredParts($anita, new InviteUser('invite-token', 'Raymon'));
+
+        foreach ([(string) $html, $parts['html']] as $part) {
+            $this->assertStringContainsString('Acme Cloud', $part);
+            $this->assertStringContainsString('#aa3300', $part);
+            $this->assertStringContainsString('Raymon created an account for you on Acme Cloud', $part);
+            $this->assertStringContainsString('/admin/welcome/invite-token', $part);
+            $this->assertStringNotContainsString('Regards', $part);
+            $this->assertStringNotContainsString('Pharos', $part);
+        }
+        $this->assertStringContainsString('Acme Cloud', $parts['text']);
+        $this->assertStringContainsString('/admin/welcome/invite-token', $parts['text']);
+        $this->assertStringNotContainsString('Pharos', $parts['text']);
+        $this->assertStringNotContainsString('<', $parts['text']);
+    }
+
+    public function test_the_password_reset_mail_carries_the_brand_not_the_app_name(): void
+    {
+        Setting::put('brand.name', 'Acme Cloud');
+        $anita = User::factory()->create(['name' => 'Anita', 'email' => 'anita@example.net']);
+
+        $parts = $this->deliveredParts($anita, new ResetAccountPassword('reset-token'));
+
+        $this->assertStringContainsString('Acme Cloud', $parts['html']);
+        $this->assertStringContainsString('/admin/reset-password/reset-token', $parts['html']);
+        $this->assertStringContainsString('Choose a new password', $parts['html']);
+        $this->assertStringNotContainsString('Regards', $parts['html']);
+        $this->assertStringNotContainsString('Pharos', $parts['html']);
+        $this->assertStringContainsString('/admin/reset-password/reset-token', $parts['text']);
+        $this->assertStringNotContainsString('Pharos', $parts['text']);
     }
 }
