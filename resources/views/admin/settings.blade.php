@@ -82,7 +82,7 @@
   </div>
   <div class="panel-bd">
     <p class="sub" style="margin-bottom:20px">This is the shared mail server for account recovery and all status pages using central transport.
-      Pages with custom SMTP keep their own server. To change one page’s sender or SMTP, select that page and open <strong>Page email</strong>.
+      Pages with custom SMTP keep their own server. To change one page’s sender or SMTP, select that page and open <strong>Email, Delivery</strong>.
       Changing these central settings affects every page that inherits them.</p>
     <form method="POST" action="{{ route('admin.settings.mail') }}" style="display:flex;flex-direction:column;gap:16px">
       @csrf @method('PUT')
