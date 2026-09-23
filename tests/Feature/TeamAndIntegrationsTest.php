@@ -124,7 +124,7 @@ class TeamAndIntegrationsTest extends TestCase
 
         $this->post('/admin/logout');
         $this->post('/admin/login', ['email' => 'raymon@example.com', 'password' => 'a-brand-new-password'])
-            ->assertRedirect('/admin/components');
+            ->assertRedirect('/admin/overview');
     }
 
     // ---------- api tokens ----------

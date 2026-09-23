@@ -2,6 +2,7 @@
 @section('title', 'Branding')
 @section('content')
 @include('partials.pagehead', [
+  'crumbs' => ['Appearance', 'Branding'],
   'title' => 'Branding',
   'sub' => 'How your status page introduces itself',
 ])
@@ -59,12 +60,12 @@
           <div class="field">
             <label for="logo_dark">Logo for dark mode (optional)</label>
             @if ($brand['logo_dark'])
-              <span class="brand-preview dark"><img src="{{ $brand['logo_dark'] }}" alt="Current dark-mode logo"></span>
+              <span class="brand-preview dark"><img src="{{ $brand['logo_dark'] }}" alt="Current dark mode logo"></span>
             @endif
             <input id="logo_dark" name="logo_dark" type="file" accept="image/png,image/jpeg,image/webp">
             <span class="help">Shown instead of the logo above when the visitor's theme is dark. Leave empty if your logo already works on both.</span>
             @if ($brand['logo_dark'])
-              <label class="check"><input type="checkbox" name="remove_logo_dark" value="1"> Remove the dark-mode logo</label>
+              <label class="check"><input type="checkbox" name="remove_logo_dark" value="1"> Remove the dark mode logo</label>
             @endif
           </div>
           <div class="field">
@@ -90,7 +91,7 @@
       @else
         <div class="locked">
           <div>
-            <strong style="font-size:13.5px">One-time purchase</strong>
+            <strong style="font-size:13.5px">One time purchase</strong>
             <p class="sub" style="margin-top:4px;font-size:13px;color:var(--ink-3)">
               Your own logo and favicon, editable email templates, and the
               footer credit gone. Everything else in Pharos is free and stays free.
@@ -118,7 +119,7 @@
       @if ($expiringSoon)
         <x-note id="branding.expiring" warn>
           <b>{{ $daysLeft === 0 ? 'Runs out today.' : 'Runs out in '.$daysLeft.' '.\Illuminate\Support\Str::plural('day', $daysLeft).'.' }}</b>
-          On {{ $expiresAt->format('d F Y') }} your support term ends. The Brand pack is yours to keep —
+          On {{ $expiresAt->format('d F Y') }} your support term ends. The Brand pack is yours to keep:
           nothing on this page changes. Renew and paste the new key here to keep support going.
         </x-note>
       @endif

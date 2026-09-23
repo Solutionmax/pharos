@@ -251,7 +251,7 @@ class PageDeliveryTest extends TestCase
         $admin = User::factory()->create(['role' => UserRole::Admin]);
         $page = StatusPage::create(['name' => 'Beta page', 'slug' => 'beta']);
 
-        $this->actingAs($admin)->get('/admin/mail')->assertOk()->assertSee('Page e-mail');
+        $this->actingAs($admin)->get('/admin/mail')->assertOk()->assertSee('Delivery');
 
         $this->actingAs($admin)->put('/admin/pages/'.$page->id.'/mail', $this->pageMail([
             'mode' => 'custom',
@@ -278,7 +278,7 @@ class PageDeliveryTest extends TestCase
         ]);
         $this->actingAs($admin)->get('/admin/pages/'.$page->id.'/mail')->assertOk()
             ->assertSee('smtp.beta.example.test')
-            ->assertSee('Stored — leave empty to keep')
+            ->assertSee('Stored, leave empty to keep')
             ->assertDontSee('beta-secret');
     }
 
@@ -303,7 +303,7 @@ class PageDeliveryTest extends TestCase
 
         $this->actingAs($admin)->post('/admin/pages/'.$page->id.'/mail-test')
             ->assertRedirect('/admin/pages/'.$page->id.'/mail')
-            ->assertSessionHas('status', 'Test e-mail sent to admin@example.test.');
+            ->assertSessionHas('status', 'Test email sent to admin@example.test.');
 
         Mail::assertSent(TestMail::class, function (TestMail $mail) use ($page) {
             return $mail->hasTo('admin@example.test')

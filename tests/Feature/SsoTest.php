@@ -132,7 +132,7 @@ class SsoTest extends TestCase
     public function test_a_known_account_is_signed_in(): void
     {
         $this->begin();
-        $this->returnFromProvider()->assertRedirect('/admin/components');
+        $this->returnFromProvider()->assertRedirect('/admin/overview');
 
         $this->assertAuthenticatedAs($this->user);
     }

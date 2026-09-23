@@ -1,5 +1,5 @@
 @extends('layouts.admin')
-@section('title', 'Mail templates')
+@section('title', 'Templates')
 @section('content')
 <style>
 .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
@@ -27,12 +27,13 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
 </style>
 
 @include('partials.pagehead', [
-  'title' => 'Mail templates',
+  'crumbs' => ['Email', 'Templates'],
+  'title' => 'Templates',
   'sub' => 'What subscribers receive',
 ])
 
 @include('partials.page-context', [
-  'contextTitle' => 'Mail templates for',
+  'contextTitle' => 'Templates for',
   'contextHelp' => 'These templates are used only for this page’s subscribers. Account emails remain separate. Switch page to edit another set.',
 ])
 
@@ -88,7 +89,7 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
               <button class="btn" type="submit">Save</button>
               <button class="btn ghost" type="reset">Undo my changes</button>
               <button class="btn ghost" type="submit" form="test-form">Send test to me</button>
-              <button class="btn ghost" type="submit" form="reset-form" @disabled($isDefault) title="{{ $isDefault ? 'This template is the default already' : 'Back to the built-in wording' }}">Reset to default</button>
+              <button class="btn ghost" type="submit" form="reset-form" @disabled($isDefault) title="{{ $isDefault ? 'This template is the default already' : 'Back to the built in wording' }}">Reset to default</button>
             </div>
           @else
             <div class="locked" style="margin-top:16px">
@@ -117,7 +118,7 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
       </form>
       <form method="POST" action="{{ \App\Services\PageUrls::route('admin.mail-templates.reset') }}" id="reset-form"
             data-confirm-title="Reset {{ strtolower($label ?? 'this template') }} to the default?"
-            data-confirm="Your wording for this template is thrown away and the built-in text comes back. The other templates are untouched."
+            data-confirm="Your wording for this template is thrown away and the built in text comes back. The other templates are untouched."
             data-confirm-action="Reset to default">
         @csrf
         <input type="hidden" name="template" value="{{ $key }}">
@@ -126,7 +127,7 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
 
     <x-note id="mail-templates.frame">
       <b>You edit the body, not the frame.</b> The logo, the accent colour, the link to the status
-      page and — on every incident mail — the unsubscribe link sit in the frame around it and are
+      page and, on every incident mail, the unsubscribe link sit in the frame around it and are
       always there, whether or not you use <code>{unsubscribe}</code> in the body.
       Tag values are printed as typed; only <code>{message}</code> is the operator's Markdown.
       A line whose only tag is empty is left out, so <code>Affects {components}</code> disappears
@@ -150,7 +151,7 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
         @if ($licensed)
           Nothing is saved until you press <b>Save</b>.
         @else
-          This is the built-in wording; there is nothing to save without the brand pack.
+          This is the built in wording; there is nothing to save without the brand pack.
         @endif
       </p>
     </div>

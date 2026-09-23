@@ -102,7 +102,7 @@ class TwoFactorTest extends TestCase
 
         $this->post('/admin/login', ['email' => 'raymon@example.com', 'password' => 'correct-horse-battery']);
         $this->post('/admin/two-factor', ['code' => $this->code($secret)])
-            ->assertRedirect('/admin/components');
+            ->assertRedirect('/admin/overview');
 
         $this->assertAuthenticatedAs($this->user);
     }
@@ -184,7 +184,7 @@ class TwoFactorTest extends TestCase
         $codes = RecoveryCode::replaceFor($this->user);
 
         $this->post('/admin/login', ['email' => 'raymon@example.com', 'password' => 'correct-horse-battery']);
-        $this->post('/admin/two-factor', ['code' => $codes[0]])->assertRedirect('/admin/components');
+        $this->post('/admin/two-factor', ['code' => $codes[0]])->assertRedirect('/admin/overview');
         $this->assertAuthenticatedAs($this->user);
 
         $this->post('/admin/logout');

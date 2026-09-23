@@ -77,7 +77,7 @@ class AdminTest extends TestCase
         $this->post('/admin/login', [
             'email' => 'admin@example.com',
             'password' => 'correct-horse-battery',
-        ])->assertRedirect('/admin/components');
+        ])->assertRedirect('/admin/overview');
 
         $this->assertAuthenticatedAs($this->user);
     }

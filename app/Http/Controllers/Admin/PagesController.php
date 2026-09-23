@@ -4,13 +4,18 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\Component;
+use App\Models\Incident;
 use App\Models\Setting;
 use App\Models\StatusPage;
 use App\Models\StatusPageSetting;
+use App\Models\Subscriber;
 use App\Models\User;
 use App\Services\License;
 use App\Services\PageContext;
+use App\Services\PageStatus;
 use App\Services\Subscriptions;
+use App\Services\Uptime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,10 +24,23 @@ use Illuminate\View\View;
 
 class PagesController extends Controller
 {
-    public function index(): View
+    public function index(Uptime $uptime): View
     {
+        $pages = StatusPage::query()->withCount('users')->orderBy('name')->get();
+
         return view('admin.pages.index', [
-            'pages' => StatusPage::query()->withCount('users')->orderBy('name')->get(),
+            'pages' => $pages,
+            'states' => PageStatus::worstByPage(),
+            // One small query per page for the 90 day figure, inside that page's own scope.
+            'uptimes' => $pages->mapWithKeys(fn (StatusPage $page) => [$page->id => app(PageContext::class)->run($page->id, function () use ($uptime) {
+                $bars = $uptime->barsFor(Component::query()->where('enabled', true)->get());
+
+                return Uptime::average(array_map($uptime->percentageOf(...), $bars));
+            })])->all(),
+            'openIncidents' => Incident::query()->withoutGlobalScope('status_page')->whereNull('resolved_at')
+                ->groupBy('status_page_id')->selectRaw('status_page_id, count(*) as total')->pluck('total', 'status_page_id')->all(),
+            'subscriberCounts' => Subscriber::query()->withoutGlobalScope('status_page')->active()
+                ->groupBy('status_page_id')->selectRaw('status_page_id, count(*) as total')->pluck('total', 'status_page_id')->all(),
             'defaultPageId' => StatusPage::defaultId(),
             // A page without its own row falls back to on, so only explicit "off" rows matter.
             'subscriptionsOff' => StatusPageSetting::query()

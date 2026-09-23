@@ -1,8 +1,9 @@
 @extends('layouts.admin')
-@section('title', 'Page e-mail')
+@section('title', 'Delivery')
 @section('content')
 @include('partials.pagehead', [
-  'title' => 'Page e-mail',
+  'crumbs' => ['Email', 'Delivery'],
+  'title' => 'Delivery',
   'sub' => 'Delivery settings for one selected status page',
 ])
 
@@ -63,7 +64,7 @@
         <div class="field">
           <label for="password">Password</label>
           <input id="password" name="password" type="password" autocomplete="new-password"
-                 placeholder="{{ $mailHasPassword ? 'Stored — leave empty to keep' : '' }}">
+                 placeholder="{{ $mailHasPassword ? 'Stored, leave empty to keep' : '' }}">
           <span class="help">Stored encrypted and never shown again.</span>
         </div>
       </div>
@@ -84,14 +85,14 @@
           <input id="from_name" name="from_name" type="text" value="{{ old('from_name', $mailForm['from_name']) }}" placeholder="{{ $effective['from_name'] }}">
         </div>
         <div class="field">
-          <label for="reply_to">Reply-to address</label>
+          <label for="reply_to">Reply to address</label>
           <input id="reply_to" name="reply_to" type="email" value="{{ old('reply_to', $mailForm['reply_to']) }}">
           @error('reply_to')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
         </div>
       </div>
 
       <div class="actions">
-        <button class="btn" type="submit">Save page e-mail</button>
+        <button class="btn" type="submit">Save delivery settings</button>
         <button class="btn ghost" type="reset">Undo my changes</button>
       </div>
     </form>
@@ -105,7 +106,7 @@
     <form method="POST" action="{{ \App\Services\PageUrls::route('admin.mail.test') }}">
       @csrf
       <div class="actions">
-        <button class="btn ghost" type="submit">Send test e-mail</button>
+        <button class="btn ghost" type="submit">Send test email</button>
         <span class="help" style="align-self:center">Goes to {{ auth()->user()->email }} using the saved settings for {{ $mailPage->name }}. Save changes before testing.</span>
       </div>
       @error('mail')<span class="help" style="color:var(--red-ink);display:block;margin-top:8px">{{ $message }}</span>@enderror

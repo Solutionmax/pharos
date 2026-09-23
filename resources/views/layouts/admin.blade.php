@@ -1,7 +1,5 @@
 @php
 $branding = app(\App\Services\Branding::class);
-$canEditPage = auth()->user()?->canEditPage(app(\App\Services\PageContext::class)->id()) ?? false;
-$canAdministerPage = auth()->user()?->canAdministerPage(app(\App\Services\PageContext::class)->id()) ?? false;
 @endphp
 <!doctype html>
 <html lang="en" @if ($branding->theme() !== 'system') data-theme="{{ $branding->theme() }}" @endif>
@@ -362,6 +360,10 @@ pre .k{color:var(--brand)}
 @stack('head')
 @stack('head-assets')
 <link rel="stylesheet" href="{{ asset('assets/pharos-v06.css') }}?v=0.6.0">
+<link rel="stylesheet" href="{{ asset('assets/pharos-ui.css') }}?v={{ @filemtime(public_path('assets/pharos-ui.css')) }}">
+@if (is_file(public_path('assets/pharos-ops.css')))
+<link rel="stylesheet" href="{{ asset('assets/pharos-ops.css') }}?v={{ @filemtime(public_path('assets/pharos-ops.css')) }}">
+@endif
 </head>
 <body>
 @auth
@@ -372,78 +374,19 @@ pre .k{color:var(--brand)}
       : $selectorUser->statusPages()->whereNull('archived_at')->orderBy('name')->get();
   $selectedPageId = app(\App\Services\PageContext::class)->id();
   $selectedPage = $selectorPages->firstWhere('id', $selectedPageId);
+  $pageStates = \App\Services\PageStatus::worstByPage();
 @endphp
 <div class="shell">
   <div class="topbar">
     <input type="checkbox" id="navtoggle" class="navtoggle" aria-label="Menu">
     <span class="brand" style="padding:0;font-size:15px">@include('partials.logo', ['size' => 22])</span>
+    <button type="button" class="topsearch" data-search-open aria-haspopup="dialog" aria-controls="pharos-search" aria-label="Search">@include('partials.icon', ['name' => 'search', 'size' => 18])</button>
   </div>
   <label class="scrim" for="navtoggle" aria-hidden="true"></label>
   <aside class="side">
     <span class="brand">@include('partials.logo', ['size' => 26])</span>
 
-    <span class="lbl">Manage a page</span>
-    @include('partials.page-selector', ['viewPages' => false])
-
-    @if(auth()->user()->isAdmin())
-      <a class="nav" href="{{ route('admin.pages.index') }}" @if(request()->routeIs('admin.pages.*')) aria-current="page" @endif>
-        @include('partials.icon', ['name' => 'pages']) Status pages
-      </a>
-    @endif
-    @if ($canAdministerPage)
-      <a class="nav" href="{{ \App\Services\PageUrls::route('admin.mail.edit') }}" @if(request()->routeIs('admin.mail.*', 'page.admin.mail.*')) aria-current="page" @endif>
-        @include('partials.icon', ['name' => 'mail']) Page email
-      </a>
-    @endif
-    <a class="nav" href="{{ \App\Services\PageUrls::route('admin.groups') }}" @if(request()->routeIs('admin.groups*', 'page.admin.groups*')) aria-current="page" @endif>
-      @include('partials.icon', ['name' => 'services']) Services
-    </a>
-    <a class="nav" href="{{ \App\Services\PageUrls::route('admin.components') }}" @if(request()->routeIs('admin.component*', 'page.admin.component*')) aria-current="page" @endif>
-      @include('partials.icon', ['name' => 'components']) Components
-    </a>
-    <a class="nav" href="{{ \App\Services\PageUrls::route('admin.incidents') }}" @if(request()->routeIs('admin.incident*', 'page.admin.incident*')) aria-current="page" @endif>
-      @include('partials.icon', ['name' => 'incidents']) Incidents
-    </a>
-    @if ($canEditPage)
-    <a class="nav" href="{{ \App\Services\PageUrls::route('admin.status-page') }}" @if(request()->routeIs('admin.status-page*', 'page.admin.status-page*')) aria-current="page" @endif>
-      @include('partials.icon', ['name' => 'sliders']) Status page
-    </a>
-    @endif
-    <a class="nav" href="{{ \App\Services\PageUrls::route('admin.subscribers') }}" @if(request()->routeIs('admin.subscribers*', 'page.admin.subscribers*')) aria-current="page" @endif>
-      @include('partials.icon', ['name' => 'mail']) Subscribers
-      @unless (\App\Services\Subscriptions::enabled())<span class="navhint">off</span>@endunless
-    </a>
-
-    <span class="lbl">Configuration</span>
-    <a class="nav" href="{{ \App\Services\PageUrls::route('admin.integrations') }}" @if(request()->routeIs('admin.integrations', 'page.admin.integrations')) aria-current="page" @endif>
-      @include('partials.icon', ['name' => 'integrations']) Integrations
-    </a>
-    {{-- Hidden rather than shown-and-refused: a 403 you did not see coming reads as a fault. --}}
-    @if (auth()->user()->isAdmin())
-      <a class="nav" href="{{ route('admin.settings') }}" @if(request()->routeIs('admin.settings', 'page.admin.settings')) aria-current="page" @endif>
-        @include('partials.icon', ['name' => 'settings']) Settings
-      </a>
-    @endif
-    @if ($canAdministerPage)
-      <a class="nav" href="{{ \App\Services\PageUrls::route('admin.branding') }}" @if(request()->routeIs('admin.branding', 'page.admin.branding')) aria-current="page" @endif>
-        @include('partials.icon', ['name' => 'branding']) Branding
-      </a>
-      <a class="nav" href="{{ \App\Services\PageUrls::route('admin.mail-templates') }}" @if(request()->routeIs('admin.mail-templates*', 'page.admin.mail-templates*')) aria-current="page" @endif>
-        @include('partials.icon', ['name' => 'mail']) Mail templates
-      </a>
-    @endif
-    @if (auth()->user()->isAdmin())
-      <a class="nav" href="{{ route('admin.users') }}" @if(request()->routeIs('admin.users', 'page.admin.users')) aria-current="page" @endif>
-        @include('partials.icon', ['name' => 'users']) Users
-      </a>
-      <a class="nav" href="{{ route('admin.audit') }}" @if(request()->routeIs('admin.audit', 'page.admin.audit')) aria-current="page" @endif>
-        @include('partials.icon', ['name' => 'audit']) Audit log
-      </a>
-      <a class="nav" href="{{ route('admin.updates') }}" @if(request()->routeIs('admin.updates', 'page.admin.updates')) aria-current="page" @endif>
-        @include('partials.icon', ['name' => 'update']) Updates
-        @if (app(\App\Services\Updater::class)->updateAvailable())<span class="dot-new" aria-label="Update available"></span>@endif
-      </a>
-    @endif
+    @include('partials.nav.menu')
 
     <span class="bottom">
       @include('partials.page-selector', ['viewPages' => true])
@@ -472,6 +415,7 @@ pre .k{color:var(--brand)}
 </div>
 @include('partials.confirm')
 @include('partials.daytip')
+@include('partials.search-dialog')
 {{-- Where a note's dismiss form actually lives; see components/note.blade.php. --}}
 @stack('deferred-forms')
 <script>
@@ -509,5 +453,6 @@ document.addEventListener('click', function (event) {
 @endauth
 @include('partials.theme-script')
 <script defer src="{{ asset('assets/pharos-v06.js') }}?v=0.6.0"></script>
+@auth<script defer src="{{ asset('assets/pharos-ui.js') }}?v={{ @filemtime(public_path('assets/pharos-ui.js')) }}"></script>@endauth
 </body>
 </html>

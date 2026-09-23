@@ -9,10 +9,12 @@ use App\Http\Controllers\Admin\IncidentController;
 use App\Http\Controllers\Admin\InstallController;
 use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\MailTemplateController;
+use App\Http\Controllers\Admin\OverviewController;
 use App\Http\Controllers\Admin\PageMailController;
 use App\Http\Controllers\Admin\PagesController;
 use App\Http\Controllers\Admin\PasswordResetController;
 use App\Http\Controllers\Admin\ProfileController;
+use App\Http\Controllers\Admin\SearchController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SsoController;
 use App\Http\Controllers\Admin\StatusPageSettingsController;
@@ -68,6 +70,10 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
         Route::get('/', fn () => redirect()->to(PageUrls::landing(auth()->user())));
+
+        Route::get('overview', [OverviewController::class, 'show'])->name('overview');
+        // Only what the signed in user may open; see App\Services\AdminSearch.
+        Route::get('search', SearchController::class)->middleware('throttle:60,1')->name('search');
 
         Route::get('components', [ComponentController::class, 'index'])->name('components');
         Route::get('components/create', [ComponentController::class, 'create'])->name('components.create');
@@ -190,7 +196,7 @@ Route::get('/storage/{path}', function (string $path) {
 // Register explicit page routes from the same actions, so legacy and page routes
 // cannot drift in validation or middleware. Account/install routes remain central.
 $pageRouteNames = ['status', 'subscribe', 'subscribe.confirm', 'unsubscribe'];
-$pageAdminPrefixes = ['components', 'groups', 'incidents', 'status-page', 'subscribers', 'integrations', 'branding', 'mail-templates', 'mail'];
+$pageAdminPrefixes = ['overview', 'components', 'groups', 'incidents', 'status-page', 'subscribers', 'integrations', 'branding', 'mail-templates', 'mail'];
 $originalRoutes = Route::getRoutes()->getRoutes();
 foreach ($originalRoutes as $original) {
     $name = $original->getName();
