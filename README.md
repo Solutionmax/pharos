@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://pharos.solutionmax.net"><img src="docs/img/current-readme-logo.png" alt="Pharos — self-hosted status pages with automatic monitoring" width="300"></a>
+  <a href="https://pharos.solutionmax.net"><img src="docs/img/current-readme-logo.png" alt="Pharos: self-hosted status pages with automatic monitoring" width="300"></a>
 </p>
 
 <p align="center">
@@ -53,7 +53,7 @@ and token header; incident creation needs changes. See the compatibility guide b
 |---|---|
 | **Checks** | HTTP, TCP and heartbeat. Two failures turn a component red, three healthy checks in a row close the incident. |
 | **Incidents** | Opened and closed by the checks themselves, or by hand. One incident can span several components, each with its own status. Templates with `{{variables}}` for the API. |
-| **Uptime** | Daily roll-ups into a 90-day bar and a percentage. Days without data are grey and left out of the average — never counted as green. |
+| **Uptime** | Daily roll-ups into a 90-day bar and a percentage. Days without data are grey and left out of the average, never counted as green. |
 | **Public page** | Every section is a switch (banner, uptime bar, services, per-component bars, incident history, empty days, API link), per-service visibility, light and dark theme, and a live preview in the admin that renders the real page from values you have not saved yet. |
 | **Subscribers** | A *Get notified* button, double opt-in, one e-mail per incident update, one-click unsubscribe. The four mails are editable Markdown templates. |
 | **Integrations** | Cachet-shaped REST API for components and incidents, Uptime Kuma through a separately configured API workflow or heartbeat adapter, n8n in both directions with an HMAC-signed outgoing webhook, Zabbix and Grafana through the API, Slack and Discord webhooks, Telegram bot notifications, Signal through your own secured bridge. |
@@ -77,12 +77,12 @@ figures, 90 days of availability and the open incident with its updates.</em>
 
 <img src="docs/img/current-admin-components.webp" alt="The Components screen grouped by service, with tiles showing what is down right now, average uptime, how many components Pharos checks and how many are set from outside." width="100%">
 
-<em>Components. The tiles answer “what is wrong right now” before the table does — including how
+<em>Components. The tiles answer “what is wrong right now” before the table does, including how
 many components still rely on someone noticing.</em>
 
 <img src="docs/img/current-admin-status-page.webp" alt="The Layout screen with one switch per section on the left and a live preview of the public page on the right, with a desktop and phone toggle." width="100%">
 
-<em>Status page. Tick a section off and it disappears from the preview beside it — the real page,
+<em>Status page. Tick a section off and it disappears from the preview beside it: the real page,
 rendered from values you have not saved yet.</em>
 
 <img src="docs/img/current-admin-incidents.webp" alt="The Incidents screen: open now, the last 30 days, typical time to resolve, the open incident with its timeline, and the history of resolved incidents." width="100%">
@@ -139,7 +139,7 @@ change your mind.</em>
 [Update recovery](https://pharos.solutionmax.net/docs/recovery/)
 
 
-### cPanel, DirectAdmin, Plesk — or compatible PHP 8.3 hosting
+### cPanel, DirectAdmin, Plesk, or compatible PHP 8.3 hosting
 
 Requires PHP 8.3 or later with the usual Laravel extensions, and either SQLite or MySQL.
 No daemon, no worker queue, no root. Two installers, one result: the application lives outside
@@ -147,7 +147,7 @@ the web root, only the public files are served by the web server, and one cron l
 every minute. Both download the same signed release and verify the Ed25519 manifest and the
 SHA-256 before unpacking. Rather do it yourself? See [by hand](#by-hand).
 
-#### 1. Without SSH — the web installer
+#### 1. Without SSH: the web installer
 
 Download [`pharos-install.php`](https://pharos.solutionmax.net/pharos-install.php) and upload it
 into the domain's document root (File Manager → `public_html`, or the subdomain's folder). Open
@@ -162,7 +162,7 @@ After unlocking, the requirements screen checks whether the host can run Pharos:
 <img src="docs/img/current-install-web-1-check-type-v2.png" alt="Step 2, the server check: all 17 checks passed for PHP, the folders, the extensions, the release server and PHP for cron." width="100%">
 
 **Download** fetches the release, verifies the signed manifest and the checksum, unpacks the
-application into a private `pharos-app-<domain-id>` folder — next to the web root, never inside it — and copies `public/`
+application into a private `pharos-app-<domain-id>` folder (next to the web root, never inside it) and copies `public/`
 into the document root with an `index.php` that points at the app. No document-root change
 needed, and `.env` stays out of reach:
 
@@ -182,19 +182,19 @@ found, and where it goes in cPanel, DirectAdmin and Plesk; it notices the first 
 The installer keeps whatever your panel already put in `.htaccess` and adds Pharos's rules
 underneath; a half-finished install resumes where it stopped.
 
-#### 2. With SSH — one command
+#### 2. With SSH: one command
 
 ```bash
 curl -fsSL https://pharos.solutionmax.net/get | sh -s -- --php --url https://status.example.com
 ```
 
 Same release, same checks. It installs into a private `pharos-app-<domain-id>` folder (`--dir` to change that), writes
-`.env`, migrates, links `storage` and adds the cron line to your crontab — or prints it where
+`.env`, migrates, links `storage` and adds the cron line to your crontab, or prints it where
 the crontab is not writable, as in DirectAdmin's jailed shell:
 
 <img src="docs/img/install-ssh-get.webp" alt="A terminal running the get script: system detected, manifest signature valid, PHP checked, archive downloaded and verified, unpacked, installation key shown, database migrated, cron task configured, then the document root instructions per panel." width="100%">
 
-**Then point the document root at `~/pharos-app/public`** — the one step the script leaves to you:
+**Then point the document root at `~/pharos-app/public`**, the one step the script leaves to you:
 
 - cPanel: Domains → Manage → Document Root, or over SSH
   `uapi SubDomain changedocroot domain=status.example.com docroot=pharos-app/public`
@@ -213,7 +213,7 @@ administrator using the installation key, done. The form disappears the moment t
 <img src="docs/img/current-install-web-4-setup.png" alt="Step 6, inside Pharos: installation key, status page name, time zone, your name, email and password." width="100%">
 
 If you would rather not touch a browser, `php artisan pharos:user you@example.com` creates
-the first account from the command line — and gets you back in if you ever lock yourself out.
+the first account from the command line, and gets you back in if you ever lock yourself out.
 
 #### The one cron line
 
@@ -252,7 +252,7 @@ php artisan migrate --force && php artisan storage:link
 
 ### Docker
 
-The image is `ghcr.io/solutionmax/pharos` — one tag per release (`:0.5.1`) plus `:latest`,
+The image is `ghcr.io/solutionmax/pharos`: one tag per release (`:0.5.1`) plus `:latest`,
 built for `linux/amd64` and `linux/arm64` by GitHub Actions on every release tag.
 
 ```bash
@@ -306,7 +306,7 @@ scheduler.
 |---|---|---|
 | **HTTP** | Requests a URL, expects a status code | Websites, APIs, control panels |
 | **TCP** | Opens a socket to host:port | Mail, databases, anything without HTTP |
-| **Heartbeat** | Waits for *your* job to call in — silence is the failure | Backups, cron scripts, anything you cannot poll from outside |
+| **Heartbeat** | Waits for *your* job to call in; silence is the failure | Backups, cron scripts, anything you cannot poll from outside |
 
 A check has to fail twice before the component goes red, and has to succeed three times in a row
 before the incident closes. That is deliberate: one dropped packet should not publish an outage.
@@ -318,7 +318,7 @@ before the incident closes. That is deliberate: one dropped packet should not pu
 The API is **Cachet-shaped**: components and incidents under `/api/v1`, the same
 `{"data": …}` envelope and status integers, and `X-Cachet-Token` accepted alongside
 `Authorization: Bearer`. Reads need no token. Not there: `ping`, `version`, component
-groups, metrics, subscribers and schedules — a Cachet client that starts with `/ping`
+groups, metrics, subscribers and schedules. A Cachet client that starts with `/ping`
 will not find them.
 
 ```bash
@@ -333,13 +333,13 @@ curl -X POST https://status.example.com/api/v1/incidents \
       }'
 ```
 
-- **Uptime Kuma** — connect a separately configured API workflow or periodic heartbeat adapter
-- **n8n** — both directions, with an HMAC-SHA256 signed outgoing webhook on every incident
-- **Zabbix and Grafana** — through the same API, no plugin needed
-- **Telegram** — bot notifications to a chat, group or channel; see [Telegram setup](docs/notifications.md#telegram-notifications)
-- **Slack** — an incoming webhook per incident update; see [docs/notifications.md](docs/notifications.md)
-- **Anything else** — a token and a POST is the whole contract
-- **Your visitors** — a *Get notified* button on the status page; confirmed addresses get an
+- **Uptime Kuma**: connect a separately configured API workflow or periodic heartbeat adapter
+- **n8n**: both directions, with an HMAC-SHA256 signed outgoing webhook on every incident
+- **Zabbix and Grafana**: through the same API, no plugin needed
+- **Telegram**: bot notifications to a chat, group or channel; see [Telegram setup](docs/notifications.md#telegram-notifications)
+- **Slack**: an incoming webhook per incident update; see [docs/notifications.md](docs/notifications.md)
+- **Anything else**: a token and a POST is the whole contract
+- **Your visitors**: a *Get notified* button on the status page; confirmed addresses get an
   e-mail per incident update, with one-click unsubscribe. See [docs/subscribers.md](docs/subscribers.md)
 
 Single sign-on and two-factor are covered in [docs/sso.md](docs/sso.md); how licence keys are
@@ -349,7 +349,7 @@ issued and verified in [docs/licensing.md](docs/licensing.md).
 
 ## Updates
 
-Pharos checks for a signed release manifest and shows what is available under **Updates** —
+Pharos checks for a signed release manifest and shows what is available under **Updates**,
 on every installation, paid or not.
 
 On a PHP host it downloads the release, verifies the SHA-256, backs up the current version and
@@ -357,10 +357,10 @@ replaces its own files, keeping `.env`, `storage/` and the database. Roll back f
 screen. On Docker the host pulls the new image: `docker compose pull && docker compose up -d`.
 
 Manifests are signed with **Ed25519** and verified locally. If the release server cannot be
-reached, that reads as *no update available* — never as an error.
+reached, that reads as *no update available*, never as an error.
 
-Every release — what changed, the signed zip, its SHA-256 and a copy of the web installer
-pinned to that version — is listed at **[pharos.solutionmax.net/releases](https://pharos.solutionmax.net/releases/)**.
+Every release (what changed, the signed zip, its SHA-256 and a copy of the web installer
+pinned to that version) is listed at **[pharos.solutionmax.net/releases](https://pharos.solutionmax.net/releases/)**.
 The GitHub Releases here carry the same files as a mirror.
 
 ---
@@ -382,14 +382,14 @@ Stated plainly rather than described as if it were finished:
 
 In plain terms: anyone may use, modify and redistribute this, including commercially. If
 you modify it **and run it as a service other people can reach**, you have to publish your
-modified source. That is the difference between the AGPL and the GPL, and it is the point —
+modified source. That is the difference between the AGPL and the GPL, and it is the point:
 it keeps a hosting company from taking this closed.
 
 If that obligation does not work for your organisation, there is a
 [commercial licence](COMMERCIAL-LICENSE.md) that lifts it. Buying one does not take Pharos
 away from anyone: every release stays published under the AGPL.
 
-Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md), which includes the
+Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md), which includes the
 short contributor licence agreement that makes the dual licence possible.
 
 ### Paid, and entirely optional
@@ -414,7 +414,7 @@ whether you are allowed to run it.
 
 ---
 
-<sub>Pharos — a <a href="https://solutionmax.net">SolutionMAX</a> product ·
+<sub>Pharos, a <a href="https://solutionmax.net">SolutionMAX</a> product ·
 <a href="https://pharos.solutionmax.net">pharos.solutionmax.net</a> ·
 <a href="https://github.com/solutionmax/pharos-site">website and documentation source</a></sub>
 

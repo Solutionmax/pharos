@@ -12,7 +12,7 @@ provider can never be the reason nobody can reach the status page.
 
 ## Why there is no JWT library
 
-The `id_token` is read from the **token endpoint over the back channel** — an
+The `id_token` is read from the **token endpoint over the back channel**: an
 outgoing TLS request that authenticates with the client secret. The transport
 already proves who the issuer is, so the signature does not have to be verified
 against a JWKS separately. That removes the only part of OIDC that would have
@@ -27,13 +27,13 @@ What is still checked, every time:
 | `aud` | It was minted for *this* client, not another app at the same provider |
 | `nonce` | It answers *our* request, not a replayed older one |
 | `exp` / `iat` | It is current |
-| `email_verified` | See below — the one that matters most |
+| `email_verified` | See below; the one that matters most |
 
 ## email_verified is not optional
 
 The email claim decides which local account you become. If the provider did not
 verify the address, anyone who can register at that provider could claim a
-colleague's address and take over their Pharos account — password and two-factor
+colleague's address and take over their Pharos account, password and two-factor
 included. Portalis parsed this field but never read it; that was a real hole.
 
 An unverified address is refused, with `sso.rejected` in the audit log.
@@ -60,14 +60,14 @@ provider hosts** under **Settings → Single sign-on** vouches for named hosts:
 id.intern.example.net, 192.168.1.20
 ```
 
-A list rather than a switch, so it opens one door instead of all of them — and
+A list rather than a switch, so it opens one door instead of all of them, and
 **link-local stays blocked whatever is in that box**, because `169.254.169.254` is
 the address the guard exists for.
 
 ## Two-factor still applies
 
 Somebody who switched two-factor on gets the code screen after the SSO step as
-well. A second door that skips the gate makes the gate decorative — and if the
+well. A second door that skips the gate makes the gate decorative, and if the
 identity provider does not enforce MFA itself, signing in through it would
 quietly undo what the user chose. Trust the provider instead? Then switch your
 own two-factor off; that is the user's decision, not the login flow's.

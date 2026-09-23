@@ -19,7 +19,7 @@ against a public key compiled into the app and unlocks the features listed in th
 That is the whole mechanism.
 
 **The private key is the entire product.** Anyone holding it can mint licences. Anyone
-without it cannot forge one, no matter what they patch — they would have to change the
+without it cannot forge one, no matter what they patch: they would have to change the
 public key in their own copy, which is legal under the AGPL and also means they are no
 longer running your build.
 
@@ -61,14 +61,14 @@ commercial licence is quoted individually and its key is signed by hand.
 
 | | |
 |---|---|
-| Secret (signing) | `/root/secrets/pharos-license-secret.hex` — **never leaves our side** |
+| Secret (signing) | `/root/secrets/pharos-license-secret.hex` (**never leaves our side**) |
 | Public (verifying) | `/root/secrets/pharos-license-public.hex` → `PHAROS_LICENSE_PUBLIC_KEY` in every install |
 
 The same pair signs **release manifests** for the updater. A `purpose` field keeps the two
 apart, so a licence key can never be replayed as a fake update and the other way round.
 
 If the secret ever leaks: generate a new pair, ship a release with the new public key, and
-re-issue keys to existing customers. Old keys stop verifying on the new version only —
+re-issue keys to existing customers. Old keys stop verifying on the new version only;
 nobody's site breaks.
 
 ## Issuing a key by hand
@@ -140,8 +140,8 @@ typed at checkout. Sign one by hand with:
 php artisan pharos:license:sign klant@example.net --features=brand_pack --domain=status.klant.nl
 ```
 
-Leave `--months` off and the claim is absent, which means the key never expires —
-that is what every key signed before this existed does, and they keep working.
+Leave `--months` off and the claim is absent, which means the key never expires.
+That is what every key signed before this existed does, and they keep working.
 
 Expired keys lose time-limited rights such as creating extra pages. Brand Pack is
 a perpetual feature and remains usable. Existing status pages continue operating.

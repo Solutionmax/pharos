@@ -20,20 +20,20 @@ Zabbix trigger →  POST /api/v1/incidents  →  Pharos incident  →  Slack mes
 
 ---
 
-## Step 1 — Create the Slack app
+## Step 1: Create the Slack app
 
 One app carries both credentials. Slack has two different ways to post, and the
 two systems in this chain each want a different one:
 
 | System | Wants | Why |
 |--------|-------|-----|
-| Pharos | An **Incoming Webhook URL** | A URL is the whole credential — nothing to store, nothing to refresh. Fits a product that must run on a plain PHP host. |
+| Pharos | An **Incoming Webhook URL** | A URL is the whole credential: nothing to store, nothing to refresh. Fits a product that must run on a plain PHP host. |
 | Zabbix | A **bot token** (`xoxb-…`) | Zabbix's Slack media type resolves channel names and edits messages on recovery, which a webhook URL cannot do. |
 
 Both come out of the same app, so create it once.
 
 1. Go to <https://api.slack.com/apps> and choose **Create New App → From scratch**.
-2. Name it after the estate it watches, not after Pharos — `SolutionMAX Alerts`,
+2. Name it after the estate it watches, not after Pharos: `SolutionMAX Alerts`,
    for example. The name appears on every message.
 3. Pick the workspace and confirm.
 
@@ -61,7 +61,7 @@ month; Zabbix has fifty. Put them in one channel and the outage scrolls away.
 
 ⚠️ **That URL is a password.** Anyone holding it can post in that channel as the
 app. It never expires and Slack will not show you a second copy of it in plain
-sight — store it where you store passwords, not in a chat message.
+sight. Store it where you store passwords, not in a chat message.
 
 The webhook is pinned to `#status` forever. Posting to a second channel means a
 second webhook, not a changed one.
@@ -73,7 +73,7 @@ second webhook, not a changed one.
    scope needed to post. Add `chat:write.public` as well if you would rather not
    invite the bot to every channel by hand.
 3. Scroll up and click **Install to Workspace**, then **Allow**.
-4. Copy the **Bot User OAuth Token** — it starts with `xoxb-`.
+4. Copy the **Bot User OAuth Token**; it starts with `xoxb-`.
 5. In Slack, open `#infra-alerts` and run `/invite @SolutionMAX Alerts`. Without
    `chat:write.public`, a bot can only post in channels it is a member of, and
    the failure is a quiet `not_in_channel` in the Zabbix log rather than a
@@ -89,13 +89,13 @@ alerts stop after an app change, that is the first thing to check.
 | Incoming Webhook URL | Pharos admin → **Integrations → Notifications**. Stored in the database, shown masked afterwards. |
 | Bot token | The Zabbix media type, and a copy in your password store. |
 
-Neither belongs in a repository, and neither belongs in `.env` for Pharos — the
+Neither belongs in a repository, and neither belongs in `.env` for Pharos: the
 webhook URL is configuration a non-technical operator changes from the admin,
 which is why it is a database row and not an environment variable.
 
 ---
 
-## Step 2 — Point Pharos at Slack
+## Step 2: Point Pharos at Slack
 
 ### Set the brand name first
 
@@ -114,7 +114,7 @@ message anyone ever sees from the status page has the wrong name on it.
 | **Shape** | **Slack**. |
 | **Address** | The Incoming Webhook URL from step 1. |
 
-Plain `http://` is fine and so is the rest of your LAN — an n8n next door is the
+Plain `http://` is fine and so is the rest of your LAN; an n8n next door is the
 common case. Addresses on the Pharos machine itself (`127.0.0.1`, `::1`) and
 link-local ranges (`169.254.0.0/16`, `fe80::/10`) are refused, both when the
 endpoint is saved and again on every delivery, including IPv4 hidden inside
@@ -122,8 +122,8 @@ IPv6 (`::ffff:…`). Redirects are not followed.
 
 The **Shape** field is the one that matters. Slack and Teams each demand their
 own JSON, and a raw payload sent to a Slack webhook is answered with `400
-invalid_payload` and shows nothing at all. Generic JSON is for anything else —
-n8n, Zapier, your own receiver — and only Generic deliveries are signed with
+invalid_payload` and shows nothing at all. Generic JSON is for anything else
+(n8n, Zapier, your own receiver), and only Generic deliveries are signed with
 `X-Pharos-Signature`. Slack and Teams ignore unknown headers, so for those the
 URL is the credential and there is nothing to verify.
 
@@ -170,7 +170,7 @@ land there, along with who did it and from which address.
 
 Two things it deliberately does not record. The **check runner writes nothing**,
 because cron is not an actor and a row a minute would bury everything a person
-did. And **no secret value is stored** — a rotated signing secret shows as
+did. And **no secret value is stored**: a rotated signing secret shows as
 changed, not as its new value.
 
 
