@@ -19,6 +19,7 @@ $journey = [
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+@include('partials.theme-early', ['theme' => $adminTheme])
 <title>@yield('title', 'Set up') · {{ $branding->name() }}</title>
 <link rel="icon" href="{{ $branding->faviconUrl() }}">
 <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}">
