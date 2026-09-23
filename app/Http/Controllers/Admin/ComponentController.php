@@ -33,8 +33,8 @@ class ComponentController extends Controller
         return view('admin.components', [
             'components' => $components,
             // Services in their page order, then the components that belong to none.
-            'sections' => $groups->map(fn (ComponentGroup $group) => ['group' => $group, 'components' => $components->where('component_group_id', $group->id)->values()])
-                ->push(['group' => null, 'components' => $components->whereNull('component_group_id')->values()])
+            'sections' => collect([...$groups->all(), null])
+                ->map(fn (?ComponentGroup $group) => ['group' => $group, 'components' => $components->where('component_group_id', $group?->id)->values()])
                 ->filter(fn ($section) => $section['components']->isNotEmpty())->values(),
             'uptime' => $components->mapWithKeys(fn ($c) => [$c->id => $this->uptime->percentage($c)]),
             // Last 30 days only: at 132px a 90-day strip gives each day 1.4px,

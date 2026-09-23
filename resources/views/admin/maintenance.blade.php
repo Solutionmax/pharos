@@ -59,7 +59,7 @@
           @if ($maintenance->announced_at)
             Announced {{ $maintenance->announced_at->format('j M H:i') }}
           @elseif ($maintenance->announce_minutes > 0)
-            Announced {{ \Illuminate\Support\Str::lower(\App\Models\Maintenance::LEAD_TIMES[$maintenance->announce_minutes] ?? '') }}
+            Announces {{ \Illuminate\Support\Str::lower(\App\Models\Maintenance::LEAD_TIMES[$maintenance->announce_minutes] ?? '') }}
           @else
             Not announced
           @endif
@@ -93,7 +93,7 @@
       @endforeach
       </tbody>
     </table></div>
-    <div class="bd">{{ $past->links('vendor.pagination.pharos', ['previousLabel' => 'Previous', 'nextLabel' => 'Next']) }}</div>
+    @if ($past->hasPages())<div class="bd">{{ $past->links('vendor.pagination.pharos', ['previousLabel' => 'Newer', 'nextLabel' => 'Older']) }}</div>@endif
   @endif
 </section>
 @endsection

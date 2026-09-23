@@ -103,6 +103,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 .plan .tx .aff{font-size:12.5px;color:var(--ink-3)}
 .plan .tx .md{font-size:13px}
 .plan.live{background:var(--card);border-left:3px solid var(--blue)}
+.plan:not(.live) .pill{background:var(--card)}
 @media(max-width:640px){.plan time{margin-left:0;flex-basis:100%;white-space:normal}}
 .day+.day{margin-top:8px}
 .day-hd{display:flex;align-items:center;gap:12px;padding:14px 2px 10px}
