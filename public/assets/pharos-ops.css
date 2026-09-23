@@ -308,3 +308,7 @@ a.ix-node:hover{border-color:color-mix(in srgb,var(--brand) 45%,var(--line));tra
   .ix-table td,.ix-table th{padding:10px 10px}.ix-table td.num{font-size:11.5px}
   .ix-kpi .k{letter-spacing:.08em}
 }
+
+/* Official partner files stay unaltered: full colour on a neutral tile, never recoloured. */
+.lg.lg-official{background:#fff;border:1px solid var(--line)}
+.lg.lg-official img{display:block}
