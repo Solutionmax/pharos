@@ -57,6 +57,13 @@ class OverviewTest extends TestCase
         }
     }
 
+    public function test_a_signed_in_user_opening_the_sign_in_page_lands_on_the_overview(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+        $this->actingAs($admin)->get('/admin/login')->assertRedirect(route('admin.overview'));
+    }
+
     public function test_a_user_of_another_page_lands_on_that_pages_overview(): void
     {
         $user = User::factory()->create(['role' => UserRole::User]);
