@@ -23,7 +23,7 @@
             @else
               @php($assignedPages = $user->statusPages->whereNull('archived_at'))
               @forelse ($assignedPages->take(3) as $assignedPage)
-                <div style="margin-bottom:5px;font-size:12px">{{ $assignedPage->name }} · {{ ['viewer' => 'Read only', 'editor' => 'Editor', 'admin' => 'Page administrator'][$assignedPage->pivot->role] }} @include('partials.page-tag', ['tagPage' => $assignedPage])</div>
+                <div style="margin-bottom:5px;font-size:12px">{{ $assignedPage->name }} · {{ ['viewer' => 'Read only', 'editor' => 'Editor', 'admin' => 'Page administrator'][$assignedPage->pivot->role] ?? $assignedPage->pivot->role }} @include('partials.page-tag', ['tagPage' => $assignedPage])</div>
               @empty
                 <span class="sub">No pages assigned</span>
               @endforelse
