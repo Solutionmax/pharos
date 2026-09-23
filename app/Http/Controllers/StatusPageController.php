@@ -70,13 +70,15 @@ class StatusPageController extends Controller
         $groupFlags = is_array($groupFlags) ? $groupFlags : [];
         $hidden = array_keys(array_filter($groupFlags, fn ($on) => $on !== '1'));
 
-        $page = $this->render(
+        // What customers will see, so in the installation zone even when the admin
+        // looking at the preview reads the rest of the admin in a zone of their own.
+        $page = Clock::withInstallationZone(fn () => (string) $this->render(
             modules: $modules,
             theme: in_array($theme, ['system', 'light', 'dark'], true) ? $theme : 'system',
             days: max(1, min(30, (int) $request->query('days', 5))),
             chrome: false,
             hiddenGroups: array_map('strval', $hidden),
-        );
+        ));
 
         // Every other page refuses to be framed (SecurityHeaders). This one is
         // built to sit in the Status page screen's iframe, so it alone allows its own

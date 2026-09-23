@@ -8,6 +8,7 @@ use App\Models\StatusPage;
 use App\Models\User;
 use App\Notifications\InviteUser;
 use App\Services\Audit;
+use App\Services\Clock;
 use App\Services\UserSessions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -91,7 +92,8 @@ class UserController extends Controller
     {
         try {
             $token = Password::broker(InvitationController::BROKER)->createToken($user);
-            $user->notify(new InviteUser($token, $request->user()->name));
+            // For someone else: the installation zone, not the inviting admin's own.
+            Clock::withInstallationZone(fn () => $user->notify(new InviteUser($token, $request->user()->name)));
             Audit::record('user.invited', $user);
 
             return true;

@@ -130,6 +130,7 @@
       </div>
       <p class="hint-row">
         This is the real page rendered from the values above, not a mockup.
+        Times are in {{ \App\Services\Clock::installationTimezone() }}, the zone customers see.
         Nothing is saved until you press <b>Save status page</b>.
       </p>
     </div>

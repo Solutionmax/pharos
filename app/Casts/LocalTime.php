@@ -16,12 +16,17 @@ use Illuminate\Support\Carbon;
  * zone is converted, a string with an offset keeps it, and a bare string —
  * what a datetime-local input sends — means the customer's own wall time.
  *
- * Immutable on purpose. Eloquent caches a class-cast object and writes it
- * back on save(), so with a mutable Carbon a stray ->addSeconds() on a read
- * attribute would silently change the stored value.
+ * Immutable on purpose, and not cached on the model: the zone in effect can
+ * change within one request (Clock::withInstallationZone() around a mail or a
+ * webhook while an admin with a personal zone is signed in), so every read
+ * converts again. With no cached object there is also nothing for Eloquent
+ * to write back on save().
  */
 class LocalTime implements CastsAttributes
 {
+    /** Read the attribute afresh each time, in the zone in effect at that moment. */
+    public bool $withoutObjectCaching = true;
+
     public function get(Model $model, string $key, mixed $value, array $attributes): ?CarbonImmutable
     {
         if ($value === null) {

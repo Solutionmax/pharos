@@ -34,12 +34,13 @@ class SettingsController extends Controller
             'tab' => $this->tab($request),
             // The word beside each tab: its state, so you know before you open it.
             'tabs' => [
-                'general' => Clock::timezone(),
+                'general' => Clock::installationTimezone(),
                 'mail' => $mail['mailer'].($mail['mailer'] === 'smtp' && $mail['host'] !== '' ? ' via '.$mail['host'] : ''),
                 'sso' => $sso->enabled() ? 'On' : 'Off',
             ],
-            'timezone' => Clock::timezone(),
-            'offset' => Clock::offsetLabel(),
+            // The installation's zone, not the personal one this admin may be viewing in.
+            'timezone' => Clock::installationTimezone(),
+            'offset' => Clock::offsetLabel(Clock::installationTimezone()),
             'general' => InstallSettings::all(),
             'manifestHost' => $updater->manifestHost(),
             'sso' => $sso,
@@ -112,7 +113,8 @@ class SettingsController extends Controller
         $user = $request->user();
 
         try {
-            Mail::to($user->email)->send(new TestMail($user));
+            // Rendered like every other mail: in the installation zone.
+            Clock::withInstallationZone(fn () => Mail::to($user->email)->send(new TestMail($user)));
         } catch (\Throwable $e) {
             return redirect()->route('admin.settings', ['tab' => 'mail'])
                 ->withErrors(['mail' => 'Test email failed: '.$e->getMessage()]);
@@ -140,7 +142,7 @@ class SettingsController extends Controller
             'keep_backups.*' => 'Backups kept must be a number from 0 (keep all) to 50.',
         ]);
 
-        $before = ['app.timezone' => Clock::timezone()] + $this->keyed(InstallSettings::all());
+        $before = ['app.timezone' => Clock::installationTimezone()] + $this->keyed(InstallSettings::all());
 
         Setting::put('app.timezone', $data['timezone']);
         InstallSettings::save([
@@ -149,7 +151,7 @@ class SettingsController extends Controller
             'update_check' => $request->boolean('update_check'),
         ]);
 
-        $after = ['app.timezone' => Clock::timezone()] + $this->keyed(InstallSettings::all());
+        $after = ['app.timezone' => Clock::installationTimezone()] + $this->keyed(InstallSettings::all());
 
         // Only what changed, by setting key: nothing on this tab is a secret.
         $changes = collect($after)

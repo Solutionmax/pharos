@@ -208,7 +208,7 @@ class AuditTest extends TestCase
         $this->assertStringContainsString('attachment; filename=', $response->headers->get('content-disposition'));
 
         $csv = $response->streamedContent();
-        $this->assertStringStartsWith("\xEF\xBB\xBFwhen,actor,ip,action,subject,changes\n", $csv);
+        $this->assertStringStartsWith("\xEF\xBB\xBF\"when (UTC)\",actor,ip,action,subject,changes\n", $csv);
         $this->assertStringContainsString('"API token: deploy",203.0.113.9,component.updated,Website,"status: Operational → Major outage"', $csv);
         $this->assertStringNotContainsString('Anita', $csv, 'the filter applies to the download too');
     }
