@@ -43,7 +43,7 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
           'url' => \App\Services\PageUrls::route('admin.mail-templates', ['template' => $tabKey]),
           'active' => $tabKey === $key,
           'label' => $label,
-          'description' => ['subscribe_confirm' => 'Confirm a new subscription', 'incident_opened' => 'Announce a new incident', 'incident_updated' => 'Share the latest progress', 'incident_resolved' => 'Confirm service recovery'][$tabKey],
+          'description' => ['subscribe_confirm' => 'Confirm a new subscription', 'incident_opened' => 'Announce a new incident', 'incident_updated' => 'Share the latest progress', 'incident_resolved' => 'Confirm service recovery', 'maintenance_scheduled' => 'Announce planned work'][$tabKey] ?? '',
           'icon' => $tabKey === 'subscribe_confirm' ? 'mail' : 'incidents',
       ];
   }
@@ -126,7 +126,7 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
 
     <x-note id="mail-templates.frame">
       <b>You edit the body, not the frame.</b> The logo, the accent colour, the link to the status
-      page and — on every incident mail — the unsubscribe link sit in the frame around it and are
+      page and, on every subscriber mail, the unsubscribe link sit in the frame around it and are
       always there, whether or not you use <code>{unsubscribe}</code> in the body.
       Tag values are printed as typed; only <code>{message}</code> is the operator's Markdown.
       A line whose only tag is empty is left out, so <code>Affects {components}</code> disappears
