@@ -1,17 +1,15 @@
 # Pharos — status en sessieoverdracht
 
-Bijgewerkt: 23 september 2026. Deze notitie beschrijft de multi-page uitbreiding en de interne testinstallatie.
+Bijgewerkt: 23 september 2026, na de release van **0.7.0**.
 
 ## Belangrijk voor de volgende sessie
 
-- **Actieve werkmap:** `/root/pharos-multipage-20260920`
-- **Branch:** `feature/multiple-status-pages`
-- **Laatste implementatiecommit:** `2e9256a` (page roles, scoped tokens, delivery filters); QA-fix `33f5de6` (23 sep).
-- Oorspronkelijke repository: `/root/projects/pharos`; basis van deze uitbreiding: `007c0c9` (v0.6.0).
-- Werk verder in de actieve werkmap. Niet opnieuw beginnen in de oorspronkelijke checkout.
-- **Niet naar GitHub gepusht.** Gebruiker wil eerst intern testen en pas publiceren wanneer alles af is. Geen release, merge of push uitvoeren zonder die vervolginstructie.
-- Geen openstaande bekende blokkerende fouten na de laatste review. Gebruikersacceptatie van de laatste toevoegingen staat nog open.
-- Cross-session geheugenopslag meldde een providerlimiet; vertrouw op dit bestand, Git en de documentatie. De geheugenworker is niet herstart.
+- **Werk in `/root/projects/pharos`, branch `main`.** Alles is samengevoegd en gepusht (`v0.7.0`, laatste commits na release: CI-fixes en deze notitie). De oude werkmap `/root/pharos-multipage-20260920` en alle QA/UI-worktrees zijn verwijderd; hun branches bestaan nog lokaal maar zijn samengevoegd.
+- **Uitgebracht: Pharos 0.7.0** (zie sectie "0.7.0 uitgebracht"). Website, portaal en GitHub zijn bijgewerkt.
+- Nieuwe release: `/pharos-release <versie>` vanuit `/root/projects/pharos` (skill). `CHANGELOG.md` heeft een lege `## [Unreleased]`.
+- **Interne installatie `.166:8130` (CT106)** draait de feature-build van vóór de release (functioneel gelijk aan 0.7.0) plus WAL. Raymon updatet die zelf; niet zelf `pharos:update` draaien. De vriend (enige gebruiker, oude versie) updatet zelf via Updates.
+- Werkafspraken: eerst vragen "Kan ik dit doorvoeren?" vóór wijzigingen; zichtbare teksten zonder em/en dash en zonder koppeltekens tussen woorden; bestanden voor Raymon via uploadpagina `192.168.18.161:3003`.
+- Deployen naar `.166`: pakket + script (`systemctl stop pharos-fresh cron`, SQLite backup-API, `tar ... --exclude='./database/*.sqlite*' ... || [ $? -eq 1 ]`, uitpakken, `view:clear`/`config:clear`, services terug via trap). De classifier laat Claude niet zelf naar productie uitrollen: Raymon draait het `!`-commando.
 
 ## Toegevoegd en intern geplaatst
 
@@ -100,15 +98,9 @@ Bijgewerkt: 23 september 2026. Deze notitie beschrijft de multi-page uitbreiding
 
 ## Laatste update, back-up en herstel
 
-- Laatste volledige bron-/databaseback-up vóór de rechtenupdate: **`/root/pharos-permissions-backup.73liUB` in container 106**.
-- Back-up bevat `source.tar.gz`, consistente `database.sqlite` en `counts.json`.
-- Scheduler en HTTP zijn tijdens migratie gepauzeerd. Bestaande aantallen records zijn vóór en na migratie vergeleken en ongewijzigd gebleven.
-- Beide nieuwe migraties geplaatst: scope op `api_tokens` en role op `status_page_user`.
-- Na plaatsing acht beheer-/publieke routes HTTP 200; webservice en cron actief; logo-bestanden aanwezig.
-- Een eerste back-uppoging stopte op een ontbrekend optioneel document, vóór applicatie-aanpassing. Services direct hervat, back-uppaden gecorrigeerd en update daarna succesvol uitgevoerd.
-- Bij herstel broncode en database als passend paar herstellen; behoud `.env`, APP_KEY en uploads. Geen databasebestand kopiëren terwijl er geschreven wordt; gebruik SQLite backup-API.
-- Bij terugzetten naar vóór deze update ook nieuw toegevoegde migratie-/middlewarebestanden verwijderen volgens het patchmanifest; een bronarchief uitpakken alleen verwijdert geen nieuwe bestanden.
-- Lokale tijdelijke deploymentbestanden: `/tmp/pharos-permissions-deploy.sh`, `/tmp/pharos-permissions-verify.php`, `/tmp/pharos-permissions-patch-files.json`. `/tmp` is geen blijvende documentatie.
+- Back-ups in container 106 (elk met `database.sqlite` via SQLite backup-API en `source.tar.gz` incl. `.env`): `/root/pharos-ui-backup.202609230852` (voor nieuwe admin UI), `...0924` (tijdzone, zoeken, logo's), `...0954` (inlog Pulse), `...1113` (branding, installer stap 6/7), `...1124` (themaflits), `...1137` (logo-notitie), `...1323` (WAL + busy_timeout, meest recent). `...1123` is een afgebroken poging (database compleet, source onvolledig). Ouder: `/root/pharos-permissions-backup.73liUB` en `.rfkfzq`, `/root/pharos-qa-fix-backup.*`.
+- Herstel: broncode en database als paar terugzetten, `.env`, APP_KEY en uploads behouden; database alleen via SQLite backup-API kopiëren. Sinds WAL horen `-wal`/`-shm` bij de database.
+- `.166` `.env` heeft sinds 23 sep `DB_JOURNAL_MODE=wal` en `DB_SYNCHRONOUS=normal`.
 
 ## Uitgevoerde verificatie
 
@@ -124,16 +116,16 @@ Bijgewerkt: 23 september 2026. Deze notitie beschrijft de multi-page uitbreiding
 
 ## Nog open
 
-0. **QA-ronde 23 sep:** zie `docs/qa-rapport-2026-09-23.md`. Fix `33f5de6` (Users-lijst 500 bij onbekende rol) staat live op `.166` sinds 23 sep. Daarna nog HSTS (`c2a3d54`) en session-fixationfix (`f0ad4ef`); ook live op `.166` sinds 23 sep (hashes gelijk).
+1. **FreeScout-module (later):** nog niet gebouwd. Voorstel: mailbox koppelen aan Pharos-pagina, service- en incidentstatus naast tickets; read-only API-token bestaat.
+2. **Talen (later):** eerst publieke statuspagina per pagina (EN, NL, ES, DE, FR), daarna admin per gebruiker.
+3. **Voorwaarden:** `legal.html` en het terms-bestand verschillen over herroepingsrecht bij Supported (al vóór 2026-09-23); Raymon kiest welke klopt.
+4. **Screenshot:** `install-ssh-get.webp` toont nog "Release 0.7.0 — ..." met em dash (volgende screenshotronde, na `get`-script fix).
+5. **Testlicentie `.166`:** verloopt 22 oktober 2026, zo nodig verlengen.
+6. **Portaal-incident om de 4 dagen rond 01:00** ("portal /account does not show the login form", 15/19/23 sep): oorzaak op edge-01 uitzoeken (back-up of herstart?).
+7. **Externe configuratietests indien gewenst:** eigen SMTP-afzender en eigen statusdomeinen/TLS.
+8. **ghcr-package public** blijft een open punt uit eerdere notities.
 
-1. **Gebruikersacceptatie:** laatste rollen, tokenkeuzes en filters zelf testen op de interne installatie. Eventuele workflow-/vormgevingsfeedback verwerken.
-2. **Releasevoorbereiding:** pas na akkoord versie, changelog, release-instructies en definitieve GitHub-publicatie voorbereiden. Er is nog niets gepusht.
-3. **Commerciële uitwerking:** bepalen welke bundels/pagina-aantallen worden verkocht, prijzen, website-/checkoutteksten en uitgifte via betaalprovider. Technische licentierechten bestaan al; commerciële koppeling nog niet.
-4. **FreeScout-module — later:** nog geen module gebouwd of FreeScout-installatie gewijzigd. Voorgesteld eerste bereik: mailbox koppelen aan Pharos-pagina en service-/incidentstatus naast tickets tonen. Read-only API-token is nu beschikbaar voor private incidentinformatie. Hooks en compatibiliteit eerst toetsen aan de daadwerkelijke FreeScout-versie.
-5. **Externe configuratietests indien gewenst:** eigen SMTP-afzender/domeinautorisatie en eigen statusdomeinen/TLS in de gewenste omgeving controleren. Er zijn bewust geen echte nieuwe notificatietests verstuurd.
-6. **Testlicentie:** zo nodig verlengen vóór 22 oktober 2026.
-
-Niet geïmplementeerd of toegezegd voor deze update: gedeelde services tussen pagina’s, automatisch DNS/TLS provisionen, privé-klantportalen of een volledige FreeScout-koppeling.
+Niet geïmplementeerd: gedeelde services tussen pagina's, automatisch DNS/TLS, privé-klantportalen, volledige FreeScout-koppeling, tijdzone voor publieke pagina's (bewust installatiezone).
 
 ## Nieuwe admin UI (23 sep, gebouwd en live op `.166`)
 
@@ -165,6 +157,6 @@ Niet geïmplementeerd of toegezegd voor deze update: gedeelde services tussen pa
 - `docs/superpowers/specs/2026-09-20-multiple-status-pages-design.md`: oorspronkelijke opzet.
 - `docs/superpowers/plans/2026-09-20-multiple-status-pages.md`: eerste implementatieplan.
 - `docs/superpowers/plans/2026-09-23-page-permissions.md`: rollen/tokens/filters en verificatie.
-- Lokale preview: `http://192.168.18.162:8140`, database `database/preview.sqlite`, mail naar log, geen scheduler. Niet verwarren met de interne installatie op `.166`.
-- MySQL-testcontainer: `pharos-multipage-mysql`, localhost-poort 13326, database `pharos_test`; uitsluitend testdata.
-- Volgende sessie: lees dit bestand, controleer branch en `git status`, en ga verder met het door de gebruiker gekozen openstaande punt.
+- Lokale preview (`:8140`, `database/preview.sqlite`) bestond in de verwijderde werkmap en is weg; opnieuw opzetten met `DB_DATABASE=<scratch>` + `db:seed --class=DemoSeeder`.
+- MySQL-testcontainer: `pharos-multipage-mysql` (draait nog), localhost-poort 13326, database `pharos_test`; uitsluitend testdata. Mag weg als MySQL-tests niet meer nodig zijn.
+- Volgende sessie: lees dit bestand, `cd /root/projects/pharos && git status` (main, schoon), en ga verder met het door Raymon gekozen openstaande punt.
