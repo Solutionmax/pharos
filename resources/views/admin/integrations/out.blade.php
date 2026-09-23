@@ -204,13 +204,9 @@
       </section>
     @endif
 
-    <section class="ix-card">
-      <header><h3>About the logos</h3></header>
-      <div class="bd"><p class="op-dim">Discord, Telegram, Signal, n8n and Uptime Kuma use their real marks. Slack and Microsoft Teams stay as letters until their official brand kit files are added.</p></div>
-    </section>
 
     <section class="ix-card">
-      <header><h3>Not here</h3></header>
+      <header><h3>Looking for subscriber emails?</h3></header>
       <div class="bd"><p style="font-size:13px;color:var(--ink-2)">Emails to subscribers are set up under <a class="integration-link" href="{{ \App\Services\PageUrls::route('admin.subscribers') }}">Subscribers</a> and <a class="integration-link" href="{{ \App\Services\PageUrls::route('admin.mail.edit') }}">Page email</a>. This screen is for your own team.</p></div>
     </section>
   </div>
