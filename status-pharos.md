@@ -135,12 +135,17 @@ Bijgewerkt: 23 september 2026. Deze notitie beschrijft de multi-page uitbreiding
 
 Niet geïmplementeerd of toegezegd voor deze update: gedeelde services tussen pagina’s, automatisch DNS/TLS provisionen, privé-klantportalen of een volledige FreeScout-koppeling.
 
-## Menu/UI-mockup (23 sep, alleen ontwerp, niets gebouwd)
+## Nieuwe admin UI (23 sep, gebouwd en live op `.166`)
 
-- Bronnen + build: `/root/pharos-mockup-20260923` (`python3 build_integrations.py && python3 build_people.py && python3 build_mock.py`). Laatste versie: `http://192.168.18.161:3003/files/1790148757131-pharos-menu-mockup-v4.html`.
-- Richting akkoord: menugroepen *This page* / *Installation*, uitklapbare subitems (geen tabknoppen), visuele Overview, Integrations gesplitst in Send out / Bring in / API tokens / Delivery log, nieuwe Users (zijpaneel) en Profiel.
-- Besluiten: talen later. Officiële brand kits (Slack, Microsoft Teams) pas ophalen nadat Raymon de mockup goedkeurt; Discord/Telegram/Signal/n8n/Uptime Kuma via Simple Icons (CC0, merkrichtlijnen checken).
-- Nieuw t.o.v. huidige code (bij bouwen): Page health, uptime-ring/-lijn op Overview, events-keuze per bestemming, aparte Kuma-endpoint, uitnodigingsmail, sessielijst, voorkeur thema/tijdzone per gebruiker.
+- Gebouwd door twee agents (navigatie en accounts / dagelijkse schermen), samengevoegd op `feature/multiple-status-pages` tot `0b9da21`. Mockups zijn verwijderd na bouw.
+- Menu: groepen *This page* en *Installation* met uitklapbare subitems (Incidents, Services, Appearance, Email, Integrations & API, Settings). Profiel via naam onderaan.
+- Nieuw: Overview met startwizard en Page health, zoeken (Ctrl K), statusbolletjes in paginakiezer, Status pages als kaarten, Users met uitnodigingsmail en optioneel verplichte 2FA, Profiel met sessies en thema per gebruiker, kruimelpad, toegankelijke dialogen.
+- Nieuw: Incidents in 3 stappen met live voorbeeld, snelle acties en templates; Components per service met status in de rij; gepland onderhoud (`pharos:maintenance`, elke minuut); Integrations als Send out / Bring in / API tokens / Delivery log met echte logo's (Slack en Teams nog letters); events per bestemming; Uptime Kuma endpoint `POST /api/v1/integrations/kuma/{component}`; Audit log filters.
+- Tekstregel: geen em/en dash en geen koppeltekens tussen woorden in zichtbare tekst.
+- Migraties: events op webhook_endpoints, maintenances (+2 koppeltabellen), require_two_factor en theme op users, invitation_tokens.
+- Verificatie: 833 tests / 3.775 assertions, PHPStan 0, Pint ok. Repetitie op kopie van live database, daarna live: alle 34 schermen 200, tellingen gelijk (alleen migraties + geleegde cache).
+- Back-up vóór deploy in container 106: `/root/pharos-ui-backup.202609230852` (database.sqlite, source.tar.gz, counts-before/after.json).
+- Open: officiële brand kits Slack/Teams na akkoord Raymon · talen later · tijdzone per gebruiker bewust niet gebouwd (Clock/LocalTime gebruiken één zone) · paginanaam "Harbor Logistics — demo" bevat een em dash (data, zelf aanpassen) · één keer een niet reproduceerbare testfout gezien (8 volgende runs groen).
 
 ## Documentatie en lokale ontwikkelomgeving
 
