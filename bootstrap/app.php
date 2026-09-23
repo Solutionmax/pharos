@@ -24,7 +24,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // The admin lives under /admin, so the framework's default "login" route
         // name does not exist here.
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
-        $middleware->redirectUsersTo(fn () => route('admin.components'));
+        $middleware->redirectUsersTo(fn () => route('admin.overview'));
 
         $middleware->web(append: SecurityHeaders::class);
         $middleware->appendToGroup('web', CentralAdministration::class);
