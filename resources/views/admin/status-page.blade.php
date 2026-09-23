@@ -1,5 +1,5 @@
 @extends('layouts.admin')
-@section('title', 'Status page')
+@section('title', 'Layout')
 @section('content')
 <style>
 .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
@@ -27,12 +27,13 @@
 </style>
 
 @include('partials.pagehead', [
-  'title' => 'Status page',
+  'crumbs' => ['Appearance', 'Layout'],
+  'title' => 'Layout',
   'sub' => 'What the status page shows, and how it looks',
 ])
 
 @include('partials.page-context', [
-  'contextTitle' => 'Status page settings for',
+  'contextTitle' => 'Layout for',
   'contextHelp' => 'Layout, theme and modules apply only to this page.',
 ])
 
@@ -128,7 +129,7 @@
         <iframe id="preview" title="Preview of the status page" loading="lazy"></iframe>
       </div>
       <p class="hint-row">
-        This is the real page rendered from the values above, not a mock-up.
+        This is the real page rendered from the values above, not a mockup.
         Nothing is saved until you press <b>Save status page</b>.
       </p>
     </div>

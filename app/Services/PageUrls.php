@@ -62,11 +62,11 @@ class PageUrls
     public static function landing(User $user): string
     {
         if ($user->canAccessPage(StatusPage::default()->id)) {
-            return route('admin.components');
+            return route('admin.overview');
         }
         $page = $user->statusPages()->whereNull('archived_at')->first();
 
-        return $page ? route('page.admin.components', ['statusPage' => $page->id]) : route('admin.no-pages');
+        return $page ? route('page.admin.overview', ['statusPage' => $page->id]) : route('admin.no-pages');
     }
 
     private static function resolve(string $name, mixed $parameters): array

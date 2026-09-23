@@ -235,7 +235,7 @@ class SettingsTest extends TestCase
         $this->actingAs($this->user)->get('/admin/settings')->assertOk()
             ->assertSee('<optgroup label="Europe">', false)
             ->assertSee('<option value="Europe/Amsterdam" selected', false)
-            ->assertSee('Europe/Amsterdam — UTC'.now()->setTimezone('Europe/Amsterdam')->format('P').' now')
+            ->assertSee('Europe/Amsterdam, UTC'.now()->setTimezone('Europe/Amsterdam')->format('P').' now')
             ->assertSee('Everything is stored in UTC');
     }
 
@@ -280,10 +280,10 @@ class SettingsTest extends TestCase
         Setting::put('app.timezone', 'Europe/Amsterdam');
         config(['mail.default' => 'log']);
 
-        $this->actingAs($this->user)->get('/admin/settings')->assertOk()
-            ->assertSee('<span class="tabhint">Europe/Amsterdam</span>', false)
-            ->assertSee('<span class="tabhint">log</span>', false)
-            ->assertSee('<span class="tabhint">Off</span>', false);
+        // The tab strip made way for the sidebar; each section's header now says its state.
+        $this->actingAs($this->user)->get('/admin/settings')->assertOk()->assertSee('Time, retention and updates · Europe/Amsterdam');
+        $this->get('/admin/settings?tab=mail')->assertOk()->assertSee('pages can use · log');
+        $this->get('/admin/settings?tab=sso')->assertOk()->assertSee('who may sign in with it · Off');
 
         config(['mail.default' => 'smtp', 'mail.mailers.smtp.host' => 'smtp.example.net']);
         Setting::put('sso.enabled', '1');
@@ -291,9 +291,8 @@ class SettingsTest extends TestCase
         Setting::put('sso.client_id', 'pharos');
         Setting::put('sso.client_secret', Crypt::encryptString('shhh'));
 
-        $this->actingAs($this->user)->get('/admin/settings')->assertOk()
-            ->assertSee('<span class="tabhint">smtp via smtp.example.net</span>', false)
-            ->assertSee('<span class="tabhint">On</span>', false);
+        $this->actingAs($this->user)->get('/admin/settings?tab=mail')->assertOk()->assertSee('pages can use · smtp via smtp.example.net');
+        $this->get('/admin/settings?tab=sso')->assertOk()->assertSee('who may sign in with it · On');
     }
 
     public function test_a_failed_save_lands_on_the_tab_it_came_from(): void

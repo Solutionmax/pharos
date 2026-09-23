@@ -268,8 +268,8 @@ class PageManagementTest extends TestCase
         $this->actingAs($member)->get("/admin/pages/{$page->id}/components")
             ->assertOk()
             ->assertSee('Customer B')
-            ->assertSee('href="'.route('page.admin.components', ['statusPage' => $page->id]).'"', false)
-            ->assertDontSee('href="'.route('page.admin.components', ['statusPage' => $default->id]).'"', false);
+            ->assertSee('href="'.route('page.admin.overview', ['statusPage' => $page->id]).'"', false)
+            ->assertDontSee('href="'.route('page.admin.overview', ['statusPage' => $default->id]).'"', false);
     }
 
     public function test_large_page_menus_offer_search_and_all_available_choices(): void
@@ -316,12 +316,12 @@ class PageManagementTest extends TestCase
         $dom = new \DOMDocument;
         @$dom->loadHTML($response->getContent());
         $xpath = new \DOMXPath($dom);
-        $rows = $xpath->query('//table/tbody/tr');
+        $rows = $xpath->query('//*[@data-page-card]');
         foreach ($rows as $row) {
             $html = $dom->saveHTML($row);
             if (str_contains($row->textContent, $page->name)) {
                 $this->assertStringContainsString('href="'.$page->publicUrl().'"', $html);
-                $this->assertStringContainsString('href="'.route('page.admin.components', ['statusPage' => $page->id]).'"', $html);
+                $this->assertStringContainsString('href="'.route('page.admin.overview', ['statusPage' => $page->id]).'"', $html);
                 $this->assertStringContainsString('Manage', $row->textContent);
             }
             if (str_contains($row->textContent, $draft->name)) {
@@ -416,7 +416,7 @@ class PageManagementTest extends TestCase
         $other = StatusPage::create(['name' => 'Harbor', 'slug' => 'harbor', 'is_published' => true]);
 
         foreach (['services' => 'Services for', 'components' => 'Components for', 'incidents' => 'Incidents for',
-            'status-page' => 'Status page settings for', 'branding' => 'Branding for', 'subscribers' => 'Subscribers for'] as $path => $title) {
+            'status-page' => 'Layout for', 'branding' => 'Branding for', 'subscribers' => 'Subscribers for'] as $path => $title) {
             $this->actingAs($this->admin)->get('/admin/pages/'.$other->id.'/'.$path)->assertOk()->assertSee($title.' Harbor');
         }
     }

@@ -52,6 +52,28 @@
     @case('update')
       <path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20.5 4v5h-5"/>
       @break
+    @case('overview')
+      <rect x="3" y="3" width="8" height="10" rx="1.5"/><rect x="13" y="3" width="8" height="6" rx="1.5"/>
+      <rect x="13" y="11" width="8" height="10" rx="1.5"/><rect x="3" y="15" width="8" height="6" rx="1.5"/>
+      @break
+    @case('search')
+      <circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>
+      @break
+    @case('subscribers')
+      <path d="M18 16v-5a6 6 0 0 0-12 0v5l-1.5 2h15Z"/><path d="M10 21a2.2 2.2 0 0 0 4 0"/>
+      @break
+    @case('desktop')
+      <rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>
+      @break
+    @case('phone')
+      <rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/>
+      @break
+    @case('key')
+      <circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16 7l2.5 2.5M14 9l2 2"/>
+      @break
+    @case('shield')
+      <path d="M12 3 4.5 6v5.5c0 4.5 3.2 8.2 7.5 9.5 4.3-1.3 7.5-5 7.5-9.5V6Z"/><path d="m9 12 2 2 4-4"/>
+      @break
     @case('empty')
       <rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18M8 15h5"/>
       @break

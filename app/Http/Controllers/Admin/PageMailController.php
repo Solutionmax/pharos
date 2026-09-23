@@ -47,7 +47,7 @@ class PageMailController extends Controller
             'host' => ['from' => '—', 'to' => (string) ($data['host'] ?? '')],
         ]);
 
-        return redirect()->to(PageUrls::route('admin.mail.edit'))->with('status', 'Page e-mail settings saved.');
+        return redirect()->to(PageUrls::route('admin.mail.edit'))->with('status', 'Delivery settings saved.');
     }
 
     public function test(Request $request, MailConfig $mailConfig): RedirectResponse
@@ -63,12 +63,12 @@ class PageMailController extends Controller
             ]);
 
             return redirect()->to(PageUrls::route('admin.mail.edit'))
-                ->withErrors(['mail' => 'Test e-mail failed. Check this page’s mail settings and server log.']);
+                ->withErrors(['mail' => 'Test email failed. Check this page’s delivery settings and the server log.']);
         }
 
         Audit::record('page.mail_test', $user);
 
         return redirect()->to(PageUrls::route('admin.mail.edit'))
-            ->with('status', "Test e-mail sent to {$user->email}.");
+            ->with('status', "Test email sent to {$user->email}.");
     }
 }

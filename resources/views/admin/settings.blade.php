@@ -3,28 +3,22 @@
 {{-- Every field on this screen shows its own error inline; opt out of the global list so it is not said twice. --}}
 @section('own-errors', 'yes')
 @section('content')
-@include('partials.pagehead', [
-  'title' => 'Settings',
-  'sub' => 'How this installation behaves',
-])
-
-{{-- Three unrelated things on one screen read better as three tabs. The server
-     renders one at a time (?tab=), so a save or a validation error can send
-     you straight back to the tab you were on. --}}
 @php
-  $sectionItems = [];
-  foreach ($tabs as $tabKey => $hint) {
-      $sectionItems[] = [
-          'url' => route('admin.settings', ['tab' => $tabKey]),
-          'active' => $tabKey === $tab,
-          'label' => ['general' => 'General', 'mail' => 'Central mail', 'sso' => 'Single sign-on'][$tabKey],
-          'description' => ['general' => 'Time, retention and updates', 'mail' => 'Account emails and shared page transport', 'sso' => 'Identity provider and access'][$tabKey],
-          'icon' => ['general' => 'settings', 'mail' => 'mail', 'sso' => 'users'][$tabKey],
-          'hint' => $hint,
-      ];
-  }
+  $tabLabels = ['general' => 'General', 'mail' => 'Central mail', 'sso' => 'Single sign on'];
+  $tabSubs = [
+      'general' => 'Time, retention and updates',
+      'mail' => 'Account emails and the shared transport pages can use',
+      'sso' => 'Identity provider and who may sign in with it',
+  ];
 @endphp
-@include('partials.section-tabs', ['items' => $sectionItems, 'navigationLabel' => 'Settings'])
+{{-- One section at a time (?tab=), picked from the Settings group in the
+     sidebar, so a save or a validation error goes straight back to it. --}}
+@include('partials.pagehead', [
+  'crumbs' => ['Settings', $tabLabels[$tab]],
+  'crumbScope' => 'installation',
+  'title' => $tabLabels[$tab],
+  'sub' => $tabSubs[$tab].($tabs[$tab] ? ' · '.$tabs[$tab] : ''),
+])
 
 @if ($tab === 'general')
 <div class="panel" id="general">
@@ -40,8 +34,8 @@
         <div class="field wide">
           <label for="timezone">Time zone</label>
           @include('partials.timezone-select', ['selected' => $timezone])
-          <span class="help"><b>{{ $timezone }} — {{ $offset }} now.</b>
-            Times on the status page, in e-mails and in the admin are shown in this zone.
+          <span class="help"><b>{{ $timezone }}, {{ $offset }} now.</b>
+            Times on the status page, in emails and in the admin are shown in this zone.
             Everything is stored in UTC, so you can change it any time.</span>
         </div>
       </div>
@@ -84,7 +78,7 @@
 <div class="panel" id="mail">
   <div class="panel-hd">
     <h3>Central mail</h3>
-    <span class="hint">Installation-wide</span>
+    <span class="hint">For the whole installation</span>
   </div>
   <div class="panel-bd">
     <p class="sub" style="margin-bottom:20px">This is the shared mail server for account recovery and all status pages using central transport.
@@ -101,7 +95,7 @@
               <option value="{{ $value }}" @selected(old('mailer', $mailForm['mailer'] ?: $mail['mailer']) === $value)>{{ $label }}</option>
             @endforeach
           </select>
-          <span class="help">"Write to the log" puts every mail in <span class="mono">storage/logs</span> instead of sending it — handy while you set things up.</span>
+          <span class="help">"Write to the log" puts every mail in <span class="mono">storage/logs</span> instead of sending it. Handy while you set things up.</span>
         </div>
         <div class="field">
           <label for="encryption">Encryption</label>
@@ -133,7 +127,7 @@
         <div class="field">
           <label for="password">Password</label>
           <input id="password" name="password" type="password" autocomplete="new-password"
-                 placeholder="{{ $mailHasPassword ? 'Stored — leave empty to keep' : '' }}">
+                 placeholder="{{ $mailHasPassword ? 'Stored, leave empty to keep' : '' }}">
           <span class="help">Stored encrypted and never shown again. Empty means unchanged.</span>
         </div>
       </div>
@@ -165,7 +159,7 @@
     <form method="POST" action="{{ route('admin.settings.mail-test') }}" style="margin-top:12px">
       @csrf
       <div class="actions">
-        <button class="btn" type="submit">Send test e-mail</button>
+        <button class="btn" type="submit">Send test email</button>
         <span class="help" style="align-self:center">Goes to {{ auth()->user()->email }}, with the settings as saved above.</span>
       </div>
       @error('mail')<span class="help" style="color:var(--red-ink);display:block;margin-top:8px">{{ $message }}</span>@enderror
@@ -196,16 +190,16 @@
 @if ($tab === 'sso')
 <div class="panel" id="sso">
   <div class="panel-hd">
-    <h3>Single sign-on</h3>
+    <h3>Single sign on</h3>
     <span class="hint">{{ $sso->enabled() ? 'On · '.$sso->providerName() : 'Off' }} · OpenID Connect</span>
   </div>
   <div class="panel-bd">
     @include('admin.partials.sso-form')
 
     <x-note id="sso.what-still-applies" style="margin-top:16px">
-      <b>What still applies.</b> Anyone who switched two-factor on keeps it, whatever door they
+      <b>What still applies.</b> Anyone who switched two factor on keeps it, whatever door they
       came through. If your provider already enforces MFA and you would rather not be asked twice,
-      switch your own two-factor off on your profile — that stays your decision, not the login
+      switch your own two factor off on your profile. That stays your decision, not the login
       screen's.
     </x-note>
   </div>

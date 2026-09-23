@@ -68,7 +68,7 @@ class MailSettingsTest extends TestCase
             ->assertSee('Mail')
             ->assertSee('smtp.example.net')
             ->assertSee('status@example.net')
-            ->assertSee('Send test e-mail')
+            ->assertSee('Send test email')
             ->assertSee('MAIL_*')
             ->assertDontSee('hunter2-secret');
     }
@@ -151,7 +151,7 @@ class MailSettingsTest extends TestCase
         $this->save();
 
         $this->actingAs($this->admin)->get('/admin/settings?tab=mail')->assertOk()
-            ->assertSee('Stored — leave empty to keep')
+            ->assertSee('Stored, leave empty to keep')
             ->assertSee('smtp.example.net')
             ->assertDontSee('hunter2-secret')
             ->assertDontSee(Setting::get('mail.password'));
