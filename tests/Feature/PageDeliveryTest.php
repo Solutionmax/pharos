@@ -402,6 +402,30 @@ class PageDeliveryTest extends TestCase
         app(MailConfig::class)->sendTo($user->email, new TestMail($user));
     }
 
+    public function test_a_page_that_selects_starttls_refuses_to_send_without_it(): void
+    {
+        Mail::fake();
+        $user = User::factory()->create();
+        $pageId = StatusPage::default()->id;
+
+        foreach (['tls' => true, 'none' => false, 'ssl' => false] as $encryption => $required) {
+            app(MailConfig::class)->savePage($this->pageMail([
+                'mode' => 'custom',
+                'host' => 'smtp.page.example.test',
+                'port' => $encryption === 'ssl' ? 465 : 587,
+                'encryption' => $encryption,
+                'username' => 'page-user',
+                'password' => 'page-secret',
+            ]));
+            app(MailConfig::class)->sendTo($user->email, new TestMail($user));
+
+            // A server (or someone in between) that does not offer STARTTLS must not
+            // receive the page's SMTP password in plain text.
+            $transport = app('mail.manager')->createSymfonyTransport(config("mail.mailers.pharos_page_$pageId"));
+            $this->assertSame($required, $transport->isTlsRequired(), "encryption=$encryption");
+        }
+    }
+
     /** @return array<string, mixed> */
     private function pageMail(array $overrides = []): array
     {
