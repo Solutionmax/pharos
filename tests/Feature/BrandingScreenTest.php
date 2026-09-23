@@ -130,10 +130,13 @@ class BrandingScreenTest extends TestCase
 
             // Only plans above the current one get a buy button, and it goes to the portal.
             $order = ['free', 'brand_pack', 'supported', 'commercial'];
-            foreach (['brand_pack' => 'brand-pack', 'supported' => 'supported', 'commercial' => 'commercial'] as $plan => $slug) {
+            foreach (['brand_pack' => 'brand-pack', 'supported' => 'supported'] as $plan => $slug) {
                 $above = array_search($plan, $order) > array_search($current, $order);
                 $this->assertSame($above, str_contains($html, 'href="'.$portal.$slug.'"'), "$plan button while $current");
             }
+            // Commercial is quoted individually (legal.html), so it asks for a quote instead of a checkout.
+            $this->assertStringNotContainsString($portal.'commercial', $html);
+            $this->assertSame($current !== 'commercial', str_contains($html, 'Request a quote'), "commercial quote while $current");
             $this->assertStringNotContainsString('€', $html);
         }
     }

@@ -203,7 +203,7 @@
                 @foreach ($option['includes'] as $line)<li>{{ $line }}</li>@endforeach
               </ul>
               @if ($plan->isUpgrade($key) && ($url = \App\Support\LicencePlan::buyUrl($key)))
-                <a class="btn {{ $key === 'brand_pack' ? '' : 'ghost' }} bx-opt-buy" href="{{ $url }}" target="_blank" rel="noopener">{{ $key === 'brand_pack' ? 'Buy the brand pack' : 'Get '.$option['name'] }}</a>
+                <a class="btn {{ $key === 'brand_pack' ? '' : 'ghost' }} bx-opt-buy" href="{{ $url }}" target="_blank" rel="noopener">{{ match ($key) { 'brand_pack' => 'Buy the brand pack', 'commercial' => 'Request a quote', default => 'Get '.$option['name'] } }}</a>
               @endif
             </div>
           @endforeach

@@ -107,6 +107,10 @@ final class LicencePlan
 
     public static function buyUrl(string $plan): ?string
     {
+        if ($plan === 'commercial') {
+            return (string) config('pharos.quote_url');
+        }
+
         $slug = self::PLANS[$plan]['slug'] ?? null;
 
         return $slug ? rtrim((string) config('pharos.portal_buy_url'), '/').'/'.$slug : null;
