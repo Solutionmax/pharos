@@ -14,6 +14,7 @@ use App\Models\IncidentUpdate;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\CronSetup;
+use App\Services\Totp;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -103,6 +104,40 @@ class AdminTest extends TestCase
         // Even the correct password is refused once the limiter trips.
         $this->assertGuest();
         $response->assertSessionHasErrors('email');
+    }
+
+    /**
+     * A session id set before login must not survive the password step, even
+     * for an account that still has a second factor pending: the pending
+     * state (which user is half signed in) is written into whatever session
+     * the browser walked in with, so if that id could be fixated by an
+     * attacker beforehand, the attacker would share the pending session too.
+     */
+    public function test_the_session_id_is_rotated_as_soon_as_the_password_checks_out(): void
+    {
+        $totp = new Totp;
+        $user = User::create([
+            'name' => 'Raymon', 'email' => 'raymon@example.com',
+            'password' => Hash::make('correct-horse-battery'),
+        ]);
+        $user->forceFill(['totp_secret' => $totp->secret(), 'totp_confirmed_at' => now()])->save();
+
+        $cookieName = config('session.cookie');
+        $fixated = $this->get('/admin/login')->headers->getCookies();
+        $fixatedCookies = [];
+        foreach ($fixated as $cookie) {
+            $fixatedCookies[$cookie->getName()] = $cookie->getValue();
+        }
+        $fixatedId = decrypt($fixatedCookies[$cookieName], false);
+
+        $response = $this->withUnencryptedCookies($fixatedCookies)
+            ->post('/admin/login', ['email' => 'raymon@example.com', 'password' => 'correct-horse-battery'])
+            ->assertRedirect('/admin/two-factor');
+
+        $newCookie = collect($response->headers->getCookies())
+            ->first(fn ($cookie) => $cookie->getName() === $cookieName);
+        $this->assertNotNull($newCookie, 'the password step must issue a fresh session cookie');
+        $this->assertNotSame($fixatedId, decrypt($newCookie->getValue(), false));
     }
 
     public function test_a_component_can_be_created_with_a_check(): void

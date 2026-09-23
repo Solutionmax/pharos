@@ -58,6 +58,14 @@ class AuthController extends Controller
 
         $user = User::where('email', $data['email'])->firstOrFail();
 
+        // The password just checked out, so any session id the browser walked in
+        // with (fixated by an attacker before the victim ever typed a password)
+        // must not survive into an authenticated, or half-authenticated, state.
+        // Auth::login() below does this for the no-2FA path on its own; the
+        // pending-2FA path needs its own regenerate since it deliberately skips
+        // Auth::login() until the code checks out.
+        $request->session()->regenerate();
+
         if ($user->hasTwoFactor()) {
             // Nothing is authenticated yet: only an id travels to the next screen,
             // and "remember me" waits there too rather than becoming a way around it.
