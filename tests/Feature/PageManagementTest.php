@@ -349,6 +349,7 @@ class PageManagementTest extends TestCase
 
     public function test_the_page_list_and_form_offer_management_without_deletion(): void
     {
+        $this->license(limit: 3);
         $this->actingAs($this->admin)->get('/admin/pages')
             ->assertOk()
             ->assertSee('Status pages')
@@ -419,6 +420,25 @@ class PageManagementTest extends TestCase
             'status-page' => 'Layout for', 'branding' => 'Branding for', 'subscribers' => 'Subscribers for'] as $path => $title) {
             $this->actingAs($this->admin)->get('/admin/pages/'.$other->id.'/'.$path)->assertOk()->assertSee($title.' Harbor');
         }
+    }
+
+    public function test_the_pages_overview_says_when_the_page_limit_is_reached(): void
+    {
+        $this->license(limit: 2);
+
+        $this->actingAs($this->admin)->get('/admin/pages')->assertOk()
+            ->assertSee('1 of 2 pages in use')->assertSee('Create page');
+
+        StatusPage::create(['name' => 'Second', 'slug' => 'second']);
+
+        $this->get('/admin/pages')->assertOk()
+            ->assertSee('2 of 2 pages in use')
+            ->assertSee('Page limit reached')
+            ->assertDontSee('>Create page<', false);
+
+        // Opening the form at the limit explains instead of offering a form that will be refused.
+        $this->get('/admin/pages/create')->assertRedirect('/admin/pages')
+            ->assertSessionHas('status', fn (string $s) => str_contains($s, 'limit'));
     }
 
     protected function license(?int $limit = null, ?string $expiresAt = null): void
