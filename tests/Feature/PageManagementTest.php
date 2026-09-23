@@ -150,27 +150,27 @@ class PageManagementTest extends TestCase
         $this->license();
 
         $this->createPage('Customer B', 'customer-b', [
-            'domain' => ' Status.Example.com. ',
+            'domain' => ' Status.Customer-B.example. ',
         ])->assertSessionHasErrors('domain_verified');
 
         $this->createPage('Customer B', 'customer-b', [
-            'domain' => ' Status.Example.com. ',
+            'domain' => ' Status.Customer-B.example. ',
             'domain_verified' => '1',
         ])->assertRedirect('/admin/pages');
 
-        $this->assertSame('status.example.com', StatusPage::where('slug', 'customer-b')->sole()->domain);
+        $this->assertSame('status.customer-b.example', StatusPage::where('slug', 'customer-b')->sole()->domain);
     }
 
     public function test_a_normalized_domain_can_belong_to_only_one_page(): void
     {
         $this->license();
         $this->createPage('Customer B', 'customer-b', [
-            'domain' => 'status.example.com',
+            'domain' => 'status.customer-b.example',
             'domain_verified' => '1',
         ]);
 
         $this->createPage('Customer C', 'customer-c', [
-            'domain' => 'STATUS.EXAMPLE.COM.',
+            'domain' => 'STATUS.CUSTOMER-B.EXAMPLE.',
             'domain_verified' => '1',
         ])->assertSessionHasErrors('domain');
 
