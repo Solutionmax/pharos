@@ -116,10 +116,10 @@ Bijgewerkt: 23 september 2026, na de release van **0.7.0**.
 
 ## Nog open
 
-2. **FreeScout-module (later).**
-3. **Talen (later):** eerst publieke statuspagina per pagina (EN, NL, ES, DE, FR), daarna admin per gebruiker.
-4. **Thuisnetwerk 03:00 CEST:** elke nacht ~30 s stall van nieuwe uitgaande verbindingen (CGNAT/ISP of UCG-taak: Radio AI cron 03:00, auto upgrade hour 3). Zabbix-trigger 33481 is aangepast (2x op rij), dus geen valse incidenten meer. Oorzaak zelf nog niet vastgesteld: 1 s loop vanaf CT105 rond 02:59:30 tot 03:01:30 naar edge-01 IP, 1.1.1.1 en 192.168.17.1.
-5. **Echte omgeving nog niet getest:** DNS + TLS voor eigen klantdomeinen, proxy/Cloudflare met custom hosts, STARTTLS/SSL tegen echte provider, SPF/DKIM/DMARC per paginaafzender.
+1. **FreeScout-module (later).**
+2. **Talen (later):** eerst publieke statuspagina per pagina (EN, NL, ES, DE, FR), daarna admin per gebruiker.
+3. **Thuisnetwerk 03:00 CEST:** elke nacht ~30 s stall van nieuwe uitgaande verbindingen (CGNAT/ISP of UCG-taak: Radio AI cron 03:00, auto upgrade hour 3). Zabbix-trigger 33481 is aangepast (2x op rij), dus geen valse incidenten meer. Oorzaak zelf nog niet vastgesteld: 1 s loop vanaf CT105 rond 02:59:30 tot 03:01:30 naar edge-01 IP, 1.1.1.1 en 192.168.17.1.
+4. **Echte omgeving nog niet getest:** DNS + TLS voor eigen klantdomeinen, proxy/Cloudflare met custom hosts, STARTTLS/SSL tegen echte provider, SPF/DKIM/DMARC per paginaafzender.
 
 Opgelost 23 sep: herroepingsrecht per pakket in `legal.html` (live), terminal-screenshot zonder em dash (live), testlicentie `.166` vernieuwd tot 2027-09-23 (brand_pack + multi_pages, limiet 5, gebonden aan .166), ghcr was al public, MySQL-testcontainer + volume verwijderd, Zabbix-trigger 33481 naar `min(web.test.fail,#2)>0` met nieuwe titel, e2e SMTP- en domeintests (alles werkt, STARTTLS-bug gefixt).
 
