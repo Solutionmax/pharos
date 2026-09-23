@@ -151,22 +151,13 @@ Niet geïmplementeerd of toegezegd voor deze update: gedeelde services tussen pa
 
 - Branding-pagina (live voorbeeld, pakkettenkaart, 4 bugfixes), paginalimiet-melding, installer stap 6/7 + scheduler-marker, guest redirect naar Overview: live op `.166` 23 sep (back-up `/root/pharos-ui-backup.202609231113`). 906 tests.
 
-## Klaar voor release 0.7.0 (wacht op "push" van Raymon)
+## 0.7.0 uitgebracht (23 sep 2026)
 
-Niets gepusht of live. Versie **0.7.0**. Stand 23 sep:
-- **App** `feature/multiple-status-pages`: alles samengevoegd (UI, installer stap 6/7, branding, plannen, demo, screenshots, README, CHANGELOG onder `## [Unreleased]`). 911 tests groen.
-- **Website** `/root/pharos-site-pricing` (branch `feat/pricing-multi-page` op pharos-site): prijzen €79 / €149 / Commercial op offerte, voorwaarden 2026-09-23, nieuwe installer, 0.7.0 overal, nieuwe screenshots en replica. `tests/site-content.py` faalt bewust alleen op `releases/index.html` tot die uit het 0.7.0-manifest is gegenereerd. Restricted-hosting test alleen draaien zoals CI (`-d open_basedir=... -d disable_functions=...`).
-- **Portaal** `/root/pharos-portal-plans` (branch `feat/multi-page-plans`): Supported 5 pagina's, Commercial onbeperkt, voorwaarden 2026-09-23. 117 tests.
-
-Volgorde op releasedag:
-1. `/root/projects/pharos` naar main (staat nu op `docs/multiple-status-pages-design`), feature branch mergen.
-2. pharos-site: `feat/pricing-multi-page` mergen naar main (niet pushen), zodat `build-release.sh` de nieuwe `pharos-install.php` pint.
-3. CHANGELOG: `## [Unreleased]` wordt `## [0.7.0] — <datum>` (em dash moet, scripts matchen erop), nieuwe lege Unreleased erboven, commit `release: 0.7.0`.
-4. `scripts/build-release.sh 0.7.0 --notes "Several status pages on one install, planned maintenance, a new admin with Overview and search."` (deze zin staat al in de terminal-screenshot `install-ssh-get.webp`). Bouwt, ondertekent, uploadt manifest + `pharos-install-0.7.0.php`, tag + GitHub Release.
-5. App pushen. Site: `latest.json` + `content/release-index.json`, `scripts/build-release-preview.py`, `build-docs.py`, datum in `content/release.json`, dan pushen (CI deployt).
-6. Portaal deployen op edge-01. Stripe ongewijzigd.
-7. GitHub: README install-voorbeelden (`--version`), repobeschrijving en topics, ghcr-package public.
-8. :8130 niet zelf updaten; vriend updatet zelf.
+- Release: tag `v0.7.0`, GitHub Release met zip, sha256, `pharos-install-0.7.0.php` en `pharos-install.php`; manifest https://pharos.solutionmax.net/releases/latest.json (handtekening geverifieerd); Docker image ghcr v0.7.0 gebouwd.
+- Website live via CI (pharos-site main `a0b3f95`): prijzen €79 / €149 / Commercial op offerte, voorwaarden 2026-09-23, 0.7.0 overal, nieuwe screenshots, installer v2, geen em/en dashes.
+- Portaal live op edge-01 (pharos-portal main `3479e8a`): Supported `multi_pages` limiet 5, Commercial onbeperkt, voorwaarden 2026-09-23.
+- GitHub: README pins 0.7.0, beschrijving en topics bijgewerkt. Na release twee CI-fixes (Larastan broker typing, testdomein), CI groen op `f7ebed7`.
+- Open: databasefix op `.166` (busy_timeout, WAL) wacht op Raymon; `.166` en de vriend updaten zelf; terminal-screenshot `install-ssh-get.webp` toont nog een em dash (bij volgende screenshotronde).
 
 ## Documentatie en lokale ontwikkelomgeving
 
