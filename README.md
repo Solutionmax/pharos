@@ -70,6 +70,11 @@ and token header; incident creation needs changes. See the compatibility guide b
 
 <em>The public page. Every section on it is a switch on the Status page screen.</em>
 
+<img src="docs/img/current-admin-overview.webp" alt="The Overview of one status page: a partial outage banner with 11 of 12 components operational, tiles for 90 day uptime, open incidents, the last 30 days and subscribers, the 90 day availability bar, services and the open incident with its timeline." width="100%">
+
+<em>Overview. The first screen after sign in: what the public page says right now, the key
+figures, 90 days of availability and the open incident with its updates.</em>
+
 <img src="docs/img/current-admin-components.webp" alt="The Components screen grouped by service, with tiles showing what is down right now, average uptime, how many components Pharos checks and how many are set from outside." width="100%">
 
 <em>Components. The tiles answer “what is wrong right now” before the table does — including how
@@ -83,6 +88,34 @@ rendered from values you have not saved yet.</em>
 <img src="docs/img/current-admin-incidents.webp" alt="The Incidents screen: open now, the last 30 days, typical time to resolve, the open incident with its timeline, and the history of resolved incidents." width="100%">
 
 <em>Incidents. Each row says whether a check, the API or a person opened it.</em>
+
+<img src="docs/img/current-admin-maintenance.webp" alt="The Scheduled maintenance screen: a window for web-03 and web-04 starting in one day, announced 24 hours before, and a history with a completed nameserver update." width="100%">
+
+<em>Scheduled maintenance. Pick the components and the window; Pharos announces it ahead, sets
+them to Under maintenance at the start and puts them back at the end.</em>
+
+<img src="docs/img/current-admin-integrations.webp" alt="The Send out screen: add a destination in numbered steps (Slack, Microsoft Teams, Discord, Telegram, Signal or generic JSON), then the moments it receives, beside the list of destinations with their health." width="100%">
+
+<em>Send out. Add a destination in a few steps, choose which moments it receives, and see at a
+glance which one is working, failing or paused.</em>
+
+<img src="docs/img/current-admin-search.webp" alt="The search palette opened over the admin with the query web: six components, one incident and a maintenance window, each with its page and status." width="100%">
+
+<em>Search. Ctrl K or Cmd K finds pages, components, incidents, maintenance and admin screens,
+limited to the pages you hold a role on.</em>
+
+### Several status pages
+
+One installation can run more than one status page, each with its own services, subscribers,
+branding, email and integrations, and a role per page for every user.
+
+<img src="docs/img/current-admin-pages.webp" alt="The Status pages screen with three cards: Harbor Logistics and Northwind Hosting published, Northwind Internal unpublished, each with its address, 90 day uptime, open incidents, subscribers and assigned users." width="100%">
+
+<em>Status pages. Each card shows the live status, 90 day uptime, open incidents and subscribers.</em>
+
+<img src="docs/img/current-status-page-harbor.webp" alt="The public page of Harbor Logistics with its own logo and green accent: all systems operational, a scheduled driver app API migration, two services and the incident history." width="100%">
+
+<em>A second public page with its own brand, next to the Northwind one above.</em>
 
 <img src="docs/img/current-admin-updates.webp" alt="The Updates screen: installed version, available release, how this install updates, and the backups kept." width="100%">
 
@@ -131,13 +164,18 @@ After unlocking, the requirements screen checks whether the host can run Pharos:
 **Download** fetches the release, verifies the signed manifest and the checksum, unpacks the
 application into a private `pharos-app-<domain-id>` folder — next to the web root, never inside it — and copies `public/`
 into the document root with an `index.php` that points at the app. No document-root change
-needed, and `.env` stays out of reach. Then it asks for the site address and the database:
+needed, and `.env` stays out of reach:
 
 <img src="docs/img/current-install-web-2-download-type-v2.png" alt="Step 3, the download: the signed release fetched, signature and checksum verified, every file unpacked and the public folder copied." width="100%">
 
-The last screen is the cron line, with the PHP binary that matches the version the installer
-found, and where it goes in cPanel, DirectAdmin and Plesk. **Finish** deletes the installer and
-opens the [setup form](#the-setup-form):
+**Configure** asks for the site address and the database. SQLite needs nothing from your host;
+MySQL or MariaDB gets a Test connection button. Saving writes `.env` and sets up the database:
+
+<img src="docs/img/current-install-web-configure.png" alt="Step 4, configure: the site address detected from the page, SQLite recommended or MySQL or MariaDB, and the button Save settings and set up the database." width="100%">
+
+**Scheduler** shows the cron line, with the PHP binary that matches the version the installer
+found, and where it goes in cPanel, DirectAdmin and Plesk; it notices the first run by itself.
+**Continue to your account** deletes the installer and opens the [setup form](#the-setup-form):
 
 <img src="docs/img/current-install-web-3-cron-type-v2.png" alt="Step 5, the scheduler: one cron line with a Copy button, a confirmation that the scheduler ran, and where to add it in cPanel, DirectAdmin and Plesk." width="100%">
 
