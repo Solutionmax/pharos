@@ -257,6 +257,21 @@ class MailSettingsTest extends TestCase
         $this->assertSame('smtps', config('mail.mailers.smtp.scheme'));
     }
 
+    public function test_tls_makes_starttls_mandatory_on_the_central_transport(): void
+    {
+        $this->save(['encryption' => 'tls', 'port' => 587]);
+        app(MailConfig::class)->apply();
+
+        $transport = app('mail.manager')->createSymfonyTransport(config('mail.mailers.smtp'));
+        $this->assertTrue($transport->isTlsRequired());
+
+        $this->save(['encryption' => 'none', 'port' => 25]);
+        app(MailConfig::class)->apply();
+
+        $transport = app('mail.manager')->createSymfonyTransport(config('mail.mailers.smtp'));
+        $this->assertFalse($transport->isTlsRequired());
+    }
+
     public function test_env_stays_the_fallback_for_anything_left_empty(): void
     {
         config([
