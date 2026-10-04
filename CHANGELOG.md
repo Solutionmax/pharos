@@ -6,6 +6,8 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [0.7.2] — 2026-10-04
+
 ### Added
 - Status pages can be deleted. On Status pages every page except the default one has a delete button next to Archive; the confirmation names how many services, incidents and subscribers go with it. Deleting removes the page with everything it owns (services and their history, incidents, maintenance, subscribers, notification destinations, API tokens, settings and uploaded branding) and cannot be undone. Nothing is sent to subscribers or destinations, and the audit log keeps its lines and gains one for the deletion. Archive remains the way to keep a page's history.
 - An address that does not exist now shows a Pharos page instead of a bare "404 Not Found": the sign in layout with the digits standing out of the wall of uptime cells, in the brand colour and in the light or dark theme. It says the same for a page that was deleted, archived, unpublished or never there. Someone signed in on an old admin link gets a button back into the admin. Without WebGL the wall stays flat, and with reduced motion it stands still.
