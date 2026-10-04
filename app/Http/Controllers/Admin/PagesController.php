@@ -13,6 +13,7 @@ use App\Models\Subscriber;
 use App\Models\User;
 use App\Services\License;
 use App\Services\PageContext;
+use App\Services\PageDeletion;
 use App\Services\PageStatus;
 use App\Services\Subscriptions;
 use App\Services\Uptime;
@@ -24,7 +25,7 @@ use Illuminate\View\View;
 
 class PagesController extends Controller
 {
-    public function index(Uptime $uptime, License $license): View
+    public function index(Uptime $uptime, License $license, PageDeletion $deletion): View
     {
         $pages = StatusPage::query()->withCount('users')->orderBy('name')->get();
 
@@ -44,6 +45,7 @@ class PagesController extends Controller
             'subscriberCounts' => Subscriber::query()->withoutGlobalScope('status_page')->active()
                 ->groupBy('status_page_id')->selectRaw('status_page_id, count(*) as total')->pluck('total', 'status_page_id')->all(),
             'defaultPageId' => StatusPage::defaultId(),
+            'deleteCounts' => $deletion->countsByPage(),
             // A page without its own row falls back to on, so only explicit "off" rows matter.
             'subscriptionsOff' => StatusPageSetting::query()
                 ->where('key', Subscriptions::KEY)->where('value', '0')
@@ -142,6 +144,15 @@ class PagesController extends Controller
         ]);
 
         return redirect()->route('admin.pages.index')->with('status', "{$statusPage->name} archived.");
+    }
+
+    public function destroy(StatusPage $statusPage, PageDeletion $deletion): RedirectResponse
+    {
+        abort_if($statusPage->getKey() === StatusPage::defaultId(), 403, 'The default status page cannot be deleted.');
+
+        $deletion->delete($statusPage);
+
+        return redirect()->route('admin.pages.index')->with('status', "{$statusPage->name} deleted.");
     }
 
     /** @return array<string, mixed> */

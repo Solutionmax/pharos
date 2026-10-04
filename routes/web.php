@@ -271,6 +271,7 @@ Route::prefix('admin/pages')->name('admin.pages.')->middleware(['web', 'auth', A
     Route::get('/{statusPage}/edit', [PagesController::class, 'edit'])->name('edit');
     Route::put('/{statusPage}', [PagesController::class, 'update'])->name('update');
     Route::post('/{statusPage}/archive', [PagesController::class, 'archive'])->name('archive');
+    Route::delete('/{statusPage}', [PagesController::class, 'destroy'])->name('destroy');
 });
 Route::get('admin/no-pages', fn () => view('admin.no-pages'))->middleware(['auth', AuthenticateSession::class, UsePersonalTimezone::class, NoStore::class])->name('admin.no-pages');
 

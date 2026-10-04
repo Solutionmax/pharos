@@ -306,6 +306,11 @@ html.pui-locked{overflow:hidden}
 .pg-stats .pill{padding:1px 8px;font-size:10.5px}
 .pg-card>footer{justify-content:flex-start;flex-wrap:wrap}
 .pg-card>footer form{margin:0}
+/* Delete sits apart from the safe actions, icon only so five of them still fit one row. */
+.pg-card>footer{gap:6px}
+.pg-card>footer .pg-del{margin-left:auto}
+.rowacts .pg-del button{display:inline-flex;align-items:center;padding:6px 7px;color:var(--red-ink);border-color:color-mix(in srgb,var(--red) 35%,var(--line))}
+.rowacts .pg-del button:hover{background:color-mix(in srgb,var(--red) 9%,transparent);border-color:var(--red)}
 .rowacts a.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
 .rowacts a.primary:hover{filter:brightness(1.07);background:var(--brand);color:var(--brand-ink)}
 .pill.off{color:var(--ink-3);background:var(--bg-tint);border:1px solid var(--line)}

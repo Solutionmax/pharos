@@ -14,7 +14,7 @@
 ])
 
 <p class="sub" style="margin-bottom:20px">Choose <strong>Manage</strong> to work on a page: its overview, services, branding and email.
-  <strong>View</strong> opens its public page in a new tab. Each page has its own services and subscribers. Archived pages keep their history and settings.</p>
+  <strong>View</strong> opens its public page in a new tab. Each page has its own services and subscribers. Archived pages keep their history and settings; a deleted page is gone for good.</p>
 
 <div class="pg-cards">
   @foreach ($pages as $page)
@@ -78,6 +78,16 @@
                 data-confirm-action="Archive page">
             @csrf
             <button type="submit">Archive</button>
+          </form>
+        @endif
+        @if ($page->id !== $defaultPageId)
+          @php $lost = \App\Services\PageDeletion::summary($deleteCounts[$page->id] ?? []); @endphp
+          <form class="pg-del" method="POST" action="{{ route('admin.pages.destroy', $page) }}"
+                data-confirm-title="Delete {{ $page->name }}?"
+                data-confirm="This permanently deletes the page{!! $lost ? ' and everything on it: <strong>'.$lost.'</strong>' : ' and its settings' !!}. {{ $page->archived_at ? '' : 'Its public page stops working right away. ' }}This cannot be undone.{{ $page->archived_at ? '' : ' To keep the history, archive the page instead.' }}"
+                data-confirm-action="Delete page">
+            @csrf @method('DELETE')
+            <button type="submit" title="Delete {{ $page->name }}" aria-label="Delete {{ $page->name }}">@include('partials.icon', ['name' => 'trash', 'size' => 13])</button>
           </form>
         @endif
       </footer>
