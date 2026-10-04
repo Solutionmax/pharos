@@ -40,6 +40,7 @@ cd "$REPO"
 if [ "$GATES" = 1 ]; then
   npm ci --ignore-scripts --no-audit --no-fund
   npm run build:editor
+  npm run build:not-found
   echo "== 1/6 gates"
   vendor/bin/pint --test -q
   vendor/bin/phpstan analyse --memory-limit=1G --no-progress -q

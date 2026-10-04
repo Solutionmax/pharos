@@ -18,7 +18,11 @@ A real change updates the page, briefly highlights the affected items and shows 
 
 Run `npm ci --ignore-scripts` and `npm run build:editor`. The generated `public/assets/editor/` files ship with the release, so installations do not need Node.js. `scripts/build-editor.mjs` replaces Toast UI's embedded DOMPurify with the pinned patched dependency before bundling; changing Toast UI's source layout intentionally fails the build for review. Do not copy upstream prebuilt JavaScript over this bundle.
 
-The normal release gates rebuild the editor, run PHP formatting and static analysis, and run the application tests. No new migration is introduced in 0.6.
+## Rebuilding the not found scene
+
+The relief on the 404 page is `resources/js/not-found.js`, bundled with the parts of three.js it uses by `npm run build:not-found` into `public/assets/not-found/`. Like the editor, the generated files ship with the release. The script is loaded on the 404 page only.
+
+The normal release gates rebuild the editor and the not found scene, run PHP formatting and static analysis, and run the application tests. No new migration is introduced in 0.6.
 
 ## Account recovery
 

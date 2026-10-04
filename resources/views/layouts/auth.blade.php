@@ -7,6 +7,9 @@
 
   Without JavaScript every form posts the normal way. pharos-auth.js takes over
   the sign in and two factor forms and plays the real outcome on the wall.
+
+  A view may bring its own wall (the 404 does); it then also brings its own
+  script, and pharos-auth.js stays away.
 --}}
 @php
   $whiteLabel = $branding->creditHidden();
@@ -33,6 +36,9 @@
     </footer>
   </section>
 
+  @hasSection('wall')
+    @yield('wall')
+  @else
   <aside class="pa-wall" aria-hidden="true" data-pa-wall>
     <div class="pa-grid" data-pa-grid></div>
     <svg class="pa-ekg" viewBox="0 0 1200 140" preserveAspectRatio="none" focusable="false" data-pa-ekg>
@@ -50,7 +56,10 @@
       <p class="pa-cap-kinds"><b>HTTP · TCP · heartbeat</b><span>kinds of checks</span></p>
     </div>
   </aside>
+  @endif
 </div>
+@sectionMissing('wall')
 <p class="pa-sr" role="status" aria-live="polite" data-pa-live></p>
 <script defer src="{{ asset('assets/pharos-auth.js') }}?v={{ @filemtime(public_path('assets/pharos-auth.js')) }}"></script>
+@endif
 @endsection

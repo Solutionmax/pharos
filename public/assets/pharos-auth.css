@@ -148,6 +148,16 @@
 .pa-cap-kinds{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:right}
 .pa-cap-kinds b{display:block;font-family:var(--sans);font-size:15px;font-weight:700;letter-spacing:-.01em;text-transform:none;color:var(--ink)}
 
+/* ---------- not found: the wall as a relief ---------- */
+.pa a.nf-btn,.pa a.nf-btn:hover{display:flex;align-items:center;justify-content:center;color:var(--pa-btn-ink);text-decoration:none}
+.pa-cap-kinds b.nf-path{font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:0;overflow-wrap:anywhere}
+/* The flat wall, for when the scene cannot start: every cell off, the line flat. */
+[data-nf-scene] .pa-ekg path{stroke:var(--ink-3)}
+[data-nf-scene] .pa-ekg .pa-ekg-line{filter:none}
+.nf-canvas{position:absolute;inset:0;width:100%;height:100%;display:none;touch-action:pan-y}
+.pa-wall.has-scene .nf-canvas{display:block}
+.pa-wall.has-scene .pa-grid,.pa-wall.has-scene .pa-ekg{visibility:hidden}
+
 /* ---------- phones: the wall becomes a band on top ---------- */
 @media (max-width:900px){
   .pa{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr}
@@ -162,6 +172,9 @@
   .pa-side{padding:28px 16px 22px;border-right:0}
   .pa-body{padding-block:0 32px}
   .pa-brand{margin-bottom:26px}
+  /* Not found: the band is the digits alone, a little taller to hold them. */
+  .pa-wall.has-scene{height:300px}
+  .pa-wall.has-scene .pa-cap{display:none}
 }
 @media (max-width:420px){
   .pa-cap-kinds{display:none}

@@ -369,7 +369,9 @@ pre .k{color:var(--brand)}
 @endif
 </head>
 <body>
-@auth
+{{-- A page that declares itself standalone (the 404) owns the whole canvas, signed in or not. --}}
+@php $signedInShell = auth()->check() && ! View::hasSection('standalone'); @endphp
+@if ($signedInShell)
 @php
   $selectorUser = auth()->user();
   $selectorPages = $selectorUser->isAdmin()
@@ -453,14 +455,14 @@ document.addEventListener('click', function (event) {
 {{-- No wrapper: a signed-out page owns its own canvas, because setup is a
      full-bleed split and a centred column would fight it. --}}
 @yield('content')
-@endauth
+@endif
 @if (session('theme_saved'))
 {{-- A saved preference replaces whatever the quick toggle remembered in this browser. --}}
 <script>try { localStorage.removeItem('pharos-theme'); } catch (e) {}</script>
 @endif
 @include('partials.theme-script', ['theme' => $adminTheme])
 <script defer src="{{ asset('assets/pharos-v06.js') }}?v=0.6.0"></script>
-@auth<script defer src="{{ asset('assets/pharos-ui.js') }}?v={{ @filemtime(public_path('assets/pharos-ui.js')) }}"></script>
-<script defer src="{{ asset('assets/pharos-search.js') }}?v={{ @filemtime(public_path('assets/pharos-search.js')) }}"></script>@endauth
+@if ($signedInShell)<script defer src="{{ asset('assets/pharos-ui.js') }}?v={{ @filemtime(public_path('assets/pharos-ui.js')) }}"></script>
+<script defer src="{{ asset('assets/pharos-search.js') }}?v={{ @filemtime(public_path('assets/pharos-search.js')) }}"></script>@endif
 </body>
 </html>
