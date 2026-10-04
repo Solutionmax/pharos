@@ -51,16 +51,15 @@ fi
 
 echo "== 2/6 stage ${STAGE}"
 mkdir -p "$STAGE"
-rsync -a --delete \
-  --exclude '/preview-notes' --exclude '/brag-output' --exclude '/.git' --exclude '/.github' --exclude '/tests' --exclude '/node_modules' --exclude '/dist' \
-  --exclude '/vendor' --exclude '.env' --exclude '.env.*.local' --exclude 'phpstan.neon' --exclude 'phpunit.xml' \
-  --exclude 'storage/app/*' --exclude 'storage/logs/*' --exclude 'storage/framework/cache/*' \
-  --exclude 'storage/framework/sessions/*' --exclude 'storage/framework/views/*' --exclude 'storage/framework/phpstan' \
-  --exclude 'storage/framework/pharos-scheduler-last-run' \
-  --exclude 'database/*.sqlite*' --exclude 'bootstrap/cache/*.php' --exclude 'public/storage' \
-  --exclude 'public/brand/uploads' --exclude 'scripts/build-release.sh' --exclude 'scripts/release-page.py' \
-  --exclude '.phpunit.result.cache' \
-  ./ "$STAGE/"
+# Only what git tracks goes in. The working tree also holds folders git merely ignores
+# (a local build, notes, a video render); copying the tree itself once shipped one of those.
+# The excludes are git pathspecs, not rsync filters: with a file list rsync does not prune folders.
+git ls-files -z -- . \
+  ':(exclude).github' ':(exclude)tests' ':(exclude)phpstan.neon' ':(exclude)phpunit.xml' \
+  ':(exclude)storage/app' ':(exclude)storage/logs' ':(exclude)storage/framework/cache' \
+  ':(exclude)storage/framework/sessions' ':(exclude)storage/framework/views' \
+  ':(exclude)scripts/build-release.sh' ':(exclude)scripts/release-page.py' \
+  | rsync -a --from0 --files-from=- ./ "$STAGE/"
 # the version travels with the code, never with .env
 sed -i "s/'version' => env('PHAROS_VERSION', '[^']*')/'version' => env('PHAROS_VERSION', '${VERSION}')/" "$STAGE/config/pharos.php"
 grep -q "'${VERSION}'" "$STAGE/config/pharos.php" || { echo "version not stamped" >&2; exit 1; }
@@ -73,6 +72,9 @@ echo "== 3/6 vendor (production only)"
 ( cd "$STAGE" && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction --no-progress -q )
 [ -d "$STAGE/vendor/laravel/framework" ] || { echo "composer install failed" >&2; exit 1; }
 rm -rf "$STAGE/vendor/*/*/tests" 2>/dev/null || true
+# Nothing may be in the archive that git does not know, apart from what this script makes itself.
+STRAY=$(cd "$STAGE" && find . -type f ! -path './vendor/*' ! -path './bootstrap/cache/*' ! -name .gitkeep -printf '%P\n' | sort | comm -23 - <(git -C "$REPO" ls-files | sort))
+[ -z "$STRAY" ] || { echo "not in git but in the archive:" >&2; echo "$STRAY" >&2; exit 1; }
 
 echo "== 4/6 archive"
 mkdir -p "$DIST"; rm -f "$DIST/pharos-${VERSION}.zip"
