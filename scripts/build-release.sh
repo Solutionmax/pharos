@@ -52,7 +52,7 @@ fi
 echo "== 2/6 stage ${STAGE}"
 mkdir -p "$STAGE"
 rsync -a --delete \
-  --exclude '/preview-notes' --exclude '/.git' --exclude '/.github' --exclude '/tests' --exclude '/node_modules' --exclude '/dist' \
+  --exclude '/preview-notes' --exclude '/brag-output' --exclude '/.git' --exclude '/.github' --exclude '/tests' --exclude '/node_modules' --exclude '/dist' \
   --exclude '/vendor' --exclude '.env' --exclude '.env.*.local' --exclude 'phpstan.neon' --exclude 'phpunit.xml' \
   --exclude 'storage/app/*' --exclude 'storage/logs/*' --exclude 'storage/framework/cache/*' \
   --exclude 'storage/framework/sessions/*' --exclude 'storage/framework/views/*' --exclude 'storage/framework/phpstan' \
