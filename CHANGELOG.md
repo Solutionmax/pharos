@@ -6,6 +6,16 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+### Fixed
+- Raw check results are now pruned once a day. The table grew for ever: about 140,000 rows and a 15 MB database after 33 days with five checks. Results older than 40 days go (set `PHAROS_CHECK_RESULT_DAYS` to change that), in small batches so the first run on a large table does not block the checks, and the newest result of every component always stays, so a paused check keeps its last run. Uptime figures and the 90 day bar come from the daily rollup and do not change. The beat strip on the component screen reads the last 40 runs; 40 days is what 40 runs of the slowest allowed interval (one day) need. An existing SQLite file does not shrink, it stops growing: the freed space is reused by new results.
+- The incident form no longer offers "Signed in users only". Pharos has no sign in for visitors, so it behaved exactly like "Internal: team only". Incidents stored with that value and API clients that still send `authenticated` keep working, and such an incident stays off the public page.
+
+### Security
+- Updated `laravel/framework` to 12.69.3 (XSS in the debug page, CVE-2026-102279) and `league/commonmark` to 2.10.3 (a bypass of the disallowed raw HTML filter and a quadratic time denial of service in the table extension). `composer audit` reports no advisories again.
+
+### Changed
+- The README no longer links to the website source repository, which is not public.
+
 ## [0.7.2] — 2026-10-04
 
 ### Added
