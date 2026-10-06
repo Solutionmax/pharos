@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\CheckResult;
 use App\Services\Audit;
 use App\Services\OutgoingWebhook;
 use Illuminate\Support\Facades\Schedule;
@@ -10,6 +11,9 @@ Schedule::command('pharos:check')->everyMinute()->withoutOverlapping();
 
 // The audit trail is append-only, so age is the only thing that bounds it.
 Schedule::call(fn () => Audit::prune())->dailyAt('03:20')->name('prune-audit-log');
+
+// Raw check results are only read for the beat strip; the uptime bar uses the daily roll-up.
+Schedule::call(fn () => CheckResult::prune())->dailyAt('03:25')->name('prune-check-results');
 
 // Planned work: announce, start and complete maintenance windows. Runs before
 // pharos:notify in the same minute, so an announcement is mailed straight away.

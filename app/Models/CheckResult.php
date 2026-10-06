@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Casts\LocalTime;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class CheckResult extends Model
 {
@@ -29,5 +30,36 @@ class CheckResult extends Model
             ->orderByDesc('checked_at')->orderByDesc('id')
             ->limit($limit)->get()
             ->reverse()->values();
+    }
+
+    /**
+     * Deletes results older than the retention window, except the newest one of
+     * each component so a paused check keeps its last run. In batches, so the
+     * first run on millions of rows never holds one long write lock. The ids are
+     * read first and deleted second: MySQL refuses to delete from a table it is
+     * also selecting from. Returns how many rows went.
+     */
+    public static function prune(?int $days = null, int $batch = 5000): int
+    {
+        $cutoff = now()->subDays($days ?? (int) config('pharos.check_result_days'));
+        $deleted = 0;
+
+        do {
+            $ids = self::query()
+                ->where('checked_at', '<', $cutoff)
+                ->whereExists(fn ($newer) => $newer->select(DB::raw(1))
+                    ->from('check_results as newer')
+                    ->whereColumn('newer.component_id', 'check_results.component_id')
+                    ->where(fn ($later) => $later
+                        ->whereColumn('newer.checked_at', '>', 'check_results.checked_at')
+                        ->orWhere(fn ($tie) => $tie
+                            ->whereColumn('newer.checked_at', 'check_results.checked_at')
+                            ->whereColumn('newer.id', '>', 'check_results.id'))))
+                ->limit($batch)->pluck('id');
+
+            $deleted += self::whereKey($ids)->delete();
+        } while ($ids->count() === $batch);
+
+        return $deleted;
     }
 }

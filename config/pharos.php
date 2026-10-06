@@ -44,6 +44,12 @@ return [
     // not grow without end on shared hosting.
     'audit_days' => (int) env('PHAROS_AUDIT_DAYS', 180),
 
+    // How long raw check results are kept. Uptime figures come from the daily
+    // roll-up and never read them; only the beat strip does (the last 40 runs).
+    // 40 days because the slowest allowed check interval is a day, which makes
+    // 40 runs 40 days. The newest result of every component is always kept.
+    'check_result_days' => (int) env('PHAROS_CHECK_RESULT_DAYS', 40),
+
     // Never hardcode these in views: moving to a real domain must stay a .env edit.
     // Vendor side only: where the Ed25519 secret lives for pharos:license:sign / release:sign.
     'license_secret_file' => env('PHAROS_LICENSE_SECRET_FILE'),
