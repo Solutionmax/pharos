@@ -415,8 +415,7 @@ whether you are allowed to run it.
 ---
 
 <sub>Pharos, a <a href="https://solutionmax.net">SolutionMAX</a> product ·
-<a href="https://pharos.solutionmax.net">pharos.solutionmax.net</a> ·
-<a href="https://github.com/solutionmax/pharos-site">website and documentation source</a></sub>
+<a href="https://pharos.solutionmax.net">pharos.solutionmax.net</a></sub>
 
 ## Support the work
 
