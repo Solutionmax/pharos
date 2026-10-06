@@ -47,7 +47,6 @@
               <label for="visibility">Visibility</label>
               <select id="visibility" name="visibility">
                 <option value="public" @selected(old('visibility', 'public') === 'public')>Public</option>
-                <option value="authenticated" @selected(old('visibility') === 'authenticated')>Signed in users only</option>
                 <option value="internal" @selected(old('visibility') === 'internal')>Internal: team only</option>
               </select>
             </div>

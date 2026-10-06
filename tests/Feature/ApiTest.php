@@ -9,6 +9,7 @@ use App\Models\Component;
 use App\Models\ComponentGroup;
 use App\Models\Incident;
 use App\Models\IncidentTemplate;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -196,6 +197,24 @@ class ApiTest extends TestCase
         ]);
 
         $this->getJson('/api/v1/incidents')->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    public function test_the_api_still_accepts_the_retired_authenticated_visibility(): void
+    {
+        $this->withHeader('Authorization', "Bearer {$this->token}")
+            ->postJson('/api/v1/incidents', [
+                'name' => 'Legacy client',
+                'status' => 'investigating',
+                'message' => 'x',
+                'visibility' => 'authenticated',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.visibility', 'authenticated');
+
+        User::factory()->create();
+        $this->flushHeaders();
+        $this->getJson('/api/v1/incidents')->assertOk()->assertJsonCount(0, 'data');
+        $this->get('/')->assertOk()->assertDontSee('Legacy client');
     }
 
     public function test_using_a_token_records_when_it_was_last_used(): void

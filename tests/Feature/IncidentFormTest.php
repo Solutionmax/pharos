@@ -21,6 +21,24 @@ class IncidentFormTest extends TestCase
         $this->user = User::create(['name' => 'Admin', 'email' => 'admin@example.net', 'password' => Hash::make('correct-horse-battery')]);
     }
 
+    public function test_the_form_offers_only_public_and_internal_visibility(): void
+    {
+        $this->actingAs($this->user)->get('/admin/incidents/create')
+            ->assertOk()
+            ->assertSee('value="public"', false)
+            ->assertSee('value="internal"', false)
+            ->assertDontSee('value="authenticated"', false);
+    }
+
+    public function test_the_form_post_still_accepts_a_stored_authenticated_value(): void
+    {
+        $this->actingAs($this->user)->post('/admin/incidents', [
+            'name' => 'Old habit', 'message' => 'Noted.', 'status' => 1, 'impact' => 'minor', 'visibility' => 'authenticated',
+        ])->assertRedirect('/admin/incidents');
+
+        $this->assertSame('authenticated', Incident::firstOrFail()->visibility);
+    }
+
     public function test_a_component_id_that_does_not_exist_is_dropped_not_a_500(): void
     {
         $real = Component::create(['name' => 'Web', 'status' => 1, 'source' => 'manual', 'enabled' => true]);
