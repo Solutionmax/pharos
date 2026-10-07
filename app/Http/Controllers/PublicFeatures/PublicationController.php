@@ -63,7 +63,7 @@ class PublicationController extends Controller
         $xml->writeElement('title', $this->xmlText(app(PageContext::class)->page()->name.' '.__('Status updates')));
         $xml->writeElement('link', PageUrls::route('status'));
         $xml->writeElement('description', __('Incidents and scheduled maintenance'));
-        $incidents = Incident::public()->with(['updates' => fn ($q) => $q->limit(500)])->latest('occurred_at')->limit(50)->get();
+        $incidents = Incident::public()->with(['updates' => fn ($q) => $q->reorder()->latest('created_at')->latest('id')->limit(1)])->latest('occurred_at')->limit(50)->get();
         foreach ($incidents as $incident) {
             $this->feedItem($xml, $incident->name, $incident->updates->first()->message ?? '', PageUrls::route('public.incident', $incident), $incident->updated_at ?? $incident->occurred_at);
         }

@@ -15,6 +15,8 @@ use App\Models\User;
 use App\Services\PageContext;
 use App\Services\PageUrls;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
@@ -57,6 +59,31 @@ class PublicFeaturesTest extends TestCase
         $other = StatusPage::create(['name' => 'Other', 'slug' => 'other', 'is_published' => true]);
         $this->get('/status/other/incidents/'.$incident->id)->assertNotFound();
         $this->get('/status/other/feed.xml')->assertOk()->assertDontSee('outage');
+    }
+
+    public function test_feed_hydrates_only_the_latest_update_per_public_incident_and_breaks_time_ties_by_id(): void
+    {
+        $hydrated = [];
+        Event::listen('eloquent.retrieved: '.IncidentUpdate::class, function ($update) use (&$hydrated) {
+            $hydrated[] = $update->id;
+        });
+        foreach (range(1, 3) as $n) {
+            $incident = Incident::create(['name' => 'Incident '.$n, 'status' => 1, 'occurred_at' => now()]);
+            $rows = [];
+            foreach (range(1, 20) as $i) {
+                $rows[] = ['incident_id' => $incident->id, 'status' => 1, 'message' => ($i === 20 ? 'LATEST-'.$n : 'OLD-'.$n).str_repeat('x', 18000), 'created_at' => now(), 'updated_at' => now()];
+            }
+            DB::table('incident_updates')->insert($rows);
+        }
+        $private = Incident::create(['name' => 'PRIVATE HISTORY', 'status' => 1, 'occurred_at' => now(), 'visibility' => 'internal']);
+        DB::table('incident_updates')->insert(['incident_id' => $private->id, 'status' => 1, 'message' => 'PRIVATE UPDATE', 'created_at' => now(), 'updated_at' => now()]);
+        $response = $this->get('/feed.xml')->assertOk();
+        $this->assertCount(3, $hydrated, 'RSS must not materialize unused historical messages');
+        $response->assertDontSee('OLD-')->assertDontSee('PRIVATE');
+        foreach (range(1, 3) as $n) {
+            $response->assertSee('LATEST-'.$n);
+        }
+        $this->assertSame(61, IncidentUpdate::count(), 'Reading RSS preserves complete history');
     }
 
     public function test_public_timeline_and_status_page_do_not_disclose_hidden_component_names(): void
