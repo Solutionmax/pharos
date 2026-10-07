@@ -110,6 +110,56 @@ class CachetImporterTest extends TestCase
         $this->assertDatabaseCount('cachet_import_batches', 1);
     }
 
+    public function test_semantic_replay_reorders_resources_defaults_and_ignored_fields_without_duplicates(): void
+    {
+        $data = $this->export();
+        $data['groups']['data'][] = ['id' => 10, 'name' => 'Second group'];
+        $data['components']['data'][] = ['id' => 21, 'name' => 'Second component', 'group_id' => 10, 'status' => 1];
+        $data['incidents']['data'][] = ['id' => 31, 'name' => 'Second incident', 'status' => 1, 'message' => 'Second', 'occurred_at' => '2026-09-22T10:00:00Z'];
+        $data['subscribers']['data'][] = ['id' => 41, 'email' => 'global@example.com', 'global' => true];
+        app(CachetImporter::class)->apply($data);
+        $changed = $data;
+        foreach (['groups', 'components', 'incidents', 'subscribers'] as $resource) {
+            $changed[$resource]['data'] = array_reverse($changed[$resource]['data']);
+        }
+        $changed['groups']['data'][0]['visible'] = 0;
+        $changed['groups']['data'][0]['collapsed'] = 0;
+        $changed['groups']['data'][0]['order'] = 0;
+        $changed['components']['data'][0]['enabled'] = true;
+        $changed['components']['data'][0]['order'] = '0';
+        $changed['incidents']['data'][0]['created_at'] = '2025-01-01';
+        $changed['incidents']['data'][0]['updated_at'] = '2025-01-02';
+        $changed['incidents']['data'][0]['resolved_at'] = '2025-01-03';
+        $changed['incidents']['data'][0]['component_status'] = 1;
+        $changed['incidents']['data'][0]['occurred_at'] = '2026-09-22T12:00:00+02:00';
+        $changed['subscribers']['data'][0]['id'] = 999;
+        $changed['subscribers']['data'][0]['verify_code'] = 'ignored-secret';
+        try {
+            app(CachetImporter::class)->apply($changed);
+            $this->fail('Semantic replay accepted');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('export', $e->errors());
+        }
+        $this->assertDatabaseCount('component_groups', 2);
+        $this->assertDatabaseCount('components', 2);
+        $this->assertDatabaseCount('incidents', 2);
+        $this->assertDatabaseCount('subscribers', 2);
+        $this->assertDatabaseCount('cachet_import_batches', 1);
+    }
+
+    public function test_empty_verification_dates_keep_subscribers_unconfirmed_and_canonical_dates_are_stable(): void
+    {
+        $data = $this->export();
+        $data['subscribers']['data'][0]['verified_at'] = '';
+        $data['subscribers']['data'][0]['unsubscribed_at'] = '';
+        $digest = app(CachetImporter::class)->preview($data)['digest'];
+        $this->travel(60)->seconds();
+        $this->assertSame($digest, app(CachetImporter::class)->preview($data)['digest']);
+        app(CachetImporter::class)->apply($data);
+        $this->assertNull(Subscriber::sole()->verified_at);
+        $this->assertFalse(Subscriber::sole()->isActive());
+    }
+
     public function test_preview_confirmation_is_owned_by_user_page_one_use_and_cannot_mutate_other_pages(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin]);

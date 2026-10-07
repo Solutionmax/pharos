@@ -175,20 +175,47 @@ class CachetImporter
 
         }
         unset($row);
-        // Discard credentials, user metadata and unrecognized keys even in the preview digest.
-        $allowed = ['groups' => ['id', 'name', 'visible', 'collapsed', 'order'], 'components' => ['id', 'name', 'description', 'status', 'group_id', 'link', 'enabled', 'order'], 'incidents' => ['id', 'name', 'status', 'message', 'visible', 'stickied', 'component_id', 'component_status', 'occurred_at', 'created_at', 'updated_at', 'resolved_at', 'updates'], 'subscribers' => ['id', 'email', 'global', 'verified_at', 'unsubscribed_at', 'subscriptions']];
-        foreach ($data as $resource => &$rows) {
-            foreach ($rows as &$row) {
-                $row = array_intersect_key($row, array_flip($allowed[$resource]));
-                if (isset($row['updates'])) {
-                    $row['updates'] = array_map(fn ($update) => array_intersect_key($update, array_flip(['status', 'message', 'created_at'])), $row['updates']);
-                }
-                if (isset($row['subscriptions'])) {
-                    $row['subscriptions'] = array_map(fn ($subscription) => ['component_id' => $subscription['component_id']], $row['subscriptions']);
-                }
-            }
+        // Canonicalize what application actually consumes, including defaults and UTC dates.
+        // Source-only IDs remain where needed to map relations; incident/subscriber IDs
+        // and overridden timestamp fields cannot change the import replay identity.
+        $date = fn ($value) => ($value === null || $value === '') ? null : CarbonImmutable::parse($value, 'UTC')->utc()->format('Y-m-d H:i:s');
+        $data['groups'] = array_map(fn ($row) => [
+            'id' => (int) $row['id'], 'name' => $row['name'], 'visible' => (bool) ($row['visible'] ?? false),
+            'collapsed' => (bool) ($row['collapsed'] ?? false), 'order' => (int) ($row['order'] ?? 0),
+        ], $data['groups']);
+        $data['components'] = array_map(fn ($row) => [
+            'id' => (int) $row['id'], 'name' => $row['name'], 'status' => (int) $row['status'],
+            'description' => $row['description'] ?? null, 'link' => $row['link'] ?? null,
+            'group_id' => empty($row['group_id']) ? null : (int) $row['group_id'],
+            'enabled' => (bool) ($row['enabled'] ?? true), 'order' => (int) ($row['order'] ?? 0),
+        ], $data['components']);
+        $data['incidents'] = array_map(function ($row) use ($date) {
+            $occurred = $date($row['occurred_at'] ?? null) ?? $date($row['created_at'] ?? null);
+            $componentId = empty($row['component_id']) ? null : (int) $row['component_id'];
+            $updates = array_map(fn ($update) => ['status' => (int) $update['status'], 'message' => $update['message'],
+                'created_at' => $date($update['created_at'] ?? null) ?? $occurred], $row['updates'] ?? []);
+            usort($updates, fn ($a, $b) => [$a['created_at'], $a['status'], $a['message']] <=> [$b['created_at'], $b['status'], $b['message']]);
+
+            return ['name' => $row['name'], 'status' => (int) $row['status'], 'message' => $row['message'],
+                'visible' => (bool) ($row['visible'] ?? false), 'stickied' => (bool) ($row['stickied'] ?? false),
+                'component_id' => $componentId, 'component_status' => $componentId === null ? null : (int) ($row['component_status'] ?? 4),
+                'occurred_at' => $occurred, 'resolved_at' => (int) $row['status'] === 4 ? ($date($row['resolved_at'] ?? null) ?? $date($row['updated_at'] ?? null) ?? $occurred) : null,
+                'updates' => $updates];
+        }, $data['incidents']);
+        $data['subscribers'] = array_map(function ($row) use ($date) {
+            $ids = array_values(array_unique(array_map(fn ($subscription) => (int) $subscription['component_id'], $row['subscriptions'])));
+            sort($ids);
+
+            return ['email' => $row['email'], 'global' => (bool) $row['global'],
+                'verified_at' => $date($row['verified_at'] ?? null), 'unsubscribed_at' => $date($row['unsubscribed_at'] ?? null),
+                'subscriptions' => array_map(fn ($id) => ['component_id' => $id], $ids)];
+        }, $data['subscribers']);
+        foreach (['groups', 'components'] as $resource) {
+            usort($data[$resource], fn ($a, $b) => $a['id'] <=> $b['id']);
         }
-        unset($row, $rows);
+        foreach (['incidents', 'subscribers'] as $resource) {
+            usort($data[$resource], fn ($a, $b) => strcmp(json_encode($a, JSON_UNESCAPED_UNICODE), json_encode($b, JSON_UNESCAPED_UNICODE)));
+        }
 
         return $data;
     }
