@@ -15,6 +15,7 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 - Updated `laravel/framework` to 12.69.3 (XSS in the debug page, CVE-2026-102279) and `league/commonmark` to 2.10.3 (a bypass of the disallowed raw HTML filter and a quadratic time denial of service in the table extension). `composer audit` reports no advisories again.
 
 ### Changed
+- The README no longer lists Plesk in the supported panels badge, and marks the Plesk install row as documented but not yet verified on a live Plesk server. cPanel and DirectAdmin are the verified hosts.
 - The README no longer links to the website source repository, which is not public.
 
 ## [0.7.2] — 2026-10-04

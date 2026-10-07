@@ -9,7 +9,7 @@
   <img alt="Laravel 12" src="https://img.shields.io/badge/Laravel-12-ff2d20">
   <a href="https://pharos.solutionmax.net/releases/"><img alt="Releases: signed zips, changelog, pinned installers" src="https://img.shields.io/badge/releases-signed%20zips%20%C2%B7%20changelog%20%C2%B7%20installers-0079d2"></a>
   <img alt="Cachet-shaped API" src="https://img.shields.io/badge/API-Cachet--shaped-0e1726">
-  <img alt="Runs on cPanel, DirectAdmin, Plesk or Docker" src="https://img.shields.io/badge/runs%20on-cPanel%20%C2%B7%20DirectAdmin%20%C2%B7%20Plesk%20%C2%B7%20Docker-475467">
+  <img alt="Runs on cPanel, DirectAdmin or Docker" src="https://img.shields.io/badge/runs%20on-cPanel%20%C2%B7%20DirectAdmin%20%C2%B7%20Docker-475467">
   <a href="https://buymeacoffee.com/solutionmax"><img alt="Buy me a coffee" src="https://img.shields.io/badge/Buy%20me%20a%20coffee-ffdd00?logo=buymeacoffee&logoColor=000"></a>
 </p>
 
@@ -130,8 +130,10 @@ change your mind.</em>
 |---|---|---|
 | DirectAdmin | [Web installation](https://pharos.solutionmax.net/docs/install/directadmin/) | Web PHP, CLI PHP, permissions and cron |
 | cPanel / CloudLinux | [Web installation](https://pharos.solutionmax.net/docs/install/cpanel/) | PHP selector versus CLI binary and cron |
-| Plesk | [Web installation](https://pharos.solutionmax.net/docs/install/plesk/) | Document root and scheduled task permissions |
+| Plesk (documented, not yet verified on a live Plesk server) | [Web installation](https://pharos.solutionmax.net/docs/install/plesk/) | Document root and scheduled task permissions |
 | Docker | [Docker guide](https://pharos.solutionmax.net/docs/docker/) | App and scheduler containers, volumes and proxy |
+
+cPanel and DirectAdmin are verified on live hosts. The Plesk paths are documented and still need a first confirmed run.
 
 [Discord setup](https://pharos.solutionmax.net/docs/discord/) ·
 [Telegram setup](docs/notifications.md#telegram-notifications) ·
