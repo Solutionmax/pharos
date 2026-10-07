@@ -40,7 +40,7 @@
           </div>
         </div>
         <span class="pg-live s-tone-{{ $state?->tone() ?? 'n' }}">
-          <span class="pdot s-{{ $state?->tone() ?? 'n' }}" aria-hidden="true"></span>{{ \App\Services\PageStatus::label($state) }}
+          <span class="pdot s-{{ $state?->tone() ?? 'n' }}" aria-hidden="true"></span>{{ __(\App\Services\PageStatus::label($state)) }}
         </span>
       </header>
 

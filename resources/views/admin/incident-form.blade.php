@@ -70,7 +70,7 @@
               @foreach ($members as $component)
                 @php $oldStatus = old("components.{$component->id}"); @endphp
                 <div class="op-affect">
-                  <span class="op-name"><strong>{{ $component->name }}</strong><span><i class="state-dot {{ $component->status->tone() }}" style="display:inline-block;margin-right:6px;vertical-align:1px"></i>{{ __('Now') }} {{ \Illuminate\Support\Str::lower($component->status->label()) }}</span></span>
+                  <span class="op-name"><strong>{{ $component->name }}</strong><span><i class="state-dot {{ $component->status->tone() }}" style="display:inline-block;margin-right:6px;vertical-align:1px"></i>{{ __('Now') }} {{ \Illuminate\Support\Str::lower(__($component->status->label())) }}</span></span>
                   <label class="sr-only" for="component-{{ $component->id }}">{{ __('New status for') }} {{ $component->name }}</label>
                   <select id="component-{{ $component->id }}" name="components[{{ $component->id }}]" data-component="{{ $component->name }}">
                     <option value="" @selected(! $oldStatus)>{{ __('Leave unchanged') }}</option>

@@ -16,7 +16,7 @@
         <span class="page-tag page-tag--slate">{{ $menuPages->count() }} {{ __('published') }}</span>
       @elseif ($selectedPage)
         @include('partials.page-tag', ['tagPage' => $selectedPage])
-        <span class="page-state"><span class="pdot s-{{ $stateOf($selectedPage)?->tone() ?? 'n' }}" aria-hidden="true"></span>{{ \App\Services\PageStatus::label($stateOf($selectedPage)) }}</span>
+        <span class="page-state"><span class="pdot s-{{ $stateOf($selectedPage)?->tone() ?? 'n' }}" aria-hidden="true"></span>{{ __(\App\Services\PageStatus::label($stateOf($selectedPage))) }}</span>
       @endif
       <span class="page-note">{{ $viewPages ? __('Open in a new tab') : __('Switch page') }}</span>
     </span>
@@ -37,7 +37,7 @@
           <span class="page-name">
             <span class="page-title" title="{{ $menuPage->name }}">{{ $menuPage->name }}</span>
             @include('partials.page-tag', ['tagPage' => $menuPage])
-            <span class="page-note">{{ \App\Services\PageStatus::label($stateOf($menuPage)) }}, {{ $viewPages ? ($menuPage->id === $selectedPageId ? __('currently selected') : 'published') : ($menuPage->is_published ? 'published' : __('draft, not public')) }}</span>
+            <span class="page-note">{{ __(\App\Services\PageStatus::label($stateOf($menuPage))) }}, {{ $viewPages ? ($menuPage->id === $selectedPageId ? __('currently selected') : __('published')) : ($menuPage->is_published ? __('published') : __('draft, not public')) }}</span>
           </span>
           @if ($viewPages) @include('partials.icon', ['name' => 'external', 'size' => 14]) @endif
         </a>

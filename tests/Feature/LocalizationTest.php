@@ -28,12 +28,13 @@ class LocalizationTest extends TestCase
     public function test_admin_language_is_saved_independently_of_page_language(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin]);
+        Component::create(['name' => 'Customer service', 'status' => 3, 'enabled' => true]);
         Setting::put('page.locale', 'de');
 
         $this->actingAs($admin)->put('/admin/profile/preferences', ['theme' => 'system', 'locale' => 'nl'])
             ->assertSessionHasNoErrors();
         $this->assertSame('nl', $admin->fresh()->locale);
-        $this->get('/admin/profile')->assertOk()->assertSee('lang="nl"', false)->assertSee('Voorkeuren');
+        $this->get('/admin/profile')->assertOk()->assertSee('lang="nl"', false)->assertSee('Voorkeuren')->assertSee('Gedeeltelijke storing');
         $this->get('/')->assertOk()->assertSee('lang="de"', false);
         $this->assertSame('en', app()->getLocale(), 'a completed request must restore its locale');
     }

@@ -3,7 +3,7 @@
 @section('content')
 @include('partials.pagehead', [
   'title' => $incident->name,
-  'sub' => __('Started ').$incident->occurred_at->translatedFormat('j M Y H:i').' · '.$incident->status->label().' · '.$incident->impact->label().' impact',
+  'sub' => __('Started ').$incident->occurred_at->translatedFormat('j M Y H:i').' · '.__($incident->status->label()).' · '.__($incident->impact->label()).' '.__('impact'),
   'back' => ['url' => \App\Services\PageUrls::route('admin.incidents'), 'label' => __('Incidents')],
 ])
 

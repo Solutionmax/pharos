@@ -33,7 +33,7 @@
           'color' => $palette[$case->tone()],
           'dash' => max($length - ($n === $total ? 0 : 3), 0.1),
           'offset' => -$offset,
-          'title' => $n.' '.strtolower($case->label()),
+          'title' => $n.' '.\Illuminate\Support\Str::lower(__($case->label())),
           'names' => $components->filter(fn ($c) => $c->status === $case)->pluck('name')->take(8)->implode(', '),
       ];
       $offset += $length;
