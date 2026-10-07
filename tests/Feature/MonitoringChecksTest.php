@@ -89,4 +89,27 @@ class MonitoringChecksTest extends TestCase
             $this->assertSame('Invalid DNS name', $e->getMessage());
         }
     }
+
+    public function test_latency_chart_renders_isolated_measurement_and_keeps_gaps_between_segments(): void
+    {
+        $this->travelTo(now('UTC')->startOfMinute());
+        $component = Component::create(['name' => 'Sparse chart']);
+        foreach ([60 => 40, 15 => 60, 10 => 80, 1500 => 999999] as $minutes => $latency) {
+            CheckResult::create(['component_id' => $component->id, 'checked_at' => now()->subMinutes($minutes), 'ok' => true, 'latency_ms' => $latency, 'message' => 'PRIVATE-CHECK-DIAGNOSTIC']);
+        }
+        $html = view('partials.latency-chart', compact('component'))->render();
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $markers = $xpath->query('//svg/circle');
+        $paths = $xpath->query('//svg/path');
+        $this->assertSame(1, $markers->length, 'An isolated measured bucket must be visible');
+        $this->assertGreaterThan(0, (float) $markers->item(0)->getAttribute('r'));
+        $this->assertSame(1, $paths->length, 'Only adjacent measured buckets may connect');
+        $path = $paths->item(0)->getAttribute('d');
+        $this->assertSame(1, substr_count($path, 'M'));
+        $this->assertSame(1, substr_count($path, 'L'));
+        $this->assertStringNotContainsString('999999', $html);
+        $this->assertStringNotContainsString('PRIVATE-CHECK-DIAGNOSTIC', $html);
+    }
 }
