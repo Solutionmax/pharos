@@ -1,6 +1,7 @@
 /* Operations screens. Plain script, no build step: each block looks for its own
    markup and returns when the screen does not have it. */
 (function () {
+  var t = window.pharosTranslate || function (message) { return message; };
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
 
@@ -17,7 +18,7 @@
       if (copied) selection.removeAllRanges();
     }
     const label = button.textContent;
-    button.textContent = copied ? 'Copied' : 'Select and copy';
+    button.textContent = copied ? t("Copied") : t("Select and copy");
     button.classList.toggle('ok', copied);
     setTimeout(() => { button.textContent = label; button.classList.remove('ok'); }, 1400);
   }));
@@ -53,7 +54,7 @@
       profile.steps.forEach((text) => { const li = document.createElement('li'); li.textContent = text; steps.append(li); });
       $('#destination-result').textContent = profile.result;
       $('#destination-docs').href = profile.docs;
-      if (announce) $('#destination-announcement').textContent = profile.title + ' fields and instructions shown.';
+      if (announce) $('#destination-announcement').textContent = profile.title + t(" fields and instructions shown.");
     };
     radios.forEach((radio) => radio.addEventListener('change', () => {
       drafts[current] = Object.fromEntries(draftFields.map((id) => [id, document.getElementById(id).value]));
@@ -118,14 +119,14 @@
       preview.style.setProperty('--pv', 'var(--' + tone + ')');
       const pill = $('[data-pv="status"]', preview);
       pill.style.background = 'var(--' + tone + '-soft)'; pill.style.color = 'var(--' + tone + '-ink)';
-      $('[data-pv="title"]', preview).textContent = title.value.trim() || 'Your title appears here';
+      $('[data-pv="title"]', preview).textContent = title.value.trim() || t("Your title appears here");
       $('[data-pv="status"]', preview).textContent = labels[status] || '';
       $('[data-pv="status-line"]', preview).textContent = labels[status] || '';
-      $('[data-pv="message"]', preview).textContent = message.value.trim() || 'What you know, what you are doing, and when you will post again.';
+      $('[data-pv="message"]', preview).textContent = message.value.trim() || t("What you know, what you are doing, and when you will post again.");
       const aff = $('[data-pv="affects"]', preview);
       aff.hidden = affected.length === 0;
       $('b', aff).textContent = affected.map((c) => c.name).join(', ');
-      $('[data-pv="impact"]', preview).textContent = impact.options[impact.selectedIndex].text + ' impact';
+      $('[data-pv="impact"]', preview).textContent = impact.options[impact.selectedIndex].text + t(" impact");
       const hidden = visibility.value !== 'public';
       $('[data-pv="private"]', preview).style.display = hidden ? 'flex' : 'none';
       $('.frame', preview).style.opacity = hidden ? '.55' : '1';
@@ -136,7 +137,7 @@
     setInterval(() => { if (message.value !== message.dataset.seen) { message.dataset.seen = message.value; render(); } }, 700);
     $$('[data-template]').forEach((button) => button.addEventListener('click', () => {
       const data = JSON.parse(button.dataset.template);
-      if (title.value.trim() && !confirm('Replace the title and message with this template?')) return;
+      if (title.value.trim() && !confirm(t("Replace the title and message with this template?"))) return;
       title.value = data.title; message.value = data.body;
       message.dispatchEvent(new Event('input', { bubbles: true }));
       $$('[data-template]').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));

@@ -19,6 +19,7 @@ use Illuminate\Notifications\Notifiable;
  * @property bool $require_two_factor
  * @property string|null $theme
  * @property string|null $timezone
+ * @property string $locale
  */
 class User extends Authenticatable
 {

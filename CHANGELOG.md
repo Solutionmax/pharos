@@ -4,6 +4,22 @@ All notable changes to Pharos. The format follows [Keep a Changelog](https://kee
 versions follow [SemVer](https://semver.org/). The signed manifest at
 `https://pharos.solutionmax.net/releases/latest.json` points at the newest published release.
 
+## [1.0.0-beta.1] — local preview, 2026-10-07
+
+This preview is for the internal test installation. It is not a published release.
+
+### Added
+- TLS certificate expiry warnings, HTTP keyword checks, A/AAAA/CNAME/MX/TXT DNS checks, 24-hour latency charts and authenticated remote probe locations with quorum decisions.
+- Public SVG badges, RSS, individual incident pages, service subscriptions and a refreshable status widget.
+- Monthly CSV and PDF uptime reports, expanded scoped API endpoints, authenticated Prometheus metrics and transactional Cachet 2.x import with preview and replay protection.
+- Independent English, Dutch, German and Spanish preferences for accounts and public pages, including default mail, dates and validation messages.
+- Clean hosting archives with VERSION, readable local release metadata and a local Composer create-project repository. Plesk installation and rollback procedure; live Plesk verification still requires a test server.
+- Token-protected web cron, encrypted S3/SFTP backup destinations and verified WebAuthn passkeys. Passkeys require an HTTPS hostname; the HTTP test address keeps password login.
+
+### Security
+- Bound report/feed/import workloads; protect subscriber data with current page administrator authority; enforce probe issuer revocation, DNS pinning and SFTP host key verification.
+- Exclude overlapping started maintenance intervals from new uptime observations while retaining raw evidence and legacy totals. Include separately hosted public files in backups; restrict server diagnostics to installation administrators.
+
 ## [Unreleased]
 
 ### Added

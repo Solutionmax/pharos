@@ -17,6 +17,7 @@ $adminTheme = in_array(auth()->user()?->theme, \App\Models\User::THEMES, true) ?
 @endif
 <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}">
 @include('partials.tokens')
+@include('partials.messages')
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
@@ -461,7 +462,7 @@ document.addEventListener('click', function (event) {
 <script>try { localStorage.removeItem('pharos-theme'); } catch (e) {}</script>
 @endif
 @include('partials.theme-script', ['theme' => $adminTheme])
-<script defer src="{{ asset('assets/pharos-v06.js') }}?v=0.6.0"></script>
+<script defer src="{{ asset('assets/pharos-v06.js') }}?v={{ @filemtime(public_path('assets/pharos-v06.js')) }}"></script>
 @if ($signedInShell)<script defer src="{{ asset('assets/pharos-ui.js') }}?v={{ @filemtime(public_path('assets/pharos-ui.js')) }}"></script>
 <script defer src="{{ asset('assets/pharos-search.js') }}?v={{ @filemtime(public_path('assets/pharos-search.js')) }}"></script>@endif
 </body>

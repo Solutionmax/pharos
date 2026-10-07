@@ -11,6 +11,7 @@
  */
 (function () {
   'use strict';
+  var t = window.pharosTranslate || function (message) { return message; };
 
   var dialog = document.getElementById('pharos-search');
   if (!dialog || !window.pharosUi) return;
@@ -114,7 +115,7 @@
 
   function remember(row) {
     // Status and age go stale, so only what identifies the row is kept.
-    var keep = { type: row.type, icon: row.icon, label: row.label, context: row.context, url: row.url, page: row.page, hint: 'Open' };
+    var keep = { type: row.type, icon: row.icon, label: row.label, context: row.context, url: row.url, page: row.page, hint: t("Open") };
     try {
       var saved = readRecent().filter(function (r) { return r.url !== row.url; });
       saved.unshift(keep);
@@ -125,7 +126,7 @@
   function clearRecent() {
     try { window.localStorage.removeItem(recentKey); } catch (e) { /* nothing to clear */ }
     showStart();
-    say('Recent items cleared');
+    say(t("Recent items cleared"));
     input.focus();
   }
 
@@ -167,7 +168,7 @@
     main.append(title, subline(row));
     var hint = el('span', 'search-hint');
     hint.setAttribute('aria-hidden', 'true');
-    hint.appendChild(el('span', null, typeof row.hint === 'string' ? row.hint : 'Open'));
+    hint.appendChild(el('span', null, typeof row.hint === 'string' ? row.hint : t("Open")));
     hint.appendChild(icon('enter'));
     a.append(main, hint);
     return a;
@@ -202,7 +203,7 @@
   function groupResults(results) {
     var sections = [], byTitle = {};
     results.forEach(function (row) {
-      var title = typeof row.group === 'string' ? row.group : 'Results';
+      var title = typeof row.group === 'string' ? row.group : t("Results");
       if (!byTitle[title]) { byTitle[title] = { title: title, rows: [] }; sections.push(byTitle[title]); }
       byTitle[title].rows.push(row);
     });
@@ -221,12 +222,12 @@
   function showStart() {
     var recent = readRecent();
     clearButton.hidden = !recent.length;
-    render([{ title: 'Recent', rows: recent }, { title: 'Jump to', rows: startActions }], '');
+    render([{ title: t("Recent"), rows: recent }, { title: t("Jump to"), rows: startActions }], '');
     mode = 'start';
     if (!rows.length) {
       setState('hint', function (box) {
-        box.append(icon('search'), el('b', null, 'Search everything you can open'),
-          el('span', null, 'Pages, components, services, incidents, maintenance and screens.'));
+        box.append(icon('search'), el('b', null, t("Search everything you can open")),
+          el('span', null, t("Pages, components, services, incidents, maintenance and screens.")));
       });
     } else {
       setState(null);
@@ -237,27 +238,27 @@
     clearButton.hidden = true;
     if (!results.length) {
       setState('empty', function (box) {
-        box.append(icon('search'), el('b', null, 'No results for “' + term + '”'),
-          el('span', null, 'Check the spelling or try fewer letters.' + (startActions.length ? ' You can also jump straight to one of these.' : '')));
+        box.append(icon('search'), el('b', null, t('No results for “:term”', {term:term})),
+          el('span', null, t("Check the spelling or try fewer letters.") + (startActions.length ? t(" You can also jump straight to one of these.") : '')));
       });
-      render([{ title: 'Suggestions', rows: startActions }], '');
-      say('No results for ' + term);
+      render([{ title: t("Suggestions"), rows: startActions }], '');
+      say(t('No results for :term', {term:term}));
       return;
     }
     setState(null);
     mode = 'results';
     var sections = groupResults(results);
     render(sections, term);
-    say(results.length + (results.length === 1 ? ' result' : ' results') + ' in ' + sections.length + (sections.length === 1 ? ' group' : ' groups'));
+    say(t(':count :results in :groups :group', {count:results.length, results:t(results.length === 1 ? 'result' : 'results'), groups:sections.length, group:t(sections.length === 1 ? 'group' : 'groups')}));
   }
 
   function showError(message) {
     render([], '');
     setState('error', function (box) {
-      var retry = el('button', 'btn ghost search-retry', 'Try again');
+      var retry = el('button', 'btn ghost search-retry', t("Try again"));
       retry.type = 'button';
       retry.addEventListener('click', function () { lastTerm = null; search(); input.focus(); });
-      box.append(icon('incidents'), el('b', null, 'Search did not answer'), el('span', null, message), retry);
+      box.append(icon('incidents'), el('b', null, t("Search did not answer")), el('span', null, message), retry);
     });
     say(message);
   }
@@ -335,8 +336,8 @@
       if (input.value.trim() !== term) return;
       lastTerm = null;
       showError(error && error.message === 'throttled'
-        ? 'Too many searches in a short time. Wait a moment, then try again.'
-        : 'Check your connection and try again.');
+        ? t("Too many searches in a short time. Wait a moment, then try again.")
+        : t("Check your connection and try again."));
     }).then(function () {
       if (controller === mine) { controller = null; busy(false); }
     });

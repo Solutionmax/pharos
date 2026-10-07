@@ -25,6 +25,13 @@
 
 **A self-hosted status page that runs its own checks.**
 
+This branch contains the local `1.0.0-beta.1` preview. It adds DNS/keyword/TLS monitoring,
+remote probe quorum, latency charts, badges/RSS/incident pages/widgets, service subscriptions,
+monthly CSV/PDF reports, scoped API/Prometheus/Cachet import, four languages, remote backups
+and WebAuthn passkeys. See [the beta changelog](CHANGELOG.md) and
+[local hosting/Composer installation](docs/hosting-package.md). No public beta release has
+been published. Passkeys require an HTTPS hostname; live Plesk verification is pending.
+
 Pharos polls HTTP endpoints and TCP
 ports, listens for heartbeats from jobs it cannot see from outside, and sets component status
 without anyone pressing a button. A failing check opens an incident and posts the first update;

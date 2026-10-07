@@ -1,16 +1,17 @@
 (function(){
+  var t = window.pharosTranslate || function (message) { return message; };
   const stack=document.createElement('div');stack.className='pharos-toasts';stack.setAttribute('aria-live','polite');stack.setAttribute('aria-atomic','false');document.body.append(stack);
-  window.pharosToast=function(message,title='Status updated',kind='success'){
+  window.pharosToast=function(message,title=t("Status updated"),kind='success'){
     const toast=document.createElement('div');toast.className='pharos-toast '+kind;
     const mark=document.createElement('span');mark.className='toast-mark';mark.textContent=kind==='warning'?'!':'✓';mark.setAttribute('aria-hidden','true');
     const body=document.createElement('div'), heading=document.createElement('strong'),text=document.createElement('p');heading.textContent=title;text.textContent=message;body.append(heading,text);
-    const close=document.createElement('button');close.type='button';close.setAttribute('aria-label','Dismiss notification');close.textContent='×';close.onclick=()=>toast.remove();
+    const close=document.createElement('button');close.type='button';close.setAttribute('aria-label',t("Dismiss notification"));close.textContent='×';close.onclick=()=>toast.remove();
     toast.append(mark,body,close);stack.append(toast);
     while(stack.children.length>3)stack.firstElementChild.remove();
     let timer;const schedule=()=>{clearTimeout(timer);timer=setTimeout(()=>{if(!toast.contains(document.activeElement))toast.remove();},12000);};
     toast.addEventListener('mouseenter',()=>clearTimeout(timer));toast.addEventListener('mouseleave',schedule);toast.addEventListener('focusin',()=>clearTimeout(timer));toast.addEventListener('focusout',schedule);schedule();
   };
-  const flash=document.querySelector('.flash');if(flash){window.pharosToast(flash.textContent.trim(),'Saved');flash.remove();}
+  const flash=document.querySelector('.flash');if(flash){window.pharosToast(flash.textContent.trim(),t("Saved"));flash.remove();}
   const live=document.getElementById('pharos-live');if(!live || !window.fetch)return;
   const indicator=document.getElementById('live-refresh');
   let pending=false,failed=false;
@@ -35,7 +36,7 @@
         const open=new Map(Array.from(live.querySelectorAll('details[id]')).map(el=>[el.id,el.open]));
         next.querySelectorAll('details[id]').forEach(el=>{if(open.has(el.id))el.open=open.get(el.id);});
         const previous=new Map(Array.from(live.querySelectorAll('[data-live-key]')).map(el=>[el.dataset.liveKey,el.dataset.liveValue]));
-        let message='The latest service status and incident updates are now on this page.';
+        let message=t("The latest service status and incident updates are now on this page.");
         next.querySelectorAll('[data-live-key]').forEach(el=>{if(previous.get(el.dataset.liveKey)!==el.dataset.liveValue){el.classList.add('live-changed');if(el.dataset.liveMessage)message=el.dataset.liveMessage;}});
         live.replaceChildren(...next.childNodes);
         document.querySelector('.daytip')?.classList.remove('on');
@@ -43,11 +44,11 @@
       }
       const stamp=live.querySelector('.when'),freshStamp=next.querySelector('.when');
       if(stamp && freshStamp)stamp.textContent=freshStamp.textContent;
-      indicator.textContent='Checked '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' · refreshes every 30 seconds';
+      indicator.textContent=t('Checked :time · refreshes every 30 seconds', {time:new Date().toLocaleTimeString(document.documentElement.lang,{hour:'2-digit',minute:'2-digit'})});
       indicator.dataset.offline='false';failed=false;
     }catch(error){
-      indicator.textContent='Connection interrupted. Retrying automatically.';indicator.dataset.offline='true';
-      if(!failed)window.pharosToast('The last loaded status is still shown. We will retry automatically.','Connection interrupted','warning');
+      indicator.textContent=t("Connection interrupted. Retrying automatically.");indicator.dataset.offline='true';
+      if(!failed)window.pharosToast(t("The last loaded status is still shown. We will retry automatically."),t("Connection interrupted"),'warning');
       failed=true;
     }finally{clearTimeout(timeout);pending=false;}
   }

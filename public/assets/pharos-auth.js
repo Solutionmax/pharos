@@ -12,6 +12,7 @@
  */
 (function () {
   'use strict';
+  var t = window.pharosTranslate || function (message) { return message; };
 
   var root = document.querySelector('[data-pa]');
   if (!root) return;
@@ -134,8 +135,8 @@
     eye.addEventListener('click', function () {
       var show = input.type === 'password';
       input.type = show ? 'text' : 'password';
-      eye.textContent = show ? 'Hide' : 'Show';
-      eye.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      eye.textContent = show ? t("Hide") : t("Show");
+      eye.setAttribute('aria-label', show ? t("Hide password") : t("Show password"));
     });
   });
 
@@ -211,7 +212,7 @@
       return 'Too many attempts. Try again in ' + (after >= 60 ? Math.ceil(after / 60) + ' minute' + (Math.ceil(after / 60) === 1 ? '' : 's') : after + ' seconds') + '.';
     }
     var title = doc && doc.title ? doc.title.trim() : '';
-    return title ? title + '. Wait a moment and try again.' : 'Too many attempts. Wait a moment and try again.';
+    return title ? title + t(". Wait a moment and try again.") : t("Too many attempts. Wait a moment and try again.");
   }
 
   /**
@@ -256,7 +257,7 @@
     }
 
     async function signedIn(url) {
-      say('Signed in. Opening your dashboard.');
+      say(t("Signed in. Opening your dashboard."));
       btn.classList.add('is-good');
       root.classList.add('is-good');
       wall.pace(320);
@@ -296,7 +297,7 @@
       hideErrors(box);
       form.querySelectorAll('.is-bad').forEach(function (el) { el.classList.remove('is-bad'); });
       setBusy(true);
-      say('Checking.');
+      say(t("Checking."));
       var started = Date.now();
       var res, html;
       try {
@@ -319,7 +320,7 @@
       var kind = outcome(res, form);
       var doc = parse(html);
       if (kind === 'signed-in') return signedIn(res.url);
-      if (kind === 'step') { say('Password accepted.'); window.location.assign(res.url); return; }
+      if (kind === 'step') { say(t("Password accepted.")); window.location.assign(res.url); return; }
       if (kind === 'expired') return expired(doc);
       if (kind === 'throttled') return refused([throttleMessage(res, doc)]);
       if (kind === 'unknown') return native();
@@ -327,9 +328,9 @@
       refreshToken(form, doc);
       var messages = messagesIn(doc);
       if (kind === 'back') {
-        return refused(messages.length ? messages : ['This sign in step expired. Go back and sign in again.']);
+        return refused(messages.length ? messages : [t("This sign in step expired. Go back and sign in again.")]);
       }
-      return refused(messages.length ? messages : ['That did not work. Try again.']);
+      return refused(messages.length ? messages : [t("That did not work. Try again.")]);
     });
   }
 
@@ -386,9 +387,9 @@
       code.value = '';
       code.setAttribute('inputmode', useRecovery ? 'text' : 'numeric');
       code.setAttribute('autocomplete', useRecovery ? 'off' : 'one-time-code');
-      label.textContent = useRecovery ? 'Recovery code' : 'Code';
-      if (help) help.textContent = useRecovery ? 'Each recovery code works once.' : helpText;
-      toggle.textContent = useRecovery ? 'Use the six digit code' : 'Use a recovery code';
+      label.textContent = useRecovery ? t("Recovery code") : t("Code");
+      if (help) help.textContent = useRecovery ? t("Each recovery code works once.") : helpText;
+      toggle.textContent = useRecovery ? t("Use the six digit code") : t("Use a recovery code");
       digits.forEach(function (d) { d.value = ''; });
       (useRecovery ? code : digits[0]).focus();
     }

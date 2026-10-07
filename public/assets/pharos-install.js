@@ -2,6 +2,7 @@
 // validates the normal way without it.
 (function () {
   'use strict';
+  var t = window.pharosTranslate || function (message) { return message; };
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var $ = function (s, r) { return (r || document).querySelector(s); };
 
@@ -21,9 +22,9 @@
     var option = zone && zone !== 'UTC' ? tz.querySelector('option[value="' + zone.replace(/"/g, '') + '"]') : null;
     if (option) {
       option.selected = true;
-      option.textContent = zone + ' (detected)';
+      option.textContent = zone + t(" (detected)");
       var help = $('[data-pi-tz-help]');
-      if (help) help.textContent = 'Detected from your browser. Stored in UTC, so you can change it later.';
+      if (help) help.textContent = t("Detected from your browser. Stored in UTC, so you can change it later.");
     }
   }
 
@@ -43,16 +44,16 @@
     meter.style.width = v ? Math.max(8, (s + 1) * 20) + '%' : '0';
     meter.style.background = ['var(--red)', 'var(--red)', 'var(--amber)', 'var(--green)', 'var(--green)'][s];
     label.className = 'pi-help';
-    if (!v) { label.textContent = 'At least 12 characters. A sentence or a password manager works best.'; return; }
-    if (v.length < 12) { label.textContent = (12 - v.length) + ' more ' + (12 - v.length === 1 ? 'character' : 'characters'); return; }
-    label.textContent = s >= 3 ? 'Strong' : 'Fine. Longer is stronger.';
+    if (!v) { label.textContent = t("At least 12 characters. A sentence or a password manager works best."); return; }
+    if (v.length < 12) { label.textContent = (12 - v.length) + t(" more ") + (12 - v.length === 1 ? t("character") : t("characters")); return; }
+    label.textContent = s >= 3 ? t("Strong") : t("Fine. Longer is stronger.");
     if (s >= 3) label.className = 'pi-help pi-good';
   }
   function paintRepeat() {
     if (!pw || !repeat || !repeatLabel) return;
     if (!repeat.value) { repeatLabel.textContent = ''; repeatLabel.className = 'pi-help'; return; }
     var same = repeat.value === pw.value;
-    repeatLabel.textContent = same ? 'Matches' : (pw.value.indexOf(repeat.value) === 0 ? '' : 'Does not match yet');
+    repeatLabel.textContent = same ? t("Matches") : (pw.value.indexOf(repeat.value) === 0 ? '' : t("Does not match yet"));
     repeatLabel.className = 'pi-help ' + (same ? 'pi-good' : 'pi-bad');
   }
   if (pw) { pw.addEventListener('input', function () { paintMeter(); paintRepeat(); }); paintMeter(); }
@@ -62,7 +63,7 @@
   if (submit) {
     submit.form.addEventListener('submit', function () {
       // Let the browser post first, then show that something is happening.
-      setTimeout(function () { submit.disabled = true; submit.textContent = 'Creating your account…'; }, 0);
+      setTimeout(function () { submit.disabled = true; submit.textContent = t("Creating your account…"); }, 0);
     });
   }
 

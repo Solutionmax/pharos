@@ -3,6 +3,7 @@
    travels with the form on Save; the server validates it again either way. */
 (function () {
   'use strict';
+  var t = window.pharosTranslate || function (message) { return message; };
 
   var form = document.getElementById('bx-form');
   var configEl = document.getElementById('bx-config');
@@ -50,7 +51,7 @@
     root.style.setProperty('--pv-accent', accent);
     each('[data-pv="accent-hex"]', function (el) { el.textContent = accent; });
     each('[data-pv="name"]', function (el) { el.textContent = name; });
-    each('[data-pv="title"]', function (el) { el.textContent = name + ' Status'; });
+    each('[data-pv="title"]', function (el) { el.textContent = name + t(" Status"); });
     each('[data-pv="favicon"]', function (el) { el.src = favicon || d.favicon; });
 
     // Mirrors partials/logo.blade.php: a custom logo wins, then the wordmark
@@ -68,18 +69,18 @@
     each('[data-pv="email-logo"]', function (el) { if (emailLogo) el.src = emailLogo; show(el, !!emailLogo); });
     each('[data-pv="email-name"]', function (el) { el.textContent = name; show(el, !emailLogo); });
     each('[data-pv="email-source"]', function (el) {
-      el.textContent = logo ? 'your logo for the light theme' : (emailLogo ? 'the Pharos email logo' : 'the name in your accent colour');
+      el.textContent = logo ? t("your logo for the light theme") : (emailLogo ? t("the Pharos email logo") : t("the name in your accent colour"));
     });
   }
 
   function markDirty() {
     var dirty = form.dataset.dirty === '1';
     if (state) {
-      state.textContent = dirty ? 'Unsaved changes' : 'No changes yet';
+      state.textContent = dirty ? t("Unsaved changes") : t("No changes yet");
       state.classList.toggle('on', dirty);
     }
     if (pvNote) {
-      pvNote.textContent = dirty ? 'Showing unsaved changes' : 'Showing what is saved';
+      pvNote.textContent = dirty ? t("Showing unsaved changes") : t("Showing what is saved");
       pvNote.classList.toggle('dirty', dirty);
     }
   }
@@ -133,10 +134,10 @@
       show(img, !!shown);
       show(empty, !shown);
       src.className = 'bx-src';
-      if (picked[field]) { src.textContent = 'New, not saved yet'; src.classList.add('new'); }
-      else if (removed[field]) { src.textContent = 'Removed on save'; src.classList.add('gone'); }
-      else if (stored) { src.textContent = 'Set for this page'; src.classList.add('set'); }
-      else { src.textContent = 'Pharos default'; }
+      if (picked[field]) { src.textContent = t("New, not saved yet"); src.classList.add('new'); }
+      else if (removed[field]) { src.textContent = t("Removed on save"); src.classList.add('gone'); }
+      else if (stored) { src.textContent = t("Set for this page"); src.classList.add('set'); }
+      else { src.textContent = t("Pharos default"); }
       show(undo, !!picked[field]);
     }
 
@@ -159,10 +160,10 @@
       if (!file) { paint(); render(); return; }
       if (!typeAllowed(file, spec)) {
         input.value = '';
-        fail('That file type is not accepted here. ' + zone.querySelector('.help').textContent);
+        fail(t("That file type is not accepted here. ") + zone.querySelector('.help').textContent);
       } else if (file.size > spec.max_kb * 1024) {
         input.value = '';
-        fail('That file is ' + Math.ceil(file.size / 1024) + ' KB; the limit is ' + spec.max_kb + ' KB.');
+        fail(t("That file is ") + Math.ceil(file.size / 1024) + t(" KB; the limit is ") + spec.max_kb + ' KB.');
       } else {
         var url = URL.createObjectURL(file);
         picked[field] = url;
@@ -171,7 +172,7 @@
           if (!tooBig || picked[field] !== url) return;
           clearPick();
           input.value = '';
-          fail('That image is ' + tooBig + ' pixels; the limit is ' + spec.max_width + ' × ' + spec.max_height + '.');
+          fail(t("That image is ") + tooBig + t(" pixels; the limit is ") + spec.max_width + ' × ' + spec.max_height + '.');
           paint();
           render();
         });
@@ -223,7 +224,7 @@
         transfer.items.add(files[0]);
         input.files = transfer.files; // so Save sends exactly what is shown
       } catch (e) {
-        fail('Dropping is not supported in this browser. Use Choose file instead.');
+        fail(t("Dropping is not supported in this browser. Use Choose file instead."));
         return;
       }
       accept(files[0]);

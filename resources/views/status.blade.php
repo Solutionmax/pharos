@@ -12,6 +12,7 @@
 @endif
 <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}">
 @include('partials.tokens')
+@include('partials.messages')
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
@@ -361,6 +362,6 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
   </footer>
 </div>
 @include('partials.daytip')
-<script defer src="{{ asset('assets/pharos-v06.js') }}?v=0.6.0"></script>
+<script defer src="{{ asset('assets/pharos-v06.js') }}?v={{ @filemtime(public_path('assets/pharos-v06.js')) }}"></script>
 </body>
 </html>

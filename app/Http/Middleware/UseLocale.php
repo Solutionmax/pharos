@@ -10,7 +10,7 @@ class UseLocale
 {
     public function handle(Request $request, Closure $next)
     {
-        $locale = $request->is('admin', 'admin/*') ? ($request->user()?->locale ?? 'en') : 'en';
+        $locale = $request->is('admin', 'admin/*') ? ($request->user()->locale ?? 'en') : 'en';
 
         return Localization::run($locale, fn () => $next($request));
     }

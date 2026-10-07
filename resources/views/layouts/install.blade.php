@@ -24,6 +24,7 @@ $journey = [
 <link rel="icon" href="{{ $branding->faviconUrl() }}">
 <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}">
 @include('partials.tokens')
+@include('partials.messages')
 <link rel="stylesheet" href="{{ asset('assets/pharos-install.css') }}?v={{ @filemtime(public_path('assets/pharos-install.css')) }}">
 <script>document.documentElement.classList.add('js')</script>
 </head>
