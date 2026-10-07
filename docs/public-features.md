@@ -90,7 +90,14 @@ lowering the role immediately removes the corresponding token access.
 
 Private new read endpoints also work on unpublished pages, with a valid scoped
 read token. Archived pages are unavailable. New API request bodies are capped at
-256 KiB, resource arrays and lists are bounded and per-minute throttles apply.
+256 KiB before native request capture decodes JSON, including requests without
+Content-Length, encoded route prefixes and trailing slashes. JSON POSTs to legacy
+component/incident ID paths use this same limit because a body `_method` can select
+the new DELETE route; ordinary update verbs, fields and authority remain compatible.
+Other legacy API paths retain their existing limits. The shared native guard also
+bounds probe request bodies to16 KiB before capture; globally prepended middleware
+retains these checks for alternate Kernel entry points. Resource arrays and lists
+are bounded and per-minute throttles apply.
 
 Prometheus: authenticated `GET /metrics` (or `/api/v1/metrics`) exposes gauges
 `pharos_component_status` (1–5) and `pharos_component_uptime_ratio` (observed up

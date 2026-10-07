@@ -3,13 +3,12 @@
 use App\Http\Controllers\Api\ExtendedController;
 use App\Http\Controllers\Api\MetricsController;
 use App\Http\Middleware\ApiTokenAuth;
-use App\Http\Middleware\FeatureRequestLimits;
 use App\Http\Middleware\SubscriberApiTokenAuth;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::get('ping', [ExtendedController::class, 'ping']);
-    Route::name('api.features.')->middleware([FeatureRequestLimits::class, 'throttle:60,1,api-features'])->group(function () {
+    Route::name('api.features.')->middleware('throttle:60,1,api-features')->group(function () {
         Route::middleware(ApiTokenAuth::class)->group(function () {
             Route::get('metrics', MetricsController::class)->name('metrics');
             Route::get('groups', [ExtendedController::class, 'groups'])->name('groups');
