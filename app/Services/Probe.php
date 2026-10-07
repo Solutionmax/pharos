@@ -37,17 +37,20 @@ class Probe
         try {
             $request = $this->safe->toOwn($check->target);
         } catch (\RuntimeException $e) {
-            return new ProbeResult(false, null, $e->getMessage());
+            return new ProbeResult(false, null, str_contains($e->getMessage(), 'never allowed') ? 'Target is never allowed' : 'Target cannot be resolved or is invalid');
         }
 
         $start = microtime(true);
 
         try {
             $expiry = null;
+            $realTransfer = false;
             $response = $request->timeout($check->timeout_seconds)
                 ->withOptions([
                     'curl' => [CURLOPT_CERTINFO => true],
-                    'on_stats' => function (TransferStats $stats) use (&$expiry) {
+                    'decode_content' => false,
+                    'on_stats' => function (TransferStats $stats) use (&$expiry, &$realTransfer) {
+                        $realTransfer = $stats->getHandlerStats() !== [];
                         $cert = $stats->getHandlerStats()['certinfo'][0]['Cert'] ?? null;
                         if ($cert && ($parsed = openssl_x509_parse($cert)) && isset($parsed['validTo_time_t'])) {
                             $expiry = Carbon::createFromTimestampUTC($parsed['validTo_time_t']);
@@ -67,6 +70,9 @@ class Probe
                 ->withHeaders(['User-Agent' => 'Pharos/1.0 (status monitor)', 'Accept-Encoding' => 'identity'])
                 ->get($check->target);
             $code = $response->status();
+            if (str_starts_with($check->target, 'https://') && $realTransfer && ! $expiry) {
+                return new ProbeResult(false, null, 'TLS certificate details unavailable');
+            }
             if (strlen($response->body()) > 1048576) {
                 return new ProbeResult(false, null, 'Response exceeds 1 MiB');
             }
@@ -111,7 +117,7 @@ class Probe
         try {
             $connectTo = $this->safe->resolveOwn($host);
         } catch (\RuntimeException $e) {
-            return new ProbeResult(false, null, $e->getMessage());
+            return new ProbeResult(false, null, str_contains($e->getMessage(), 'never allowed') ? 'Target is never allowed' : 'Target cannot be resolved or is invalid');
         }
         $connectTo = str_contains($connectTo, ':') ? "[{$connectTo}]" : $connectTo;
 
@@ -137,7 +143,7 @@ class Probe
             str_contains($message, 'Could not resolve') => 'Name does not resolve',
             str_contains($message, 'certificate') => 'TLS certificate problem',
             $message === '' => 'No response',
-            default => 'No response ('.substr(strtok($message, "\n") ?: $message, 0, 80).')',
+            default => 'No response',
         };
     }
 

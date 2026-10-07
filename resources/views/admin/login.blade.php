@@ -31,6 +31,8 @@
     @include('partials.auth.submit', ['label' => __('Sign in')])
   </form>
 
+  <div data-passkey-login data-options-url="{{ route('admin.passkeys.login.options') }}" data-submit-url="{{ route('admin.passkeys.login') }}" data-csrf="{{ csrf_token() }}" data-error="{{ __('Passkey sign in failed. Start again and verify your device.') }}"><button class="pa-ghost" type="button">{{ __('Sign in with a passkey') }}</button><p data-passkey-status role="status"></p></div>
+  <script defer src="{{ asset('assets/pharos-passkeys.js') }}"></script>
   @if (app(\App\Services\Sso::class)->enabled())
     <div class="pa-or"><span>{{ __('or') }}</span></div>
     <a class="pa-ghost" href="{{ route('admin.sso.redirect') }}">

@@ -18,7 +18,7 @@ class ProbeController extends Controller
         $token = $request->bearerToken();
         abort_unless(is_string($token) && strlen($token) <= 200, 401);
         $location = ProbeLocation::withoutGlobalScopes()->where('token_hash', hash('sha256', $token))->where('enabled', true)->first();
-        abort_unless($location, 401);
+        abort_unless($location !== null, 401);
         $location->update(['last_seen_at' => now()]);
 
         return $location;
@@ -38,7 +38,7 @@ class ProbeController extends Controller
                 $jobs[] = ['id' => $job->id, 'type' => $check->type->value, 'target' => $check->target, 'timeout_seconds' => min(30, $check->timeout_seconds), 'expected_keyword' => $check->expected_keyword, 'dns_type' => $check->dns_type, 'dns_expected' => $check->dns_expected];
             }
 
-return response()->json(['jobs' => $jobs]);
+            return response()->json(['jobs' => $jobs]);
         });
     }
 
@@ -49,10 +49,10 @@ return response()->json(['jobs' => $jobs]);
 
         return app(PageContext::class)->run($location->status_page_id, fn () => DB::transaction(function () use ($location, $data) {
             $job = ProbeJob::whereKey($data['job'])->where('probe_location_id', $location->id)->lockForUpdate()->first();
-            abort_unless($job, 404);
+            abort_unless($job !== null, 404);
             abort_if($job->consumed_at || $job->expires_at->isPast(), 409);
             $check = $location->checks()->where('checks.id', $job->check_id)->where('checks.enabled', true)->whereHas('component')->first();
-            abort_unless($check, 404);
+            abort_unless($check !== null, 404);
             $job->update(['consumed_at' => now()]);
             ProbeSample::create(['check_id' => $check->id, 'probe_location_id' => $location->id, 'ok' => $data['ok'], 'latency_ms' => $data['latency_ms'] ?? null, 'checked_at' => now()]);
 

@@ -48,6 +48,9 @@ class CheckRunner
         $result = app(ProbeQuorum::class)->combine($check, $this->probe->run($check));
 
         if ($result->inconclusive) {
+            if ($check->component->status !== ComponentStatus::UnderMaintenance) {
+                $check->component->update(['status' => ComponentStatus::PerformanceIssues]);
+            }
             if ($check->type !== CheckType::Heartbeat) {
                 $check->update(['last_run_at' => $now]);
             }

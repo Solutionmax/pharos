@@ -34,4 +34,13 @@ class WebCronTest extends TestCase
         $this->withToken('high-entropy-secret-at-least-thirty-two-characters')->postJson('/api/cron')->assertStatus(409);
         $lock->release();
     }
+
+    public function test_get_fallback_uses_header_auth_and_never_accepts_query_token(): void
+    {
+        config(['monitoring.web_cron_token' => 'high-entropy-secret-at-least-thirty-two-characters']);
+        Setting::put('cron.web_enabled', '1');
+        Artisan::shouldReceive('call')->once()->with('schedule:run')->andReturn(0);
+        $this->getJson('/cron/run?token=high-entropy-secret-at-least-thirty-two-characters')->assertUnauthorized();
+        $this->withToken('high-entropy-secret-at-least-thirty-two-characters')->getJson('/cron/run')->assertOk()->assertExactJson(['ok' => true]);
+    }
 }

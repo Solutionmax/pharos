@@ -1,6 +1,9 @@
 <?php
 
 use App\Models\CheckResult;
+use App\Models\PasskeyChallenge;
+use App\Models\ProbeJob;
+use App\Models\ProbeSample;
 use App\Services\Audit;
 use App\Services\OutgoingWebhook;
 use App\Services\ReportedUptime;
@@ -30,4 +33,10 @@ Schedule::command('pharos:notify')->everyMinute()->withoutOverlapping();
 Schedule::call(fn () => app(OutgoingWebhook::class)->sendPending())->everyMinute()->name('deliver-webhooks')->withoutOverlapping();
 
 Schedule::command('pharos:probe-remote')->everyMinute()->withoutOverlapping();
-Schedule::call(function () { \App\Models\ProbeJob::where('expires_at', '<', now()->subDay())->delete(); \App\Models\ProbeSample::where('checked_at', '<', now()->subDays(2))->delete(); })->daily()->name('prune-probe-results');
+Schedule::call(function () {
+    ProbeJob::where('expires_at', '<', now()->subDay())->delete();
+    ProbeSample::where('checked_at', '<', now()->subDays(2))->delete();
+})->daily()->name('prune-probe-results');
+Schedule::command('pharos:backup-remote')->dailyAt('02:45')->withoutOverlapping(20);
+
+Schedule::call(fn () => PasskeyChallenge::where('expires_at', '<', now()->subDay())->delete())->daily()->name('prune-passkey-challenges');

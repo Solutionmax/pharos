@@ -35,6 +35,6 @@ class DnsResolver
             }
         }
 
-return false;
+        return false;
     }
 }

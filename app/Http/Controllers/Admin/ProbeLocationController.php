@@ -53,6 +53,6 @@ class ProbeLocationController extends Controller
         $this->authorizePage($r);
         $location->delete();
 
-        return redirect()->to(PageUrls::route('admin.locations'))->with('status',__('Location removed and credentials revoked.'));
+        return redirect()->to(PageUrls::route('admin.locations'))->with('status', __('Location removed and credentials revoked.'));
     }
 }

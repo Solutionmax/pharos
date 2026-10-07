@@ -8,6 +8,7 @@ use App\Models\Concerns\Auditable;
 use App\Models\Concerns\LocalTimestamps;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Check extends Model
 {
@@ -42,7 +43,8 @@ class Check extends Model
         return $this->belongsTo(Component::class);
     }
 
-    public function locations()
+    /** @return BelongsToMany<ProbeLocation, $this> */
+    public function locations(): BelongsToMany
     {
         return $this->belongsToMany(ProbeLocation::class, 'check_probe_location');
     }

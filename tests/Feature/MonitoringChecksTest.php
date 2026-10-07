@@ -65,6 +65,28 @@ class MonitoringChecksTest extends TestCase
         $this->assertCount(288, $data);
         $this->assertContains(23.0, array_column($data, 'ms'));
         $this->assertNotContains(900.0, array_column($data, 'ms'));
-        $this->assertContains(null,array_column($data,'ms'));
+        $this->assertContains(null, array_column($data, 'ms'));
+    }
+
+    public function test_dns_runtime_uses_record_fixture_and_invalid_configuration_fails(): void
+    {
+        $this->app->instance(DnsResolver::class, new class extends DnsResolver
+        {
+            public function records(string $name, string $type): array
+            {
+                return [['ip' => '192.0.2.55']];
+            }
+        });
+        $check = new Check(['type' => 'dns', 'target' => 'fixture.example.test', 'dns_type' => 'A', 'dns_expected' => '192.0.2.55']);
+        $this->assertTrue(app(Probe::class)->run($check)->ok);
+        $check->dns_expected = '192.0.2.56';
+        $this->assertFalse(app(Probe::class)->run($check)->ok);
+        $dns = new DnsResolver;
+        try {
+            $dns->records('localhost/evil', 'A');
+            $this->fail('Invalid DNS name accepted');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('Invalid DNS name', $e->getMessage());
+        }
     }
 }

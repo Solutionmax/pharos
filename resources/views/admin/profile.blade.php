@@ -253,4 +253,5 @@
     </section>
   </div>
 </div>
+@include('admin.partials.passkeys')
 @endsection
