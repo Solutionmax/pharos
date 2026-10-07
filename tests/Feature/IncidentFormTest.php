@@ -39,6 +39,33 @@ class IncidentFormTest extends TestCase
         $this->assertSame('authenticated', Incident::firstOrFail()->visibility);
     }
 
+    public function test_a_message_is_bounded_at_twenty_thousand_characters(): void
+    {
+        $post = fn (int $length) => $this->actingAs($this->user)->post('/admin/incidents', [
+            'name' => 'Long', 'message' => str_repeat('a', $length), 'status' => 1, 'impact' => 'minor', 'visibility' => 'public',
+        ]);
+
+        $post(20001)->assertSessionHasErrors('message');
+        $this->assertSame(0, Incident::count());
+
+        $post(20000)->assertSessionHasNoErrors();
+        $this->assertSame(1, Incident::count());
+    }
+
+    public function test_an_update_message_is_bounded_at_twenty_thousand_characters(): void
+    {
+        $incident = Incident::create(['name' => 'Long', 'status' => 1, 'occurred_at' => now()]);
+        $post = fn (int $length) => $this->actingAs($this->user)->post("/admin/incidents/{$incident->id}/update", [
+            'status' => 2, 'message' => str_repeat('a', $length),
+        ]);
+
+        $post(20001)->assertSessionHasErrors('message');
+        $this->assertSame(0, $incident->updates()->count());
+
+        $post(20000)->assertSessionHasNoErrors();
+        $this->assertSame(1, $incident->updates()->count());
+    }
+
     public function test_a_component_id_that_does_not_exist_is_dropped_not_a_500(): void
     {
         $real = Component::create(['name' => 'Web', 'status' => 1, 'source' => 'manual', 'enabled' => true]);

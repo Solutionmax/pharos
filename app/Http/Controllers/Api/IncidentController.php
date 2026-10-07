@@ -53,7 +53,7 @@ class IncidentController extends Controller
             'vars' => ['sometimes', 'array'],
             'vars.*' => ['string', 'max:255'],
             'status' => ['required'],
-            'message' => ['required_without:template', 'string'],
+            'message' => ['required_without:template', 'string', 'max:20000'],
             'component_id' => ['sometimes', 'integer'],
             'component_status' => ['sometimes', 'integer', 'min:1', 'max:5'],
             'impact' => ['sometimes', Rule::in(['minor', 'major', 'critical'])],
@@ -117,7 +117,7 @@ class IncidentController extends Controller
     {
         $data = $request->validate([
             'status' => ['required'],
-            'message' => ['required', 'string'],
+            'message' => ['required', 'string', 'max:20000'],
             'components' => ['sometimes', 'array'],
         ]);
 

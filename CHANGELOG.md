@@ -11,6 +11,7 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 - The incident form no longer offers "Signed in users only". Pharos has no sign in for visitors, so it behaved exactly like "Internal: team only". Incidents stored with that value and API clients that still send `authenticated` keep working, and such an incident stays off the public page.
 
 ### Security
+- Incident messages and update messages are limited to 20,000 characters, in the admin and in the API (a longer one is refused with a validation error, 422 in the API). They were unbounded and are rendered as Markdown on every page view, so one multi megabyte message could make every view slow. Messages already stored keep rendering as before.
 - Updated `laravel/framework` to 12.69.3 (XSS in the debug page, CVE-2026-102279) and `league/commonmark` to 2.10.3 (a bypass of the disallowed raw HTML filter and a quadratic time denial of service in the table extension). `composer audit` reports no advisories again.
 
 ### Changed

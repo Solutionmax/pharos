@@ -89,7 +89,7 @@ class IncidentController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'message' => ['required', 'string'],
+            'message' => ['required', 'string', 'max:20000'],
             'status' => ['required', 'integer', 'min:1', 'max:4'],
             'impact' => ['required', Rule::in(['minor', 'major', 'critical'])],
             'visibility' => ['required', Rule::in(['public', 'authenticated', 'internal'])],
@@ -146,7 +146,7 @@ class IncidentController extends Controller
     {
         $data = $request->validate([
             'status' => ['required', 'integer', 'min:1', 'max:4'],
-            'message' => ['required', 'string'],
+            'message' => ['required', 'string', 'max:20000'],
         ]);
 
         $this->postUpdate($incident, IncidentStatus::from((int) $data['status']), $data['message']);

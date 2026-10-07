@@ -217,6 +217,25 @@ class ApiTest extends TestCase
         $this->get('/')->assertOk()->assertDontSee('Legacy client');
     }
 
+    public function test_api_messages_are_bounded_at_twenty_thousand_characters(): void
+    {
+        $this->withHeader('Authorization', "Bearer {$this->token}");
+        $incident = fn (int $length) => $this->postJson('/api/v1/incidents', [
+            'name' => 'Long', 'status' => 'investigating', 'message' => str_repeat('a', $length),
+        ]);
+
+        $incident(20001)->assertStatus(422)->assertJsonValidationErrors('message');
+        $incident(20000)->assertCreated();
+
+        $id = Incident::firstOrFail()->id;
+        $update = fn (int $length) => $this->postJson("/api/v1/incidents/{$id}/updates", [
+            'status' => 'identified', 'message' => str_repeat('a', $length),
+        ]);
+
+        $update(20001)->assertStatus(422)->assertJsonValidationErrors('message');
+        $update(20000)->assertOk();
+    }
+
     public function test_using_a_token_records_when_it_was_last_used(): void
     {
         $token = ApiToken::findByPlaintext($this->token);
