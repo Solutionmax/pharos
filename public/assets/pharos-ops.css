@@ -30,6 +30,8 @@
 .share-badges .field input{font-size:12px}
 .passkey-copy{margin-bottom:18px}
 .passkey-list{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
+.import-names{margin:0;padding-left:18px;max-height:280px;overflow:auto;font-size:13px;overflow-wrap:anywhere}
+.import-names li+li{margin-top:7px}
 .st-ok{--st:var(--green);--st-ink:var(--green-ink);--st-soft:var(--green-soft)}
 .st-w{--st:var(--amber);--st-ink:var(--amber-ink);--st-soft:var(--amber-soft)}
 .st-p{--st:var(--orange);--st-ink:var(--orange-ink);--st-soft:var(--orange-soft)}
