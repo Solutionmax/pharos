@@ -16,7 +16,7 @@ const results = [];
 for (const [secure, supported] of [[false, true], [true, false], [true, true]]) {
   let requests = 0, prevented = false;
   const roots = [true, false].map(register => {
-    const button = {disabled: false}, status = {textContent: ''}, handlers = {};
+    const button = {disabled: true}, status = {textContent: ''}, handlers = {};
     const form = {elements: {_token: {value: 'csrf'}, current_password: {value: 'secret'}},
       querySelector: () => button, addEventListener: (name, fn) => handlers[name] = fn};
     button.addEventListener = (name, fn) => handlers[name] = fn;

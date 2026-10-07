@@ -108,6 +108,21 @@ class PasskeysTest extends TestCase
         $this->actingAs($user)->postJson('/admin/profile/passkeys/options', ['current_password' => 'password'])->assertOk()->assertJsonPath('publicKey.authenticatorSelection.userVerification', 'required');
     }
 
+    public function test_password_registration_form_is_safe_without_javascript(): void
+    {
+        $user = User::factory()->create();
+        $html = $this->actingAs($user)->get('/admin/profile')->assertOk()->getContent();
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $form = $xpath->query('//form[@data-passkey-form]')->item(0);
+        $this->assertSame('post', strtolower($form->getAttribute('method')));
+        $this->assertSame(route('admin.profile.passkeys.options'), $form->getAttribute('action'));
+        $this->assertSame(1, $xpath->query('.//input[@name="_token"]', $form)->length);
+        $this->assertSame(1, $xpath->query('.//button[@type="submit"][@disabled]', $form)->length);
+        $this->assertSame(1, $xpath->query('.//input[@name="current_password"][@type="password"]', $form)->length);
+    }
+
     public function test_ip_and_insecure_origins_are_rejected_before_browser_ceremony(): void
     {
         foreach (['https://192.168.10.20:8130', 'http://pharos-beta.home.arpa', 'https://localhost:8132/invalid'] as $origin) {

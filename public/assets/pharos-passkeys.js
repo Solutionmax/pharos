@@ -36,8 +36,8 @@
   const setup = (root, register) => {
     const form = register ? root.querySelector('form[data-passkey-form]') : null;
     const button = register ? form.querySelector('button') : root.querySelector('button');
+    button.disabled = !available;
     if (!available) {
-      button.disabled = true;
       root.querySelector('[data-passkey-status]').textContent = root.dataset.unavailable;
     }
     // Prevent native form submission even when the browser cannot use WebAuthn.
