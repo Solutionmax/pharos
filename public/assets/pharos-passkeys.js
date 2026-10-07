@@ -32,6 +32,18 @@
     } catch (error) {status.textContent = root.dataset.error;}
     finally {button.disabled = false; if (form) form.elements.current_password.value = '';}
   };
-  for (const root of document.querySelectorAll('[data-passkey-register]')) root.querySelector('form[data-passkey-form]').addEventListener('submit', event => {event.preventDefault(); run(root, true);});
-  for (const root of document.querySelectorAll('[data-passkey-login]')) root.querySelector('button').addEventListener('click', () => run(root, false));
+  const available = !!(window.isSecureContext && navigator.credentials && window.PublicKeyCredential);
+  const setup = (root, register) => {
+    const form = register ? root.querySelector('form[data-passkey-form]') : null;
+    const button = register ? form.querySelector('button') : root.querySelector('button');
+    if (!available) {
+      button.disabled = true;
+      root.querySelector('[data-passkey-status]').textContent = root.dataset.unavailable;
+    }
+    // Prevent native form submission even when the browser cannot use WebAuthn.
+    if (form) form.addEventListener('submit', event => {event.preventDefault(); if (available) run(root, true);});
+    else button.addEventListener('click', () => {if (available) run(root, false);});
+  };
+  for (const root of document.querySelectorAll('[data-passkey-register]')) setup(root, true);
+  for (const root of document.querySelectorAll('[data-passkey-login]')) setup(root, false);
 })();
