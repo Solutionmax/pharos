@@ -25,15 +25,16 @@
       <span class="v">{{ \App\Services\Uptime::format($summary['uptime']) }}</span>
       <span class="n">Average over 90 days</span>
     </div>
+    {{-- Watched counts everything that is measured or reported; "13/47 checked" read like a failing score. --}}
     <div class="op-kpi">
-      <span class="k">Checked by Pharos</span>
-      <span class="v">{{ $summary['checked'] }}<span style="font-size:16px;color:var(--ink-3)">/{{ $summary['total'] }}</span></span>
-      <span class="n">HTTP, TCP and heartbeat checks</span>
+      <span class="k">Watched</span>
+      <span class="v">{{ $summary['checked'] + $summary['outside'] }}<span style="font-size:16px;color:var(--ink-3)">/{{ $summary['total'] }}</span></span>
+      <span class="n">{{ $summary['checked'] }} checked by Pharos, {{ $summary['outside'] }} reported from outside</span>
     </div>
     <div class="op-kpi">
-      <span class="k">Set from outside</span>
-      <span class="v">{{ $summary['outside'] }}</span>
-      <span class="n">{{ $summary['byHand'] }} set by hand</span>
+      <span class="k">Set by hand</span>
+      <span class="v">{{ $summary['byHand'] }}</span>
+      <span class="n">{{ $summary['byHand'] > 0 ? 'Not measured: only a person changes them' : 'Every component is checked or reported' }}</span>
     </div>
   </div>
 @endif

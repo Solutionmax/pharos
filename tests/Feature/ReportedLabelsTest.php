@@ -114,6 +114,16 @@ class ReportedLabelsTest extends TestCase
         $this->assertStringContainsString(Carbon::today()->format('j M').' · 100.00%', $html);
     }
 
+    public function test_the_cards_say_so_when_nothing_is_left_to_a_person(): void
+    {
+        $this->reported('Zabbix one');
+
+        $list = $this->actingAs($this->admin)->get('/admin/components')->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('#Watched</span>\s*<span class="v">1<span[^>]*>/1</span></span>\s*<span class="n">0 checked by Pharos, 1 reported from outside</span>#', $list);
+        $this->assertMatchesRegularExpression('#Set by hand</span>\s*<span class="v">0</span>\s*<span class="n">Every component is checked or reported</span>#', $list);
+    }
+
     public function test_every_screen_splits_components_the_same_way(): void
     {
         $checked = Component::create(['name' => 'Web', 'source' => 'check']);
@@ -126,7 +136,9 @@ class ReportedLabelsTest extends TestCase
 
         $list = $this->actingAs($this->admin)->get('/admin/components')->assertOk()->getContent();
         $this->assertSame(3, substr_count($list, 'Set from outside ·'));
-        $this->assertMatchesRegularExpression('#Set from outside</span>\s*<span class="v">3</span>\s*<span class="n">1 set by hand#', $list);
+        // One card says how much is watched at all, the next what nothing measures.
+        $this->assertMatchesRegularExpression('#Watched</span>\s*<span class="v">4<span[^>]*>/5</span></span>\s*<span class="n">1 checked by Pharos, 3 reported from outside</span>#', $list);
+        $this->assertMatchesRegularExpression('#Set by hand</span>\s*<span class="v">1</span>\s*<span class="n">Not measured: only a person changes them</span>#', $list);
 
         $overview = $this->actingAs($this->admin)->get('/admin/overview')->assertOk()->getContent();
         $this->assertSame(3, substr_count($overview, ', reported</span>'));
