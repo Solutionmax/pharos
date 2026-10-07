@@ -18,5 +18,7 @@
   "[{brand}] Scheduled maintenance: {maintenance}": "[{brand}] Geplante Wartung: {maintenance}",
   "# Confirm your subscription\n\nYou asked to be told about incidents on the {brand} status page. Confirm the address and we will mail you when something happens, and when it is fixed.\n\n[Confirm subscription]({link})\n\nThe link is good for {hours} hours. If you did not ask for this, ignore this mail; the address is forgotten on its own.": "# Bestätigen Sie Ihr Abonnement\n\nSie möchten über Vorfälle auf der Statusseite von {brand} informiert werden. Bestätigen Sie Ihre Adresse; wir benachrichtigen Sie bei einem Vorfall und sobald er behoben ist.\n\n[Abonnement bestätigen]({link})\n\nDer Link ist {hours} Stunden gültig. Wenn Sie dies nicht angefordert haben, ignorieren Sie diese E-Mail; Ihre Adresse wird automatisch gelöscht.",
   "{status}\n\n# {incident}\n\nAffects **{components}**\n\n> {message}\n\n{when}\n\n[View status page]({link})": "{status}\n\n# {incident}\n\nBetrifft **{components}**\n\n> {message}\n\n{when}\n\n[Statusseite ansehen]({link})",
-  "Scheduled maintenance\n\n# {maintenance}\n\nFrom **{starts}** until **{ends}**\n\nAffects **{components}**\n\n> {message}\n\n[View status page]({link})": "Geplante Wartung\n\n# {maintenance}\n\nVon **{starts}** bis **{ends}**\n\nBetrifft **{components}**\n\n> {message}\n\n[Statusseite ansehen]({link})"
+  "Scheduled maintenance\n\n# {maintenance}\n\nFrom **{starts}** until **{ends}**\n\nAffects **{components}**\n\n> {message}\n\n[View status page]({link})": "Geplante Wartung\n\n# {maintenance}\n\nVon **{starts}** bis **{ends}**\n\nBetrifft **{components}**\n\n> {message}\n\n[Statusseite ansehen]({link})",
+  "Manage subscription": "Abonnement verwalten",
+  "status page": "Statusseite"
 }

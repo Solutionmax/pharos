@@ -27,7 +27,7 @@ class MailTemplates
         'renderer' => ['soft_break' => "<br>\n"],
     ];
 
-    protected const INCIDENT_TAGS = ['brand', 'incident', 'status', 'message', 'components', 'link', 'unsubscribe', 'when', 'name'];
+    protected const INCIDENT_TAGS = ['brand', 'incident', 'status', 'message', 'components', 'link', 'unsubscribe', 'preferences', 'when', 'name'];
 
     protected const INCIDENT_BODY = <<<'MD'
     {status}
@@ -79,7 +79,7 @@ class MailTemplates
         ],
         'maintenance_scheduled' => [
             'label' => 'Maintenance scheduled',
-            'tags' => ['brand', 'maintenance', 'message', 'components', 'starts', 'ends', 'link', 'unsubscribe', 'name'],
+            'tags' => ['brand', 'maintenance', 'message', 'components', 'starts', 'ends', 'link', 'unsubscribe', 'preferences', 'name'],
             'subject' => '[{brand}] Scheduled maintenance: {maintenance}',
             'body' => <<<'MD'
             Scheduled maintenance
@@ -190,7 +190,7 @@ class MailTemplates
     public function render(string $key, array $vars, ?string $subject = null, ?string $body = null): array
     {
         $vars = array_map(fn ($v) => str_replace("\r\n", "\n", (string) $v), $vars);
-        $frame = self::frame($vars['unsubscribe'] ?? null);
+        $frame = self::frame($vars['unsubscribe'] ?? null, $vars['preferences'] ?? null);
 
         // Not a tag: the state colour is the frame's business, never something to type.
         $line = self::TONES[$vars['tone'] ?? ''] ?? null;
@@ -200,8 +200,9 @@ class MailTemplates
         $markdown = self::substitute(str_replace("\r\n", "\n", $body ?? $this->body($key)), $vars);
         $html = Str::markdown($markdown, self::MARKDOWN);
 
-        $footer = "\n\n{$frame['brand']} status page: {$frame['link']}"
-            .($frame['unsubscribe'] ? "\nUnsubscribe: {$frame['unsubscribe']}" : '');
+        $footer = "\n\n{$frame['brand']} ".__('status page').": {$frame['link']}"
+            .($frame['unsubscribe'] ? "\n".__('Unsubscribe').": {$frame['unsubscribe']}" : '')
+            .($frame['preferences'] ? "\n".__('Manage subscription').": {$frame['preferences']}" : '');
 
         return [
             // A newline in a subject is a header injection; the line is folded instead.
@@ -215,9 +216,9 @@ class MailTemplates
      * What the frame needs. url() rather than the stored path: a mail is read
      * away from the site, so a relative logo path shows a broken image.
      *
-     * @return array{brand: string, accent: string, logo: ?string, link: string, unsubscribe: ?string}
+     * @return array{brand: string, accent: string, logo: ?string, link: string, unsubscribe: ?string, preferences: ?string}
      */
-    public static function frame(?string $unsubscribe = null): array
+    public static function frame(?string $unsubscribe = null, ?string $preferences = null): array
     {
         $branding = app(Branding::class);
         $logo = $branding->logoUrl();
@@ -231,6 +232,7 @@ class MailTemplates
             'logo' => $logo ? url($logo) : null,
             'link' => PageUrls::route('status'),
             'unsubscribe' => $unsubscribe ?: null,
+            'preferences' => $preferences ?: null,
         ];
     }
 

@@ -77,7 +77,7 @@ class MailTemplatesTest extends TestCase
 
         foreach (['incident_opened', 'incident_updated', 'incident_resolved'] as $key) {
             $this->assertSame(
-                ['{brand}', '{incident}', '{status}', '{message}', '{components}', '{link}', '{unsubscribe}', '{when}', '{name}'],
+                ['{brand}', '{incident}', '{status}', '{message}', '{components}', '{link}', '{unsubscribe}', '{preferences}', '{when}', '{name}'],
                 MailTemplates::tags($key),
             );
         }

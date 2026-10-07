@@ -51,6 +51,7 @@ class AdminMenu
             self::pageLink('Bring in', 'admin.integrations.in', $current, ['admin.integrations.in', 'admin.integrations.in.*']),
             $administer ? self::pageLink('API tokens', 'admin.integrations.tokens', $current, ['admin.integrations.tokens', 'admin.integrations.tokens.*']) : null,
             self::pageLink('Delivery log', 'admin.integrations.log', $current, ['admin.integrations.log*']),
+            $administer ? self::pageLink('Cachet import', 'admin.integrations.cachet', $current, ['admin.integrations.cachet*']) : null,
         ]));
         if ($integrations === []) {
             // Until the split screens exist, one Integrations screen covers all four.
@@ -66,7 +67,9 @@ class AdminMenu
             self::group('services', 'Services', 'services', [
                 self::pageLink('Services', 'admin.groups', $current, ['admin.groups*']),
                 self::pageLink('Components', 'admin.components', $current, ['admin.components*']),
+                $administer ? self::pageLink('Probe locations', 'admin.locations', $current, ['admin.locations*']) : null,
             ]),
+            self::pageLink('Reports', 'admin.reports', $current, ['admin.reports*'], 'audit'),
             self::pageLink('Subscribers', 'admin.subscribers', $current, ['admin.subscribers*'], 'subscribers',
                 Subscriptions::enabled() ? null : 'off'),
             self::group('appearance', 'Appearance', 'sliders', [
@@ -98,6 +101,7 @@ class AdminMenu
             self::link('Status pages', route('admin.pages.index'), Str::is('admin.pages.*', $current), 'pages'),
             self::link('Users', route('admin.users'), Str::is(['admin.users', 'admin.users.*'], $current), 'users'),
             self::group('settings', 'Settings', 'settings', $settings),
+            Route::has('admin.system-monitoring') ? self::link('Scheduler and backups', route('admin.system-monitoring'), Str::is('admin.system-monitoring*', $current), 'settings') : null,
             self::link('Audit log', route('admin.audit'), Str::is('admin.audit*', $current), 'audit'),
             self::link('Updates', route('admin.updates'), Str::is('admin.updates*', $current), 'update',
                 dot: app(Updater::class)->updateAvailable() ? 'Update available' : null),

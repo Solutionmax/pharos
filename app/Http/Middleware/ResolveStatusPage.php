@@ -62,11 +62,13 @@ class ResolveStatusPage
 
         return app(PageContext::class)->run($page->id, function () use ($page, $request, $next) {
             $publicLocale = ! $request->is('admin/*', 'api/*') || str_ends_with((string) $request->route()->getName(), 'status-page.preview');
+            $responseLocale = $publicLocale ? Localization::page() : app()->getLocale();
             $response = $publicLocale
                 ? Localization::run(Localization::page(), fn () => $next($request))
                 : $next($request);
             if ($response instanceof StreamedResponse && $callback = $response->getCallback()) {
-                $response->setCallback(fn () => app(PageContext::class)->run($page->id, $callback));
+                $response->setCallback(fn () => app(PageContext::class)->run($page->id,
+                    fn () => Localization::run($responseLocale, $callback)));
             }
 
             return $response;

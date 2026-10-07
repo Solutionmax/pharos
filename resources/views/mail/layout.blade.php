@@ -27,6 +27,9 @@
         @isset($unsubscribe)
           {{ __(' · ') }} <a href="{{ $unsubscribe }}" style="color:#667085">{{ __('Unsubscribe') }}</a>
         @endisset
+        @if ($preferences ?? null)
+          &nbsp;·&nbsp; <a href="{{ $preferences }}" style="color:#667085">{{ __('Manage subscription') }}</a>
+        @endif
       </td></tr>
     </table>
   </td></tr>

@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Mail\IncidentNoticeMail;
 use App\Mail\SubscribeConfirmMail;
 use App\Models\Component;
+use App\Models\Incident;
 use App\Models\Setting;
 use App\Models\Subscriber;
 use App\Models\User;
@@ -72,5 +74,20 @@ class LocalizationTest extends TestCase
         $admin = User::factory()->create(['role' => UserRole::Admin]);
         Setting::put('page.locale', '../en');
         $this->actingAs($admin)->get('/')->assertOk()->assertSee('lang="en"', false);
+    }
+
+    public function test_incident_mail_has_localized_status_and_signed_preference_link(): void
+    {
+        User::factory()->create(['role' => UserRole::Admin]);
+        Setting::put('page.locale', 'nl');
+        $incident = Incident::create(['name' => 'Database', 'status' => 1, 'visibility' => 'public', 'occurred_at' => now()]);
+        $update = $incident->updates()->create(['status' => 1, 'message' => 'Unchanged customer message']);
+        $subscriber = Subscriber::create(['email' => 'visitor@example.net', 'token' => Subscriber::freshToken(), 'verified_at' => now()]);
+
+        $html = (new IncidentNoticeMail($update, $subscriber))->render();
+        $this->assertStringContainsString('In onderzoek', $html);
+        $this->assertStringContainsString('Unchanged customer message', $html);
+        $this->assertStringContainsString('/subscribe/preferences/'.$subscriber->id.'?', $html);
+        $this->assertStringContainsString('Abonnement beheren', $html);
     }
 }
