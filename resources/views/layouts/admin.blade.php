@@ -262,6 +262,7 @@ dialog.modal .panel{margin:0}
   transition:.15s var(--ease)}
 .tip:hover,.tip:focus{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
 .tip-bubble{
+  display:none;
   position:absolute;bottom:calc(100% + 10px);left:-7px;
   width:max-content;max-width:250px;
   padding:9px 12px;border-radius:10px;
@@ -273,7 +274,13 @@ dialog.modal .panel{margin:0}
   transition:opacity .16s var(--ease),transform .16s var(--ease),visibility .16s}
 .tip-bubble::after{content:"";position:absolute;top:100%;left:12px;
   border:5px solid transparent;border-top-color:var(--tip)}
-.tip:hover .tip-bubble,.tip:focus .tip-bubble{opacity:1;visibility:visible;transform:translateY(0)}
+.tip:hover .tip-bubble,.tip:focus .tip-bubble{display:block;opacity:1;visibility:visible;transform:translateY(0)}
+@media(max-width:650px){
+  .lblrow{position:relative}
+  .lblrow .tip{position:static}
+  .lblrow .tip-bubble{left:0;max-width:min(250px,100%)}
+  .lblrow .tip-bubble::after{display:none}
+}
 @media (prefers-reduced-motion:reduce){.tip-bubble{transition:none}}
 
 .check{display:flex;align-items:center;gap:10px;font-size:13.5px}
