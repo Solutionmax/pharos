@@ -261,6 +261,9 @@ foreach ($originalRoutes as $original) {
         : 'status/{slug}'.($original->uri() === '/' ? '' : '/'.$original->uri());
     $action = $original->getAction();
     $action['as'] = $name ? 'page.'.$name : null;
+    // The clone URI is complete. Cached routes otherwise strip/reapply the old
+    // group prefix and can lose statusPage when reconstructing nested groups.
+    $action['prefix'] = '';
     $copy = clone $original;
     $copy->setUri($uri);
     $copy->setAction($action);

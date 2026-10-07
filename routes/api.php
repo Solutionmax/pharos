@@ -42,6 +42,8 @@ foreach (Route::getRoutes()->getRoutes() as $original) {
     if (isset($action['as'])) {
         $action['as'] = 'page.'.$action['as'];
     }
+    // Treat the rewritten tenant URI as authoritative when cache reconstructs it.
+    $action['prefix'] = '';
     $copy->setAction($action);
     Route::getRoutes()->add($copy);
 }
