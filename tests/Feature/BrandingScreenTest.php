@@ -90,8 +90,8 @@ class BrandingScreenTest extends TestCase
         $this->actingAs($this->admin)->get('/admin/pages/'.$other->id.'/branding')->assertOk()
             ->assertSee('Branding for Harbor')
             ->assertSee('Nothing is inherited from the default page')
-            ->assertSee('Pharos default')
-            ->assertDontSee('Set for this page');
+            ->assertSee('data-drop-src>Pharos default</span>', false)
+            ->assertDontSee('data-drop-src>Set for this page</span>', false);
     }
 
     public function test_the_plan_card_counts_pages_against_the_limit(): void

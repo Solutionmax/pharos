@@ -1664,5 +1664,6 @@
     "That did not work. Try again.": "Dat lukte niet. Probeer opnieuw.",
     "Recovery code": "Herstelcode",
     "Each recovery code works once.": "Elke herstelcode werkt eenmaal.",
-    "Use the six digit code": "Gebruik de zescijferige code"
+    "Use the six digit code": "Gebruik de zescijferige code",
+    "Use an HTTPS endpoint without credentials, query strings or fragments.": "Gebruik een HTTPS-endpoint zonder inloggegevens, querystrings of fragmenten."
 }

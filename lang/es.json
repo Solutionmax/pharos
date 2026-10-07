@@ -1664,5 +1664,6 @@
     "That did not work. Try again.": "No ha funcionado. Reintenta.",
     "Recovery code": "Código de recuperación",
     "Each recovery code works once.": "Cada código de recuperación funciona una vez.",
-    "Use the six digit code": "Usar el código de seis dígitos"
+    "Use the six digit code": "Usar el código de seis dígitos",
+    "Use an HTTPS endpoint without credentials, query strings or fragments.": "Usa un endpoint HTTPS sin credenciales, parámetros de consulta ni fragmentos."
 }

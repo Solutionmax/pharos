@@ -6,7 +6,7 @@ an application `VERSION` file, SHA-256 checksums, `release-info.json`, a
 
 ```sh
 php scripts/build-local-package.php 1.0.0-beta.1 /path/to/private/beta-output
-composer create-project --repository=file:///path/to/private/beta-output/packages.json --no-dev solutionmax/pharos pharos 1.0.0-beta.1
+composer create-project --repository='{"type":"composer","url":"file:///path/to/private/beta-output/packages.json"}' --no-dev solutionmax/pharos pharos 1.0.0-beta.1
 ```
 
 The builder does not publish a release or register the project on Packagist.
