@@ -26,7 +26,7 @@ class NativeRequestCaptureBoundsTest extends TestCase
         $migrate->mustRun();
         $source = file_get_contents(base_path('public/index.php'));
         $source = str_replace(['__DIR__', 'use Illuminate\\Http\\Request;'], [var_export(base_path('public'), true), 'use CaptureSpyRequest as Request;'], $source);
-        $prefix = '<?php require '.var_export(base_path('vendor/autoload.php'), true).'; class CaptureSpyRequest extends Illuminate\\Http\\Request { public function json($key = null, $default = null) { file_put_contents(getenv("PHAROS_PARSE_MARKER"), "called"); return parent::json($key, $default); } } ?>';
+        $prefix = '<?php require '.var_export(base_path('vendor/autoload.php'), true).'; class CaptureSpyRequest extends Illuminate\\Http\\Request { public function json($key = null, $default = null) { $value = parent::json($key, $default); if ($key === null) { $padding = $value->get("padding"); file_put_contents(getenv("PHAROS_PARSE_MARKER"), json_encode(["padding_length" => is_string($padding) ? strlen($padding) : -1])); } return $value; } } ?>';
         file_put_contents($directory.'/router.php', $prefix.$source);
         $process = new Process(['php', '-S', $address, $directory.'/router.php'], base_path(), $env);
         $process->start();
@@ -64,6 +64,7 @@ class NativeRequestCaptureBoundsTest extends TestCase
                     } else {
                         $this->assertNotSame(413, (int) $match[1], $path);
                         $this->assertFileExists($marker, 'Accepted JSON must reach native capture');
+                        $this->assertSame(strlen($data['padding']), json_decode(file_get_contents($marker), true, flags: JSON_THROW_ON_ERROR)['padding_length'], 'Native guard must preserve every accepted byte');
                     }
                 }
             }
