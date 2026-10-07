@@ -39,6 +39,9 @@ foreach (Route::getRoutes()->getRoutes() as $original) {
     $action = $original->getAction();
     $copy = clone $original;
     $copy->setUri('api/v1/pages/{slug}/'.substr($original->uri(), strlen('api/v1/')));
+    if (isset($action['as'])) {
+        $action['as'] = 'page.'.$action['as'];
+    }
     $copy->setAction($action);
     Route::getRoutes()->add($copy);
 }
