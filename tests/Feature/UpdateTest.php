@@ -87,6 +87,26 @@ class UpdateTest extends TestCase
         $this->assertTrue(app(Updater::class)->updateAvailable());
     }
 
+    public function test_a_beta_is_newer_than_the_last_release_so_nothing_is_offered(): void
+    {
+        config(['pharos.version' => '0.7.3-beta.1']);
+        Http::fake(['releases.example.net/*' => Http::response($this->manifest(['version' => '0.7.2']))]);
+
+        $this->assertFalse(app(Updater::class)->updateAvailable());
+        $this->artisan('pharos:update')
+            ->expectsOutputToContain('Installed: 0.7.3-beta.1')
+            ->expectsOutputToContain('Already up to date.')
+            ->assertSuccessful();
+    }
+
+    public function test_a_beta_is_older_than_its_final_release_so_that_is_offered(): void
+    {
+        config(['pharos.version' => '0.7.3-beta.1']);
+        Http::fake(['releases.example.net/*' => Http::response($this->manifest(['version' => '0.7.3']))]);
+
+        $this->assertTrue(app(Updater::class)->updateAvailable());
+    }
+
     public function test_a_manifest_signed_with_another_key_is_refused(): void
     {
         $other = sodium_crypto_sign_secretkey(sodium_crypto_sign_keypair());
