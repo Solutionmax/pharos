@@ -1668,5 +1668,10 @@
     "Use an HTTPS endpoint without credentials, query strings or fragments.": "Use an HTTPS endpoint without credentials, query strings or fragments.",
     "Passkeys are unavailable here. Use a supported browser on the configured HTTPS hostname.": "Passkeys are unavailable here. Use a supported browser on the configured HTTPS hostname.",
     "Set up": "Set up",
-    "Review": "Review"
+    "Review": "Review",
+    "Change its address, publication and access": "Change its address, publication and access",
+    "Create status page": "Create status page",
+    "Edit :name": "Edit :name",
+    "Edit status page": "Edit status page",
+    "New pages start empty and unpublished": "New pages start empty and unpublished"
 }

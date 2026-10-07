@@ -1,10 +1,10 @@
 @extends('layouts.admin')
 @php($editing = $statusPage->exists)
-@section('title', $editing ? 'Edit status page' : 'Create status page')
+@section('title', $editing ? __('Edit status page') : __('Create status page'))
 @section('content')
 @include('partials.pagehead', [
-  'title' => $editing ? 'Edit '.$statusPage->name : 'Create status page',
-  'sub' => $editing ? 'Change its address, publication and access' : 'New pages start empty and unpublished',
+  'title' => $editing ? __('Edit :name', ['name' => $statusPage->name]) : __('Create status page'),
+  'sub' => $editing ? __('Change its address, publication and access') : __('New pages start empty and unpublished'),
 ])
 
 <form method="POST" action="{{ $editing ? route('admin.pages.update', $statusPage) : route('admin.pages.store') }}">

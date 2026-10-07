@@ -1668,5 +1668,10 @@
     "Use an HTTPS endpoint without credentials, query strings or fragments.": "Gebruik een HTTPS-endpoint zonder inloggegevens, querystrings of fragmenten.",
     "Passkeys are unavailable here. Use a supported browser on the configured HTTPS hostname.": "Passkeys zijn hier niet beschikbaar. Gebruik een ondersteunde browser op de ingestelde HTTPS-hostnaam.",
     "Set up": "Instellen",
-    "Review": "Bekijken"
+    "Review": "Bekijken",
+    "Change its address, publication and access": "Adres, publicatie en toegang aanpassen",
+    "Create status page": "Statuspagina aanmaken",
+    "Edit :name": ":name bewerken",
+    "Edit status page": "Statuspagina bewerken",
+    "New pages start empty and unpublished": "Nieuwe pagina’s beginnen leeg en ongepubliceerd"
 }
