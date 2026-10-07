@@ -47,6 +47,7 @@ form{margin:0;display:flex}
         reported on the') }} {{ $branding->name() }} {{ __('status page, and when it is resolved.') }}</p>
       <a class="btn" href="{{ \App\Services\PageUrls::route('status') }}">{{ __('Back to the status page') }}</a>
       <p class="small">{{ __('Changed your mind?') }} <a href="{{ $subscriber->unsubscribeUrl() }}">{{ __('Unsubscribe') }}</a>{{ __('. The same link sits at the bottom of every mail.') }}</p>
+    <p><a href="{{ $subscriber->preferencesUrl() }}">{{ __('Manage service preferences') }}</a></p>
     @elseif ($outcome === 'confirm-unsubscribe')
       <h1>{{ __('Unsubscribe from') }} {{ $branding->name() }} {{ __('status updates?') }}</h1>
       <p><span class="mail">{{ $subscriber->email }}</span> {{ __('gets an email when an incident is reported

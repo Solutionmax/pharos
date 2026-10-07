@@ -15,19 +15,26 @@ class MaintenanceNotifier
 {
     public function queue(Maintenance $maintenance): int
     {
+        $page = app(PageContext::class)->page();
+        if (! Subscriptions::enabled() || ! $page->is_published || $page->archived_at !== null || $maintenance->cancelled_at !== null) {
+            return 0;
+        }
         $queued = 0;
         $now = now();
         $pageId = app(PageContext::class)->id();
 
-        Subscriber::active()->select('id')->chunkById(500, function ($subscribers) use ($maintenance, $now, $pageId, &$queued) {
-            $queued += MaintenanceNotification::insertOrIgnore($subscribers->map(fn ($s) => [
-                'status_page_id' => $pageId,
-                'subscriber_id' => $s->id,
-                'maintenance_id' => $maintenance->id,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ])->all());
-        });
+        Subscriber::active()->where(fn ($q) => $q->where('all_services', true)
+            ->orWhereHas('components', fn ($c) => $c->whereIn('components.id', $maintenance->components()->pluck('components.id')))
+            ->when(! $maintenance->components()->exists(), fn ($q) => $q->orWhereRaw('1 = 1')))
+            ->select('id')->chunkById(500, function ($subscribers) use ($maintenance, $now, $pageId, &$queued) {
+                $queued += MaintenanceNotification::insertOrIgnore($subscribers->map(fn ($s) => [
+                    'status_page_id' => $pageId,
+                    'subscriber_id' => $s->id,
+                    'maintenance_id' => $maintenance->id,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])->all());
+            });
 
         return $queued;
     }

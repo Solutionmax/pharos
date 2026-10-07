@@ -94,14 +94,14 @@ class IncidentController extends Controller
                 'resolved_at' => $status === IncidentStatus::Resolved ? now() : null,
             ]);
 
+            $this->applyComponents($incident, $this->componentMap($data), $request->attributes->get('api_token'));
+
             IncidentUpdate::create([
                 'incident_id' => $incident->id,
                 'status' => $status,
                 'message' => $message,
                 'automatic' => false,
             ]);
-
-            $this->applyComponents($incident, $this->componentMap($data), $request->attributes->get('api_token'));
 
             return $incident;
         });

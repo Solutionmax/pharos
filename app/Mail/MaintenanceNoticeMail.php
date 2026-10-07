@@ -58,6 +58,7 @@ class MaintenanceNoticeMail extends Mailable
             'ends' => $this->maintenance->ends_at->format('j F Y, H:i'),
             'link' => PageUrls::route('status'),
             'unsubscribe' => $this->subscriber->unsubscribeUrl(),
+            'preferences' => $this->subscriber->preferencesUrl(),
             'name' => MailTemplates::nameFor($this->subscriber->email),
             'tone' => 'w',
         ]);

@@ -9,6 +9,7 @@ use App\Services\PageContext;
 use App\Services\PageUrls;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -34,6 +35,7 @@ class Subscriber extends Model
     protected $hidden = ['token'];
 
     protected $casts = [
+        'all_services' => 'boolean',
         'verified_at' => LocalTime::class,
         'unsubscribed_at' => LocalTime::class,
         'created_at' => LocalTime::class,
@@ -84,6 +86,18 @@ class Subscriber extends Model
             'subscribe.confirm',
             ['subscriber' => $this->id, 'token' => $this->token],
             now()->addHours(self::CONFIRM_HOURS),
+        ));
+    }
+
+    public function components(): BelongsToMany
+    {
+        return $this->belongsToMany(Component::class);
+    }
+
+    public function preferencesUrl(): string
+    {
+        return app(PageContext::class)->run($this->status_page_id, fn () => PageUrls::signedRoute(
+            'subscribe.preferences', ['subscriber' => $this->id, 'token' => $this->token],
         ));
     }
 

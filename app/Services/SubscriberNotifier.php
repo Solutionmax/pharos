@@ -44,19 +44,23 @@ class SubscriberNotifier
         $queued = 0;
         $now = now();
 
-        Subscriber::active()->select('id')->chunkById(self::INSERT_CHUNK, function ($subscribers) use ($update, $now, &$queued) {
-            $rows = $subscribers->map(fn ($s) => [
-                'status_page_id' => app(PageContext::class)->id(),
-                'subscriber_id' => $s->id,
-                'incident_update_id' => $update->id,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ])->all();
+        Subscriber::active()->where(fn ($q) => $q->where('all_services', true)
+            ->orWhereHas('components', fn ($c) => $c->whereIn('components.id', $update->incident->components()->pluck('components.id')))
+            ->when(! $update->incident->components()->exists(), fn ($q) => $q->orWhereRaw('1 = 1'))
+            ->orWhereHas('notifications', fn ($n) => $n->whereHas('incidentUpdate', fn ($u) => $u->where('incident_id', $update->incident_id))))
+            ->select('id')->chunkById(self::INSERT_CHUNK, function ($subscribers) use ($update, $now, &$queued) {
+                $rows = $subscribers->map(fn ($s) => [
+                    'status_page_id' => app(PageContext::class)->id(),
+                    'subscriber_id' => $s->id,
+                    'incident_update_id' => $update->id,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])->all();
 
-            // insertOrIgnore: a re-fired event must not double a row the unique
-            // index already holds.
-            $queued += SubscriberNotification::insertOrIgnore($rows);
-        });
+                // insertOrIgnore: a re-fired event must not double a row the unique
+                // index already holds.
+                $queued += SubscriberNotification::insertOrIgnore($rows);
+            });
 
         return $queued;
     }

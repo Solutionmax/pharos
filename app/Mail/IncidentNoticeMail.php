@@ -65,8 +65,9 @@ class IncidentNoticeMail extends Mailable
             // Inserted as Markdown; the renderer escapes anything that looks like a tag.
             'message' => (string) $this->update->message,
             'components' => $incident->components->pluck('name')->implode(', '),
-            'link' => PageUrls::route('status'),
+            'link' => PageUrls::route('public.incident', $incident),
             'unsubscribe' => $this->subscriber->unsubscribeUrl(),
+            'preferences' => $this->subscriber->preferencesUrl(),
             'when' => $this->update->created_at->format('j F Y, H:i'),
             'name' => MailTemplates::nameFor($this->subscriber->email),
             // Same rule as the status page: resolved is green, a major outage red, anything else open is orange.

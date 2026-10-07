@@ -187,6 +187,13 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
                 <input class="hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
                 @error('email')<span class="err" style="display:block;margin-top:6px">{{ $message }}</span>@enderror
                 <button class="go" type="submit" style="margin-top:10px">{{ __('Subscribe') }}</button>
+                <input type="hidden" name="all_services" value="0">
+                <label><input type="checkbox" name="all_services" value="1" checked> {{ __('All services') }}</label>
+                <details><summary>{{ __('Choose services') }}</summary>
+                @foreach(\App\Services\PublicComponents::query()->orderBy('position')->get() as $subscriptionComponent)
+                  <label><input type="checkbox" name="component_ids[]" value="{{ $subscriptionComponent->id }}"> {{ $subscriptionComponent->name }}</label>
+                @endforeach
+                </details>
                 <span class="fine" style="display:block;margin-top:8px">{{ __('A confirmation link comes first. Every mail carries an unsubscribe link.') }}</span>
               </form>
             @endif

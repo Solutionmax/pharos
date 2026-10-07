@@ -6,6 +6,8 @@ use App\Mail\SubscribeConfirmMail;
 use App\Models\Subscriber;
 use App\Services\MailConfig;
 use App\Services\PageUrls;
+use App\Services\PublicComponents;
+use App\Services\SubscriberPreferences;
 use App\Services\Subscriptions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -35,6 +37,8 @@ class SubscribeController extends Controller
             'email' => ['required', 'string', 'email:rfc', 'max:254'],
         ]);
 
+        $preferences = SubscriberPreferences::validate($request);
+
         $email = mb_strtolower(trim($data['email']));
         $subscriber = Subscriber::where('email', $email)->first();
 
@@ -49,6 +53,8 @@ class SubscribeController extends Controller
             'token' => Subscriber::freshToken(),
             'created_ip' => $subscriber->created_ip ?? $request->ip(),
         ]);
+
+        SubscriberPreferences::save($subscriber, $preferences);
 
         try {
             app(MailConfig::class)->sendTo($subscriber->email, new SubscribeConfirmMail($subscriber));
@@ -113,6 +119,21 @@ class SubscribeController extends Controller
         }
 
         return $this->page('unsubscribed', $subscriber);
+    }
+
+    public function preferences(Request $request, Subscriber $subscriber)
+    {
+        $this->guardToken($request, $subscriber);
+
+        return view('public.preferences', ['subscriber' => $subscriber, 'components' => PublicComponents::query()->orderBy('position')->get(), 'action' => $request->getRequestUri()]);
+    }
+
+    public function updatePreferences(Request $request, Subscriber $subscriber)
+    {
+        $this->guardToken($request, $subscriber);
+        SubscriberPreferences::save($subscriber, SubscriberPreferences::validate($request));
+
+        return redirect()->to($subscriber->preferencesUrl())->with('saved', __('Preferences saved.'));
     }
 
     /** The signature proves the URL is ours; the token proves it is the *current* one. */

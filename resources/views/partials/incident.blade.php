@@ -6,7 +6,7 @@
         @endphp
         <article class="inc {{ $tone }}" data-live-key="incident-{{ $incident->id }}" data-live-value="{{ $incident->status->value }}:{{ $incident->updates->max('id') }}" data-live-message="{{ $incident->name }}: {{ $incident->status->label() }}">
           <div class="inc-hd">
-            <h4>{{ $incident->name }}</h4>
+            <h4><a href="{{ \App\Services\PageUrls::route('public.incident', $incident) }}">{{ $incident->name }}</a></h4>
             <span class="pill {{ $tone }}">{{ $incident->status->label() }}</span>
             @if (($chrome ?? true) && auth()->check())
               <a class="inc-update" href="{{ \App\Services\PageUrls::route('admin.incidents.update-form', $incident) }}" aria-label="Update {{ $incident->name }}">

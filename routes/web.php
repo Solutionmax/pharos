@@ -234,9 +234,11 @@ Route::get('/storage/{path}', function (string $path) {
     return response()->file($file, ['X-Content-Type-Options' => 'nosniff', 'Content-Security-Policy' => "sandbox; default-src 'none'"]);
 })->where('path', '.*')->name('public.upload');
 
+require __DIR__.'/public-features.php';
+
 // Register explicit page routes from the same actions, so legacy and page routes
 // cannot drift in validation or middleware. Account/install routes remain central.
-$pageRouteNames = ['status', 'subscribe', 'subscribe.confirm', 'unsubscribe'];
+$pageRouteNames = ['status', 'subscribe', 'subscribe.confirm', 'unsubscribe', 'public.badge', 'public.feed', 'public.incident', 'public.widget', 'public.embed', 'subscribe.preferences', 'subscribe.preferences.update'];
 $pageAdminPrefixes = ['overview', 'components', 'groups', 'incidents', 'maintenance', 'status-page', 'subscribers', 'integrations', 'branding', 'mail-templates', 'mail'];
 $originalRoutes = Route::getRoutes()->getRoutes();
 foreach ($originalRoutes as $original) {

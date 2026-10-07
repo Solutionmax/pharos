@@ -115,12 +115,6 @@ class IncidentController extends Controller
                 'resolved_at' => $status === IncidentStatus::Resolved ? now() : null,
             ]);
 
-            IncidentUpdate::create([
-                'incident_id' => $incident->id,
-                'status' => $status,
-                'message' => $data['message'],
-            ]);
-
             // The form posts components[<id>] = status; a key that is not a component is dropped rather than tripping the foreign key.
             $known = Component::whereKey(array_keys($data['components'] ?? []))->pluck('id')->all();
 
@@ -132,6 +126,12 @@ class IncidentController extends Controller
                 Component::whereKey($componentId)
                     ->update(['status' => ComponentStatus::from((int) $componentStatus)->value]);
             }
+
+            IncidentUpdate::create([
+                'incident_id' => $incident->id,
+                'status' => $status,
+                'message' => $data['message'],
+            ]);
 
             return $incident;
         });
