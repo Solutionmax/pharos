@@ -1,6 +1,8 @@
 """Controlled TLS/S3 fixture. SigV4 authenticated PUT/GET/DELETE with private objects."""
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import ssl, os, hashlib, hmac, urllib.parse, re
+import ssl, os, hashlib, hmac, urllib.parse, re, json, uuid, time
+TOKEN="pharos-fixture-probe-token-0000000000000000000000000000000000000000"
+remaining=list(range(5)); issued={}; accepted=[]
 ROOT='/backups/s3'; os.makedirs(ROOT,exist_ok=True)
 class Handler(BaseHTTPRequestHandler):
  def log_message(self,*args): pass
@@ -24,12 +26,29 @@ class Handler(BaseHTTPRequestHandler):
   for k,v in headers.items():self.send_header(k,str(v))
   self.send_header('Content-Length',str(len(body)));self.end_headers();self.wfile.write(body)
  def do_GET(self):
+  if self.path.startswith('/slow'):
+   time.sleep(float(os.environ.get('PHAROS_FIXTURE_JOB_DELAY','25')))
+   return self.respond(200,b'fixture ready')
+  if self.path=='/oversize':return self.respond(200,b'x'*1048576)
+  if self.path=='/api/v1/probe/jobs':
+   if self.headers.get('Authorization')!='Bearer '+TOKEN:return self.respond(401)
+   if not remaining:return self.respond(200,b'{"jobs":[]}')
+   index=remaining.pop(0);nonce=str(uuid.uuid4());issued[nonce]=time.monotonic()+120
+   job={'id':nonce,'type':'http','target':'https://172.17.0.4:9443/slow?check='+str(index),'timeout_seconds':30}
+   return self.respond(200,json.dumps({'jobs':[job]}).encode())
+  if self.path=='/api/v1/probe/evidence':return self.respond(200,json.dumps({'accepted':len(accepted),'remaining':len(remaining)}).encode())
   if self.path=='/up':return self.respond(200,b'fixture ready')
   if self.path=='/redirect':return self.respond(302,b'',{'Location':'http://169.254.169.254/latest/meta-data/'})
   path=self.location()
   if not path or not self.authenticated():return self.respond(403)
   if not os.path.isfile(path):return self.respond(404)
   data=open(path,'rb').read();self.respond(200,data,{'ETag':'"'+hashlib.md5(data).hexdigest()+'"','Content-Type':'application/octet-stream'})
+ def do_POST(self):
+  if self.path!='/api/v1/probe/results' or self.headers.get('Authorization')!='Bearer '+TOKEN:return self.respond(401)
+  data=json.loads(self.rfile.read(int(self.headers.get('Content-Length','0'))));nonce=data['job']
+  if nonce not in issued or issued.pop(nonce)<time.monotonic():return self.respond(409)
+  if not data.get('ok'):return self.respond(422)
+  accepted.append(nonce);return self.respond(200,b'{"ok":true}')
  def do_PUT(self):
   path=self.location()
   if not path or not self.authenticated():return self.respond(403)

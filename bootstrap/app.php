@@ -3,6 +3,7 @@
 use App\Http\Middleware\ApiTokenAuth;
 use App\Http\Middleware\CentralAdministration;
 use App\Http\Middleware\EnsurePageCapability;
+use App\Http\Middleware\MonitoringRequestLimits;
 use App\Http\Middleware\RequireTwoFactorSetup;
 use App\Http\Middleware\ResolveStatusPage;
 use App\Http\Middleware\SecurityHeaders;
@@ -26,6 +27,9 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // name does not exist here.
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
         $middleware->redirectUsersTo(fn () => route('admin.overview'));
+
+        // Bound probe bodies before global JSON input transformers parse them.
+        $middleware->prepend(MonitoringRequestLimits::class);
 
         $middleware->web(append: SecurityHeaders::class);
         $middleware->appendToGroup('web', UseLocale::class);

@@ -46,6 +46,7 @@ class Probe
             $expiry = null;
             $realTransfer = false;
             $response = $request->timeout($check->timeout_seconds)
+                ->withOptions(TransferLimits::options(1048576, $check->timeout_seconds))
                 ->withOptions([
                     'curl' => [CURLOPT_CERTINFO => true],
                     'decode_content' => false,
@@ -56,21 +57,11 @@ class Probe
                             $expiry = Carbon::createFromTimestampUTC($parsed['validTo_time_t']);
                         }
                     },
-                    'on_headers' => function ($response) {
-                        if ((int) $response->getHeaderLine('Content-Length') > 1048576) {
-                            throw new \RuntimeException('Response exceeds 1 MiB');
-                        }
-                    },
-                    'progress' => function ($total, $downloaded) {
-                        if ($downloaded > 1048576) {
-                            throw new \RuntimeException('Response exceeds 1 MiB');
-                        }
-                    },
                 ])
                 ->withHeaders(['User-Agent' => 'Pharos/1.0 (status monitor)', 'Accept-Encoding' => 'identity'])
                 ->get($check->target);
             $code = $response->status();
-            if (str_starts_with($check->target, 'https://') && $realTransfer && ! $expiry) {
+            if (strtolower((string) parse_url($check->target, PHP_URL_SCHEME)) === 'https' && $realTransfer && ! $expiry) {
                 return new ProbeResult(false, null, 'TLS certificate details unavailable');
             }
             if (strlen($response->body()) > 1048576) {

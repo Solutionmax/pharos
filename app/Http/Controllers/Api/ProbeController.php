@@ -29,18 +29,27 @@ class ProbeController extends Controller
     {
         $location = $this->location($request);
 
-        return app(PageContext::class)->run($location->status_page_id, function () use ($location) {
-            $jobs = [];
-            foreach ($location->checks()->where('checks.enabled', true)->whereHas('component', fn ($q) => $q->where('enabled', true))->where('type', '!=', 'heartbeat')->limit(100)->get() as $check) {
-                $recent = ProbeJob::where('check_id', $check->id)->where('probe_location_id', $location->id)->where('created_at', '>', now()->subSeconds($check->interval_seconds))->exists();
+        return app(PageContext::class)->run($location->status_page_id, fn () => DB::transaction(function () use ($location) {
+            // Serialize claims per credential. Issue only when a serial worker is ready.
+            ProbeLocation::withoutGlobalScopes()->whereKey($location->id)->lockForUpdate()->firstOrFail();
+            $last = ProbeJob::where('probe_location_id', $location->id)->select('check_id')->selectRaw('MAX(created_at) AS last_issued_at')->groupBy('check_id');
+            $checks = $location->checks()->where('checks.enabled', true)->whereHas('component', fn ($q) => $q->where('enabled', true))->where('type', '!=', 'heartbeat')
+                ->leftJoinSub($last, 'last_job', fn ($join) => $join->on('checks.id', '=', 'last_job.check_id'))
+                ->orderBy('last_job.last_issued_at')->orderBy('checks.id')->limit(100)->get(['checks.*']);
+            foreach ($checks as $check) {
+                $recent = ProbeJob::where('check_id', $check->id)->where('probe_location_id', $location->id)
+                    ->where(fn ($q) => $q->where('created_at', '>', now()->subSeconds($check->interval_seconds))
+                        ->orWhere(fn ($pending) => $pending->whereNull('consumed_at')->where('expires_at', '>', now())))->exists();
                 if ($recent) {
                     continue;
-                }$job = ProbeJob::create(['id' => (string) Str::uuid(), 'check_id' => $check->id, 'probe_location_id' => $location->id, 'expires_at' => now()->addMinutes(2)]);
-                $jobs[] = ['id' => $job->id, 'type' => $check->type->value, 'target' => $check->target, 'timeout_seconds' => min(30, $check->timeout_seconds), 'expected_keyword' => $check->expected_keyword, 'dns_type' => $check->dns_type, 'dns_expected' => $check->dns_expected];
+                }
+                $job = ProbeJob::create(['id' => (string) Str::uuid(), 'check_id' => $check->id, 'probe_location_id' => $location->id, 'expires_at' => now()->addMinutes(2)]);
+
+                return response()->json(['jobs' => [['id' => $job->id, 'type' => $check->type->value, 'target' => $check->target, 'timeout_seconds' => min(30, $check->timeout_seconds), 'expected_keyword' => $check->expected_keyword, 'dns_type' => $check->dns_type, 'dns_expected' => $check->dns_expected]]]);
             }
 
-            return response()->json(['jobs' => $jobs]);
-        });
+            return response()->json(['jobs' => []]);
+        }));
     }
 
     public function results(Request $request)

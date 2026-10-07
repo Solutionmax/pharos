@@ -30,7 +30,7 @@ class MonitoringSystemController extends Controller
     public function store(Request $r, SafeHttp $safe)
     {
         $input = $r->all();
-        $r->replace(collect($input)->except(['password', 'key', 'secret'])->all());
+        $r->replace(collect($input)->except(['password', 'key', 'secret', 'endpoint'])->all());
         $driver = $input['driver'] ?? '';
         $rules = ['name' => 'required|string|max:100', 'driver' => 'required|in:s3,sftp', 'allow_private' => 'sometimes|boolean'];
         if ($driver === 'sftp') {
@@ -40,7 +40,12 @@ class MonitoringSystemController extends Controller
                 }
             }], 'root' => 'required|string|max:255|starts_with:/'];
         } else {
-            $rules += ['endpoint' => 'nullable|url:https|max:255', 'region' => 'required|string|max:100|regex:/^[a-z0-9-]+$/', 'bucket' => 'required|string|max:63|regex:/^[a-z0-9][a-z0-9.-]+$/', 'prefix' => 'nullable|string|max:200|regex:/^[a-zA-Z0-9_\/-]*$/', 'key' => 'required|string|max:200', 'secret' => 'required|string|max:4096'];
+            $rules += ['endpoint' => ['nullable', 'url:https', 'max:255', function ($attribute, $value, $fail) {
+                $parts = parse_url($value);
+                if (! is_array($parts) || array_intersect(['user', 'pass', 'query', 'fragment'], array_keys($parts)) !== []) {
+                    $fail(__('Use an HTTPS endpoint without credentials, query strings or fragments.'));
+                }
+            }], 'region' => 'required|string|max:100|regex:/^[a-z0-9-]+$/', 'bucket' => 'required|string|max:63|regex:/^[a-z0-9][a-z0-9.-]+$/', 'prefix' => 'nullable|string|max:200|regex:/^[a-zA-Z0-9_\/-]*$/', 'key' => 'required|string|max:200', 'secret' => 'required|string|max:4096'];
         }
         $data = validator($input, $rules)->validate();
         try {
