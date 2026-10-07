@@ -1666,5 +1666,7 @@
     "Each recovery code works once.": "Cada código de recuperación funciona una vez.",
     "Use the six digit code": "Usar el código de seis dígitos",
     "Use an HTTPS endpoint without credentials, query strings or fragments.": "Usa un endpoint HTTPS sin credenciales, parámetros de consulta ni fragmentos.",
-    "Passkeys are unavailable here. Use a supported browser on the configured HTTPS hostname.": "Las claves de acceso no están disponibles aquí. Usa un navegador compatible en el nombre de host HTTPS configurado."
+    "Passkeys are unavailable here. Use a supported browser on the configured HTTPS hostname.": "Las claves de acceso no están disponibles aquí. Usa un navegador compatible en el nombre de host HTTPS configurado.",
+    "Set up": "Configurar",
+    "Review": "Revisar"
 }
