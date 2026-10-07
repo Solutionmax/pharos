@@ -1673,5 +1673,15 @@
     "Create status page": "Crear página de estado",
     "Edit :name": "Editar :name",
     "Edit status page": "Editar página de estado",
-    "New pages start empty and unpublished": "Las páginas nuevas empiezan vacías y sin publicar"
+    "New pages start empty and unpublished": "Las páginas nuevas empiezan vacías y sin publicar",
+    "Services with data": "Servicios con datos",
+    "How to read this report": "Cómo leer este informe",
+    "Previous year": "Año anterior",
+    "Next year": "Año siguiente",
+    "Year": "Año",
+    "No probe locations yet": "Todavía no hay ubicaciones de sondeo",
+    "Add a location to measure your services from another network.": "Añade una ubicación para medir tus servicios desde otra red.",
+    "No checks available": "No hay comprobaciones disponibles",
+    "No backup destinations yet": "Todavía no hay destinos de copia de seguridad",
+    "Choose S3 or SFTP below to store a verified copy off this server.": "Elige S3 o SFTP a continuación para guardar una copia verificada fuera de este servidor."
 }

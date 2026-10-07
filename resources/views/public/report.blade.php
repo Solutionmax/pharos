@@ -1,1 +1,8 @@
-<!doctype html><html lang="{{ app()->getLocale() }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ __('Monthly uptime report') }}</title>@include('partials.tokens')<style>body{font-family:var(--sans);background:var(--bg);color:var(--ink);margin:24px;line-height:1.6}main{max-width:1000px;margin:auto}a{color:inherit}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line)}button,input{font:inherit}form,p{margin:20px 0}</style></head><body><main><a href="{{ \App\Services\PageUrls::route('status') }}">← {{ __('Status page') }}</a>@include('partials.monthly-report')</main></body></html>
+@extends('layouts.public-document')
+@section('title', __('Monthly uptime report'))
+@push('head')
+<link rel="stylesheet" href="{{ asset('assets/pharos-reports.css') }}?v={{ filemtime(public_path('assets/pharos-reports.css')) }}">
+@endpush
+@section('content')
+@include('partials.monthly-report')
+@endsection

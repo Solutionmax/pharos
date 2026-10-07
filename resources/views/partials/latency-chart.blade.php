@@ -13,6 +13,16 @@ foreach ($points as $i => $point) {
 }
 if ($segment !== []) $segments[] = $segment;
 @endphp
+@once
+<style>
+.latency-chart{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);margin:18px 0;min-width:0}
+.latency-chart .panel-hd{padding:15px 20px;border-bottom:1px solid var(--line)}
+.latency-chart .panel-hd h3{font-family:var(--sans);font-size:14px;font-weight:650;margin:0}
+.latency-chart .panel-bd{padding:16px 20px}
+.latency-chart svg{display:block;color:var(--brand)}
+.latency-chart p{font-family:var(--sans);font-size:12px;line-height:1.6;color:var(--ink-3);margin:8px 0 0}
+</style>
+@endonce
 <div class="panel latency-chart"><div class="panel-hd"><h3>{{ __('Response time · last 24 hours') }}</h3></div><div class="panel-bd">
 @if (!$values)<p>{{ __('No measured response times yet.') }}</p>@else
 <svg viewBox="0 0 600 105" role="img" aria-label="{{ __('Response time in milliseconds. Gaps mean no measurements.') }}" style="width:100%;height:130px">

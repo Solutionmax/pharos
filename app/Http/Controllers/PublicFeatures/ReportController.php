@@ -4,6 +4,7 @@ namespace App\Http\Controllers\PublicFeatures;
 
 use App\Http\Controllers\Controller;
 use App\Services\MonthlyUptimeReport;
+use App\Services\PageContext;
 use App\Support\Csv;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -29,11 +30,16 @@ class ReportController extends Controller
             return response($csv)->header('Content-Type', 'text/csv; charset=UTF-8')->header('Content-Disposition', 'attachment; filename="uptime-'.$report['month'].'.csv"')->header('Cache-Control', 'no-store');
         }
         if ($format === 'pdf') {
-            $options = new Options(['isRemoteEnabled' => false, 'isPhpEnabled' => false, 'isJavascriptEnabled' => false, 'defaultFont' => 'DejaVu Sans', 'chroot' => storage_path('app'), 'tempDir' => storage_path('app'), 'fontCache' => storage_path('app')]);
+            $options = new Options(['isRemoteEnabled' => false, 'isPhpEnabled' => false, 'isJavascriptEnabled' => false, 'defaultFont' => 'DejaVu Sans', 'chroot' => [storage_path('app'), public_path('fonts')], 'tempDir' => storage_path('app'), 'fontDir' => storage_path('app'), 'fontCache' => storage_path('app')]);
             $pdf = new Dompdf($options);
-            $pdf->loadHtml(view('public.report-pdf', compact('report'))->render());
+            $pageName = app(PageContext::class)->page()->name;
+            $pdf->loadHtml(view('public.report-pdf', compact('report', 'pageName'))->render());
             $pdf->setPaper('A4', 'landscape');
             $pdf->render();
+            $canvas = $pdf->getCanvas();
+            $font = $pdf->getFontMetrics()->getFont('Plus Jakarta Sans', 'normal');
+            $canvas->page_text(34, $canvas->get_height() - 27, __('Monthly uptime report').' · '.$report['month'].' · UTC', $font, 8, [0.40, 0.44, 0.52]);
+            $canvas->page_text($canvas->get_width() - 72, $canvas->get_height() - 27, '{PAGE_NUM} / {PAGE_COUNT}', $font, 8, [0.40, 0.44, 0.52]);
 
             return response($pdf->output())->header('Content-Type', 'application/pdf')->header('Content-Disposition', 'attachment; filename="uptime-'.$report['month'].'.pdf"')->header('Cache-Control', 'no-store');
         }

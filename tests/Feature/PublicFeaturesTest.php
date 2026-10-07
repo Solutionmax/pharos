@@ -54,7 +54,8 @@ class PublicFeaturesTest extends TestCase
         $this->assertNotFalse($xml);
         $this->assertCount(2, $xml->channel->item);
         $response->assertSee('/incidents/'.$incident->id, false);
-        $this->get('/incidents/'.$incident->id)->assertOk()->assertSee('A &amp; B', false)->assertDontSee('<script>', false);
+        $this->get('/incidents/'.$incident->id)->assertOk()->assertSee('A &amp; B', false)
+            ->assertSee('&lt;script&gt;bad&lt;/script&gt;', false)->assertDontSee('<script>bad</script>', false);
         $this->get('/incidents/'.Incident::where('name', 'PRIVATE')->value('id'))->assertNotFound();
         $other = StatusPage::create(['name' => 'Other', 'slug' => 'other', 'is_published' => true]);
         $this->get('/status/other/incidents/'.$incident->id)->assertNotFound();

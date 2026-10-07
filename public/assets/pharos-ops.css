@@ -3,6 +3,33 @@
    16px cards, mono eyebrows, pills that carry state in words and colour. */
 
 /* ---------- state tokens: one place decides what a tone looks like ---------- */
+.beta-form{display:flex;flex-direction:column;gap:18px;min-width:0}
+.beta-form .fields{grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr))}
+.beta-form .field{min-width:0}
+.beta-form p{overflow-wrap:anywhere}
+.beta-disclosure{border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.beta-disclosure>summary{display:flex;align-items:center;gap:10px;list-style:none;cursor:pointer;padding:14px 16px;font-size:13.5px;font-weight:600;min-width:0;overflow-wrap:anywhere}
+.beta-disclosure>summary::-webkit-details-marker{display:none}
+.beta-chevron{margin-left:auto;color:var(--ink-3)}
+.beta-disclosure[open] .beta-chevron{transform:rotate(180deg)}
+.beta-disclosure>form,.beta-disclosure>.beta-form{padding:0 16px 18px}
+.probe-checks{margin:0;padding:14px;border:1px solid var(--line);border-radius:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:12px;background:var(--bg-tint);min-width:0}
+.probe-checks legend{font-size:12.5px;font-weight:600;color:var(--ink-2);padding:0 6px}
+.probe-checks .check{align-items:flex-start;overflow-wrap:anywhere;min-width:0}
+.probe-checks input{margin-top:3px}
+.probe-location,.backup-destination{display:flex;flex-direction:column;gap:12px;min-width:0}
+.probe-location+.probe-location,.backup-destination+.backup-destination{border-top:1px solid var(--line);padding-top:18px;margin-top:18px}
+.probe-location h3,.backup-destination h3{font-size:15px;overflow-wrap:anywhere}
+.probe-results{display:flex;flex-direction:column;gap:8px}
+.probe-results>div{display:flex;gap:12px;justify-content:space-between;font-size:12.5px;flex-wrap:wrap;overflow-wrap:anywhere;min-width:0}
+.probe-results span{color:var(--ink-3)}
+.scheduler-addresses{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg-tint)}
+.scheduler-addresses code{font-family:var(--mono);font-size:11px;overflow-wrap:anywhere}
+.share-status{margin-top:18px}
+.share-badges{max-height:380px;overflow:auto;display:flex;flex-direction:column;gap:14px;padding:0 16px 16px}
+.share-badges .field input{font-size:12px}
+.passkey-copy{margin-bottom:18px}
+.passkey-list{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
 .st-ok{--st:var(--green);--st-ink:var(--green-ink);--st-soft:var(--green-soft)}
 .st-w{--st:var(--amber);--st-ink:var(--amber-ink);--st-soft:var(--amber-soft)}
 .st-p{--st:var(--orange);--st-ink:var(--orange-ink);--st-soft:var(--orange-soft)}

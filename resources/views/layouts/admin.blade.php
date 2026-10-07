@@ -23,7 +23,8 @@ $adminTheme = in_array(auth()->user()?->theme, \App\Models\User::THEMES, true) ?
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
 h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:-.02em}
 p{margin:0}a{color:inherit}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button,input,select,textarea{font:inherit}
+button{color:inherit;background:none;border:0;cursor:pointer}
 :focus-visible{outline:2px solid var(--brand);outline-offset:3px;border-radius:6px}
 .mono{font-family:var(--mono)}
 
@@ -205,7 +206,7 @@ td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--ink
 .grouphd:first-child{margin-top:0}
 .inline-unit{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)}
 .inline-unit input{width:110px}
-input[type=text],input[type=email],input[type=password],input[type=url],input[type=color],input[type=number],input[type=datetime-local],input[type=file],select,textarea{
+input:not([type]),input[type=text],input[type=search],input[type=tel],input[type=email],input[type=password],input[type=url],input[type=color],input[type=number],input[type=date],input[type=month],input[type=time],input[type=datetime-local],input[type=file],select,textarea{
   font:inherit;font-size:14px;padding:10px 13px;border-radius:10px;border:1px solid var(--line);background:var(--bg-tint);color:var(--ink);width:100%}
 input[type=color]{height:40px;padding:3px;cursor:pointer}
 input[type=file]{padding:8px 10px;font-size:13px}

@@ -1673,5 +1673,15 @@
     "Create status page": "Statuspagina aanmaken",
     "Edit :name": ":name bewerken",
     "Edit status page": "Statuspagina bewerken",
-    "New pages start empty and unpublished": "Nieuwe pagina’s beginnen leeg en ongepubliceerd"
+    "New pages start empty and unpublished": "Nieuwe pagina’s beginnen leeg en ongepubliceerd",
+    "Services with data": "Diensten met gegevens",
+    "How to read this report": "Toelichting bij dit rapport",
+    "Previous year": "Vorig jaar",
+    "Next year": "Volgend jaar",
+    "Year": "Jaar",
+    "No probe locations yet": "Nog geen meetlocaties",
+    "Add a location to measure your services from another network.": "Voeg een locatie toe om je diensten vanuit een ander netwerk te meten.",
+    "No checks available": "Geen controles beschikbaar",
+    "No backup destinations yet": "Nog geen bestemmingen voor back ups",
+    "Choose S3 or SFTP below to store a verified copy off this server.": "Kies hieronder S3 of SFTP om een gecontroleerde kopie buiten deze server op te slaan."
 }
