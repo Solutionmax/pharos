@@ -2,14 +2,20 @@
 
 namespace Tests\Feature;
 
+use App\Mail\IncidentNoticeMail;
+use App\Mail\MaintenanceNoticeMail;
 use App\Models\Component;
 use App\Models\ComponentGroup;
 use App\Models\Incident;
 use App\Models\IncidentUpdate;
 use App\Models\Maintenance;
 use App\Models\StatusPage;
+use App\Models\Subscriber;
+use App\Models\User;
 use App\Services\PageContext;
+use App\Services\PageUrls;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 class PublicFeaturesTest extends TestCase
@@ -51,6 +57,36 @@ class PublicFeaturesTest extends TestCase
         $other = StatusPage::create(['name' => 'Other', 'slug' => 'other', 'is_published' => true]);
         $this->get('/status/other/incidents/'.$incident->id)->assertNotFound();
         $this->get('/status/other/feed.xml')->assertOk()->assertDontSee('outage');
+    }
+
+    public function test_public_timeline_and_status_page_do_not_disclose_hidden_component_names(): void
+    {
+        User::factory()->create();
+        $group = ComponentGroup::create(['name' => 'PRIVATE GROUP', 'visible' => false]);
+        $secret = Component::create(['name' => 'PRIVATE COMPONENT', 'component_group_id' => $group->id]);
+        $incident = Incident::create(['name' => 'Public incident', 'status' => 1, 'occurred_at' => now()]);
+        $incident->components()->attach($secret->id, ['status' => 4]);
+        $this->get('/incidents/'.$incident->id)->assertOk()->assertDontSee('PRIVATE COMPONENT');
+        $this->get('/')->assertOk()->assertDontSee('PRIVATE COMPONENT');
+        $this->getJson('/api/v1/incidents')->assertOk()->assertJsonMissing(['name' => 'PRIVATE COMPONENT']);
+        $update = IncidentUpdate::create(['incident_id' => $incident->id, 'status' => 1, 'message' => 'Public message']);
+        $subscriber = Subscriber::create(['email' => 'reader@example.com', 'token' => Subscriber::freshToken(), 'verified_at' => now()]);
+        $this->assertStringNotContainsString('PRIVATE COMPONENT', (new IncidentNoticeMail($update, $subscriber))->render());
+        $maintenance = Maintenance::create(['title' => 'Public work', 'starts_at' => now()->addHour(), 'ends_at' => now()->addHours(2)]);
+        $maintenance->components()->attach($secret->id);
+        $this->assertStringNotContainsString('PRIVATE COMPONENT', (new MaintenanceNoticeMail($maintenance, $subscriber))->render());
+    }
+
+    public function test_actual_widget_script_renders_untrusted_names_as_text_and_handles_network_failure(): void
+    {
+        $script = $this->get('/embed.js')->assertOk()->getContent();
+        $data = $this->get('/widget.json')->assertOk()->json();
+        foreach ([false, true] as $fail) {
+            $process = new Process(['node', base_path('tests/Fixtures/widget-dom.cjs')]);
+            $process->setInput(json_encode(['script' => $script, 'fail' => $fail, 'statusUrl' => $data['url'], 'dataUrl' => PageUrls::route('public.widget')]));
+            $process->mustRun();
+            $this->assertStringContainsString('widget DOM checks passed', $process->getOutput());
+        }
     }
 
     public function test_widget_is_scoped_public_json_and_safe_dom_script(): void

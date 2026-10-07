@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Component;
 use App\Models\ComponentGroup;
 use App\Models\Incident;
+use App\Models\IncidentUpdate;
 use App\Models\Maintenance;
 use App\Models\Subscriber;
 use App\Services\MaintenanceScheduler;
@@ -75,7 +76,13 @@ class ExtendedController extends Controller
 
     public function deleteComponent(Component $component)
     {
-        $component->delete();
+        DB::transaction(function () use ($component) {
+            foreach (Incident::where('grouping_key', 'check:'.$component->id)->where('auto_resolve', true)->whereNull('resolved_at')->get() as $incident) {
+                $incident->update(['status' => 4, 'resolved_at' => now()]);
+                IncidentUpdate::create(['incident_id' => $incident->id, 'status' => 4, 'message' => __('Closed because the component was removed. This incident could not resolve itself any more.'), 'automatic' => true]);
+            }
+            $component->delete();
+        });
 
         return response()->noContent();
     }
@@ -112,6 +119,9 @@ class ExtendedController extends Controller
     public function storeSubscriber(Request $request)
     {
         $this->subscriberAuthority($request);
+        if (is_string($request->input('email'))) {
+            $request->merge(['email' => mb_strtolower(trim($request->input('email')))]);
+        }
         $data = $request->validate(['email' => ['required', 'string', 'email:rfc', 'max:254', Rule::unique('subscribers')->where('status_page_id', app(PageContext::class)->id())]]);
         $preferences = SubscriberPreferences::validate($request);
         $subscriber = DB::transaction(function () use ($data, $preferences) {
@@ -192,6 +202,8 @@ class ExtendedController extends Controller
         DB::transaction(function () use ($maintenance, $scheduler) {
             if ($maintenance->isOpen()) {
                 $scheduler->cancel($maintenance);
+            } elseif ($maintenance->started_at !== null && $maintenance->completed_at === null && $maintenance->cancelled_at === null) {
+                $scheduler->complete($maintenance);
             }
             $maintenance->delete();
         });

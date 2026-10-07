@@ -18,6 +18,8 @@ use Illuminate\Support\Str;
  * opt-in has no actor, and what an operator does to a subscriber is recorded by
  * name in the controller (removed, confirmation resent).
  *
+ * @property bool $all_services
+ * @property int $preferences_version
  * @property int $status_page_id
  */
 class Subscriber extends Model
@@ -36,6 +38,7 @@ class Subscriber extends Model
 
     protected $casts = [
         'all_services' => 'boolean',
+        'preferences_version' => 'integer',
         'verified_at' => LocalTime::class,
         'unsubscribed_at' => LocalTime::class,
         'created_at' => LocalTime::class,

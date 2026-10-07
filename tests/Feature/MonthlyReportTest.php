@@ -5,10 +5,14 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\Component;
 use App\Models\ComponentGroup;
+use App\Models\Maintenance;
 use App\Models\StatusPage;
 use App\Models\UptimeDay;
 use App\Models\User;
+use App\Services\MonthlyUptimeReport;
+use App\Services\PageContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 class MonthlyReportTest extends TestCase
@@ -35,6 +39,23 @@ class MonthlyReportTest extends TestCase
         $this->get('/reports?month=2099-01')->assertSessionHasErrors('month');
     }
 
+    public function test_overlapping_maintenance_is_excluded_once_and_foreign_rows_never_count(): void
+    {
+        $component = Component::create(['name' => 'A']);
+        foreach ([['01:00:00', '03:00:00'], ['02:00:00', '04:00:00']] as [$from, $to]) {
+            $window = Maintenance::create(['title' => 'Work', 'starts_at' => '2026-09-01 '.$from, 'ends_at' => '2026-09-01 '.$to, 'started_at' => '2026-09-01 '.$from, 'completed_at' => '2026-09-01 '.$to]);
+            $window->components()->attach($component->id);
+        }
+        $report = app(MonthlyUptimeReport::class)->build('2026-09');
+        $this->assertSame(10800, $report['rows'][0]['excluded_seconds']);
+        $this->assertSame(30 * 86400 - 10800, $report['rows'][0]['unobserved_seconds']);
+        $this->assertNull($report['rows'][0]['uptime']);
+        $page = StatusPage::create(['name' => 'Other', 'slug' => 'other', 'is_published' => true]);
+        app(PageContext::class)->run($page->id, fn () => Component::create(['name' => 'FOREIGN']));
+        $this->get('/reports.csv?month=2026-09')->assertOk()->assertDontSee('FOREIGN');
+        $this->get('/status/other/reports.csv?month=2026-09')->assertOk()->assertSee('FOREIGN')->assertDontSee('Work');
+    }
+
     public function test_pdf_is_actual_safe_unicode_pdf_and_page_scoped(): void
     {
         Component::create(['name' => 'Üptime <img src="file:///etc/passwd">']);
@@ -43,6 +64,16 @@ class MonthlyReportTest extends TestCase
         $this->assertStringContainsString('%%EOF', $pdf->getContent());
         $this->assertGreaterThan(1000, strlen($pdf->getContent()));
         $this->assertStringNotContainsString('root:x:', $pdf->getContent());
+        $path = tempnam(sys_get_temp_dir(), 'pharos-report-');
+        try {
+            file_put_contents($path, $pdf->getContent());
+            $process = new Process(['pdftotext', $path, '-']);
+            $process->mustRun();
+            $this->assertStringContainsString('Üptime', $process->getOutput());
+            $this->assertStringContainsString('2026-09', $process->getOutput());
+        } finally {
+            unlink($path);
+        }
         StatusPage::default()->update(['is_published' => false]);
         $this->get('/reports.pdf?month=2026-09')->assertNotFound();
         $this->actingAs(User::factory()->create(['role' => UserRole::Admin]))->get('/admin/reports?month=2026-09')->assertOk();

@@ -11,7 +11,10 @@ use App\Models\Subscriber;
 use App\Models\SubscriberNotification;
 use App\Services\MaintenanceNotifier;
 use App\Services\PageContext;
+use App\Services\SubscriberNotifier;
+use App\Services\SubscriberPreferences;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class ServiceSubscriptionsTest extends TestCase
@@ -56,6 +59,33 @@ class ServiceSubscriptionsTest extends TestCase
         $subscriber->update(['token' => Subscriber::freshToken()]);
         $this->get($url)->assertForbidden();
         $this->get('/subscribe/preferences/'.$subscriber->id)->assertForbidden();
+    }
+
+    public function test_preferences_changed_after_queueing_skip_irrelevant_mail(): void
+    {
+        Mail::fake();
+        $a = Component::create(['name' => 'A']);
+        $b = Component::create(['name' => 'B']);
+        $subscriber = Subscriber::create(['email' => 'pending@example.com', 'token' => Subscriber::freshToken(), 'verified_at' => now()]);
+        $incident = Incident::create(['name' => 'A down', 'status' => 1, 'occurred_at' => now()]);
+        $incident->components()->attach($a->id, ['status' => 4]);
+        IncidentUpdate::create(['incident_id' => $incident->id, 'status' => 1, 'message' => 'A down']);
+        SubscriberPreferences::save($subscriber, ['all_services' => false, 'component_ids' => [$b->id]]);
+        app(SubscriberNotifier::class)->sendPending();
+        Mail::assertNothingSent();
+        $resolved = IncidentUpdate::create(['incident_id' => $incident->id, 'status' => 4, 'message' => 'Resolved']);
+        $this->assertSame(0, SubscriberNotification::where('incident_update_id', $resolved->id)->count());
+    }
+
+    public function test_guessed_email_cannot_change_an_active_subscribers_preferences(): void
+    {
+        $a = Component::create(['name' => 'A']);
+        $subscriber = Subscriber::create(['email' => 'victim@example.com', 'token' => Subscriber::freshToken(), 'verified_at' => now()]);
+        $token = $subscriber->token;
+        $this->post('/subscribe', ['email' => 'victim@example.com', 'all_services' => false, 'component_ids' => [$a->id]])->assertRedirect();
+        $this->assertTrue($subscriber->fresh()->all_services);
+        $this->assertSame($token, $subscriber->fresh()->token);
+        $this->assertSame(0, $subscriber->components()->count());
     }
 
     public function test_signup_rejects_cross_page_choices_before_sending_mail(): void

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\MetricsController;
+use App\Http\Controllers\PublicFeatures\CachetImportController;
 use App\Http\Controllers\PublicFeatures\PublicationController;
 use App\Http\Controllers\PublicFeatures\ReportController;
 use App\Http\Controllers\SubscribeController;
@@ -29,3 +30,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', AuthenticateSession:
 });
 
 Route::get('metrics', MetricsController::class)->middleware([ApiTokenAuth::class, 'throttle:60,1,metrics'])->name('api.features.metrics.web');
+
+Route::prefix('admin/integrations')->name('admin.integrations.')->middleware(['auth', AuthenticateSession::class, UsePersonalTimezone::class, NoStore::class])->group(function () {
+    Route::get('cachet', [CachetImportController::class, 'show'])->name('cachet');
+    Route::post('cachet/preview', [CachetImportController::class, 'preview'])->middleware('throttle:5,1,cachet-import')->name('cachet.preview');
+    Route::post('cachet/apply', [CachetImportController::class, 'apply'])->middleware('throttle:5,1,cachet-import')->name('cachet.apply');
+});

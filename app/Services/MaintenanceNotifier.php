@@ -64,6 +64,7 @@ class MaintenanceNotifier
         $page = app(PageContext::class)->page();
         $maintenance = $row->maintenance;
         if (! $row->subscriber?->isActive() || $maintenance === null || $maintenance->cancelled_at !== null
+            || ! ($row->subscriber->all_services || ! $maintenance->components()->exists() || $row->subscriber->components()->whereIn('components.id', $maintenance->components()->pluck('components.id'))->exists())
             || $maintenance->ends_at->lte(now()) || ! $page->is_published || $page->archived_at !== null) {
             $row->forceFill(['attempts' => SubscriberNotifier::MAX_ATTEMPTS, 'error' => 'Skipped: maintenance is no longer deliverable'])->save();
 

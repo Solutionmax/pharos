@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 /** One public visibility boundary shared by badges, widget, subscriptions and reports. */
 class PublicComponents
 {
+    /** @return Builder<Component> */
     public static function query(): Builder
     {
         return Component::query()->where('enabled', true)

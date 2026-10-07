@@ -7,6 +7,7 @@ use App\Models\Maintenance;
 use App\Models\Subscriber;
 use App\Services\MailTemplates;
 use App\Services\PageUrls;
+use App\Services\PublicComponents;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -53,7 +54,7 @@ class MaintenanceNoticeMail extends Mailable
             'brand' => $this->branding()->name(),
             'maintenance' => $this->maintenance->title,
             'message' => (string) $this->maintenance->message,
-            'components' => $this->maintenance->components->pluck('name')->implode(', '),
+            'components' => PublicComponents::query()->whereIn('id', $this->maintenance->components->modelKeys())->pluck('name')->implode(', '),
             'starts' => $this->maintenance->starts_at->format('j F Y, H:i'),
             'ends' => $this->maintenance->ends_at->format('j F Y, H:i'),
             'link' => PageUrls::route('status'),

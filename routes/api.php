@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\HeartbeatController;
 use App\Http\Controllers\Api\IncidentController;
 use App\Http\Controllers\Api\KumaController;
 use App\Http\Middleware\ApiTokenAuth;
+use App\Http\Middleware\FeatureRequestLimits;
 use App\Http\Middleware\ResolveStatusPage;
 use Illuminate\Support\Facades\Route;
 
@@ -17,7 +18,7 @@ Route::prefix('v1')->group(function () {
     // jobs behind one NAT add up, and they must not use up the write budget.
     Route::post('heartbeat/{token}', [HeartbeatController::class, 'ping'])->middleware('throttle:120,1,heartbeat');
 
-    Route::middleware([ApiTokenAuth::class, 'throttle:60,1,api-write'])->group(function () {
+    Route::middleware([ApiTokenAuth::class, FeatureRequestLimits::class, 'throttle:60,1,api-write'])->group(function () {
         Route::post('integrations/kuma/{component}', KumaController::class);
         // The first address the guide gave out; Kuma notifications saved with it keep working.
         Route::post('kuma/components/{component}', KumaController::class);

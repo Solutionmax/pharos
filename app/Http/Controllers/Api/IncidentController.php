@@ -12,10 +12,12 @@ use App\Models\IncidentTemplate;
 use App\Models\IncidentUpdate;
 use App\Services\OutgoingWebhook;
 use App\Services\PageContext;
+use App\Services\PublicComponents;
 use App\Services\TokenAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class IncidentController extends Controller
 {
@@ -30,7 +32,7 @@ class IncidentController extends Controller
         $trusted = $token && TokenAccess::allows($token, app(PageContext::class)->id());
 
         $incidents = Incident::query()->when(! $trusted, fn ($q) => $q->public())
-            ->with('updates', 'components')
+            ->with(['updates', 'components' => fn ($q) => $q->when(! $trusted, fn ($q) => $q->whereIn('components.id', PublicComponents::query()->select('id')))])
             ->latest('occurred_at')->limit(50)->get();
 
         return response()->json([
@@ -50,7 +52,7 @@ class IncidentController extends Controller
         $data = $request->validate([
             'name' => ['required_without:template', 'string', 'max:255'],
             'template' => ['sometimes', 'string', Rule::exists('incident_templates', 'slug')->where('status_page_id', app(PageContext::class)->id())],
-            'vars' => ['sometimes', 'array'],
+            'vars' => ['sometimes', 'array', 'max:50'],
             'vars.*' => ['string', 'max:255'],
             'status' => ['required'],
             'message' => ['required_without:template', 'string', 'max:20000'],
@@ -58,7 +60,7 @@ class IncidentController extends Controller
             'component_status' => ['sometimes', 'integer', 'min:1', 'max:5'],
             'impact' => ['sometimes', Rule::in(['minor', 'major', 'critical'])],
             'visibility' => ['sometimes', Rule::in(['public', 'authenticated', 'internal'])],
-            'components' => ['sometimes', 'array'],
+            'components' => ['sometimes', 'array', 'max:500'],
             'auto_resolve' => ['sometimes', 'boolean'],
             'notify' => ['sometimes', 'boolean'],
             'occurred_at' => ['sometimes', 'date'],
@@ -118,7 +120,7 @@ class IncidentController extends Controller
         $data = $request->validate([
             'status' => ['required'],
             'message' => ['required', 'string', 'max:20000'],
-            'components' => ['sometimes', 'array'],
+            'components' => ['sometimes', 'array', 'max:500'],
         ]);
 
         $status = $this->parseStatus($data['status']);
@@ -128,6 +130,8 @@ class IncidentController extends Controller
         }
 
         DB::transaction(function () use ($incident, $status, $data, $request) {
+            $this->applyComponents($incident, $data['components'] ?? [], $request->attributes->get('api_token'));
+
             IncidentUpdate::create([
                 'incident_id' => $incident->id,
                 'status' => $status,
@@ -139,8 +143,6 @@ class IncidentController extends Controller
                 'status' => $status,
                 'resolved_at' => $status === IncidentStatus::Resolved ? now() : $incident->resolved_at,
             ]);
-
-            $this->applyComponents($incident, $data['components'] ?? [], $request->attributes->get('api_token'));
 
             // Same rule as the admin: closing an incident puts its components
             // back, unless this request said otherwise explicitly.
@@ -172,8 +174,11 @@ class IncidentController extends Controller
      */
     protected function parseStatus(mixed $status): ?IncidentStatus
     {
-        if (is_numeric($status)) {
+        if (is_int($status) || (is_string($status) && preg_match('/^[1-4]$/D', $status))) {
             return IncidentStatus::tryFrom((int) $status);
+        }
+        if (! is_string($status) || strlen($status) > 40) {
+            return null;
         }
 
         try {
@@ -207,12 +212,17 @@ class IncidentController extends Controller
             $component = Component::find($id) ?? Component::where('name', $id)->first();
 
             if (! $component) {
-                continue;
+                throw ValidationException::withMessages(['components' => __('Choose components from this page.')]);
             }
-
-            $value = is_numeric($status)
-                ? ComponentStatus::from((int) $status)
+            if (! is_int($status) && ! is_string($status)) {
+                throw ValidationException::withMessages(['components' => __('Use a valid component status.')]);
+            }
+            $value = is_int($status) || preg_match('/^[1-5]$/D', (string) $status)
+                ? ComponentStatus::tryFrom((int) $status)
                 : $this->statusFromSlug((string) $status);
+            if (! $value) {
+                throw ValidationException::withMessages(['components' => __('Use a valid component status.')]);
+            }
 
             $incident->components()->syncWithoutDetaching([
                 $component->id => ['status' => $value->value],
@@ -222,7 +232,7 @@ class IncidentController extends Controller
         }
     }
 
-    protected function statusFromSlug(string $slug): ComponentStatus
+    protected function statusFromSlug(string $slug): ?ComponentStatus
     {
         return match (strtolower($slug)) {
             'operational' => ComponentStatus::Operational,
@@ -230,7 +240,7 @@ class IncidentController extends Controller
             'partial', 'partial_outage' => ComponentStatus::PartialOutage,
             'major', 'major_outage' => ComponentStatus::MajorOutage,
             'maintenance', 'under_maintenance' => ComponentStatus::UnderMaintenance,
-            default => ComponentStatus::Operational,
+            default => null,
         };
     }
 

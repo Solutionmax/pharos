@@ -26,22 +26,29 @@ class MonthlyUptimeReport
     {
         $start = CarbonImmutable::createFromFormat('!Y-m', $month, 'UTC');
         $end = $start->addMonth()->min(CarbonImmutable::now('UTC'));
-        $components = ($public ? PublicComponents::query() : Component::query())->orderBy('position')->limit(500)->get();
+        $query = $public ? PublicComponents::query() : Component::query();
+        $components = $query->orderBy('position')->limit(501)->get();
+        if ($components->count() > 500) {
+            throw ValidationException::withMessages(['month' => __('Reports support up to 500 components per page. Split this page to report all components.')]);
+        }
         $totals = UptimeDay::whereIn('component_id', $components->modelKeys())->where('day', '>=', $start)->where('day', '<', $start->addMonth())
             ->groupBy('component_id')->selectRaw('component_id, SUM(up_seconds) as up_seconds, SUM(down_seconds) as down_seconds')->get()->keyBy('component_id');
-        $windows = Maintenance::with('components')->whereNotNull('started_at')->where('starts_at', '<', $end)->where('ends_at', '>', $start)->limit(2000)->get();
+        $windows = Maintenance::with('components')->whereNotNull('started_at')->where('starts_at', '<', $end)->where('ends_at', '>', $start)->limit(2001)->get();
+        if ($windows->count() > 2000) {
+            throw ValidationException::withMessages(['month' => __('This month has too many maintenance windows to report accurately.')]);
+        }
         $elapsed = max(0, (int) $start->diffInSeconds($end));
         $rows = [];
         foreach ($components as $component) {
-            $up = (int) ($totals->get($component->id)?->up_seconds ?? 0);
-            $down = (int) ($totals->get($component->id)?->down_seconds ?? 0);
+            $up = (int) ($totals->get($component->id)->up_seconds ?? 0);
+            $down = (int) ($totals->get($component->id)->down_seconds ?? 0);
             $intervals = [];
             foreach ($windows as $window) {
                 if (! $window->components->contains($component->id)) {
                     continue;
                 }
                 $from = max($start->timestamp, $window->starts_at->timestamp, $window->started_at->timestamp);
-                $to = min($end->timestamp, $window->ends_at->timestamp, $window->completed_at?->timestamp ?? PHP_INT_MAX, $window->cancelled_at?->timestamp ?? PHP_INT_MAX);
+                $to = min($end->timestamp, $window->ends_at->timestamp, $window->completed_at->timestamp ?? PHP_INT_MAX, $window->cancelled_at->timestamp ?? PHP_INT_MAX);
                 if ($to > $from) {
                     $intervals[] = [$from, $to];
                 }

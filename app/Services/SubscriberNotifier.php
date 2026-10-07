@@ -47,11 +47,12 @@ class SubscriberNotifier
         Subscriber::active()->where(fn ($q) => $q->where('all_services', true)
             ->orWhereHas('components', fn ($c) => $c->whereIn('components.id', $update->incident->components()->pluck('components.id')))
             ->when(! $update->incident->components()->exists(), fn ($q) => $q->orWhereRaw('1 = 1'))
-            ->orWhereHas('notifications', fn ($n) => $n->whereHas('incidentUpdate', fn ($u) => $u->where('incident_id', $update->incident_id))))
-            ->select('id')->chunkById(self::INSERT_CHUNK, function ($subscribers) use ($update, $now, &$queued) {
+            ->orWhereHas('notifications', fn ($n) => $n->whereColumn('subscriber_notifications.preference_version', 'subscribers.preferences_version')->whereHas('incidentUpdate', fn ($u) => $u->where('incident_id', $update->incident_id))))
+            ->select('id', 'preferences_version')->chunkById(self::INSERT_CHUNK, function ($subscribers) use ($update, $now, &$queued) {
                 $rows = $subscribers->map(fn ($s) => [
                     'status_page_id' => app(PageContext::class)->id(),
                     'subscriber_id' => $s->id,
+                    'preference_version' => $s->preferences_version ?? 0,
                     'incident_update_id' => $update->id,
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -99,6 +100,7 @@ class SubscriberNotifier
         if (! $subscriber?->isActive()
             || $update?->incident === null
             || $update->incident->visibility !== 'public'
+            || ! $this->relevant($subscriber, $update, $notification->id)
             || ! $page->is_published
             || $page->archived_at !== null) {
             $notification->forceFill([
@@ -114,6 +116,7 @@ class SubscriberNotifier
 
             $notification->forceFill([
                 'sent_at' => now(),
+                'preference_version' => $subscriber->preferences_version ?? 0,
                 'error' => null,
                 'attempts' => $notification->attempts + 1,
             ])->save();
@@ -127,6 +130,18 @@ class SubscriberNotifier
 
             return false;
         }
+    }
+
+    private function relevant(Subscriber $subscriber, IncidentUpdate $update, int $notificationId): bool
+    {
+        $ids = $update->incident->components()->pluck('components.id');
+        if ($subscriber->all_services || $ids->isEmpty() || $subscriber->components()->whereIn('components.id', $ids)->exists()) {
+            return true;
+        }
+
+        return $subscriber->notifications()->where('id', '!=', $notificationId)
+            ->where('preference_version', $subscriber->preferences_version ?? 0)
+            ->whereHas('incidentUpdate', fn ($u) => $u->where('incident_id', $update->incident_id))->exists();
     }
 
     /** Addresses that never clicked their confirmation are not kept. GDPR minimalism, and hygiene. */

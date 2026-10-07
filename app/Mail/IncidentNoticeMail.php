@@ -8,6 +8,7 @@ use App\Models\IncidentUpdate;
 use App\Models\Subscriber;
 use App\Services\MailTemplates;
 use App\Services\PageUrls;
+use App\Services\PublicComponents;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -64,7 +65,7 @@ class IncidentNoticeMail extends Mailable
             'status' => __($this->update->status->label()),
             // Inserted as Markdown; the renderer escapes anything that looks like a tag.
             'message' => (string) $this->update->message,
-            'components' => $incident->components->pluck('name')->implode(', '),
+            'components' => PublicComponents::query()->whereIn('id', $incident->components->modelKeys())->pluck('name')->implode(', '),
             'link' => PageUrls::route('public.incident', $incident),
             'unsubscribe' => $this->subscriber->unsubscribeUrl(),
             'preferences' => $this->subscriber->preferencesUrl(),

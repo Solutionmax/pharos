@@ -189,11 +189,13 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
                 <button class="go" type="submit" style="margin-top:10px">{{ __('Subscribe') }}</button>
                 <input type="hidden" name="all_services" value="0">
                 <label><input type="checkbox" name="all_services" value="1" checked> {{ __('All services') }}</label>
+                @if($modules['page.show_services'])
                 <details><summary>{{ __('Choose services') }}</summary>
                 @foreach(\App\Services\PublicComponents::query()->orderBy('position')->get() as $subscriptionComponent)
                   <label><input type="checkbox" name="component_ids[]" value="{{ $subscriptionComponent->id }}"> {{ $subscriptionComponent->name }}</label>
                 @endforeach
                 </details>
+                @endif
                 <span class="fine" style="display:block;margin-top:8px">{{ __('A confirmation link comes first. Every mail carries an unsubscribe link.') }}</span>
               </form>
             @endif
@@ -252,7 +254,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
       <h2 id="maintenance-heading">{{ __('Maintenance') }}</h2>
       @foreach ($maintenances as $maintenance)
         @php $live = $maintenance->starts_at->lte(now()); @endphp
-        <article class="plan @if ($live) live @endif" data-live-key="maintenance-{{ $maintenance->id }}" data-live-value="{{ $live ? 'on' : 'planned' }}:{{ $maintenance->updated_at?->timestamp }}">
+        <article id="maintenance-{{ $maintenance->id }}" class="plan @if ($live) live @endif" data-live-key="maintenance-{{ $maintenance->id }}" data-live-value="{{ $live ? 'on' : 'planned' }}:{{ $maintenance->updated_at?->timestamp }}">
           <span class="pill m">{{ $live ? 'Maintenance in progress' : 'Scheduled maintenance' }}</span>
           <div class="tx">
             <b>{{ $maintenance->title }}</b>
@@ -352,6 +354,8 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 
   </div>
   <footer class="foot">
+    <a href="{{ \App\Services\PageUrls::route('public.feed') }}">{{ __('RSS feed') }}</a>
+    <a href="{{ \App\Services\PageUrls::route('public.reports') }}">{{ __('Monthly reports') }}</a>
     @if ($modules['page.show_api_link'])<a href="{{ \App\Services\PageUrls::api('components') }}">{{ __('API') }}</a>@endif
     @unless ($branding->creditHidden())<a class="cr" href="https://pharos.solutionmax.net" rel="noopener">{{ __('Powered by Pharos') }}</a>@endunless
   </footer>

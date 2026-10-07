@@ -21,9 +21,16 @@ class SubscriberPreferences
     public static function save(Subscriber $subscriber, array $data): void
     {
         DB::transaction(function () use ($subscriber, $data) {
-            $all = $data['all_services'] ?? true;
-            $subscriber->update(['all_services' => $all]);
-            $subscriber->components()->sync($all ? [] : ($data['component_ids'] ?? []));
+            $subscriber = Subscriber::whereKey($subscriber->id)->lockForUpdate()->firstOrFail();
+            $all = (bool) ($data['all_services'] ?? true);
+            $ids = array_map('intval', $all ? [] : ($data['component_ids'] ?? []));
+            $previous = $subscriber->components()->pluck('components.id')->map(fn ($id) => (int) $id)->all();
+            sort($ids);
+            sort($previous);
+            if ($subscriber->all_services !== $all || $ids !== $previous) {
+                $subscriber->update(['all_services' => $all, 'preferences_version' => ($subscriber->preferences_version ?? 0) + 1]);
+                $subscriber->components()->sync($ids);
+            }
         });
     }
 }

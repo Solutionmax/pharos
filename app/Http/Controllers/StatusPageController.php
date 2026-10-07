@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\Branding;
 use App\Services\Clock;
+use App\Services\PublicComponents;
 use App\Services\Uptime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -144,7 +145,7 @@ class StatusPageController extends Controller
             'overall' => $overall,
             'worst' => $worst,
             // Planned work of this page that is still to come or under way.
-            'maintenances' => Maintenance::visible()->with('components')->orderBy('starts_at')->get(),
+            'maintenances' => Maintenance::visible()->with(['components' => fn ($q) => $q->whereIn('components.id', PublicComponents::query()->select('id'))])->orderBy('starts_at')->get(),
             // An incident that is still open when it falls out of the history window
             // is pinned above the days: a component can stay red for longer than the
             // window, and the page must never show a red service without the
@@ -154,7 +155,7 @@ class StatusPageController extends Controller
             'ongoing' => $modules['page.show_incidents'] && $page === 1
                 ? Incident::public()->whereNull('resolved_at')
                     ->where('occurred_at', '<', $this->windowStart($days, 1))
-                    ->with('updates', 'components')->orderByDesc('occurred_at')->get()
+                    ->with(['updates', 'components' => fn ($q) => $q->whereIn('components.id', PublicComponents::query()->select('id'))])->orderByDesc('occurred_at')->get()
                 : collect(),
             'days' => $modules['page.show_incidents'] ? $this->incidentDays($days, $modules, $page) : [],
             'page' => $page,
@@ -184,7 +185,7 @@ class StatusPageController extends Controller
         $offset = $span * ($page - 1);
 
         $incidents = Incident::public()
-            ->with('updates', 'components')
+            ->with(['updates', 'components' => fn ($q) => $q->whereIn('components.id', PublicComponents::query()->select('id'))])
             ->where('occurred_at', '>=', $start)
             ->where('occurred_at', '<', $start->copy()->addDays($span))
             ->orderByDesc('occurred_at')

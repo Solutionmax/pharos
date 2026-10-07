@@ -22,7 +22,7 @@ class PublicationController extends Controller
             $entity = ComponentGroup::where('visible', true)->with(['components' => fn ($q) => $q->where('enabled', true)])->findOrFail($id);
             $status = $entity->status();
         }
-        $label = mb_substr($entity->name, 0, 60);
+        $label = $this->xmlText(mb_substr($entity->name, 0, 60));
         $state = __($status->label());
         $left = min(480, max(70, mb_strlen($label) * 8 + 20));
         $right = min(300, max(95, mb_strlen($state) * 8 + 20));
@@ -60,12 +60,12 @@ class PublicationController extends Controller
         $xml->startElement('rss');
         $xml->writeAttribute('version', '2.0');
         $xml->startElement('channel');
-        $xml->writeElement('title', app(PageContext::class)->page()->name.' '.__('Status updates'));
+        $xml->writeElement('title', $this->xmlText(app(PageContext::class)->page()->name.' '.__('Status updates')));
         $xml->writeElement('link', PageUrls::route('status'));
         $xml->writeElement('description', __('Incidents and scheduled maintenance'));
         $incidents = Incident::public()->with(['updates' => fn ($q) => $q->limit(500)])->latest('occurred_at')->limit(50)->get();
         foreach ($incidents as $incident) {
-            $this->feedItem($xml, $incident->name, $incident->updates->first()?->message ?? '', PageUrls::route('public.incident', $incident), $incident->updated_at ?? $incident->occurred_at);
+            $this->feedItem($xml, $incident->name, $incident->updates->first()->message ?? '', PageUrls::route('public.incident', $incident), $incident->updated_at ?? $incident->occurred_at);
         }
         foreach (Maintenance::whereNull('cancelled_at')->latest('starts_at')->limit(50)->get() as $maintenance) {
             $this->feedItem($xml, $maintenance->title, $maintenance->message ?? '', PageUrls::route('status').'#maintenance-'.$maintenance->id, $maintenance->updated_at);
@@ -80,12 +80,17 @@ class PublicationController extends Controller
     private function feedItem(\XMLWriter $xml, string $title, string $message, string $url, $date): void
     {
         $xml->startElement('item');
-        $xml->writeElement('title', $title);
+        $xml->writeElement('title', $this->xmlText($title));
         $xml->writeElement('link', $url);
         $xml->writeElement('guid', $url);
-        $xml->writeElement('description', mb_substr($message, 0, 20000));
+        $xml->writeElement('description', $this->xmlText(mb_substr($message, 0, 20000)));
         $xml->writeElement('pubDate', $date->toRfc2822String());
         $xml->endElement();
+    }
+
+    private function xmlText(string $text): string
+    {
+        return preg_replace('/[^\x{9}\x{A}\x{D}\x{20}-\x{D7FF}\x{E000}-\x{FFFD}\x{10000}-\x{10FFFF}]/u', '', $text) ?? '';
     }
 
     public function widgetData()

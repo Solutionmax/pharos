@@ -21,7 +21,7 @@ class MetricsController extends Controller
             $labels = '{component_id="'.$component->id.'",name="'.$name.'"}';
             $text .= 'pharos_component_status'.$labels.' '.$component->status->value."\n";
             $day = $days->get($component->id);
-            $total = ($day?->up_seconds ?? 0) + ($day?->down_seconds ?? 0);
+            $total = ($day->up_seconds ?? 0) + ($day->down_seconds ?? 0);
             $ratios .= 'pharos_component_uptime_ratio'.$labels.' '.($total > 0 ? number_format($day->up_seconds / $total, 6, '.', '') : 'NaN')."\n";
         }
 
