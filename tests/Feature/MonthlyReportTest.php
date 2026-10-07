@@ -27,7 +27,7 @@ class MonthlyReportTest extends TestCase
         UptimeDay::create(['component_id' => $component->id, 'day' => '2026-10-01', 'up_seconds' => 0, 'down_seconds' => 10000]);
         $hidden = ComponentGroup::create(['name' => 'Hidden', 'visible' => false]);
         Component::create(['name' => 'SECRET', 'component_group_id' => $hidden->id]);
-        $this->get('/reports?month=2026-09')->assertOk()->assertSee('95.00%')->assertSee('UTC')->assertDontSee('SECRET');
+        $this->get('/reports?month=2026-09')->assertOk()->assertSee('95.00%')->assertSee('UTC')->assertDontSee('SECRET')->assertSee('Historical daily totals may include maintenance observations.');
         $csv = $this->get('/reports.csv?month=2026-09')->assertOk();
         $csv->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
         $rows = array_map('str_getcsv', explode("\n", trim($csv->getContent())));

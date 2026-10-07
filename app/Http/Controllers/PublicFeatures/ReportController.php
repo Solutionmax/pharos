@@ -18,9 +18,9 @@ class ReportController extends Controller
         $format = str_ends_with($request->path(), '.csv') ? 'csv' : (str_ends_with($request->path(), '.pdf') ? 'pdf' : 'html');
         if ($format === 'csv') {
             $stream = fopen('php://temp', 'r+');
-            fputcsv($stream, ['Service', 'Up seconds', 'Down seconds', 'Uptime %', 'Coverage %', 'Excluded maintenance seconds', 'Unobserved seconds', 'Month', 'Timezone'], ',', '"', '');
+            fputcsv($stream, ['Service', 'Up seconds', 'Down seconds', 'Uptime %', 'Coverage %', 'Excluded maintenance seconds', 'Unobserved seconds', 'Month', 'Timezone', 'Accounting notes'], ',', '"', '');
             foreach ($report['rows'] as $row) {
-                fputcsv($stream, array_map(Csv::cell(...), [$row['name'], $row['up_seconds'], $row['down_seconds'], $row['uptime'] === null ? '' : number_format($row['uptime'], 2, '.', ''), $row['coverage'], $row['excluded_seconds'], $row['unobserved_seconds'], $report['month'], 'UTC']), ',', '"', '');
+                fputcsv($stream, array_map(Csv::cell(...), [$row['name'], $row['up_seconds'], $row['down_seconds'], $row['uptime'] === null ? '' : number_format($row['uptime'], 2, '.', ''), $row['coverage'], $row['excluded_seconds'], $row['unobserved_seconds'], $report['month'], 'UTC', __('Historical daily totals may include maintenance observations. They are preserved and are not reconstructed.')]), ',', '"', '');
             }
             rewind($stream);
             $csv = stream_get_contents($stream);

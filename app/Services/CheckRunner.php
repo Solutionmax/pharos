@@ -95,33 +95,31 @@ class CheckRunner
 
     protected function recordUptime(Check $check, ProbeResult $result, \DateTimeInterface $now, ?string $previousRun): void
     {
-        $now = Carbon::instance(
-            $now instanceof \DateTimeImmutable ? \DateTime::createFromImmutable($now) : $now
-        );
-        // UTC days on purpose: the roll-up is a storage concept, and the bar's
-        // "today" is the UTC day even when the page displays another zone.
+        $now = Carbon::instance($now)->utc();
         $dayStart = $now->copy()->startOfDay();
-
+        // Preserve the existing observation cap and UTC midnight boundary.
+        $since = $previousRun ? Carbon::parse($previousRun, 'UTC') : $now->copy()->subSeconds($check->interval_seconds);
+        $since = $since->max($dayStart)->max($now->copy()->subSeconds($check->interval_seconds));
+        $seconds = (int) max(0, $since->diffInSeconds($now));
+        $windows = Maintenance::whereNotNull('started_at')->where('starts_at', '<', $now)->where('ends_at', '>', $since)
+            ->whereHas('components', fn ($q) => $q->whereKey($check->component_id))
+            ->with(['components' => fn ($q) => $q->whereKey($check->component_id)])->limit(2001)->get();
+        if ($windows->count() > 2000) {
+            return; // Too many windows to establish accurate eligible credit; keep raw evidence only.
+        }
+        $excluded = MaintenanceIntervals::excluded($windows, $check->component_id, $since, $now);
+        // A manually held maintenance state has no reliable earlier boundary.
+        if ($check->component->status === ComponentStatus::UnderMaintenance && $excluded === 0) {
+            return;
+        }
+        $seconds = max(0, $seconds - $excluded);
+        if ($seconds === 0) {
+            return;
+        }
         $day = UptimeDay::firstOrCreate(
-            [
-                'component_id' => $check->component_id,
-                // Carbon, not a string: the date cast stores "Y-m-d 00:00:00",
-                // so a bare "Y-m-d" never matches the row that is already there.
-                'day' => $dayStart,
-            ],
+            ['component_id' => $check->component_id, 'day' => $dayStart],
             ['up_seconds' => 0, 'down_seconds' => 0, 'worst_status' => ComponentStatus::Operational->value],
         );
-
-        // Credit the wall time since the previous evaluation, not the configured
-        // interval: a due heartbeat is re-evaluated on every scheduler tick, and
-        // 86400 s per tick gave one day 101,952,000 "up" seconds. Capped at one
-        // interval so a stalled scheduler cannot back-fill hours it did not observe,
-        // and at midnight so the seconds land in the row they belong to.
-        $since = $previousRun
-            ? Carbon::parse($previousRun)
-            : $now->copy()->subSeconds($check->interval_seconds);
-        $since = $since->max($dayStart);
-        $seconds = (int) min(max(0, $since->diffInSeconds($now)), $check->interval_seconds);
 
         $column = $result->ok ? 'up_seconds' : 'down_seconds';
         $day->increment($column, $seconds);

@@ -42,24 +42,7 @@ class MonthlyUptimeReport
         foreach ($components as $component) {
             $up = (int) ($totals->get($component->id)->up_seconds ?? 0);
             $down = (int) ($totals->get($component->id)->down_seconds ?? 0);
-            $intervals = [];
-            foreach ($windows as $window) {
-                if (! $window->components->contains($component->id)) {
-                    continue;
-                }
-                $from = max($start->timestamp, $window->starts_at->timestamp, $window->started_at->timestamp);
-                $to = min($end->timestamp, $window->ends_at->timestamp, $window->completed_at->timestamp ?? PHP_INT_MAX, $window->cancelled_at->timestamp ?? PHP_INT_MAX);
-                if ($to > $from) {
-                    $intervals[] = [$from, $to];
-                }
-            }
-            sort($intervals);
-            $excluded = 0;
-            $lastEnd = 0;
-            foreach ($intervals as [$from, $to]) {
-                $excluded += max(0, $to - max($from, $lastEnd));
-                $lastEnd = max($lastEnd, $to);
-            }
+            $excluded = MaintenanceIntervals::excluded($windows, $component->id, $start, $end);
             $eligible = max(0, $elapsed - $excluded);
             $measured = $up + $down;
             $rows[] = ['id' => $component->id, 'name' => $component->name, 'up_seconds' => $up, 'down_seconds' => $down,

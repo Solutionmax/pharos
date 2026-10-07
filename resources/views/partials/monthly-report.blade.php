@@ -1,5 +1,6 @@
 <h1>{{ __('Monthly uptime report') }}</h1>
 <p>{{ __('UTC calendar months. Uptime uses measured seconds; unobserved time is not counted as uptime. Recorded maintenance windows are excluded from coverage.') }}</p>
+<p class="hint">{{ __('Historical daily totals may include maintenance observations. They are preserved and are not reconstructed.') }}</p>
 <form method="GET"><label>{{ __('Month') }} <input type="month" name="month" value="{{ $report['month'] }}" min="2000-01" max="{{ now('UTC')->format('Y-m') }}" required></label> <button type="submit">{{ __('Show report') }}</button></form>
 <p><a href="{{ \App\Services\PageUrls::route($admin ? 'admin.reports.csv' : 'public.reports.csv', ['month' => $report['month']]) }}">{{ __('Download CSV') }}</a> · <a href="{{ \App\Services\PageUrls::route($admin ? 'admin.reports.pdf' : 'public.reports.pdf', ['month' => $report['month']]) }}">{{ __('Download PDF') }}</a></p>
 <div style="overflow:auto"><table class="op-table"><thead><tr><th>{{ __('Service') }}</th><th>{{ __('Uptime') }}</th><th>{{ __('Coverage') }}</th><th>{{ __('Up seconds') }}</th><th>{{ __('Down seconds') }}</th><th>{{ __('Excluded maintenance seconds') }}</th><th>{{ __('Unobserved seconds') }}</th></tr></thead><tbody>

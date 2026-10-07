@@ -47,6 +47,12 @@ local intraday boundaries. Do not interpret them as a local-time SLA. Percentage
 are weighted by observed up/down seconds. Missing data is unobserved, never
 assumed available. Coverage compares observed seconds to elapsed month seconds
 minus actual recorded maintenance windows; overlapping windows are counted once.
+New check rollups exclude only the maintenance portion of the capped observed UTC
+interval. Scheduled-but-unstarted work does not count as an exclusion; cancellation
+ends the exclusion. Raw check history and old daily totals remain intact. Historical
+daily totals recorded before this accounting change may still include maintenance
+observations; reports/export metadata state this limitation rather than fabricating
+a retrospective correction.
 Manually set maintenance states and delayed/missing monitoring samples may appear
 as unobserved time. The current month stops at the present time.
 
@@ -101,7 +107,10 @@ admin), upload JSON, review the named resources/counts, then import. The preview
 expires after 20 minutes, is encrypted in server cache, belongs to the current
 user and selected page and is consumed once. Revoked page rights block application.
 Application validates again and runs in one database transaction. Identical
-normalized exports cannot be applied twice to the same page.
+normalized exports cannot be applied twice to the same page. Resource order,
+object key order, equivalent UTC timestamps, explicit default fields and ignored
+metadata do not create a new import identity. Component/group source references
+remain significant; incident/subscriber IDs with no destination use are ignored.
 
 Accepts one local JSON object with `groups` (alias `component_groups`), `components`,
 `incidents`, `subscribers`. Each value is either a list or a Cachet API envelope
