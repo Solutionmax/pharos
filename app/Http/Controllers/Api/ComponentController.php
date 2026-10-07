@@ -49,6 +49,7 @@ class ComponentController extends Controller
         $component->update([
             'status' => ComponentStatus::from($data['status']),
             'description' => $data['description'] ?? $component->description,
+            ...$component->reportedAttributes($request->attributes->get('api_token'), 'webhook'),
         ]);
 
         return response()->json(['data' => $this->present($component->fresh())]);

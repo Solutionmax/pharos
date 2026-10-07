@@ -31,8 +31,11 @@ class KumaController extends Controller
 
         $status = self::MAP[(int) $data['heartbeat']['status']];
         $changed = $status !== null && $component->status !== $status;
-        if ($changed) {
-            $component->update(['status' => $status]);
+        if ($status !== null) {
+            $component->update([
+                'status' => $status,
+                ...$component->reportedAttributes($request->attributes->get('api_token'), 'kuma'),
+            ]);
         }
 
         return response()->json(['ok' => true, 'changed' => $changed, 'status' => $component->status->value]);
