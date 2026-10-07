@@ -29,6 +29,7 @@ class Check extends Model
 
     protected $casts = [
         'type' => CheckType::class,
+        'tls_expires_at' => LocalTime::class,
         'enabled' => 'boolean',
         'last_run_at' => LocalTime::class,
         'created_at' => LocalTime::class,
@@ -39,6 +40,11 @@ class Check extends Model
     public function component(): BelongsTo
     {
         return $this->belongsTo(Component::class);
+    }
+
+    public function locations()
+    {
+        return $this->belongsToMany(ProbeLocation::class, 'check_probe_location');
     }
 
     /** Due when it has never run, or the interval has elapsed. */

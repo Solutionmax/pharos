@@ -28,3 +28,6 @@ Schedule::command('pharos:maintenance')->everyMinute()->withoutOverlapping();
 Schedule::command('pharos:notify')->everyMinute()->withoutOverlapping();
 
 Schedule::call(fn () => app(OutgoingWebhook::class)->sendPending())->everyMinute()->name('deliver-webhooks')->withoutOverlapping();
+
+Schedule::command('pharos:probe-remote')->everyMinute()->withoutOverlapping();
+Schedule::call(function () { \App\Models\ProbeJob::where('expires_at', '<', now()->subDay())->delete(); \App\Models\ProbeSample::where('checked_at', '<', now()->subDays(2))->delete(); })->daily()->name('prune-probe-results');

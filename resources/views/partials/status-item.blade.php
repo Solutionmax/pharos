@@ -24,3 +24,7 @@
   <span class="pill sm {{ $component->status->tone() }}">{{ $component->status->label() }}</span>
   </span>
 </div>
+
+@if ($component->show_latency)
+@include('partials.latency-chart', ['component' => $component])
+@endif

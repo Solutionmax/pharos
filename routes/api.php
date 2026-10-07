@@ -41,3 +41,5 @@ foreach (Route::getRoutes()->getRoutes() as $original) {
     $copy->setAction($action);
     Route::getRoutes()->add($copy);
 }
+
+require __DIR__.'/monitoring-api.php';

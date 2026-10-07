@@ -4,7 +4,7 @@
 @php $check = $component->check; @endphp
 @include('partials.pagehead', [
   'title' => $component->exists ? 'Edit '.$component->name : 'Add a component',
-  'back' => ['url' => \App\Services\PageUrls::route('admin.components'), 'label' => __('Components')],
+  'back' => ['url' => \App\Services\PageUrls::route('admin.components'), 'label' => 'Components'],
 ])
 
 <form method="POST" action="{{ $component->exists ? \App\Services\PageUrls::route('admin.components.update', $component) : \App\Services\PageUrls::route('admin.components.store') }}">
@@ -123,6 +123,7 @@
             @include('partials.tip', ['text' => 'HTTP GET fetches the URL and counts 200 through 399 as up. TCP port only opens a socket: for mail, databases, anything without a web page.'])</span>
           <select id="check_type" name="check_type">
             <option value="http" @selected(old('check_type', $check?->type->value) === 'http')>{{ __('HTTP GET') }}</option>
+            <option value="dns" @selected(old('check_type', $check?->type->value) === 'dns')>{{ __('DNS record') }}</option>
             <option value="tcp" @selected(old('check_type', $check?->type->value) === 'tcp')>{{ __('TCP port') }}</option>
           </select>
         </div>
@@ -142,6 +143,13 @@
         <span class="help">{{ __('A URL for HTTP, host:port for TCP. Leave empty for the other sources.') }}</span>
       </div>
 
+      <div class="fields">
+        <div class="field"><label for="expected_keyword">{{ __('Expected HTTP text') }}</label><input id="expected_keyword" name="expected_keyword" maxlength="1000" value="{{ old('expected_keyword', $check?->expected_keyword) }}"><span class="help">{{ __('Optional. A successful response must contain this exact text.') }}</span></div>
+        <div class="field"><label for="dns_type">{{ __('DNS record type') }}</label><select id="dns_type" name="dns_type">@foreach (['A','AAAA','CNAME','MX','TXT'] as $type)<option @selected(old('dns_type',$check?->dns_type)===$type)>{{ $type }}</option>@endforeach</select></div>
+        <div class="field"><label for="dns_expected">{{ __('Expected DNS value') }}</label><input id="dns_expected" name="dns_expected" maxlength="1000" value="{{ old('dns_expected',$check?->dns_expected) }}"><span class="help">{{ __('For MX use priority and hostname, for example 10 mail.example.net.') }}</span></div>
+      </div>
+      @if ($check?->tls_expires_at)<p>{{ __('TLS certificate expires') }}: {{ $check->tls_expires_at->toDateString() }} @if ($check->tls_warning)<strong>{{ __('Certificate renewal needed') }}</strong>@endif</p>@endif
+      <label class="check"><input type="checkbox" name="show_latency" value="1" @checked(old('show_latency',$component->show_latency))> {{ __('Show response time on the public page') }}</label>
       @if ($check && $check->type === \App\Enums\CheckType::Heartbeat)
         <x-note id="component.heartbeat-url">
           <b>{{ __('Heartbeat URL.') }}</b> {{ __('Have the job call this when it finishes. Silence for two intervals is the alarm.') }}
@@ -165,6 +173,10 @@
     </div>
   </div>
 </form>
+
+@if ($component->exists && $check)
+@include('partials.latency-chart', ['component' => $component])
+@endif
 
 @if ($component->exists && ($recent ?? null) !== null)
   {{-- Under the check settings, outside the form: nothing here is posted. --}}

@@ -45,7 +45,19 @@ class CheckRunner
     public function runOne(Check $check, ?\DateTimeInterface $now = null): ProbeResult
     {
         $now ??= now();
-        $result = $this->probe->run($check);
+        $result = app(ProbeQuorum::class)->combine($check, $this->probe->run($check));
+
+        if ($result->inconclusive) {
+            if ($check->type !== CheckType::Heartbeat) {
+                $check->update(['last_run_at' => $now]);
+            }
+
+            return $result;
+        }
+        if ($check->type === CheckType::Http) {
+            $check->tls_expires_at = $result->tlsExpiresAt;
+            $check->tls_warning = $result->tlsExpiresAt && $result->tlsExpiresAt <= now()->addDays(14) ? $result->message : null;
+        }
 
         // Read before this run's own result is written: it is the reference for how
         // much wall time this evaluation stands for.
@@ -144,7 +156,11 @@ class CheckRunner
         // the form says it will overwrite. Under maintenance is the one deliberate
         // state a probe cannot judge, so that stays until someone clears it.
         if (! in_array($component->status, [ComponentStatus::Operational, ComponentStatus::UnderMaintenance], true)) {
-            $component->update(['status' => ComponentStatus::Operational]);
+            $component->update(['status' => $result->degraded ? ComponentStatus::PerformanceIssues : ComponentStatus::Operational]);
+        }
+
+        if ($result->degraded && $component->status === ComponentStatus::Operational) {
+            $component->update(['status' => ComponentStatus::PerformanceIssues]);
         }
 
         // Checked independently of the component status: the first healthy result

@@ -197,9 +197,20 @@ class ComponentController extends Controller
             'check_type' => ['nullable', Rule::in(array_column(CheckType::cases(), 'value'))],
             'check_target' => ['nullable', 'string', 'max:255'],
             'check_interval' => ['nullable', 'integer', 'min:30', 'max:86400'],
+            'expected_keyword' => ['nullable', 'string', 'max:1000'],
+            'dns_type' => ['nullable', Rule::in(['A', 'AAAA', 'CNAME', 'MX', 'TXT'])],
+            'dns_expected' => ['nullable', 'string', 'max:1000'],
+            'show_latency' => ['sometimes', 'boolean'],
         ];
 
         if ($request->input('source') === 'check') {
+            if ($request->input('check_type') === 'dns') {
+                $rules['dns_type'] = ['required', Rule::in(['A', 'AAAA', 'CNAME', 'MX', 'TXT'])];
+                $rules['dns_expected'] = ['required', 'string', 'max:1000'];
+                $rules['check_target'] = ['required', 'string', 'max:253', 'regex:/^(?:[a-z0-9_](?:[a-z0-9_-]{0,61}[a-z0-9_])?\.)*[a-z0-9_](?:[a-z0-9_-]{0,61}[a-z0-9_])?\.?$/i'];
+
+                return $rules;
+            }
             $rules['check_target'] = $request->input('check_type') === 'tcp'
                 ? ['required', 'string', 'max:255', 'regex:/^[A-Za-z0-9._-]+:\d{1,5}$/']
                 : ['required', 'url:http,https', 'max:255'];
@@ -219,6 +230,7 @@ class ComponentController extends Controller
             'status' => ComponentStatus::from((int) $data['status']),
             'enabled' => (bool) ($data['enabled'] ?? false),
             'show_uptime' => (bool) ($data['show_uptime'] ?? false),
+            'show_latency' => (bool) ($data['show_latency'] ?? false),
             'source' => $data['source'],
         ];
     }
@@ -252,6 +264,9 @@ class ComponentController extends Controller
                 'type' => $isHeartbeat ? CheckType::Heartbeat : CheckType::from($data['check_type'] ?? 'http'),
                 'target' => $target,
                 'interval_seconds' => $data['check_interval'] ?? 60,
+                'expected_keyword' => ($data['check_type'] ?? '') === 'http' ? ($data['expected_keyword'] ?? null) : null,
+                'dns_type' => ($data['check_type'] ?? '') === 'dns' ? ($data['dns_type'] ?? null) : null,
+                'dns_expected' => ($data['check_type'] ?? '') === 'dns' ? ($data['dns_expected'] ?? null) : null,
                 'enabled' => true,
             ],
         );

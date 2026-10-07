@@ -41,6 +41,7 @@ class Component extends Model
         'status' => ComponentStatus::class,
         'enabled' => 'boolean',
         'show_uptime' => 'boolean',
+        'show_latency' => 'boolean',
         'reported_at' => LocalTime::class,
         'created_at' => LocalTime::class,
         'updated_at' => LocalTime::class,

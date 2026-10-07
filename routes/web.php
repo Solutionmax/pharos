@@ -235,6 +235,7 @@ Route::get('/storage/{path}', function (string $path) {
 })->where('path', '.*')->name('public.upload');
 
 require __DIR__.'/public-features.php';
+require __DIR__.'/monitoring.php';
 
 // Register explicit page routes from the same actions, so legacy and page routes
 // cannot drift in validation or middleware. Account/install routes remain central.
