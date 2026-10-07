@@ -1,0 +1,22 @@
+{
+  "All systems operational": "Alle systemen werken",
+  "Preferences": "Voorkeuren",
+  "Admin language": "Beheertaal",
+  "Only your administration screens. Each status page has its own language.": "Alleen jouw beheerschermen. Iedere statuspagina heeft een eigen taal.",
+  "Public page language": "Taal van de publieke pagina",
+  "Used by this status page, subscriber emails and automatic incidents.": "Voor deze statuspagina, abonnee-mails en automatische incidenten.",
+  "Operational": "Operationeel",
+  "Degraded performance": "Verminderde prestaties",
+  "Partial outage": "Gedeeltelijke storing",
+  "Major outage": "Grote storing",
+  "Under maintenance": "In onderhoud",
+  "Investigating": "In onderzoek",
+  "Identified": "Oorzaak vastgesteld",
+  "Monitoring": "Wordt gevolgd",
+  "Resolved": "Opgelost",
+  "Confirm your subscription to {brand} status updates": "Bevestig je abonnement op statusmeldingen van {brand}",
+  "[{brand}] Scheduled maintenance: {maintenance}": "[{brand}] Gepland onderhoud: {maintenance}",
+  "# Confirm your subscription\n\nYou asked to be told about incidents on the {brand} status page. Confirm the address and we will mail you when something happens, and when it is fixed.\n\n[Confirm subscription]({link})\n\nThe link is good for {hours} hours. If you did not ask for this, ignore this mail; the address is forgotten on its own.": "# Bevestig je abonnement\n\nJe vroeg om meldingen over incidenten op de statuspagina van {brand}. Bevestig je adres; we mailen je bij een incident en wanneer het is opgelost.\n\n[Abonnement bevestigen]({link})\n\nDe link is {hours} uur geldig. Heb je dit niet aangevraagd, negeer deze mail; je adres wordt automatisch verwijderd.",
+  "{status}\n\n# {incident}\n\nAffects **{components}**\n\n> {message}\n\n{when}\n\n[View status page]({link})": "{status}\n\n# {incident}\n\nBetreft **{components}**\n\n> {message}\n\n{when}\n\n[Statuspagina bekijken]({link})",
+  "Scheduled maintenance\n\n# {maintenance}\n\nFrom **{starts}** until **{ends}**\n\nAffects **{components}**\n\n> {message}\n\n[View status page]({link})": "Gepland onderhoud\n\n# {maintenance}\n\nVan **{starts}** tot **{ends}**\n\nBetreft **{components}**\n\n> {message}\n\n[Statuspagina bekijken]({link})"
+}

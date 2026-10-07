@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\RecoveryCode;
 use App\Models\User;
 use App\Services\Audit;
+use App\Services\Localization;
 use App\Services\Notes;
 use App\Services\Totp;
 use App\Services\UserSessions;
@@ -89,12 +90,16 @@ class ProfileController extends Controller
     {
         $data = $request->validate([
             'theme' => ['required', Rule::in(User::THEMES)],
+            'locale' => ['sometimes', 'string', Rule::in(array_keys(Localization::LANGUAGES))],
             // Empty means the installation default. Only zones PHP knows, so a
             // stored value can never break a page.
             'timezone' => ['sometimes', 'nullable', 'string', Rule::in(\DateTimeZone::listIdentifiers())],
         ], ['timezone.in' => 'Choose a time zone from the list.']);
 
         $changes = ['theme' => $data['theme']];
+        if (isset($data['locale'])) {
+            $changes['locale'] = $data['locale'];
+        }
         if ($request->has('timezone')) {
             $changes['timezone'] = $data['timezone'] ?? null;
         }

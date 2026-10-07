@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\StatusPage;
+use App\Services\Localization;
 use App\Services\PageContext;
 use Closure;
 use Illuminate\Http\Request;
@@ -58,7 +59,10 @@ class ResolveStatusPage
         $request->attributes->set('explicit_status_page', $explicit);
 
         return app(PageContext::class)->run($page->id, function () use ($page, $request, $next) {
-            $response = $next($request);
+            $publicLocale = ! $request->is('admin/*', 'api/*') || str_ends_with((string) $request->route()->getName(), 'status-page.preview');
+            $response = $publicLocale
+                ? Localization::run(Localization::page(), fn () => $next($request))
+                : $next($request);
             if ($response instanceof StreamedResponse && $callback = $response->getCallback()) {
                 $response->setCallback(fn () => app(PageContext::class)->run($page->id, $callback));
             }

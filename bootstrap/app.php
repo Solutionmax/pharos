@@ -27,6 +27,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo(fn () => route('admin.overview'));
 
         $middleware->web(append: SecurityHeaders::class);
+        $middleware->appendToGroup('web', \App\Http\Middleware\UseLocale::class);
         $middleware->appendToGroup('web', CentralAdministration::class);
         // Invited with "two factor first": only the profile until it is on.
         $middleware->appendToGroup('web', RequireTwoFactorSetup::class);
@@ -42,6 +43,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // without a token gets a 404 that tells a stranger which ids exist.
         $middleware->prependToPriorityList(SubstituteBindings::class, ApiTokenAuth::class);
         $middleware->prependToPriorityList(ApiTokenAuth::class, ResolveStatusPage::class);
+        $middleware->prependToPriorityList(ResolveStatusPage::class, \App\Http\Middleware\UseLocale::class);
         $middleware->appendToPriorityList(ResolveStatusPage::class, EnsurePageCapability::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

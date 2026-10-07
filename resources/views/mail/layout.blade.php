@@ -2,7 +2,7 @@
      ignore most of what a browser honours. The accent colour is the only thing
      that changes per install; the logo is optional. --}}
 <!doctype html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">

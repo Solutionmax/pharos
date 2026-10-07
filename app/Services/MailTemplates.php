@@ -117,12 +117,12 @@ class MailTemplates
 
     public static function defaultSubject(string $key): string
     {
-        return self::TEMPLATES[$key]['subject'];
+        return __(self::TEMPLATES[$key]['subject']);
     }
 
     public static function defaultBody(string $key): string
     {
-        return self::TEMPLATES[$key]['body'];
+        return __(self::TEMPLATES[$key]['body']);
     }
 
     /** Which incident template an update gets: first word, last word, or one in between. */

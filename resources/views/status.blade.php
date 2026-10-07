@@ -205,7 +205,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
       @if ($modules['page.show_overall'])
         <div class="hero-top">
           <span class="dot" style="color:var(--{{ ['ok' => 'green', 'w' => 'amber', 'p' => 'orange', 'b' => 'red', 'm' => 'blue'][$worst->tone()] }})"></span>
-          <h1>{{ $worst === \App\Enums\ComponentStatus::Operational ? 'All systems operational' : $worst->label() }}</h1>
+          <h1>{{ __($worst === \App\Enums\ComponentStatus::Operational ? 'All systems operational' : $worst->label()) }}</h1>
           <span class="when">checked {{ \App\Services\Clock::now()->format('H:i') }}</span>
         </div>
       @endif

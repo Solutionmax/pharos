@@ -21,6 +21,7 @@ trait Branded
     protected function captureBrandContext(): void
     {
         $this->brandPageId = app(PageContext::class)->id();
+        $this->locale(\App\Services\Localization::page());
     }
 
     /**
@@ -30,7 +31,8 @@ trait Branded
     protected function inBrandContext(callable $callback): mixed
     {
         return Clock::withInstallationZone(
-            fn () => app(PageContext::class)->run($this->brandPageId ?? app(PageContext::class)->id(), $callback),
+            fn () => app(PageContext::class)->run($this->brandPageId ?? app(PageContext::class)->id(),
+                fn () => \App\Services\Localization::run(\App\Services\Localization::page(), $callback)),
         );
     }
 

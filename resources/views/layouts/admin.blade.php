@@ -4,7 +4,7 @@ $branding = app(\App\Services\Branding::class);
 $adminTheme = in_array(auth()->user()?->theme, \App\Models\User::THEMES, true) ? auth()->user()->theme : $branding->theme();
 @endphp
 <!doctype html>
-<html lang="en" @if ($adminTheme !== 'system') data-theme="{{ $adminTheme }}" @endif>
+<html lang="{{ app()->getLocale() }}" @if ($adminTheme !== 'system') data-theme="{{ $adminTheme }}" @endif>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">

@@ -92,6 +92,16 @@
         <div class="panel-bd">
           <div class="fields">
             <div class="field">
+              <label for="page-locale">{{ __('Public page language') }}</label>
+              <select id="page-locale" name="locale">
+                @foreach (\App\Services\Localization::LANGUAGES as $code => $label)
+                  <option value="{{ $code }}" @selected(old('locale', $locale) === $code)>{{ $label }}</option>
+                @endforeach
+              </select>
+              <span class="help">{{ __('Used by this status page, subscriber emails and automatic incidents.') }}</span>
+              @error('locale')<span class="err">{{ $message }}</span>@enderror
+            </div>
+            <div class="field">
               <label for="theme">Default theme</label>
               <select id="theme" name="theme">
                 <option value="system" @selected($theme === 'system')>Follow the visitor's device</option>

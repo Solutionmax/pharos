@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ComponentGroup;
 use App\Models\Setting;
 use App\Services\Branding;
+use App\Services\Localization;
 use App\Services\PageUrls;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -25,6 +26,7 @@ class StatusPageSettingsController extends Controller
             'enabled' => $this->branding->modules(),
             'theme' => $this->branding->theme(),
             'incidentDays' => (int) Setting::get('page.incident_days', 5),
+            'locale' => Localization::page(),
             'groups' => ComponentGroup::withCount('components')->orderBy('position')->get(),
         ]);
     }
@@ -34,12 +36,16 @@ class StatusPageSettingsController extends Controller
         $data = $request->validate([
             'theme' => ['required', Rule::in(['system', 'light', 'dark'])],
             'incident_days' => ['required', 'integer', 'min:1', 'max:30'],
+            'locale' => ['sometimes', 'string', Rule::in(array_keys(Localization::LANGUAGES))],
             'modules' => ['sometimes', 'array'],
             'groups' => ['sometimes', 'array'],
         ]);
 
         Setting::put('brand.theme', $data['theme']);
         Setting::put('page.incident_days', (string) $data['incident_days']);
+        if (isset($data['locale'])) {
+            Setting::put('page.locale', $data['locale']);
+        }
 
         // Unchecked boxes are absent from the request, so iterate over the known
         // module list rather than over what was submitted.

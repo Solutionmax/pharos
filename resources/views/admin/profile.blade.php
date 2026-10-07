@@ -67,10 +67,18 @@
     </section>
 
     <section class="ix-card" aria-labelledby="pf-prefs">
-      <header><h3 id="pf-prefs">Preferences</h3></header>
+      <header><h3 id="pf-prefs">{{ __('Preferences') }}</h3></header>
       <div class="bd">
         <form method="POST" action="{{ route('admin.profile.preferences') }}" class="pf-prefs">
           @csrf @method('PUT')
+          <div class="pf-pref">
+            <span><label for="profile-locale"><b>{{ __('Admin language') }}</b></label><span>{{ __('Only your administration screens. Each status page has its own language.') }}</span></span>
+            <span class="pf-prefctl"><select class="ix-input" id="profile-locale" name="locale">
+              @foreach (\App\Services\Localization::LANGUAGES as $code => $label)
+                <option value="{{ $code }}" @selected(old('locale', $user->locale ?? 'en') === $code)>{{ $label }}</option>
+              @endforeach
+            </select>@error('locale')<span class="err">{{ $message }}</span>@enderror</span>
+          </div>
           <div class="pf-pref">
             <span><b id="pf-theme-label">Theme</b><span>For the admin screens. The quick switch at the top of each screen still works for this browser.</span></span>
             <span class="pf-prefctl">
