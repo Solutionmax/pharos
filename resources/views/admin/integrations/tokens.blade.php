@@ -28,8 +28,8 @@
           <tr>
             <td><b>{{ $token->name }}</b></td>
             <td><span class="ix-state {{ $token->scope === 'write' ? 'w' : 'ok' }}">{{ ucfirst($token->scope) }}</span></td>
-            <td class="hide-sm">{{ $token->user?->name ?? 'No owner' }}</td>
-            <td class="num hide-sm">{{ $token->created_at->format('j M Y') }}</td>
+            <td class="hide-sm">{{ $token->user?->name ?? __('No owner') }}</td>
+            <td class="num hide-sm">{{ $token->created_at->translatedFormat('j M Y') }}</td>
             <td class="num">{{ $token->last_used_at?->diffForHumans() ?? 'never' }}</td>
             <td class="right">
               <form method="POST" action="{{ \App\Services\PageUrls::route('admin.integrations.tokens.destroy', $token) }}"
@@ -44,7 +44,7 @@
         @endforeach
         </tbody>
       </table></div>
-      @if ($tokens->hasPages())<div class="bd">{{ $tokens->links('vendor.pagination.pharos', ['previousLabel' => 'Previous', 'nextLabel' => 'Next']) }}</div>@endif
+      @if ($tokens->hasPages())<div class="bd">{{ $tokens->links('vendor.pagination.pharos', ['previousLabel' => __('Previous'), 'nextLabel' => __('Next')]) }}</div>@endif
     @endif
     <div class="bd" style="border-top:1px solid var(--line)"><div class="ix-note"><span aria-hidden="true">ⓘ</span><span>{{ __('Unused for 90 days? Revoke it. A write token stops working at once when its owner loses edit rights on this page.') }}</span></div></div>
   </section>

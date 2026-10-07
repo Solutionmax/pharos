@@ -37,12 +37,12 @@
 
 <div class="pp-kpis">
   <div class="pp-kpi"><span class="k">{{ __('Accounts') }}</span><div class="v">{{ $users->count() }}</div>
-    <span class="n">{{ $admins }} {{ \Illuminate\Support\Str::plural('administrator', $admins) }}, {{ $users->count() - $admins }} {{ \Illuminate\Support\Str::plural('user', $users->count() - $admins) }}</span></div>
+    <span class="n">{{ $admins }} {{ \App\Services\Localization::plural('administrator', $admins) }}, {{ $users->count() - $admins }} {{ \App\Services\Localization::plural('user', $users->count() - $admins) }}</span></div>
   <div class="pp-kpi"><span class="k">{{ __('Two factor') }}</span><div class="v" @if ($withTwoFactor < $users->count()) style="color:var(--amber-ink)" @endif>{{ $withTwoFactor }}/{{ $users->count() }}</div>
-    <span class="n">{{ $users->count() - $withTwoFactor === 0 ? 'Every account' : ($users->count() - $withTwoFactor).' '.\Illuminate\Support\Str::plural('account', $users->count() - $withTwoFactor).' without' }}</span></div>
+    <span class="n">{{ $users->count() - $withTwoFactor === 0 ? __('Every account') : ($users->count() - $withTwoFactor).' '.\App\Services\Localization::plural('account', $users->count() - $withTwoFactor).__(' without') }}</span></div>
   <div class="pp-kpi"><span class="k">{{ __('Without access') }}</span><div class="v">{{ $withoutAccess }}</div><span class="n">{{ __('Can sign in, sees no page') }}</span></div>
-  <div class="pp-kpi"><span class="k">{{ __('Active this week') }}</span><div class="v">{{ $sessionsKnown ? $activeWeek : 'Unknown' }}</div>
-    <span class="n">{{ $sessionsKnown ? 'Signed in during the last 7 days' : 'Needs database sessions' }}</span></div>
+  <div class="pp-kpi"><span class="k">{{ __('Active this week') }}</span><div class="v">{{ $sessionsKnown ? $activeWeek : __('Unknown') }}</div>
+    <span class="n">{{ $sessionsKnown ? __('Signed in during the last 7 days') : __('Needs database sessions') }}</span></div>
 </div>
 
 <section class="ix-card" aria-label="{{ __('Accounts') }}">
@@ -76,7 +76,7 @@
           @endif
         </div>
         <div class="pp-meta">
-          <span class="pp-tag {{ $user->isAdmin() ? 'admin' : 'user' }}">{{ $user->role->label() }}</span>
+          <span class="pp-tag {{ $user->isAdmin() ? 'admin' : 'user' }}">{{ __($user->role->label() ?? '') }}</span>
           @if ($user->hasTwoFactor())
             <span class="pp-tag f2a">{{ __('2FA on') }}</span>
           @elseif ($user->require_two_factor)

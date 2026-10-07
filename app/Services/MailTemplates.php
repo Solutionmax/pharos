@@ -270,8 +270,8 @@ class MailTemplates
                 'maintenance' => 'Database upgrade',
                 'message' => "We upgrade the database cluster. **Expect short interruptions** of up to five minutes.\n\n- Websites stay online\n- Mail is queued, not lost",
                 'components' => 'Database, Control panel',
-                'starts' => $start->format('j F Y, H:i'),
-                'ends' => $start->copy()->addHours(2)->format('j F Y, H:i'),
+                'starts' => $start->translatedFormat('j F Y, H:i'),
+                'ends' => $start->copy()->addHours(2)->translatedFormat('j F Y, H:i'),
                 'link' => PageUrls::route('status'),
                 'unsubscribe' => url('/unsubscribe/preview'),
                 'name' => $name,
@@ -293,7 +293,7 @@ class MailTemplates
             'components' => 'Mail, Outbound queue',
             'link' => PageUrls::route('status'),
             'unsubscribe' => url('/unsubscribe/preview'),
-            'when' => Clock::now()->format('j F Y, H:i'), // the customer's zone, like a real notice
+            'when' => Clock::now()->translatedFormat('j F Y, H:i'), // the customer's zone, like a real notice
             'name' => $name,
             'tone' => $key === 'incident_resolved' ? 'ok' : 'p',
         ];

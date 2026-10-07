@@ -3,7 +3,7 @@
 @section('content')
 @include('partials.pagehead', [
   'title' => $incident->name,
-  'sub' => __('Started ').$incident->occurred_at->format('j M Y H:i').' · '.$incident->status->label().' · '.$incident->impact->label().' impact',
+  'sub' => __('Started ').$incident->occurred_at->translatedFormat('j M Y H:i').' · '.$incident->status->label().' · '.$incident->impact->label().' impact',
   'back' => ['url' => \App\Services\PageUrls::route('admin.incidents'), 'label' => __('Incidents')],
 ])
 
@@ -37,7 +37,7 @@
         <ol class="op-tl">
           @foreach ($incident->updates as $update)
             <li class="update-entry-lite">
-              <span class="t"><b>{{ $update->status->label() }}</b>{{ $update->created_at->format('j M H:i') }}@if ($update->automatic) {{ __('· automatic') }} @endif</span>
+              <span class="t"><b>{{ __($update->status->label() ?? '') }}</b>{{ $update->created_at->translatedFormat('j M H:i') }}@if ($update->automatic) {{ __('· automatic') }} @endif</span>
               <div class="md">{!! $update->messageHtml() !!}</div>
             </li>
           @endforeach
@@ -49,7 +49,7 @@
         <header><h3>{{ __('Affected components') }}</h3></header>
         <div class="bd"><span class="op-chips">
           @foreach ($incident->components as $component)
-            <span class="op-chip st-{{ $component->status->tone() }}"><i></i>{{ $component->name }} · {{ $component->status->label() }}</span>
+            <span class="op-chip st-{{ $component->status->tone() }}"><i></i>{{ $component->name }} · {{ __($component->status->label() ?? '') }}</span>
           @endforeach
         </span></div>
       </section>

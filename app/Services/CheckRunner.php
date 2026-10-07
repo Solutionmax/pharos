@@ -188,7 +188,7 @@ class CheckRunner
     {
         $incident = DB::transaction(function () use ($check, $result, $now) {
             $incident = Incident::create([
-                'name' => "{$check->component->name} unreachable",
+                'name' => __(':component unreachable', ['component' => $check->component->name], Localization::page()),
                 'status' => IncidentStatus::Investigating,
                 'impact' => 'major',
                 'source' => 'check',
@@ -205,8 +205,8 @@ class CheckRunner
                 'incident_id' => $incident->id,
                 'status' => IncidentStatus::Investigating,
                 'message' => $result->message
-                    ? "Automatic check failed: {$result->message}."
-                    : 'Automatic check failed.',
+                    ? __('Automatic check failed: :reason.', ['reason' => __($result->message, [], Localization::page())], Localization::page())
+                    : __('Automatic check failed.', [], Localization::page()),
                 'automatic' => true,
             ]);
 
@@ -230,14 +230,13 @@ class CheckRunner
             return;
         }
 
-        DB::transaction(function () use ($incident, $now) {
+        DB::transaction(function () use ($incident, $now, $check) {
             $incident->update(['status' => IncidentStatus::Resolved, 'resolved_at' => $now]);
 
             IncidentUpdate::create([
                 'incident_id' => $incident->id,
                 'status' => IncidentStatus::Resolved,
-                'message' => 'The component responded normally again for '
-                    .self::RECOVERY_STREAK.' consecutive checks.',
+                'message' => __('The component responded normally again for :count consecutive checks.', ['count' => $this->recoveryStreak($check)], Localization::page()),
                 'automatic' => true,
             ]);
         });

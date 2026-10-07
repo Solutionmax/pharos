@@ -4,7 +4,7 @@
 @include('partials.pagehead', [
   'title' => $group->exists ? 'Edit '.$group->name : 'Add a service',
   'sub' => $group->exists
-      ? $group->components_count.' '.\Illuminate\Support\Str::plural('component', $group->components_count).' in this service'
+      ? $group->components_count.' '.\App\Services\Localization::plural('component', $group->components_count).' in this service'
       : null,
   'back' => ['url' => $listUrl, 'label' => __('Services')],
 ])
@@ -46,7 +46,7 @@
       </div>
 
       <div class="actions">
-        <button class="btn" type="submit">{{ $group->exists ? 'Save service' : 'Add service' }}</button>
+        <button class="btn" type="submit">{{ $group->exists ? __('Save service') : __('Add service') }}</button>
         <a class="btn ghost" href="{{ $listUrl }}">{{ __('Cancel') }}</a>
       </div>
     </div>

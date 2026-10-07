@@ -41,7 +41,7 @@
     <div class="field">
       <label for="client_secret">{{ __('Client secret') }}</label>
       <input id="client_secret" name="client_secret" type="password" autocomplete="new-password"
-             placeholder="{{ $sso->clientSecret() ? 'Stored, leave empty to keep it' : '' }}">
+             placeholder="{{ $sso->clientSecret() ? __('Stored, leave empty to keep it') : '' }}">
       <span class="help">{{ __('Stored encrypted and never shown again. Empty means unchanged.') }}</span>
       @error('client_secret')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
     </div>

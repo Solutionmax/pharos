@@ -18,7 +18,7 @@
     @unless ($adding) @method('PUT') @endunless
     <input type="hidden" name="_drawer" value="{{ $drawerId }}">
     <header>
-      <h2 id="{{ $drawerId }}-title">{{ $adding ? 'Add someone' : 'Edit access for '.$member->name }}</h2>
+      <h2 id="{{ $drawerId }}-title">{{ $adding ? __('Add someone') : __('Edit access for ').$member->name }}</h2>
       <button type="button" class="pui-x" data-close aria-label="{{ __('Close') }}">{{ __('×') }}</button>
     </header>
     <div class="bd">
@@ -92,7 +92,7 @@
     </div>
     <footer>
       <button type="button" class="btn ghost" data-close>{{ __('Cancel') }}</button>
-      <button type="submit" class="btn">{{ $adding ? 'Add and invite' : 'Save access' }}</button>
+      <button type="submit" class="btn">{{ $adding ? __('Add and invite') : __('Save access') }}</button>
     </footer>
   </form>
 </div>

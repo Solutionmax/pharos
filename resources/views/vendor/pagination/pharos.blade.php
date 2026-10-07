@@ -6,14 +6,14 @@
       <span class="sub">· {{ $paginator->firstItem() }} {{ __('to') }} {{ $paginator->lastItem() }} {{ __('of') }} {{ $paginator->total() }}</span></span>
     <span class="pager-links">
       @if ($paginator->onFirstPage())
-        <span class="btn ghost" aria-disabled="true">{{ __('←') }} {{ $previousLabel ?? 'Newer' }}</span>
+        <span class="btn ghost" aria-disabled="true">{{ __('←') }} {{ $previousLabel ?? __('Newer') }}</span>
       @else
-        <a class="btn ghost" href="{{ $paginator->previousPageUrl() }}" rel="prev">{{ __('←') }} {{ $previousLabel ?? 'Newer' }}</a>
+        <a class="btn ghost" href="{{ $paginator->previousPageUrl() }}" rel="prev">{{ __('←') }} {{ $previousLabel ?? __('Newer') }}</a>
       @endif
       @if ($paginator->hasMorePages())
-        <a class="btn ghost" href="{{ $paginator->nextPageUrl() }}" rel="next">{{ $nextLabel ?? 'Older' }} {{ __('→') }}</a>
+        <a class="btn ghost" href="{{ $paginator->nextPageUrl() }}" rel="next">{{ $nextLabel ?? __('Older') }} {{ __('→') }}</a>
       @else
-        <span class="btn ghost" aria-disabled="true">{{ $nextLabel ?? 'Older' }} {{ __('→') }}</span>
+        <span class="btn ghost" aria-disabled="true">{{ $nextLabel ?? __('Older') }} {{ __('→') }}</span>
       @endif
     </span>
   </nav>

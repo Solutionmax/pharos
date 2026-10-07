@@ -44,7 +44,7 @@
             <label for="tag-color">{{ __('Tag colour') }}</label>
             <select id="tag-color" name="tag_color">
               @foreach (\App\Models\StatusPage::TAG_COLORS as $color => $label)
-                <option value="{{ $color }}" @selected(old('tag_color', $statusPage->tag_color ?: 'teal') === $color)>{{ $label }}</option>
+                <option value="{{ $color }}" @selected(old('tag_color', $statusPage->tag_color ?: 'teal') === $color)>{{ __($label) }}</option>
               @endforeach
             </select>
           </div>
@@ -92,7 +92,7 @@
   </div>
 
   <div class="actions">
-    <button class="btn" type="submit">{{ $editing ? 'Save page' : 'Create page' }}</button>
+    <button class="btn" type="submit">{{ $editing ? __('Save page') : __('Create page') }}</button>
     <a class="btn ghost" href="{{ route('admin.pages.index') }}">{{ __('Cancel') }}</a>
   </div>
 </form>

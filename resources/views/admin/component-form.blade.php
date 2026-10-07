@@ -25,7 +25,7 @@
             @include('partials.tip', ['text' => 'The status shown right now. A Pharos check overwrites this on its next run, except Under maintenance, which stays until you clear it. With Manual only it stays exactly as you set it.'])</span>
           <select id="status" name="status">
             @foreach (\App\Enums\ComponentStatus::cases() as $case)
-              <option value="{{ $case->value }}" @selected(old('status', $component->status?->value ?? 1) == $case->value)>{{ $case->label() }}</option>
+              <option value="{{ $case->value }}" @selected(old('status', $component->status?->value ?? 1) == $case->value)>{{ __($case->label() ?? '') }}</option>
             @endforeach
           </select>
         </div>
@@ -110,9 +110,9 @@
             @include('partials.tip', ['text' => 'Who sets this status. Checked by Pharos: Pharos tests it itself, over HTTP, TCP or a heartbeat from your job. Set from outside: Uptime Kuma, n8n or a script writes it through the API. Manual only: you set it here. Pharos marks a service as set from outside by itself the first time the API or Uptime Kuma writes its status.'])</span>
           <select id="source" name="source">
             @foreach (['Checked by Pharos' => ['check' => 'HTTP or TCP check', 'heartbeat' => 'Heartbeat from your job'], 'Set from outside' => ['kuma' => 'Uptime Kuma', 'webhook' => 'API or webhook (n8n, scripts)', 'upstream' => 'Upstream provider'], 'Set by hand' => ['manual' => 'Manual only']] as $sourceGroup => $sourceOptions)
-              <optgroup label="{{ $sourceGroup }}">
+              <optgroup label="{{ __($sourceGroup) }}">
                 @foreach ($sourceOptions as $value => $label)
-                  <option value="{{ $value }}" @selected(old('source', $component->source) === $value)>{{ $label }}</option>
+                  <option value="{{ $value }}" @selected(old('source', $component->source) === $value)>{{ __($label) }}</option>
                 @endforeach
               </optgroup>
             @endforeach
@@ -167,7 +167,7 @@
       </div>
 
       <div class="actions">
-        <button class="btn" type="submit">{{ $component->exists ? 'Save component' : 'Add component' }}</button>
+        <button class="btn" type="submit">{{ $component->exists ? __('Save component') : __('Add component') }}</button>
         <a class="btn ghost" href="{{ \App\Services\PageUrls::route('admin.components') }}">{{ __('Cancel') }}</a>
       </div>
     </div>
@@ -186,7 +186,7 @@
       @if ($recent['count'] === 0)
         <span class="help">{{ __('No runs yet. The first one lands within a minute once the cron line is in place.') }}</span>
       @else
-        <span class="beats" role="img" aria-label="{{ $component->name }}, last {{ $recent['count'] }} runs: {{ $recent['failed'] ? $recent['failed'].' failed' : 'all ok' }}">
+        <span class="beats" role="img" aria-label="{{ $component->name }}, last {{ $recent['count'] }} runs: {{ $recent['failed'] ? $recent['failed'].__(' failed') : __('all ok') }}">
           @foreach ($recent['beats'] as $beat)<span class="beat{{ $beat['tone'] !== 'ok' ? ' '.$beat['tone'] : '' }}" data-tip="{{ $beat['tip'] }}" tabindex="0"></span>@endforeach
           @for ($i = $recent['count']; $i < $recent['limit']; $i++)<span class="beat unknown" aria-hidden="true"></span>@endfor
         </span>

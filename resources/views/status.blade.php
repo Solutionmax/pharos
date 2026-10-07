@@ -240,8 +240,8 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
           @endphp
           {{-- One tab stop for the whole bar with the summary spoken, not ninety for the slivers. --}}
           <div class="bar" role="img" tabindex="0"
-               aria-label="Daily availability over the last {{ \App\Services\Uptime::WINDOW_DAYS }} days: {{ \App\Services\Uptime::format($overall) }} uptime, {{ $overall === null ? 'awaiting measurements' : ($badDays ? $badDays.' '.\Illuminate\Support\Str::plural('day', $badDays).' with a disruption' : 'no recorded disruptions') }}">
-            @foreach ($overallBar as $i => $tone)<span class="{{ $tone }}" data-tip="{{ $overallDays[$i] ? \Carbon\Carbon::parse($overallDays[$i])->format('j M') : '' }}{{ ['b' => ' · major outage', 'p' => ' · partial outage', 'w' => ' · degraded', 'unknown' => ' · no data'][$tone] ?? ' · all operational' }}"></span>@endforeach
+               aria-label="Daily availability over the last {{ \App\Services\Uptime::WINDOW_DAYS }} days: {{ \App\Services\Uptime::format($overall) }} uptime, {{ $overall === null ? __('awaiting measurements') : ($badDays ? $badDays.' '.\App\Services\Localization::plural('day', $badDays).__(' with a disruption') : __('no recorded disruptions')) }}">
+            @foreach ($overallBar as $i => $tone)<span class="{{ $tone }}" data-tip="{{ $overallDays[$i] ? \Carbon\Carbon::parse($overallDays[$i])->translatedFormat('j M') : '' }}{{ ['b' => __(' · major outage'), 'p' => __(' · partial outage'), 'w' => __(' · degraded'), 'unknown' => __(' · no data')][$tone] ?? __(' · all operational') }}"></span>@endforeach
           </div>
           <div class="scale"><span>{{ \App\Services\Uptime::WINDOW_DAYS }} {{ __('days ago') }}</span><span>{{ __('today') }}</span></div>
         </div>
@@ -255,13 +255,13 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
       @foreach ($maintenances as $maintenance)
         @php $live = $maintenance->starts_at->lte(now()); @endphp
         <article id="maintenance-{{ $maintenance->id }}" class="plan @if ($live) live @endif" data-live-key="maintenance-{{ $maintenance->id }}" data-live-value="{{ $live ? 'on' : 'planned' }}:{{ $maintenance->updated_at?->timestamp }}">
-          <span class="pill m">{{ $live ? 'Maintenance in progress' : 'Scheduled maintenance' }}</span>
+          <span class="pill m">{{ $live ? __('Maintenance in progress') : __('Scheduled maintenance') }}</span>
           <div class="tx">
             <b>{{ $maintenance->title }}</b>
-            @if ($maintenance->components->isNotEmpty())<span class="aff">{{ __('Affects') }} {{ $maintenance->components->pluck('name')->join(', ', ' and ') }}</span>@endif
+            @if ($maintenance->components->isNotEmpty())<span class="aff">{{ __('Affects') }} {{ $maintenance->components->pluck('name')->join(', ', __(' and ')) }}</span>@endif
             @if ($maintenance->message)<div class="md">{!! \Illuminate\Support\Str::markdown($maintenance->message, \App\Services\MailTemplates::MARKDOWN) !!}</div>@endif
           </div>
-          <time datetime="{{ $maintenance->starts_at->toIso8601String() }}">{{ $maintenance->starts_at->format('j M H:i') }} {{ __('to') }} {{ $maintenance->ends_at->isSameDay($maintenance->starts_at) ? $maintenance->ends_at->format('H:i') : $maintenance->ends_at->format('j M H:i') }}</time>
+          <time datetime="{{ $maintenance->starts_at->toIso8601String() }}">{{ $maintenance->starts_at->translatedFormat('j M H:i') }} {{ __('to') }} {{ $maintenance->ends_at->isSameDay($maintenance->starts_at) ? $maintenance->ends_at->format('H:i') : $maintenance->ends_at->translatedFormat('j M H:i') }}</time>
         </article>
       @endforeach
     </section>
@@ -292,12 +292,12 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
             <div class="svc-hd">
               <span class="car" aria-hidden="true">&#9654;</span>
               <span class="nm">{{ $group->name }}</span>
-              <span class="cnt">{{ $group->components->count() }} {{ \Illuminate\Support\Str::plural('component', $group->components->count()) }}</span>
+              <span class="cnt">{{ $group->components->count() }} {{ \App\Services\Localization::plural('component', $group->components->count()) }}</span>
               <span class="service-metrics">
               @if ($modules['page.show_component_uptime'])
                 @include('partials.service-history', ['historyName' => $group->name, 'serviceBar' => app(\App\Services\Uptime::class)->aggregate($group->components->mapWithKeys(fn ($c) => [$c->id => $bars[$c->id]])->all())])
               @endif
-              <span class="pill {{ $gs->tone() }}">{{ $gs->label() }}</span>
+              <span class="pill {{ $gs->tone() }}">{{ __($gs->label() ?? '') }}</span>
               </span>
             </div>
           </summary>
@@ -319,7 +319,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
           <div class="day-hd">
             <h3>{{ __('Ongoing') }}</h3>
             <span class="ln"></span>
-            <span class="none">{{ __('since') }} {{ $ongoing->last()->occurred_at->timezone(\App\Services\Clock::timezone())->format('j F') }}</span>
+            <span class="none">{{ __('since') }} {{ $ongoing->last()->occurred_at->timezone(\App\Services\Clock::timezone())->translatedFormat('j F') }}</span>
           </div>
           @foreach ($ongoing as $incident)
             @include('partials.incident', ['incident' => $incident])
@@ -330,7 +330,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
         @php $carbon = \Illuminate\Support\Carbon::parse($date, \App\Services\Clock::timezone()); @endphp
         <div class="day">
           <div class="day-hd">
-            <h3>{{ $carbon->isToday() ? 'Today · '.$carbon->format('j F') : $carbon->format('j F') }}</h3>
+            <h3>{{ $carbon->isToday() ? 'Today · '.$carbon->translatedFormat('j F') : $carbon->translatedFormat('j F') }}</h3>
             <span class="ln"></span>
             @if ($incidents->isEmpty())<span class="none">{{ __('No incidents') }}</span>@endif
           </div>

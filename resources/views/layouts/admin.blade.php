@@ -412,7 +412,7 @@ pre .k{color:var(--brand)}
 
   <main class="main">
     @include('partials.scheduler-warning')
-    @if (session('status'))<div class="flash">{{ session('status') }}</div>@endif
+    @if (session('status'))<div class="flash">{{ __(session('status')) }}</div>@endif
     {{-- Pages that show every error inline (Settings) opt out of the global list to avoid saying it twice. --}}
     @if ($errors->any() && ! View::hasSection('own-errors'))<div class="errors"><ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
     @yield('content')

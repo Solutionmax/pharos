@@ -34,9 +34,9 @@
           <td>
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
               <b>{{ $group->name }}</b>
-              <span class="op-pill st-{{ $groupStatus->tone() }}">{{ $groupStatus->label() }}</span>
+              <span class="op-pill st-{{ $groupStatus->tone() }}">{{ __($groupStatus->label() ?? '') }}</span>
             </div>
-            <div class="sub" style="margin-top:4px">{{ $group->components_count }} {{ \Illuminate\Support\Str::plural('component', $group->components_count) }} · {{ $group->collapsed ? 'starts collapsed' : 'starts open' }}</div>
+            <div class="sub" style="margin-top:4px">{{ $group->components_count }} {{ \App\Services\Localization::plural('component', $group->components_count) }} · {{ $group->collapsed ? __('starts collapsed') : __('starts open') }}</div>
             @if ($group->components->isNotEmpty())
               <div class="op-chips" style="margin-top:6px">
                 @foreach ($group->components->take(8) as $component)
@@ -47,7 +47,7 @@
             @endif
           </td>
           <td>@include('partials.service-history', ['serviceBar' => $serviceBars[$group->id], 'historyName' => $group->name])</td>
-          <td class="hide-sm"><span class="ix-state {{ $group->visible ? 'ok' : 'w' }}">{{ $group->visible ? 'Visible' : 'Hidden' }}</span></td>
+          <td class="hide-sm"><span class="ix-state {{ $group->visible ? 'ok' : 'w' }}">{{ $group->visible ? __('Visible') : __('Hidden') }}</span></td>
           @if ($canEditPage)
           <td class="hide-sm">
             <span class="rowacts" style="justify-content:flex-start">
@@ -66,7 +66,7 @@
               <a href="{{ \App\Services\PageUrls::route('admin.groups.edit', array_filter(['group' => $group->id, 'from' => $from])) }}">{{ __('Edit') }}</a>
               <form method="POST" action="{{ \App\Services\PageUrls::route('admin.groups.destroy', $group) }}"
                     data-confirm-title="Delete {{ $group->name }}?"
-                    data-confirm="Its {{ $group->components_count }} {{ \Illuminate\Support\Str::plural('component', $group->components_count) }} and their uptime history are <strong>kept</strong>: they move to the page without a heading. Only the grouping is lost."
+                    data-confirm="Its {{ $group->components_count }} {{ \App\Services\Localization::plural('component', $group->components_count) }} and their uptime history are <strong>kept</strong>: they move to the page without a heading. Only the grouping is lost."
                     data-confirm-action="{{ __('Delete service') }}">
                 @csrf @method('DELETE')
                 <button type="submit">{{ __('Delete') }}</button>

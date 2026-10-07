@@ -19,13 +19,13 @@
     <h2>{{ $user->name }}</h2>
     <p>{{ $user->email }}</p>
     <div class="pp-badges">
-      <span class="pp-tag {{ $user->isAdmin() ? 'admin' : 'user' }}">{{ $user->role->label() }}</span>
-      <span class="pp-tag {{ $user->hasTwoFactor() ? 'f2a' : 'no2a' }}">{{ $user->hasTwoFactor() ? '2FA on' : 'No 2FA' }}</span>
-      <span class="pp-tag user">{{ $pageCount === null ? 'All pages' : $pageCount.' '.\Illuminate\Support\Str::plural('page', $pageCount) }}</span>
+      <span class="pp-tag {{ $user->isAdmin() ? 'admin' : 'user' }}">{{ __($user->role->label() ?? '') }}</span>
+      <span class="pp-tag {{ $user->hasTwoFactor() ? 'f2a' : 'no2a' }}">{{ $user->hasTwoFactor() ? __('2FA on') : __('No 2FA') }}</span>
+      <span class="pp-tag user">{{ $pageCount === null ? __('All pages') : $pageCount.' '.\App\Services\Localization::plural('page', $pageCount) }}</span>
     </div>
   </div>
   <div class="right">
-    <div class="pf-stat"><b>{{ $user->created_at?->format('j M Y') }}</b><span>{{ __('Member since') }}</span></div>
+    <div class="pf-stat"><b>{{ $user->created_at?->translatedFormat('j M Y') }}</b><span>{{ __('Member since') }}</span></div>
     <div class="pf-stat"><b>{{ $thisDevice['browser'] }} {{ __('on') }} {{ $thisDevice['platform'] }}</b><span>{{ __('This session') }}</span></div>
   </div>
 </section>
@@ -75,7 +75,7 @@
             <span><label for="profile-locale"><b>{{ __('Admin language') }}</b></label><span>{{ __('Only your administration screens. Each status page has its own language.') }}</span></span>
             <span class="pf-prefctl"><select class="ix-input" id="profile-locale" name="locale">
               @foreach (\App\Services\Localization::LANGUAGES as $code => $label)
-                <option value="{{ $code }}" @selected(old('locale', $user->locale ?? 'en') === $code)>{{ $label }}</option>
+                <option value="{{ $code }}" @selected(old('locale', $user->locale ?? 'en') === $code)>{{ __($label) }}</option>
               @endforeach
             </select>@error('locale')<span class="err">{{ $message }}</span>@enderror</span>
           </div>
@@ -84,7 +84,7 @@
             <span class="pf-prefctl">
               <span class="pp-seg" role="radiogroup" aria-labelledby="pf-theme-label">
                 @foreach (['light' => 'Light', 'system' => 'System', 'dark' => 'Dark'] as $value => $label)
-                  <label><input type="radio" name="theme" value="{{ $value }}" @checked($themeNow === $value)><span>{{ $label }}</span></label>
+                  <label><input type="radio" name="theme" value="{{ $value }}" @checked($themeNow === $value)><span>{{ __($label) }}</span></label>
                 @endforeach
               </span>
             </span>
@@ -105,7 +105,7 @@
         </form>
         <div class="pf-pref">
           <span><b>{{ __('"Good to know" notes') }}</b>
-            <span>{{ $hiddenNotes ? 'You have hidden '.$hiddenNotes.' Good to know '.\Illuminate\Support\Str::plural('note', $hiddenNotes).'.' : 'All Good to know notes are showing.' }}</span></span>
+            <span>{{ $hiddenNotes ? __('You have hidden ').$hiddenNotes.__(' Good to know ').\App\Services\Localization::plural('note', $hiddenNotes).'.' : __('All Good to know notes are showing.') }}</span></span>
           @if ($hiddenNotes)
             <form method="POST" action="{{ route('admin.notes.restore') }}">@csrf
               <button class="btn ghost" type="submit">{{ __('Show all notes again') }}</button>
@@ -122,7 +122,7 @@
                   <ul>
                     @foreach ($group['notes'] as $note)
                       <li>
-                        <span>{{ $note['title'] }}</span>
+                        <span>{{ __($note['title']) }}</span>
                         <form method="POST" action="{{ route('admin.notes.restore-one', $note['id']) }}">@csrf<button type="submit">{{ __('Show again') }}</button></form>
                       </li>
                     @endforeach

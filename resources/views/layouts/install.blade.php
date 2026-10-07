@@ -38,7 +38,7 @@ $journey = [
         @php $n = $i + 1; @endphp
         <li @class(['done' => $n < $current, 'now' => $n === $current]) @if ($n === $current) aria-current="step" @endif>
           <span class="pi-n" aria-hidden="true">{{ $n < $current ? '✓' : $n }}</span>
-          <span><b>{{ $label }}</b><small>{{ $hint }}</small></span>
+          <span><b>{{ __($label) }}</b><small>{{ __($hint) }}</small></span>
         </li>
       @endforeach
     </ol>

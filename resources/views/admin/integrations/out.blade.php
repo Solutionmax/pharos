@@ -41,7 +41,7 @@
                 </label>
               @endforeach
             </div>
-            <noscript><p class="help">{{ __('Without JavaScript, load the fields for your tool:') }} @foreach ($destinationProfiles as $value => $profile)<a href="{{ \App\Services\PageUrls::route('admin.integrations.out', ['destination' => $value]) }}#add-notification">{{ $profile['title'] }}</a> @endforeach</p></noscript>
+            <noscript><p class="help">{{ __('Without JavaScript, load the fields for your tool:') }} @foreach ($destinationProfiles as $value => $profile)<a href="{{ \App\Services\PageUrls::route('admin.integrations.out', ['destination' => $value]) }}#add-notification">{{ __($profile['title']) }}</a> @endforeach</p></noscript>
           </div></li>
 
           <li><div>
@@ -75,7 +75,7 @@
             </fieldset>
             @if ($errors->any())<p class="help">{{ __('Enter any webhook URL or token again before saving. Credentials are not kept after a validation error.') }}</p>@endif
             <details class="ix-more">
-              <summary>{{ __('Step by step:') }} <span id="destination-title">{{ $destination['title'] }}</span></summary>
+              <summary>{{ __('Step by step:') }} <span id="destination-title">{{ __($destination['title']) }}</span></summary>
               <div>
                 <p id="destination-summary">{{ $destination['summary'] }}</p>
                 <ol id="destination-steps" class="integration-steps">@foreach ($destination['steps'] as $step)<li>{{ $step }}</li>@endforeach</ol>
@@ -90,7 +90,7 @@
             <span class="sub">{{ __('Internal incidents are included too: this goes to your own team, not to subscribers.') }}</span>
             <div class="ix-chips" role="group" aria-labelledby="events-heading">
               @foreach (\App\Models\WebhookEndpoint::EVENTS as $value => $label)
-                <label class="ix-chip"><input type="checkbox" name="events[]" value="{{ $value }}" @checked(in_array($value, (array) $chosenEvents, true))>{{ $label }}</label>
+                <label class="ix-chip"><input type="checkbox" name="events[]" value="{{ $value }}" @checked(in_array($value, (array) $chosenEvents, true))>{{ __($label) }}</label>
               @endforeach
             </div>
             @error('events')<p class="help" style="color:var(--red-ink);margin-top:6px">{{ $message }}</p>@enderror
@@ -141,7 +141,7 @@
                 @include('partials.brand-mark', ['mark' => $endpoint->format])
                 <span>
                   <b>{{ $endpoint->label }}</b>
-                  <span class="d">{{ $tiles[$endpoint->format][0] ?? $endpoint->formatLabel() }} · {{ $endpoint->last_attempt_at ? 'last attempt '.$endpoint->last_attempt_at->format('j M H:i') : 'never tried' }}</span>
+                  <span class="d">{{ $tiles[$endpoint->format][0] ?? $endpoint->formatLabel() }} · {{ $endpoint->last_attempt_at ? 'last attempt '.$endpoint->last_attempt_at->translatedFormat('j M H:i') : 'never tried' }}</span>
                   @if ($canEditIntegrations)<span class="d mono">{{ $endpoint->maskedUrl() }}</span>@endif
                 </span>
                 <span class="ix-state {{ $tone }}">{{ $word }}</span>
@@ -158,7 +158,7 @@
                           @csrf @method('PUT')
                           <div class="ix-chips">
                             @foreach (\App\Models\WebhookEndpoint::EVENTS as $value => $label)
-                              <label class="ix-chip"><input type="checkbox" name="events[]" value="{{ $value }}" @checked($endpoint->wants($value))>{{ $label }}</label>
+                              <label class="ix-chip"><input type="checkbox" name="events[]" value="{{ $value }}" @checked($endpoint->wants($value))>{{ __($label) }}</label>
                             @endforeach
                           </div>
                           <button class="btn ghost op-sm" type="submit" style="align-self:flex-start">{{ __('Save moments') }}</button>
@@ -183,7 +183,7 @@
               </li>
             @endforeach
           </ul>
-          {{ $endpoints->links('vendor.pagination.pharos', ['previousLabel' => 'Previous', 'nextLabel' => 'Next']) }}
+          {{ $endpoints->links('vendor.pagination.pharos', ['previousLabel' => __('Previous'), 'nextLabel' => __('Next')]) }}
         @endif
       </div>
     </section>

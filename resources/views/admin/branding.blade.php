@@ -23,9 +23,9 @@
   $accept = fn (array $spec): string => implode(',', array_values(array_unique(array_merge(...array_map(fn ($ext) => $typeMimes[$ext] ?? [], $spec['mimes'])))));
 
   $multiUsed = $plan->pageLimit
-      ? $plan->activePages.' of '.$plan->pageLimit.' '.\Illuminate\Support\Str::plural('page', $plan->pageLimit).' in use'
-      : $plan->activePages.' '.\Illuminate\Support\Str::plural('page', $plan->activePages).' in use, no limit';
-  $termEnds = $plan->expiresAt?->format('j F Y');
+      ? $plan->activePages.' of '.$plan->pageLimit.' '.\App\Services\Localization::plural('page', $plan->pageLimit).' in use'
+      : $plan->activePages.' '.\App\Services\Localization::plural('page', $plan->activePages).' in use, no limit';
+  $termEnds = $plan->expiresAt?->translatedFormat('j F Y');
   $keepsBrand = $plan->signed(\App\Services\License::FEATURE_BRAND_PACK);
 @endphp
 
@@ -153,7 +153,7 @@
               @endif
             </div>
             @if ($plan->multiPage)
-              <span class="bx-state ok">{{ $plan->pageLimit ? $plan->activePages.' / '.$plan->pageLimit : 'Unlimited' }}</span>
+              <span class="bx-state ok">{{ $plan->pageLimit ? $plan->activePages.' / '.$plan->pageLimit : __('Unlimited') }}</span>
             @elseif ($plan->multiPageEnded())
               <span class="bx-state warn">{{ __('Ended') }}</span>
             @else
@@ -167,7 +167,7 @@
             <p><b>{{ __('No licence key yet.') }}</b> {{ __('Everything on this screen marked Free works without one.') }}</p>
           @else
             <p>
-              <b>{{ __('Licensed') }}{{ $plan->issuedTo ? ' to '.$plan->issuedTo : '' }}.</b>
+              <b>{{ __('Licensed') }}{{ $plan->issuedTo ? __(' to ').$plan->issuedTo : '' }}.</b>
               @if ($plan->boundTo) {{ __('Tied to') }} {{ $plan->boundTo }}. @endif
               @if (! $plan->expiresAt)
                 {{ __('This key has no end date.') }}
@@ -179,12 +179,12 @@
             </p>
             @if ($plan->expiresAt)
               <p>
-                {{ $plan->expired ? 'Since then' : 'After that' }}:
+                {{ $plan->expired ? __('Since then') : __('After that') }}:
                 @if ($keepsBrand) {{ __('the Brand pack stays,') }} @endif
                 @if ($plan->signed(\App\Services\License::FEATURE_MULTI_PAGES))
-                  {{ __('extra pages') }} {{ $plan->expired ? 'keep' : 'will keep' }} {{ __('running but new pages cannot be created and archived pages cannot be reactivated,') }}
+                  {{ __('extra pages') }} {{ $plan->expired ? 'keep' : __('will keep') }} {{ __('running but new pages cannot be created and archived pages cannot be reactivated,') }}
                 @endif
-                {{ __('and support') }} {{ $plan->expired ? 'has ended' : 'ends' }}.
+                {{ __('and support') }} {{ $plan->expired ? __('has ended') : 'ends' }}.
               </p>
             @endif
           @endif
@@ -203,7 +203,7 @@
                 @foreach ($option['includes'] as $line)<li>{{ $line }}</li>@endforeach
               </ul>
               @if ($plan->isUpgrade($key) && ($url = \App\Support\LicencePlan::buyUrl($key)))
-                <a class="btn {{ $key === 'brand_pack' ? '' : 'ghost' }} bx-opt-buy" href="{{ $url }}" target="_blank" rel="noopener">{{ match ($key) { 'brand_pack' => 'Buy the brand pack', 'commercial' => 'Request a quote', default => 'Get '.$option['name'] } }}</a>
+                <a class="btn {{ $key === 'brand_pack' ? '' : 'ghost' }} bx-opt-buy" href="{{ $url }}" target="_blank" rel="noopener">{{ match ($key) { 'brand_pack' => __('Buy the brand pack'), 'commercial' => __('Request a quote'), default => __('Get ').$option['name'] } }}</a>
               @endif
             </div>
           @endforeach
@@ -212,7 +212,7 @@
         <div class="bx-plan-act">
           <a class="linkbtn" href="{{ $buyUrl }}" target="_blank" rel="noopener">{{ __('Compare plans') }}</a>
           @if ($isAdmin)
-            <a class="btn ghost" href="#licence">{{ $plan->hasKey ? 'Change the licence key' : 'Enter a licence key' }}</a>
+            <a class="btn ghost" href="#licence">{{ $plan->hasKey ? __('Change the licence key') : __('Enter a licence key') }}</a>
           @else
             <span class="bx-fine">{{ __('Only an installation administrator can add or change the licence key.') }}</span>
           @endif
@@ -294,7 +294,7 @@
           @if ($licensed)
             <div class="bx-mailnote">
               <p>{{ __('Subscriber emails from this page open with the') }} <b>{{ __('logo for the light theme') }}</b>{{ __(', on a white card. Without a logo the name is set in your accent colour. There is no separate email logo to upload.') }}</p>
-              <p class="bx-uses">{{ __('Now used:') }} <b data-pv="email-source">{{ $brand['logo'] ? 'your logo for the light theme' : 'the name in your accent colour' }}</b></p>
+              <p class="bx-uses">{{ __('Now used:') }} <b data-pv="email-source">{{ $brand['logo'] ? __('your logo for the light theme') : __('the name in your accent colour') }}</b></p>
               <p><a href="{{ \App\Services\PageUrls::route('admin.mail-templates') }}">{{ __('Change the wording in Email, Templates') }}</a></p>
             </div>
           @else
@@ -339,14 +339,14 @@
       <section class="panel bx-licence" id="licence" aria-labelledby="bx-licence-title">
         <div class="panel-hd">
           <h3 id="bx-licence-title">{{ __('Licence key') }}</h3>
-          <span class="hint">{{ $plan->hasKey ? 'Active for the whole installation' : 'Not activated' }}</span>
+          <span class="hint">{{ $plan->hasKey ? __('Active for the whole installation') : __('Not activated') }}</span>
         </div>
         <div class="panel-bd">
           @if ($plan->hasKey)
             @if ($expiringSoon)
               <x-note id="branding.expiring" warn>
-                <b>{{ $daysLeft === 0 ? 'Runs out today.' : 'Runs out in '.$daysLeft.' '.\Illuminate\Support\Str::plural('day', $daysLeft).'.' }}</b>
-                {{ __('On') }} {{ $expiresAt->format('j F Y') }} {{ __('the term ends.') }}
+                <b>{{ $daysLeft === 0 ? __('Runs out today.') : __('Runs out in ').$daysLeft.' '.\App\Services\Localization::plural('day', $daysLeft).'.' }}</b>
+                {{ __('On') }} {{ $expiresAt->translatedFormat('j F Y') }} {{ __('the term ends.') }}
                 @if ($plan->signed(\App\Services\License::FEATURE_BRAND_PACK)) {{ __('The Brand pack is yours to keep.') }} @endif
                 @if ($plan->signed(\App\Services\License::FEATURE_MULTI_PAGES)) {{ __('After that no new pages can be created or reactivated.') }} @endif
                 {{ __('Renew and paste the new key below.') }}
@@ -354,9 +354,9 @@
             @endif
 
             <x-note id="branding.activated">
-              <b>{{ __('Activated.') }}</b> {{ __('Licensed to') }} {{ $issuedTo ?? 'this installation' }}.
+              <b>{{ __('Activated.') }}</b> {{ __('Licensed to') }} {{ $issuedTo ?? __('this installation') }}.
               @if ($expiresAt)
-                {{ __('The term') }} {{ $plan->expired ? 'ended on' : 'runs until' }} <b>{{ $expiresAt->format('j F Y') }}</b>{{ $keepsBrand ? '; the Brand pack has no end date' : '' }}.
+                {{ __('The term') }} {{ $plan->expired ? __('ended on') : __('runs until') }} <b>{{ $expiresAt->translatedFormat('j F Y') }}</b>{{ $keepsBrand ? __('; the Brand pack has no end date') : '' }}.
               @else
                 {{ __('This key has no end date.') }}
               @endif
@@ -370,9 +370,9 @@
           <form method="POST" action="{{ route('admin.branding.activate') }}" class="bx-keyform">
             @csrf
             <div class="field">
-              <label for="key">{{ $plan->hasKey ? 'Paste a new key' : 'Already have a key?' }}</label>
+              <label for="key">{{ $plan->hasKey ? __('Paste a new key') : __('Already have a key?') }}</label>
               <textarea id="key" name="key" rows="3" class="mono" placeholder="{{ __('eyJwcm9kdWN0Ijo…') }}" aria-describedby="key-help" @error('key') aria-invalid="true" @enderror>{{ old('key') }}</textarea>
-              <span class="help" id="key-help">{{ $plan->hasKey ? 'A renewal or upgrade replaces the current key. ' : '' }}{{ __('Paste the key from your purchase email. It is verified here; nothing is sent anywhere.') }}</span>
+              <span class="help" id="key-help">{{ $plan->hasKey ? __('A renewal or upgrade replaces the current key. ') : '' }}{{ __('Paste the key from your purchase email. It is verified here; nothing is sent anywhere.') }}</span>
             </div>
             <div class="actions">
               <button class="btn {{ $plan->hasKey ? 'ghost' : '' }}" type="submit">{{ __('Activate') }}</button>

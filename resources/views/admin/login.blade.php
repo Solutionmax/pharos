@@ -5,7 +5,7 @@
   <h1 class="pa-h1">{{ __('Sign in to') }} {{ $branding->name() }}</h1>
   <p class="pa-lede">{{ __('Manage components, incidents and maintenance for your status pages.') }}</p>
 
-  @if (session('status'))<div class="flash pa-flash" role="status" data-pa-flash>{{ session('status') }}</div>@endif
+  @if (session('status'))<div class="flash pa-flash" role="status" data-pa-flash>{{ __(session('status')) }}</div>@endif
   @if (request('after') === 'rollback')
     {{-- Not a flash: the rollback replaced the session store, so the message travels in the URL. --}}
     <div class="flash pa-flash">{{ __('Rolled back to a backup. You were signed out because the session store was restored too. Sign in with the password you had at the time of that backup.') }}</div>

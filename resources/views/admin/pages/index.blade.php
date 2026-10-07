@@ -6,7 +6,7 @@
   'crumbScope' => 'installation',
   'title' => __('Status pages'),
   'sub' => $pageLimit === null
-      ? $pages->count().' '.\Illuminate\Support\Str::plural('page', $pages->count()).' on this installation'
+      ? $pages->count().' '.\App\Services\Localization::plural('page', $pages->count()).' on this installation'
       : $activePages.' of '.$pageLimit.' pages in use',
   'actions' => $pageLimit !== null && $activePages >= $pageLimit
       ? [['url' => \App\Services\PageUrls::route('admin.branding').'#plan', 'label' => __('Page limit reached, see plans'), 'ghost' => true]]
@@ -54,7 +54,7 @@
 
       <dl class="pg-stats">
         <div><dt>{{ __('Uptime, 90 days') }}</dt><dd>{{ \App\Services\Uptime::format($uptimes[$page->id] ?? null) }}</dd></div>
-        <div><dt>{{ __('Open incidents') }}</dt><dd class="{{ $open ? 'hot' : '' }}">{{ $open ?: 'None' }}</dd></div>
+        <div><dt>{{ __('Open incidents') }}</dt><dd class="{{ $open ? 'hot' : '' }}">{{ $open ?: __('None') }}</dd></div>
         <div><dt>{{ __('Subscribers') }}</dt>
           <dd data-subscriptions="{{ $page->id }}">
             @if ($subscriptionsOn)<span class="pill ok">{{ __('On') }}</span>@else<span class="pill off">{{ __('Off') }}</span>@endif
@@ -84,7 +84,7 @@
           @php $lost = \App\Services\PageDeletion::summary($deleteCounts[$page->id] ?? []); @endphp
           <form class="pg-del" method="POST" action="{{ route('admin.pages.destroy', $page) }}"
                 data-confirm-title="Delete {{ $page->name }}?"
-                data-confirm="This permanently deletes the page{!! $lost ? ' and everything on it: <strong>'.$lost.'</strong>' : ' and its settings' !!}. {{ $page->archived_at ? '' : 'Its public page stops working right away. ' }}This cannot be undone.{{ $page->archived_at ? '' : ' To keep the history, archive the page instead.' }}"
+                data-confirm="This permanently deletes the page{!! $lost ? ' and everything on it: <strong>'.$lost.'</strong>' : ' and its settings' !!}. {{ $page->archived_at ? '' : __('Its public page stops working right away. ') }}This cannot be undone.{{ $page->archived_at ? '' : __(' To keep the history, archive the page instead.') }}"
                 data-confirm-action="{{ __('Delete page') }}">
             @csrf @method('DELETE')
             <button type="submit" title="Delete {{ $page->name }}" aria-label="Delete {{ $page->name }}">@include('partials.icon', ['name' => 'trash', 'size' => 13])</button>

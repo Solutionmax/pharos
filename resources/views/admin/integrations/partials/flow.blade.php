@@ -15,7 +15,7 @@
     @if (! $loop->first)<span class="ix-arrow" aria-hidden="true">→</span>@endif
     <a class="ix-node {{ $key === 'core' ? 'core' : '' }} {{ $active === $key ? 'on' : '' }}" href="{{ \App\Services\PageUrls::route($node['route']) }}" @if ($active === $key) aria-current="page" @endif>
       <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $node['icon'] !!}</svg></span>
-      <span><b>{{ $node['title'] }}</b><span>{{ $node['sub'] }}</span></span>
+      <span><b>{{ __($node['title']) }}</b><span>{{ __($node['sub']) }}</span></span>
     </a>
   @endforeach
 </nav>

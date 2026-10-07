@@ -23,9 +23,9 @@
 @section('card')
   <p class="pa-kicker"><i aria-hidden="true"></i>{{ __('Error 404') }}</p>
   <h1 class="pa-h1">{{ __('This page does not exist') }}</h1>
-  <p class="pa-lede">{{ $viewer ? 'This part of the admin is gone. The status page it belonged to may have been deleted.' : 'The address may be mistyped, or the page was moved or removed.' }}</p>
+  <p class="pa-lede">{{ $viewer ? __('This part of the admin is gone. The status page it belonged to may have been deleted.') : __('The address may be mistyped, or the page was moved or removed.') }}</p>
   <div class="pa-form">
-    <a class="pa-btn nf-btn" href="{{ $back['url'] }}">{{ $back['label'] }}</a>
+    <a class="pa-btn nf-btn" href="{{ $back['url'] }}">{{ __($back['label']) }}</a>
   </div>
 @endsection
 @section('wall')

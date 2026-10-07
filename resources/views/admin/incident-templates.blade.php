@@ -10,7 +10,7 @@
 
 <div class="op-cols">
   <section class="op-card" aria-labelledby="templates-title">
-    <header><h3 id="templates-title">{{ __('Templates for') }} {{ app(\App\Services\PageContext::class)->page()->name }}</h3><span class="hint">{{ $templates->count() }} {{ \Illuminate\Support\Str::plural('template', $templates->count()) }}</span></header>
+    <header><h3 id="templates-title">{{ __('Templates for') }} {{ app(\App\Services\PageContext::class)->page()->name }}</h3><span class="hint">{{ $templates->count() }} {{ \App\Services\Localization::plural('template', $templates->count()) }}</span></header>
     @if ($templates->isEmpty())
       <div class="op-empty" style="border:0;border-radius:0 0 16px 16px">
         @include('partials.icon', ['name' => 'empty', 'size' => 28])

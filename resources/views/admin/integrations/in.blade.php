@@ -88,7 +88,7 @@
             <span class="ix-lbl" id="status-heading">{{ __('Status to send') }}</span>
             <div class="ix-chips" id="ix-status" role="group" aria-labelledby="status-heading">
               @foreach (\App\Enums\ComponentStatus::cases() as $status)
-                <button type="button" class="ix-chip st-{{ $status->tone() }}" data-status="{{ $status->value }}" aria-pressed="{{ $status->value === 1 ? 'true' : 'false' }}"><i style="background:var(--st)"></i>{{ $status->label() }}</button>
+                <button type="button" class="ix-chip st-{{ $status->tone() }}" data-status="{{ $status->value }}" aria-pressed="{{ $status->value === 1 ? 'true' : 'false' }}"><i style="background:var(--st)"></i>{{ __($status->label() ?? '') }}</button>
               @endforeach
             </div>
             <span class="ix-lbl">{{ __('Body') }}</span>
@@ -118,7 +118,7 @@
               <div class="ix-note"><span aria-hidden="true">ⓘ</span><span>{{ __('No heartbeat components yet. Add a component with source') }} <b>{{ __('Heartbeat') }}</b> {{ __('and its check in URL appears here.') }}</span></div>
               <p style="margin-top:8px"><a class="integration-link" href="{{ \App\Services\PageUrls::route('admin.components.create') }}">{{ __('Add a heartbeat component') }}</a></p>
             @endforelse
-            {{ $heartbeats->links('vendor.pagination.pharos', ['previousLabel' => 'Previous', 'nextLabel' => 'Next']) }}
+            {{ $heartbeats->links('vendor.pagination.pharos', ['previousLabel' => __('Previous'), 'nextLabel' => __('Next')]) }}
             <div class="ix-note" style="margin-top:10px"><span aria-hidden="true">ⓘ</span><span>{{ __('No check in on time: the component goes to') }} <b>{{ __('Major outage') }}</b>{{ __('. The next check in sets it back. The secret in the URL is the authorization; no token is needed.') }}</span></div>
           </div>
 
@@ -126,7 +126,7 @@
             <summary>{{ __('Need an incident with a message instead of a status change?') }}</summary>
             <div>
               <p>{{ __('POST this to') }} <code>{{ $api }}/incidents</code> {{ __('with the same header. It appears on the page and is mailed to subscribers. Keep the returned') }} <code>data.id</code> {{ __('and post follow ups to') }} <code>{{ $api }}/incidents/INCIDENT_ID/updates</code>{{ __('; send status') }} <code>resolved</code> {{ __('to close it.') }}</p>
-              <div class="ix-code"><pre id="incident-example">{{ json_encode(['name' => 'Service unavailable', 'status' => 'investigating', 'message' => 'We are investigating a service interruption.', 'impact' => 'major', 'components' => (object) [$guideComponent => 'major_outage']], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre><button type="button" class="ix-copy" data-copy-target="incident-example">{{ __('Copy') }}</button></div>
+              <div class="ix-code"><pre id="incident-example">{{ json_encode(['name' => __('Service unavailable'), 'status' => 'investigating', 'message' => __('We are investigating a service interruption.'), 'impact' => 'major', 'components' => (object) [$guideComponent => 'major_outage']], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre><button type="button" class="ix-copy" data-copy-target="incident-example">{{ __('Copy') }}</button></div>
             </div>
           </details>
         </div></li>
@@ -139,7 +139,7 @@
 
   <div class="ix-side">
     <section class="ix-card" aria-labelledby="feeding-title">
-      <header><h3 id="feeding-title">{{ __('Already feeding this page') }}</h3><span class="hint">{{ $components->count() }} {{ \Illuminate\Support\Str::plural('component', $components->count()) }}</span></header>
+      <header><h3 id="feeding-title">{{ __('Already feeding this page') }}</h3><span class="hint">{{ $components->count() }} {{ \App\Services\Localization::plural('component', $components->count()) }}</span></header>
       <div class="bd">
         @if ($components->isEmpty())
           <p class="op-dim">{{ __('No components yet.') }}</p>
@@ -147,22 +147,22 @@
         <ul class="ix-list">
           @if ($checked->isNotEmpty())
             <li>@include('partials.brand-mark', ['mark' => 'check'])
-              <span><b>{{ __('Pharos checks') }}</b><span class="d">{{ $checked->take(6)->map(fn ($c) => $c->name.' ('.strtoupper($c->check->type->value).')')->join(', ') }}{{ $checked->count() > 6 ? ' and '.($checked->count() - 6).' more' : '' }}</span></span>
+              <span><b>{{ __('Pharos checks') }}</b><span class="d">{{ $checked->take(6)->map(fn ($c) => $c->name.' ('.strtoupper($c->check->type->value).')')->join(', ') }}{{ $checked->count() > 6 ? __(' and ').($checked->count() - 6).__(' more') : '' }}</span></span>
               <span class="ix-state ok">{{ $checked->count() }} {{ __('running') }}</span></li>
           @endif
           @foreach ($heartbeatComponents as $component)
             <li>@include('partials.brand-mark', ['mark' => 'hb'])
-              <span><b>{{ $component->name }}</b><span class="d">{{ __('Heartbeat ·') }} {{ $component->check->last_run_at ? 'last check in '.$component->check->last_run_at->format('j M H:i') : 'expected every '.\Carbon\CarbonInterval::seconds($component->check->interval_seconds)->cascade()->forHumans() }}</span></span>
+              <span><b>{{ $component->name }}</b><span class="d">{{ __('Heartbeat ·') }} {{ $component->check->last_run_at ? 'last check in '.$component->check->last_run_at->translatedFormat('j M H:i') : 'expected every '.\Carbon\CarbonInterval::seconds($component->check->interval_seconds)->cascade()->forHumans() }}</span></span>
               @if (! $component->check->enabled)<span class="ix-state off">{{ __('Off') }}</span>@elseif ($component->check->last_run_at)<span class="ix-state ok">{{ __('Live') }}</span>@else<span class="ix-state w">{{ __('Not seen yet') }}</span>@endif</li>
           @endforeach
           @foreach ($outside as $component)
             <li>@include('partials.brand-mark', ['mark' => $component->source === 'kuma' ? 'kuma' : 'api'])
-              <span><b>{{ $component->name }}</b><span class="d">{{ $component->source === 'kuma' ? 'Uptime Kuma' : 'API' }} {{ __('· last change') }} {{ $component->updated_at?->format('j M H:i') }}</span></span>
+              <span><b>{{ $component->name }}</b><span class="d">{{ $component->source === 'kuma' ? __('Uptime Kuma') : 'API' }} {{ __('· last change') }} {{ $component->updated_at?->translatedFormat('j M H:i') }}</span></span>
               <span class="ix-state ok">{{ __('Set from outside') }}</span></li>
           @endforeach
           @if ($manual->isNotEmpty())
             <li>@include('partials.brand-mark', ['mark' => 'manual'])
-              <span><b>{{ $manual->pluck('name')->take(5)->join(', ') }}{{ $manual->count() > 5 ? ' and '.($manual->count() - 5).' more' : '' }}</b><span class="d">{{ __('Nothing connected: set by hand or through the API') }}</span></span>
+              <span><b>{{ $manual->pluck('name')->take(5)->join(', ') }}{{ $manual->count() > 5 ? __(' and ').($manual->count() - 5).__(' more') : '' }}</b><span class="d">{{ __('Nothing connected: set by hand or through the API') }}</span></span>
               <span class="ix-state off">{{ __('Manual') }}</span></li>
           @endif
         </ul>

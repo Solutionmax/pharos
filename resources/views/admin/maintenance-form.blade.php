@@ -38,10 +38,10 @@
           <div class="field"><label for="announce_minutes">{{ __('Announce') }}</label>
             <select id="announce_minutes" name="announce_minutes" @disabled($started) style="max-width:280px">
               @foreach (\App\Models\Maintenance::LEAD_TIMES as $minutes => $label)
-                <option value="{{ $minutes }}" @selected((int) old('announce_minutes', $maintenance->announce_minutes ?? 1440) === $minutes)>{{ $label }}</option>
+                <option value="{{ $minutes }}" @selected((int) old('announce_minutes', $maintenance->announce_minutes ?? 1440) === $minutes)>{{ __($label) }}</option>
               @endforeach
             </select>
-            @if ($maintenance->announced_at)<span class="help">{{ __('Announced') }} {{ $maintenance->announced_at->format('j M H:i') }}{{ __('. Changing the times announces it again.') }}</span>@endif
+            @if ($maintenance->announced_at)<span class="help">{{ __('Announced') }} {{ $maintenance->announced_at->translatedFormat('j M H:i') }}{{ __('. Changing the times announces it again.') }}</span>@endif
           </div>
         </div></li>
       </ol>
@@ -64,7 +64,7 @@
                   <input type="checkbox" name="components[]" value="{{ $component->id }}" @checked(in_array($component->id, array_map('intval', (array) $selected), true))>
                   <span class="state-dot {{ $component->status->tone() }}"></span>
                   <span>{{ $component->name }}</span>
-                  <small>{{ $component->status->label() }}</small>
+                  <small>{{ __($component->status->label() ?? '') }}</small>
                 </label>
               @endforeach
             @endforeach
@@ -75,7 +75,7 @@
     <div class="op-card">
       <div class="bd">
         <div class="actions">
-          <button class="btn" type="submit">{{ $maintenance->exists ? 'Save maintenance' : 'Schedule maintenance' }}</button>
+          <button class="btn" type="submit">{{ $maintenance->exists ? __('Save maintenance') : __('Schedule maintenance') }}</button>
           <a class="btn ghost" href="{{ \App\Services\PageUrls::route('admin.maintenance') }}">{{ __('Cancel') }}</a>
         </div>
       </div>

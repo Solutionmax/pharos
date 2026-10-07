@@ -62,7 +62,7 @@
       <h4 class="grouphd">{{ __('Updates') }}</h4>
       <div class="switchrow">
         <span class="t"><strong>{{ __('Check for updates automatically') }}</strong>
-          <span class="s">{{ __('Once an hour, from') }} {{ $manifestHost ?? 'the release server' }}{{ __('. Off means the Updates screen only checks when you press Check again.') }}</span></span>
+          <span class="s">{{ __('Once an hour, from') }} {{ $manifestHost ?? __('the release server') }}{{ __('. Off means the Updates screen only checks when you press Check again.') }}</span></span>
         <label class="check"><input type="checkbox" name="update_check" value="1" @checked(old('update_check', $general['update_check']))> {{ __('On') }}</label>
       </div>
 
@@ -93,7 +93,7 @@
           <label for="mailer">{{ __('Mailer') }}</label>
           <select id="mailer" name="mailer">
             @foreach (['smtp' => 'SMTP', 'sendmail' => 'Sendmail (local)', 'log' => 'Write to the log (testing)'] as $value => $label)
-              <option value="{{ $value }}" @selected(old('mailer', $mailForm['mailer'] ?: $mail['mailer']) === $value)>{{ $label }}</option>
+              <option value="{{ $value }}" @selected(old('mailer', $mailForm['mailer'] ?: $mail['mailer']) === $value)>{{ __($label) }}</option>
             @endforeach
           </select>
           <span class="help">{{ __('"Write to the log" puts every mail in') }} <span class="mono">{{ __('storage/logs') }}</span> {{ __('instead of sending it. Handy while you set things up.') }}</span>
@@ -102,7 +102,7 @@
           <label for="encryption">{{ __('Encryption') }}</label>
           <select id="encryption" name="encryption">
             @foreach (['none' => 'None', 'tls' => 'TLS (STARTTLS, port 587)', 'ssl' => 'SSL (port 465)'] as $value => $label)
-              <option value="{{ $value }}" @selected(old('encryption', $mailForm['encryption']) === $value)>{{ $label }}</option>
+              <option value="{{ $value }}" @selected(old('encryption', $mailForm['encryption']) === $value)>{{ __($label) }}</option>
             @endforeach
           </select>
           <span class="help">{{ __('587 + TLS works for most providers; a few want 465 + SSL.') }}</span>
@@ -128,7 +128,7 @@
         <div class="field">
           <label for="password">{{ __('Password') }}</label>
           <input id="password" name="password" type="password" autocomplete="new-password"
-                 placeholder="{{ $mailHasPassword ? 'Stored, leave empty to keep' : '' }}">
+                 placeholder="{{ $mailHasPassword ? __('Stored, leave empty to keep') : '' }}">
           <span class="help">{{ __('Stored encrypted and never shown again. Empty means unchanged.') }}</span>
         </div>
       </div>
@@ -192,7 +192,7 @@
 <div class="panel" id="sso">
   <div class="panel-hd">
     <h3>{{ __('Single sign on') }}</h3>
-    <span class="hint">{{ $sso->enabled() ? 'On · '.$sso->providerName() : 'Off' }} {{ __('· OpenID Connect') }}</span>
+    <span class="hint">{{ $sso->enabled() ? __('On · ').$sso->providerName() : __('Off') }} {{ __('· OpenID Connect') }}</span>
   </div>
   <div class="panel-bd">
     @include('admin.partials.sso-form')

@@ -65,7 +65,7 @@
         @foreach ($entries as $entry)
           <tr>
             <td class="num" style="white-space:nowrap">
-              {{ $entry->created_at->format('j M H:i') }}
+              {{ $entry->created_at->translatedFormat('j M H:i') }}
               <div class="sub">{{ $entry->created_at->diffForHumans() }}</div>
             </td>
             <td>
@@ -101,7 +101,7 @@
         </tbody>
       </table>
     </div>
-    <div class="bd">{{ $entries->links('vendor.pagination.pharos', ['previousLabel' => 'Newer', 'nextLabel' => 'Older']) }}</div>
+    <div class="bd">{{ $entries->links('vendor.pagination.pharos', ['previousLabel' => __('Newer'), 'nextLabel' => __('Older')]) }}</div>
   @endif
 </section>
 

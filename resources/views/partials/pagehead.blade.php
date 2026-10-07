@@ -11,7 +11,7 @@
       @include('partials.breadcrumb', ['crumbs' => $crumbs, 'crumbScope' => $crumbScope ?? 'page'])
     @endisset
     @isset($back)
-      <a href="{{ $back['url'] }}" class="backlink">← {{ $back['label'] }}</a>
+      <a href="{{ $back['url'] }}" class="backlink">← {{ __($back['label']) }}</a>
     @endisset
     <h1>{{ $title }}</h1>
     @isset($sub)<span class="sub">{{ $sub }}</span>@endisset
@@ -19,13 +19,13 @@
   <span class="act">
     @foreach ($actions ?? [] as $extra)
       @if (isset($extra['dialog']))
-      <button type="button" class="btn{{ ($extra['ghost'] ?? false) ? ' ghost' : '' }}" data-dialog="{{ $extra['dialog'] }}" aria-haspopup="dialog">{{ $extra['label'] }}</button>
+      <button type="button" class="btn{{ ($extra['ghost'] ?? false) ? ' ghost' : '' }}" data-dialog="{{ $extra['dialog'] }}" aria-haspopup="dialog">{{ __($extra['label']) }}</button>
       @continue
       @endif
-      <a class="btn{{ ($extra['ghost'] ?? false) ? ' ghost' : '' }}" href="{{ $extra['url'] }}" @if ($extra['external'] ?? false) target="_blank" rel="noopener" @endif>{{ $extra['label'] }}</a>
+      <a class="btn{{ ($extra['ghost'] ?? false) ? ' ghost' : '' }}" href="{{ $extra['url'] }}" @if ($extra['external'] ?? false) target="_blank" rel="noopener" @endif>{{ __($extra['label']) }}</a>
     @endforeach
     @isset($action)
-      <a class="btn" href="{{ $action['url'] }}">{{ $action['label'] }}</a>
+      <a class="btn" href="{{ $action['url'] }}">{{ __($action['label']) }}</a>
     @endisset
     @include('partials.theme-toggle')
   </span>

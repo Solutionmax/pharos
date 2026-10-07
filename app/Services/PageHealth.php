@@ -122,7 +122,7 @@ class PageHealth
             ],
             [
                 'label' => 'Publish the page',
-                'detail' => 'Until then visitors see nothing at '.$page->publicUrl().'.',
+                'detail' => __('Until then visitors see nothing at :url.', ['url' => $page->publicUrl()]),
                 'done' => $published,
                 'action' => $user->isAdmin() ? 'Publish' : null,
                 'url' => $user->isAdmin() ? route('admin.pages.edit', $page) : null,
@@ -143,7 +143,7 @@ class PageHealth
             return ['ready' => false, 'detail' => 'Central mail only writes to the log'];
         }
 
-        return ['ready' => true, 'detail' => ($custom ? 'Own SMTP server' : 'Central transport').($effective['from'] !== '' ? ', from '.$effective['from'] : '')];
+        return ['ready' => true, 'detail' => __($custom ? 'Own SMTP server' : 'Central transport').($effective['from'] !== '' ? __(', from :address', ['address' => $effective['from']]) : '')];
     }
 
     protected function coverage(int $automatic, int $total): string
@@ -152,10 +152,10 @@ class PageHealth
             return 'No components yet';
         }
         if ($automatic === $total) {
-            return 'All '.$total.' components are watched automatically';
+            return __('All :count components are watched automatically', ['count' => $total]);
         }
         $manual = $total - $automatic;
 
-        return $automatic.' of '.$total.' components; '.$manual.' '.($manual === 1 ? 'relies' : 'rely').' on someone noticing';
+        return __($manual === 1 ? ':automatic of :total components; :manual relies on someone noticing' : ':automatic of :total components; :manual rely on someone noticing', ['automatic' => $automatic, 'total' => $total, 'manual' => $manual]);
     }
 }

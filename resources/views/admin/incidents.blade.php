@@ -16,7 +16,7 @@
 <div class="op-kpis">
   <div class="op-kpi {{ $summary['open'] > 0 ? 'warn' : 'good' }}">
     <span class="k">{{ __('Open now') }}</span>
-    <span class="v">{{ $summary['open'] ?: 'None' }}</span>
+    <span class="v">{{ $summary['open'] ?: __('None') }}</span>
     <span class="n">{{ $summary['total'] }} {{ __('in the archive') }}</span>
   </div>
   <div class="op-kpi">
@@ -46,7 +46,7 @@
     <span class="seg">
       @foreach (['' => 'All', 'open' => 'Open', 'resolved' => 'Resolved'] as $value => $label)
         <a href="{{ \App\Services\PageUrls::route('admin.incidents', array_filter(['q' => $search, 'state' => $value])) }}"
-           @if ((string) $state === (string) $value) aria-current="page" @endif>{{ $label }}</a>
+           @if ((string) $state === (string) $value) aria-current="page" @endif>{{ __($label) }}</a>
       @endforeach
     </span>
     <button class="btn ghost op-sm" type="submit">{{ __('Search') }}</button>
@@ -55,7 +55,7 @@
 
 @if ($state !== 'resolved')
 <section class="op-section" aria-labelledby="open-heading" style="margin-bottom:22px">
-  <div class="op-section-hd"><h2 id="open-heading">{{ __('Open now') }}</h2><span class="hint">{{ $open->count() }} {{ \Illuminate\Support\Str::plural('incident', $open->count()) }}</span></div>
+  <div class="op-section-hd"><h2 id="open-heading">{{ __('Open now') }}</h2><span class="hint">{{ $open->count() }} {{ \App\Services\Localization::plural('incident', $open->count()) }}</span></div>
   @forelse ($open as $incident)
     @php
       $updates = $incident->updates->sortByDesc('id')->values();
@@ -66,16 +66,16 @@
       <header class="op-inc-hd">
         <div class="op-inc-title">
           <div class="op-pills">
-            <span class="op-pill st-{{ ['1' => 'b', '2' => 'p', '3' => 'm', '4' => 'ok'][$incident->status->value] }} op-live">{{ $incident->status->label() }}</span>
-            <span class="op-pill">{{ $incident->impact->label() }} {{ __('impact') }}</span>
-            @if ($incident->visibility !== 'public')<span class="op-pill">{{ $incident->visibility === 'internal' ? 'Internal' : 'Signed in only' }}</span>@endif
-            @if ($incident->source !== 'manual')<span class="op-pill">{{ $incident->source === 'check' ? 'Opened by a check' : 'From the API' }}</span>@endif
+            <span class="op-pill st-{{ ['1' => 'b', '2' => 'p', '3' => 'm', '4' => 'ok'][$incident->status->value] }} op-live">{{ __($incident->status->label() ?? '') }}</span>
+            <span class="op-pill">{{ __($incident->impact->label() ?? '') }} {{ __('impact') }}</span>
+            @if ($incident->visibility !== 'public')<span class="op-pill">{{ $incident->visibility === 'internal' ? __('Internal') : __('Signed in only') }}</span>@endif
+            @if ($incident->source !== 'manual')<span class="op-pill">{{ $incident->source === 'check' ? __('Opened by a check') : __('From the API') }}</span>@endif
             @if ($lonely)<span class="op-pill st-w">{{ __('Awaiting an update') }}</span>@endif
             @if ($incident->grouping_key && ($repeats[$incident->grouping_key] ?? 0) > 1)<span class="op-pill st-b">{{ $repeats[$incident->grouping_key] }} {{ __('occurrences in 30 days') }}</span>@endif
           </div>
           <h3>@if ($canEditPage)<a href="{{ \App\Services\PageUrls::route('admin.incidents.update-form', $incident) }}">{{ $incident->name }}</a>@else{{ $incident->name }}@endif</h3>
           <p class="op-when">
-            <span>{{ __('Started') }} <time datetime="{{ $incident->occurred_at->toIso8601String() }}">{{ $incident->occurred_at->format('j M H:i') }}</time> ({{ $incident->occurred_at->diffForHumans() }})</span>
+            <span>{{ __('Started') }} <time datetime="{{ $incident->occurred_at->toIso8601String() }}">{{ $incident->occurred_at->translatedFormat('j M H:i') }}</time> ({{ $incident->occurred_at->diffForHumans() }})</span>
             @if ($latest)<span class="op-dim">{{ __('· last update') }} {{ $latest->created_at->diffForHumans() }}</span>@endif
           </p>
         </div>
@@ -84,17 +84,17 @@
         <div class="op-inc-msg">
           <ol class="op-tl">
             @foreach ($updates->take(3) as $update)
-              <li><span class="t"><b>{{ $update->status->label() }}</b>{{ $update->created_at->format('j M H:i') }}@if ($update->automatic) {{ __('· automatic') }} @endif</span><div class="md">{!! $update->messageHtml() !!}</div></li>
+              <li><span class="t"><b>{{ __($update->status->label() ?? '') }}</b>{{ $update->created_at->translatedFormat('j M H:i') }}@if ($update->automatic) {{ __('· automatic') }} @endif</span><div class="md">{!! $update->messageHtml() !!}</div></li>
             @endforeach
           </ol>
-          @if ($updates->count() > 3)<p class="op-dim" style="margin-top:8px">{{ $updates->count() - 3 }} {{ __('earlier') }} {{ \Illuminate\Support\Str::plural('update', $updates->count() - 3) }} {{ __('in the full timeline.') }}</p>@endif
+          @if ($updates->count() > 3)<p class="op-dim" style="margin-top:8px">{{ $updates->count() - 3 }} {{ __('earlier') }} {{ \App\Services\Localization::plural('update', $updates->count() - 3) }} {{ __('in the full timeline.') }}</p>@endif
         </div>
       @endif
       <footer class="op-inc-ft">
         <span class="op-chips">
           @forelse ($incident->components as $component)
             @php $pivotStatus = \App\Enums\ComponentStatus::tryFrom((int) $component->pivot?->getAttribute('status')); @endphp
-            <span class="op-chip st-{{ $pivotStatus?->tone() ?? 'off' }}" title="{{ $pivotStatus?->label() }}"><i></i>{{ $component->name }}</span>
+            <span class="op-chip st-{{ $pivotStatus?->tone() ?? 'off' }}" title="{{ __($pivotStatus?->label() ?? '') }}"><i></i>{{ $component->name }}</span>
           @empty
             <span class="op-dim">{{ __('No affected components') }}</span>
           @endforelse
@@ -106,7 +106,7 @@
           <label class="btn op-sm" for="quick-{{ $incident->id }}">{{ __('Post update') }}</label>
           <form method="POST" action="{{ \App\Services\PageUrls::route('admin.incidents.resolve', $incident) }}"
                 data-confirm-title="Resolve {{ $incident->name }}?"
-                data-confirm="Posts a closing update, puts {{ $incident->components->count() ? 'its '.$incident->components->count().' '.\Illuminate\Support\Str::plural('component', $incident->components->count()) : 'nothing' }} back to operational and tells subscribers and destinations."
+                data-confirm="Posts a closing update, puts {{ $incident->components->count() ? __('its ').$incident->components->count().' '.\App\Services\Localization::plural('component', $incident->components->count()) : 'nothing' }} back to operational and tells subscribers and destinations."
                 data-confirm-action="{{ __('Resolve') }}">
             @csrf
             <button class="btn ghost op-sm" type="submit" style="color:var(--green-ink)">{{ __('✓ Resolve') }}</button>
@@ -115,7 +115,7 @@
           <span class="spacer"></span>
           <form method="POST" action="{{ \App\Services\PageUrls::route('admin.incidents.destroy', $incident) }}"
                 data-confirm-title="Delete {{ $incident->name }}?"
-                data-confirm="It disappears from the public page along with its {{ $updates->count() }} {{ \Illuminate\Support\Str::plural('update', $updates->count()) }}. Delete a false alarm; <strong>resolve</strong> a real one instead, so customers keep the record."
+                data-confirm="It disappears from the public page along with its {{ $updates->count() }} {{ \App\Services\Localization::plural('update', $updates->count()) }}. Delete a false alarm; <strong>resolve</strong> a real one instead, so customers keep the record."
                 data-confirm-action="{{ __('Delete incident') }}">
             @csrf @method('DELETE')
             <button class="btn ghost op-sm" type="submit">{{ __('Delete') }}</button>
@@ -137,7 +137,7 @@
   @empty
     <div class="op-empty">
       @include('partials.icon', ['name' => 'empty', 'size' => 28])
-      <b>{{ $search !== '' ? 'No open incident matches.' : 'Nothing open.' }}</b>
+      <b>{{ $search !== '' ? __('No open incident matches.') : __('Nothing open.') }}</b>
       <span>{{ __('That is the good outcome. Incidents you publish, and ones your checks open, appear here first.') }}</span>
     </div>
   @endforelse
@@ -148,7 +148,7 @@
 <section class="op-card" aria-labelledby="history-heading">
   <header><h3 id="history-heading">{{ __('History') }}</h3><span class="hint">{{ __('Resolved, newest first') }}</span></header>
   @if ($incidents->isEmpty())
-    <div class="bd"><p class="op-dim">{{ $search !== '' ? 'No resolved incident matches.' : 'No resolved incidents yet.' }}</p></div>
+    <div class="bd"><p class="op-dim">{{ $search !== '' ? __('No resolved incident matches.') : __('No resolved incidents yet.') }}</p></div>
   @else
   <div class="scroll"><table class="op-table">
     <thead><tr><th>{{ __('Incident') }}</th><th>{{ __('Started') }}</th><th class="hide-sm">{{ __('Took') }}</th><th class="hide-sm">{{ __('Components') }}</th><th><span class="sr-only">{{ __('Actions') }}</span></th></tr></thead>
@@ -158,21 +158,21 @@
         <td>
           <b>{{ $incident->name }}</b>
           <div class="op-pills" style="margin-top:4px">
-            <span class="op-pill">{{ $incident->impact->label() }}</span>
-            @if ($incident->visibility !== 'public')<span class="op-pill">{{ $incident->visibility === 'internal' ? 'Internal' : 'Signed in only' }}</span>@endif
+            <span class="op-pill">{{ __($incident->impact->label() ?? '') }}</span>
+            @if ($incident->visibility !== 'public')<span class="op-pill">{{ $incident->visibility === 'internal' ? __('Internal') : __('Signed in only') }}</span>@endif
             @if ($incident->source === 'check')<span class="op-pill">{{ __('By a check') }}</span>@endif
             @if ($incident->grouping_key && ($repeats[$incident->grouping_key] ?? 0) > 1)<span class="op-pill st-b">{{ $repeats[$incident->grouping_key] }} {{ __('occurrences in 30 days') }}</span>@endif
           </div>
         </td>
-        <td class="num">{{ $incident->occurred_at->format('j M Y H:i') }}</td>
+        <td class="num">{{ $incident->occurred_at->translatedFormat('j M Y H:i') }}</td>
         <td class="num hide-sm">{{ $incident->resolved_at ? $incident->occurred_at->diffForHumans($incident->resolved_at, \Carbon\CarbonInterface::DIFF_ABSOLUTE, true, 2) : '' }}</td>
-        <td class="hide-sm">{{ $incident->components->pluck('name')->join(', ') ?: 'None' }}</td>
+        <td class="hide-sm">{{ $incident->components->pluck('name')->join(', ') ?: __('None') }}</td>
         <td class="right">
           @if ($canEditPage)<span class="rowacts">
             <a href="{{ \App\Services\PageUrls::route('admin.incidents.update-form', $incident) }}">{{ __('Timeline') }}</a>
             <form method="POST" action="{{ \App\Services\PageUrls::route('admin.incidents.destroy', $incident) }}"
                   data-confirm-title="Delete {{ $incident->name }}?"
-                  data-confirm="It disappears from the public page along with its {{ $incident->updates->count() }} {{ \Illuminate\Support\Str::plural('update', $incident->updates->count()) }}. Delete a false alarm only; customers keep the record of a real one."
+                  data-confirm="It disappears from the public page along with its {{ $incident->updates->count() }} {{ \App\Services\Localization::plural('update', $incident->updates->count()) }}. Delete a false alarm only; customers keep the record of a real one."
                   data-confirm-action="{{ __('Delete incident') }}">
               @csrf @method('DELETE')
               <button type="submit">{{ __('Delete') }}</button>
@@ -183,7 +183,7 @@
     @endforeach
     </tbody>
   </table></div>
-  @if ($incidents->hasPages())<div class="bd">{{ $incidents->links('vendor.pagination.pharos', ['previousLabel' => 'Newer', 'nextLabel' => 'Older']) }}</div>@endif
+  @if ($incidents->hasPages())<div class="bd">{{ $incidents->links('vendor.pagination.pharos', ['previousLabel' => __('Newer'), 'nextLabel' => __('Older')]) }}</div>@endif
   @endif
 </section>
 @endif

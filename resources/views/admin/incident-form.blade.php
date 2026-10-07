@@ -39,7 +39,7 @@
               <label for="impact">{{ __('Impact') }}</label>
               <select id="impact" name="impact">
                 @foreach (\App\Enums\Impact::cases() as $case)
-                  <option value="{{ $case->value }}" @selected(old('impact', 'minor') === $case->value)>{{ $case->label() }}</option>
+                  <option value="{{ $case->value }}" @selected(old('impact', 'minor') === $case->value)>{{ __($case->label() ?? '') }}</option>
                 @endforeach
               </select>
             </div>
@@ -75,7 +75,7 @@
                   <select id="component-{{ $component->id }}" name="components[{{ $component->id }}]" data-component="{{ $component->name }}">
                     <option value="" @selected(! $oldStatus)>{{ __('Leave unchanged') }}</option>
                     @foreach (\App\Enums\ComponentStatus::cases() as $case)
-                      <option value="{{ $case->value }}" @selected($oldStatus == $case->value)>{{ $case->label() }}</option>
+                      <option value="{{ $case->value }}" @selected($oldStatus == $case->value)>{{ __($case->label() ?? '') }}</option>
                     @endforeach
                   </select>
                 </div>

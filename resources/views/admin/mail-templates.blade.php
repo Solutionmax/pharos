@@ -59,9 +59,9 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
 
       <div class="panel">
         <div class="panel-hd">
-          <h3>{{ $labels[$key] }}</h3>
+          <h3>{{ __($labels[$key]) }}</h3>
           @if ($licensed)
-            <span class="hint">{{ $isDefault ? 'Default wording' : 'Your wording' }}</span>
+            <span class="hint">{{ $isDefault ? __('Default wording') : __('Your wording') }}</span>
           @else
             <span class="pro">{{ __('Brand pack') }}</span>
           @endif
@@ -89,7 +89,7 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
               <button class="btn" type="submit">{{ __('Save') }}</button>
               <button class="btn ghost" type="reset">{{ __('Undo my changes') }}</button>
               <button class="btn ghost" type="submit" form="test-form">{{ __('Send test to me') }}</button>
-              <button class="btn ghost" type="submit" form="reset-form" @disabled($isDefault) title="{{ $isDefault ? 'This template is the default already' : 'Back to the built in wording' }}">{{ __('Reset to default') }}</button>
+              <button class="btn ghost" type="submit" form="reset-form" @disabled($isDefault) title="{{ $isDefault ? __('This template is the default already') : __('Back to the built in wording') }}">{{ __('Reset to default') }}</button>
             </div>
           @else
             <div class="locked" style="margin-top:16px">
@@ -117,7 +117,7 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
         <input type="hidden" name="body" value="{{ old('body', $body) }}">
       </form>
       <form method="POST" action="{{ \App\Services\PageUrls::route('admin.mail-templates.reset') }}" id="reset-form"
-            data-confirm-title="Reset {{ strtolower($label ?? 'this template') }} to the default?"
+            data-confirm-title="Reset {{ strtolower($label ?? __('this template')) }} to the default?"
             data-confirm="{{ __('Your wording for this template is thrown away and the built in text comes back. The other templates are untouched.') }}"
             data-confirm-action="{{ __('Reset to default') }}">
         @csrf

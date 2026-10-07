@@ -4,7 +4,7 @@
   <p class="pa-kicker"><i aria-hidden="true"></i>{{ __('Account recovery') }}</p>
   <h1 class="pa-h1">{{ __('Forgot your password?') }}</h1>
   <p class="pa-lede">{{ __('Enter your account email and we will send you a link to choose a new password.') }}</p>
-  @if (session('status'))<div class="recovery-notice pa-flash" role="status">{{ session('status') }}</div>@endif
+  @if (session('status'))<div class="recovery-notice pa-flash" role="status">{{ __(session('status')) }}</div>@endif
   @include('partials.auth.errors')
   <form class="pa-form" method="POST" action="{{ route('admin.password.email') }}">
     @csrf

@@ -9,7 +9,7 @@
       </label>
       <select name="page_roles[{{ $page->id }}]" aria-label="Role for {{ $page->name }}">
         @foreach (['viewer' => 'Read only', 'editor' => 'Editor', 'admin' => 'Page administrator'] as $value => $label)
-          <option value="{{ $value }}" @selected(old('page_roles.'.$page->id, $selectedPageRoles[$page->id] ?? 'editor') === $value)>{{ $label }}</option>
+          <option value="{{ $value }}" @selected(old('page_roles.'.$page->id, $selectedPageRoles[$page->id] ?? 'editor') === $value)>{{ __($label) }}</option>
         @endforeach
       </select>
     @empty

@@ -8,7 +8,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>{{ ['subscribed' => "You're subscribed", 'confirm-unsubscribe' => 'Unsubscribe'][$outcome] ?? 'Unsubscribed' }} · {{ $branding->name() }} {{ __('Status') }}</title>
+<title>{{ ['subscribed' => __('You\'re subscribed'), 'confirm-unsubscribe' => __('Unsubscribe')][$outcome] ?? __('Unsubscribed') }} · {{ $branding->name() }} {{ __('Status') }}</title>
 <link rel="icon" href="{{ $branding->faviconUrl() }}">
 @if ($branding->name() === 'Pharos' && ! $branding->logoUrl())
 <link rel="apple-touch-icon" href="{{ $branding->builtInAssetUrl('apple-touch-icon.png') }}">

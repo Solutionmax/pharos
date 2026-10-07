@@ -13,7 +13,7 @@
   <div><dt>{{ __('Version') }}</dt><dd>{{ $version }}</dd></div>
   <div><dt>{{ __('Address') }}</dt><dd>{{ $address }}</dd></div>
   <div><dt>{{ __('Database') }}</dt><dd>{{ $database }}</dd></div>
-  <div><dt>{{ __('Scheduler') }}</dt><dd @class(['pi-wait' => ! $schedulerRunning])>{{ $schedulerRunning ? 'Running' : 'Waiting for the first run' }}</dd></div>
+  <div><dt>{{ __('Scheduler') }}</dt><dd @class(['pi-wait' => ! $schedulerRunning])>{{ $schedulerRunning ? __('Running') : __('Waiting for the first run') }}</dd></div>
 </dl>
 
 @unless ($schedulerRunning)

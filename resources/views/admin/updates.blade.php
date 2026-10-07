@@ -34,14 +34,14 @@
   <div class="op-kpi {{ $available ? 'warn' : ($confirmedCurrent ? 'good' : '') }}">
     <span class="k">{{ __('Installed') }}</span>
     <span class="v">{{ $current }}</span>
-    <span class="n">{{ $available ? 'An update is available' : ($confirmedCurrent ? 'Up to date' : 'No newer release known') }}</span>
+    <span class="n">{{ $available ? __('An update is available') : ($confirmedCurrent ? __('Up to date') : __('No newer release known')) }}</span>
   </div>
   <div class="op-kpi">
     <span class="k">{{ __('Available') }}</span>
-    <span class="v">{{ $state === 'ok' ? $latest['version'] : 'Unknown' }}</span>
+    <span class="v">{{ $state === 'ok' ? $latest['version'] : __('Unknown') }}</span>
     <span class="n">
       @if ($state === 'ok')
-        {{ isset($latest['released_at']) ? 'Released '.$latest['released_at'] : 'Release date unknown' }}
+        {{ isset($latest['released_at']) ? __('Released ').$latest['released_at'] : __('Release date unknown') }}
       @else
         {{ $stateText }}@if ($check['error'])<br><span class="mono" style="font-size:11px">{{ $check['error'] }}</span>@endif
       @endif
@@ -49,14 +49,14 @@
   </div>
   <div class="op-kpi">
     <span class="k">{{ __('How this install updates') }}</span>
-    <span class="v" style="font-size:19px">{{ $managed ? 'From the host' : ($writable ? 'By itself' : 'By hand') }}</span>
-    <span class="n">{{ $managed ? 'Docker image, pulled outside the app' : ($writable ? 'Downloads and replaces its own files' : 'The directory is not writable') }}@if ($state !== 'disabled' && $manifestHost) {{ __('· Checks') }} {{ $manifestHost }} {{ __('every hour') }} @endif</span>
+    <span class="v" style="font-size:19px">{{ $managed ? __('From the host') : ($writable ? __('By itself') : __('By hand')) }}</span>
+    <span class="n">{{ $managed ? __('Docker image, pulled outside the app') : ($writable ? __('Downloads and replaces its own files') : __('The directory is not writable')) }}@if ($state !== 'disabled' && $manifestHost) {{ __('· Checks') }} {{ $manifestHost }} {{ __('every hour') }} @endif</span>
   </div>
 </div>
 
 <p class="note" style="margin:-4px 0 16px">
   @if ($checkedAt)
-    {{ __('Last checked') }} {{ $checkedAt->gt(now()->subMinute()) ? 'just now' : $checkedAt->diffForHumans() }} {{ __('· next automatic check in') }} {{ $nextCheckAt->diffForHumans(['parts' => 1, 'syntax' => \Carbon\Carbon::DIFF_ABSOLUTE]) }}
+    {{ __('Last checked') }} {{ $checkedAt->gt(now()->subMinute()) ? __('just now') : $checkedAt->diffForHumans() }} {{ __('· next automatic check in') }} {{ $nextCheckAt->diffForHumans(['parts' => 1, 'syntax' => \Carbon\Carbon::DIFF_ABSOLUTE]) }}
   @else
     {{ __('Never checked yet') }}
   @endif
@@ -133,7 +133,7 @@ php artisan pharos:update</pre>
           @foreach ($backups as $backup)
             <tr>
               <td><b>{{ $backup['version'] }}</b> <span class="sub mono">{{ $backup['name'] }}</span></td>
-              <td>{{ $backup['created_at']->copy()->setTimezone(\App\Services\Clock::timezone())->format('j M Y H:i') }} <span class="sub">{{ $backup['created_at']->diffForHumans() }}</span></td>
+              <td>{{ $backup['created_at']->copy()->setTimezone(\App\Services\Clock::timezone())->translatedFormat('j M Y H:i') }} <span class="sub">{{ $backup['created_at']->diffForHumans() }}</span></td>
               <td class="num">{{ \App\Support\Bytes::human($backup['size']) }}</td>
               <td>
                 <span class="rowacts">
@@ -141,14 +141,14 @@ php artisan pharos:update</pre>
                   <form method="POST" action="{{ route('admin.updates.backup.rollback', $backup['name']) }}"
                         data-job="rollback" data-progress="{{ route('admin.updates.backup.progress') }}" data-after="{{ route('admin.login', ['after' => 'rollback']) }}"
                         data-confirm-title="Roll back to {{ $backup['version'] }}?"
-                        data-confirm="Pharos replaces its own files with the copy taken on {{ $backup['created_at']->copy()->setTimezone(\App\Services\Clock::timezone())->format('j M Y H:i') }} and, on SQLite, puts that copy of the database back too. Everything entered since then is lost from the app, but not from the safety backup Pharos makes first. The page is briefly unavailable."
+                        data-confirm="Pharos replaces its own files with the copy taken on {{ $backup['created_at']->copy()->setTimezone(\App\Services\Clock::timezone())->translatedFormat('j M Y H:i') }} and, on SQLite, puts that copy of the database back too. Everything entered since then is lost from the app, but not from the safety backup Pharos makes first. The page is briefly unavailable."
                         data-confirm-action="{{ __('Roll back') }}">
                     @csrf
                     <button type="submit">{{ __('Roll back') }}</button>
                   </form>
                   <form method="POST" action="{{ route('admin.updates.backup.destroy', $backup['name']) }}"
                         data-confirm-title="Remove backup {{ $backup['name'] }}?"
-                        data-confirm="This is the copy of {{ $backup['version'] }} taken on {{ $backup['created_at']->copy()->setTimezone(\App\Services\Clock::timezone())->format('j M Y H:i') }}. Once removed, there is nothing to put back."
+                        data-confirm="This is the copy of {{ $backup['version'] }} taken on {{ $backup['created_at']->copy()->setTimezone(\App\Services\Clock::timezone())->translatedFormat('j M Y H:i') }}. Once removed, there is nothing to put back."
                         data-confirm-action="{{ __('Remove backup') }}">
                     @csrf @method('DELETE')
                     <button type="submit">{{ __('Delete') }}</button>

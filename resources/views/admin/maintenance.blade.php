@@ -15,7 +15,7 @@
 @error('maintenance')<div class="errors">{{ $message }}</div>@enderror
 
 <section class="op-section" aria-labelledby="maint-open">
-  <div class="op-section-hd"><h2 id="maint-open">{{ __('Coming up and under way') }}</h2><span class="hint">{{ $open->count() }} {{ \Illuminate\Support\Str::plural('window', $open->count()) }}</span></div>
+  <div class="op-section-hd"><h2 id="maint-open">{{ __('Coming up and under way') }}</h2><span class="hint">{{ $open->count() }} {{ \App\Services\Localization::plural('window', $open->count()) }}</span></div>
   @forelse ($open as $maintenance)
     @php $state = $maintenance->state(); @endphp
     <article class="op-inc op-maint {{ $state === 'in_progress' ? 'is-live' : '' }}">
@@ -23,13 +23,13 @@
         <div class="op-inc-title">
           <div class="op-pills">
             <span class="op-pill st-m">{{ $maintenance->stateLabel() }}</span>
-            <span class="op-pill">{{ $state === 'in_progress' ? 'Ends '.$maintenance->ends_at->diffForHumans() : 'Starts '.$maintenance->starts_at->diffForHumans() }}</span>
+            <span class="op-pill">{{ $state === 'in_progress' ? __('Ends ').$maintenance->ends_at->diffForHumans() : __('Starts ').$maintenance->starts_at->diffForHumans() }}</span>
           </div>
           <h3>{{ $maintenance->title }}</h3>
           <p class="op-when">
-            <time datetime="{{ $maintenance->starts_at->toIso8601String() }}">{{ $maintenance->starts_at->format('D j M, H:i') }}</time>
+            <time datetime="{{ $maintenance->starts_at->toIso8601String() }}">{{ $maintenance->starts_at->translatedFormat('D j M, H:i') }}</time>
             <span aria-hidden="true">→</span>
-            <time datetime="{{ $maintenance->ends_at->toIso8601String() }}">{{ $maintenance->ends_at->isSameDay($maintenance->starts_at) ? $maintenance->ends_at->format('H:i') : $maintenance->ends_at->format('D j M, H:i') }}</time>
+            <time datetime="{{ $maintenance->ends_at->toIso8601String() }}">{{ $maintenance->ends_at->isSameDay($maintenance->starts_at) ? $maintenance->ends_at->format('H:i') : $maintenance->ends_at->translatedFormat('D j M, H:i') }}</time>
             <span class="op-dim">{{ \App\Services\Clock::offsetLabel() }}</span>
           </p>
         </div>
@@ -38,7 +38,7 @@
             <a class="btn ghost op-sm" href="{{ \App\Services\PageUrls::route('admin.maintenance.edit', $maintenance) }}">{{ __('Edit') }}</a>
             <form method="POST" action="{{ \App\Services\PageUrls::route('admin.maintenance.cancel', $maintenance) }}"
                   data-confirm-title="Cancel {{ $maintenance->title }}?"
-                  data-confirm="{{ $state === 'in_progress' ? 'The window stops now and the affected components go back to how they were.' : 'Nothing will be started or announced for this window.' }} Destinations that were told about it hear that it is cancelled."
+                  data-confirm="{{ $state === 'in_progress' ? __('The window stops now and the affected components go back to how they were.') : __('Nothing will be started or announced for this window.') }} Destinations that were told about it hear that it is cancelled."
                   data-confirm-action="{{ __('Cancel maintenance') }}">
               @csrf
               <button class="btn ghost op-sm" type="submit">{{ __('Cancel') }}</button>
@@ -57,7 +57,7 @@
         </span>
         <span class="op-dim">
           @if ($maintenance->announced_at)
-            {{ __('Announced') }} {{ $maintenance->announced_at->format('j M H:i') }}
+            {{ __('Announced') }} {{ $maintenance->announced_at->translatedFormat('j M H:i') }}
           @elseif ($maintenance->announce_minutes > 0)
             {{ __('Announces') }} {{ \Illuminate\Support\Str::lower(\App\Models\Maintenance::LEAD_TIMES[$maintenance->announce_minutes] ?? '') }}
           @else
@@ -86,14 +86,14 @@
       @foreach ($past as $maintenance)
         <tr>
           <td><b>{{ $maintenance->title }}</b></td>
-          <td class="num">{{ $maintenance->starts_at->format('j M Y H:i') }}</td>
-          <td class="hide-sm">{{ $maintenance->components->pluck('name')->join(', ') ?: 'None' }}</td>
+          <td class="num">{{ $maintenance->starts_at->translatedFormat('j M Y H:i') }}</td>
+          <td class="hide-sm">{{ $maintenance->components->pluck('name')->join(', ') ?: __('None') }}</td>
           <td><span class="ix-state {{ $maintenance->cancelled_at ? 'off' : 'ok' }}">{{ $maintenance->stateLabel() }}</span></td>
         </tr>
       @endforeach
       </tbody>
     </table></div>
-    @if ($past->hasPages())<div class="bd">{{ $past->links('vendor.pagination.pharos', ['previousLabel' => 'Newer', 'nextLabel' => 'Older']) }}</div>@endif
+    @if ($past->hasPages())<div class="bd">{{ $past->links('vendor.pagination.pharos', ['previousLabel' => __('Newer'), 'nextLabel' => __('Older')]) }}</div>@endif
   @endif
 </section>
 @endsection

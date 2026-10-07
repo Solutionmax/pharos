@@ -71,7 +71,7 @@
             <label class="switchrow" style="cursor:pointer">
               <span class="t">
                 <strong>{{ $group->name }}</strong>
-                <span class="s">{{ $group->components_count }} {{ \Illuminate\Support\Str::plural('component', $group->components_count) }}</span>
+                <span class="s">{{ $group->components_count }} {{ \App\Services\Localization::plural('component', $group->components_count) }}</span>
               </span>
               <span class="check">
                 <input type="checkbox" name="groups[{{ $group->id }}]" value="1"
@@ -95,7 +95,7 @@
               <label for="page-locale">{{ __('Public page language') }}</label>
               <select id="page-locale" name="locale">
                 @foreach (\App\Services\Localization::LANGUAGES as $code => $label)
-                  <option value="{{ $code }}" @selected(old('locale', $locale) === $code)>{{ $label }}</option>
+                  <option value="{{ $code }}" @selected(old('locale', $locale) === $code)>{{ __($label) }}</option>
                 @endforeach
               </select>
               <span class="help">{{ __('Used by this status page, subscriber emails and automatic incidents.') }}</span>

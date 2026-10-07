@@ -17,8 +17,8 @@
   <div class="op-kpis">
     <div class="op-kpi {{ $summary['down'] > 0 ? 'bad' : ($summary['degraded'] > 0 ? 'warn' : 'good') }}">
       <span class="k">{{ __('Right now') }}</span>
-      <span class="v">{{ $summary['down'] > 0 ? $summary['down'].' down' : ($summary['degraded'] > 0 ? $summary['degraded'].' degraded' : 'All good') }}</span>
-      <span class="n">{{ $summary['total'] }} {{ \Illuminate\Support\Str::plural('component', $summary['total']) }} {{ __('in total') }}</span>
+      <span class="v">{{ $summary['down'] > 0 ? $summary['down'].__(' down') : ($summary['degraded'] > 0 ? $summary['degraded'].__(' degraded') : __('All good')) }}</span>
+      <span class="n">{{ $summary['total'] }} {{ \App\Services\Localization::plural('component', $summary['total']) }} {{ __('in total') }}</span>
     </div>
     <div class="op-kpi">
       <span class="k">{{ __('Uptime') }}</span>
@@ -34,7 +34,7 @@
     <div class="op-kpi">
       <span class="k">{{ __('Set by hand') }}</span>
       <span class="v">{{ $summary['byHand'] }}</span>
-      <span class="n">{{ $summary['byHand'] > 0 ? 'Not measured: only a person changes them' : 'Every component is checked or reported' }}</span>
+      <span class="n">{{ $summary['byHand'] > 0 ? __('Not measured: only a person changes them') : __('Every component is checked or reported') }}</span>
     </div>
   </div>
 @endif
@@ -57,11 +57,11 @@
     @foreach ($sections as $section)
       <div class="op-svc">
         <div class="op-svc-hd">
-          <h4>{{ $section['group']?->name ?? 'Ungrouped' }}</h4>
-          <span class="op-dim">{{ $section['components']->count() }} {{ \Illuminate\Support\Str::plural('component', $section['components']->count()) }}@if ($section['group'] && ! $section['group']->getAttribute('visible')) {{ __('· hidden on the page') }} @endif</span>
+          <h4>{{ $section['group']?->name ?? __('Ungrouped') }}</h4>
+          <span class="op-dim">{{ $section['components']->count() }} {{ \App\Services\Localization::plural('component', $section['components']->count()) }}@if ($section['group'] && ! $section['group']->getAttribute('visible')) {{ __('· hidden on the page') }} @endif</span>
           @if ($section['group'])
             @php $groupStatus = $section['group']->setRelation('components', $section['components'])->status(); @endphp
-            <span class="op-pill st-{{ $groupStatus->tone() }}">{{ $groupStatus->label() }}</span>
+            <span class="op-pill st-{{ $groupStatus->tone() }}">{{ __($groupStatus->label() ?? '') }}</span>
           @endif
         </div>
         @foreach ($section['components'] as $component)
@@ -75,22 +75,22 @@
           <div class="op-row @unless ($component->enabled) op-disabled @endunless">
             <span class="op-name">
               <strong>{{ $component->name }}</strong>
-              <span>{{ $component->enabled ? ($component->description ?: 'No description') : 'Disabled: not on the page' }}</span>
+              <span>{{ $component->enabled ? ($component->description ?: __('No description')) : __('Disabled: not on the page') }}</span>
             </span>
             <span class="op-src">
               @if ($checked)
                 <span class="op-src-tag auto"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>{{ __('Checked by Pharos ·') }} {{ $check->type === \App\Enums\CheckType::Heartbeat ? 'heartbeat' : strtoupper($check->type->value) }}</span>
                 @if ($canEditPage && $check->type !== \App\Enums\CheckType::Heartbeat)<small>{{ \Illuminate\Support\Str::limit($check->target, 34) }}</small>@endif
               @elseif ($outside)
-                <span class="op-src-tag ext">{{ __('Set from outside ·') }} {{ ['kuma' => 'Uptime Kuma', 'webhook' => 'API', 'upstream' => 'Upstream'][$component->source] }}</span>
+                <span class="op-src-tag ext">{{ __('Set from outside ·') }} {{ ['kuma' => __('Uptime Kuma'), 'webhook' => 'API', 'upstream' => __('Upstream')][$component->source] }}</span>
                 @if ($canEditPage && $component->reportedBy)<small>{{ __('via') }} {{ $component->reportedBy->name }}</small>@endif
               @else
                 <span class="op-src-tag ext">{{ __('Set by hand') }}</span>
                 <small>{{ __('not measured') }}</small>
               @endif
             </span>
-            <span class="op-mini" role="img" tabindex="0" aria-label="{{ $component->name }}, last 30 days: {{ $badDays ? $badDays.' '.\Illuminate\Support\Str::plural('day', $badDays).' with a disruption' : 'no disruptions' }}">
-              @foreach ($strip as $d)<i class="{{ $d['tone'] === 'ok' ? '' : $d['tone'] }}" data-tip="{{ \Carbon\Carbon::parse($d['day'])->format('j M') }}{{ $d['known'] ? ' · '.number_format($d['pct'], 2).'%'.($outside ? ', reported' : '') : ' · not measured' }}"></i>@endforeach
+            <span class="op-mini" role="img" tabindex="0" aria-label="{{ $component->name }}, last 30 days: {{ $badDays ? $badDays.' '.\App\Services\Localization::plural('day', $badDays).__(' with a disruption') : __('no disruptions') }}">
+              @foreach ($strip as $d)<i class="{{ $d['tone'] === 'ok' ? '' : $d['tone'] }}" data-tip="{{ \Carbon\Carbon::parse($d['day'])->translatedFormat('j M') }}{{ $d['known'] ? ' · '.number_format($d['pct'], 2).'%'.($outside ? ', reported' : '') : ' · not measured' }}"></i>@endforeach
             </span>
             <span class="op-pct">{{ $uptime[$component->id] === null && $component->isSetByHand() ? '' : \App\Services\Uptime::format($uptime[$component->id]) }}</span>
             <span class="op-status st-{{ $component->status->tone() }}">
@@ -100,7 +100,7 @@
                   <label class="sr-only" for="status-{{ $component->id }}">{{ __('Status of') }} {{ $component->name }}</label>
                   <select id="status-{{ $component->id }}" name="status">
                     @foreach (\App\Enums\ComponentStatus::cases() as $case)
-                      <option value="{{ $case->value }}" @selected($component->status === $case)>{{ $case->label() }}</option>
+                      <option value="{{ $case->value }}" @selected($component->status === $case)>{{ __($case->label() ?? '') }}</option>
                     @endforeach
                   </select>
                   <button class="btn ghost op-sm" type="submit">{{ __('Set') }}</button>
@@ -116,7 +116,7 @@
                   </form>
                 </span>
               @else
-                <span class="op-pill st-{{ $component->status->tone() }}">{{ $component->status->label() }}</span>
+                <span class="op-pill st-{{ $component->status->tone() }}">{{ __($component->status->label() ?? '') }}</span>
               @endif
             </span>
           </div>

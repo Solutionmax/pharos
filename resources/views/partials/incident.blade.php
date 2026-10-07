@@ -4,10 +4,10 @@
               ? 'ok'
               : (($incident->components->max('pivot.status') ?? 0) >= 4 ? 'b' : 'p');
         @endphp
-        <article class="inc {{ $tone }}" data-live-key="incident-{{ $incident->id }}" data-live-value="{{ $incident->status->value }}:{{ $incident->updates->max('id') }}" data-live-message="{{ $incident->name }}: {{ $incident->status->label() }}">
+        <article class="inc {{ $tone }}" data-live-key="incident-{{ $incident->id }}" data-live-value="{{ $incident->status->value }}:{{ $incident->updates->max('id') }}" data-live-message="{{ $incident->name }}: {{ __($incident->status->label() ?? '') }}">
           <div class="inc-hd">
             <h4><a href="{{ \App\Services\PageUrls::route('public.incident', $incident) }}">{{ $incident->name }}</a></h4>
-            <span class="pill {{ $tone }}">{{ $incident->status->label() }}</span>
+            <span class="pill {{ $tone }}">{{ __($incident->status->label() ?? '') }}</span>
             @if (($chrome ?? true) && auth()->check())
               <a class="inc-update" href="{{ \App\Services\PageUrls::route('admin.incidents.update-form', $incident) }}" aria-label="Update {{ $incident->name }}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5M4 16 16.5 3.5a3.5 3.5 0 0 1 5 5L9 21H4v-5Z"/></svg>
@@ -17,15 +17,15 @@
           </div>
           @if ($incident->components->isNotEmpty())
             <p class="aff">
-              {{ $incident->isOpen() ? 'Affects' : 'Affected' }}
-              <b>{{ $incident->components->pluck('name')->join(', ', ' and ') }}</b>
+              {{ $incident->isOpen() ? __('Affects') : __('Affected') }}
+              <b>{{ $incident->components->pluck('name')->join(', ', __(' and ')) }}</b>
             </p>
           @endif
           <div class="tl">
             @foreach ($incident->updates as $update)
               <div class="tl-i">
                 <span class="hd">
-                  <strong>{{ $update->status->label() }}</strong>
+                  <strong>{{ __($update->status->label() ?? '') }}</strong>
                   <time>{{ $update->created_at->format('H:i') }}</time>
                   @if ($update->automatic)<span class="auto">{{ __('automatic') }}</span>@endif
                 </span>

@@ -22,14 +22,18 @@
     @else
       {{ __('The scheduler has never run, so every status on this page is whatever someone typed.') }}
     @endif
-    {{ __('Add this one line to cron:') }}
-    @if (app(\App\Services\CronSetup::class)->php())
-      <code class="mono">* * * * * {{ app(\App\Services\CronSetup::class)->command() }}</code>
+    @if (auth()->user()?->isAdmin())
+      {{ __('Add this one line to cron:') }}
+      @if (app(\App\Services\CronSetup::class)->php())
+        <code class="mono">* * * * * {{ app(\App\Services\CronSetup::class)->command() }}</code>
+      @else
+        <span>{{ __('Ask your host for the versioned CLI PHP path, then run') }} <code>php artisan pharos:cron</code> {{ __('with that PHP. The web PHP selector does not configure cron.') }}</span>
+      @endif
+      @if (\App\Models\Setting::get('checks.last_error'))
+        <span>{{ \App\Models\Setting::get('checks.last_error') }}</span>
+      @endif
     @else
-      <span>{{ __('Ask your host for the versioned CLI PHP path, then run') }} <code>php artisan pharos:cron</code> {{ __('with that PHP. The web PHP selector does not configure cron.') }}</span>
-    @endif
-    @if (\App\Models\Setting::get('checks.last_error'))
-      <span>{{ \App\Models\Setting::get('checks.last_error') }}</span>
+      <span>{{ __('Ask an installation administrator to restore automatic checks.') }}</span>
     @endif
   </div>
 @endif

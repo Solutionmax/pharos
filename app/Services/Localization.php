@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Setting;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 
 /** Laravel's translator, scoped so a page or mail cannot change the next request. */
 class Localization
@@ -19,6 +20,11 @@ class Localization
     public static function page(): string
     {
         return self::valid(Setting::get('page.locale', 'en'));
+    }
+
+    public static function plural(string $word, int $count): string
+    {
+        return trans_choice($word.'|'.Str::plural($word), $count);
     }
 
     public static function run(mixed $locale, callable $callback): mixed

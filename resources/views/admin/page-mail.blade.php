@@ -53,7 +53,7 @@
           <label for="encryption">{{ __('Encryption') }}</label>
           <select id="encryption" name="encryption">
             @foreach (['none' => 'None', 'tls' => 'TLS (STARTTLS)', 'ssl' => 'SSL'] as $value => $label)
-              <option value="{{ $value }}" @selected(old('encryption', $mailForm['encryption'] ?: 'tls') === $value)>{{ $label }}</option>
+              <option value="{{ $value }}" @selected(old('encryption', $mailForm['encryption'] ?: 'tls') === $value)>{{ __($label) }}</option>
             @endforeach
           </select>
         </div>
@@ -64,7 +64,7 @@
         <div class="field">
           <label for="password">{{ __('Password') }}</label>
           <input id="password" name="password" type="password" autocomplete="new-password"
-                 placeholder="{{ $mailHasPassword ? 'Stored, leave empty to keep' : '' }}">
+                 placeholder="{{ $mailHasPassword ? __('Stored, leave empty to keep') : '' }}">
           <span class="help">{{ __('Stored encrypted and never shown again.') }}</span>
         </div>
       </div>

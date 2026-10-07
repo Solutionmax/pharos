@@ -19,7 +19,7 @@
 </div>
 
 <section class="op-card" id="switch" aria-labelledby="switch-title">
-  <header><h3 id="switch-title">{{ __('Subscriptions') }}</h3><span class="ix-state {{ $enabled ? 'ok' : 'off' }}">{{ $enabled ? 'On' : 'Off' }}</span></header>
+  <header><h3 id="switch-title">{{ __('Subscriptions') }}</h3><span class="ix-state {{ $enabled ? 'ok' : 'off' }}">{{ $enabled ? __('On') : __('Off') }}</span></header>
   <div class="bd">
     <div class="switchrow">
       <span class="t">
@@ -35,7 +35,7 @@
         <form method="POST" action="{{ \App\Services\PageUrls::route('admin.subscribers.toggle') }}" style="margin-left:auto">
           @csrf
           <input type="hidden" name="enabled" value="{{ $enabled ? '0' : '1' }}">
-          <button class="btn {{ $enabled ? 'ghost' : '' }}" type="submit">{{ $enabled ? 'Switch off' : 'Switch on' }}</button>
+          <button class="btn {{ $enabled ? 'ghost' : '' }}" type="submit">{{ $enabled ? __('Switch off') : __('Switch on') }}</button>
         </form>
       @endif
     </div>
@@ -43,7 +43,7 @@
 </section>
 
 <section class="op-card" aria-labelledby="addresses-title">
-  <header><h3 id="addresses-title">{{ __('Addresses') }}</h3><span class="hint">{{ $subscribers->total() }} {{ \Illuminate\Support\Str::plural('address', $subscribers->total()) }}</span></header>
+  <header><h3 id="addresses-title">{{ __('Addresses') }}</h3><span class="hint">{{ $subscribers->total() }} {{ \App\Services\Localization::plural('address', $subscribers->total()) }}</span></header>
   <form class="op-filters" method="GET" action="{{ \App\Services\PageUrls::route('admin.subscribers') }}" role="search">
     <label class="sr-only" for="q">{{ __('Search addresses') }}</label>
     <input id="q" name="q" type="text" value="{{ $search }}" placeholder="{{ __('Part of an email address') }}">
@@ -57,7 +57,7 @@
   @if ($subscribers->isEmpty())
     <div class="empty">
       @include('partials.icon', ['name' => 'mail', 'size' => 28])
-      <b>{{ $search !== '' ? 'No address matches' : 'Nobody has subscribed yet' }}</b>
+      <b>{{ $search !== '' ? __('No address matches') : __('Nobody has subscribed yet') }}</b>
       @if ($search === '')
         {{ __('The "Get notified" button on the status page is where visitors sign up.') }}
       @endif
@@ -75,10 +75,10 @@
               @elseif ($s->isPending())<span class="ix-state w">{{ __('Pending') }}</span>
               @else<span class="ix-state off">{{ __('Unsubscribed') }}</span>@endif
             </td>
-            <td class="num hide-sm">{{ ($s->verified_at ?? $s->created_at)->format('j M Y') }}</td>
+            <td class="num hide-sm">{{ ($s->verified_at ?? $s->created_at)->translatedFormat('j M Y') }}</td>
             <td class="num hide-sm">
               @if ($s->notifications_max_sent_at)
-                {{ \Carbon\CarbonImmutable::parse($s->notifications_max_sent_at, 'UTC')->setTimezone(\App\Services\Clock::timezone())->format('d M H:i') }}
+                {{ \Carbon\CarbonImmutable::parse($s->notifications_max_sent_at, 'UTC')->setTimezone(\App\Services\Clock::timezone())->translatedFormat('d M H:i') }}
               @else
                 <span class="op-dim">{{ __('none yet') }}</span>
               @endif
@@ -105,7 +105,7 @@
         </tbody>
       </table>
     </div>
-    @if ($subscribers->hasPages())<div class="bd">{{ $subscribers->links('vendor.pagination.pharos', ['previousLabel' => 'Newer', 'nextLabel' => 'Older']) }}</div>@endif
+    @if ($subscribers->hasPages())<div class="bd">{{ $subscribers->links('vendor.pagination.pharos', ['previousLabel' => __('Newer'), 'nextLabel' => __('Older')]) }}</div>@endif
   @endif
 </section>
 

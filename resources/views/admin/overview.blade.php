@@ -57,7 +57,7 @@
   $sparkPath = $sparkPath !== '' ? $sparkPath : 'M0 32 L220 32 ';
   $cellTip = fn (array $day, bool $reported = false) => $day['known'] ? Uptime::format($day['pct']).' up'.($reported ? ', reported' : '') : 'Not measured';
   $sourceChip = fn (Component $c) => $c->isSetFromOutside() ? ['webhook' => 'api'][$c->source] ?? $c->source : null;
-  $cellDay = fn (array $day) => \Illuminate\Support\Carbon::parse($day['day'])->format('j M Y');
+  $cellDay = fn (array $day) => \Illuminate\Support\Carbon::parse($day['day'])->translatedFormat('j M Y');
   $good = collect($health)->where('state', 'good')->count();
 @endphp
 
@@ -81,11 +81,11 @@
           @foreach ($readiness as $step)
             <li class="{{ $step['done'] ? 'done' : '' }}">
               <div>
-                <h4>{{ $step['label'] }} @if ($step['done'])<span class="sr-only">{{ __('(done)') }}</span>@endif</h4>
-                <p>{{ $step['detail'] }}</p>
+                <h4>{{ __($step['label']) }} @if ($step['done'])<span class="sr-only">{{ __('(done)') }}</span>@endif</h4>
+                <p>{{ __($step['detail']) }}</p>
               </div>
               @if (! $step['done'] && $step['url'])
-                <a class="btn ghost" href="{{ $step['url'] }}">{{ $step['action'] }}</a>
+                <a class="btn ghost" href="{{ $step['url'] }}">{{ __($step['action']) }}</a>
               @elseif (! $step['done'])
                 <span class="sub">{{ __('Ask an administrator') }}</span>
               @endif
@@ -98,11 +98,11 @@
 
   <section class="ov-hero" style="--st:var(--{{ $tone }});--st-soft:var(--{{ $tone }}-soft);--st-ink:var(--{{ $tone }}-ink)" aria-labelledby="ov-state-title">
     <div>
-      <span class="ov-state"><span class="ov-pulse" aria-hidden="true"></span>{{ $published ? 'Live on the status page' : 'Draft, not public yet' }}</span>
+      <span class="ov-state"><span class="ov-pulse" aria-hidden="true"></span>{{ $published ? __('Live on the status page') : __('Draft, not public yet') }}</span>
       <h2 id="ov-state-title">
         @if ($total === 0) {{ __('No components yet') }}
         @elseif ($worst === ComponentStatus::Operational) {{ __('All systems operational') }}
-        @else {{ $worst->label() }}
+        @else {{ __($worst->label() ?? '') }}
         @endif
       </h2>
       <p>
@@ -119,7 +119,7 @@
       <div class="ov-meta">
         @if ($incident)
           <span>{{ __('Incident') }} <b>{{ $incident->name }}</b></span>
-          <span>{{ __('Status') }} <b>{{ $incident->status->label() }}</b></span>
+          <span>{{ __('Status') }} <b>{{ __($incident->status->label() ?? '') }}</b></span>
           <span>{{ __('Started') }} <b>{{ $incident->occurred_at?->diffForHumans() }}</b></span>
         @else
           <span>{{ __('No open incidents') }}</span>
@@ -153,10 +153,10 @@
     </div>
     <div class="ov-kpi">
       <span class="k">{{ __('Open incidents') }}</span>
-      <span class="v" style="color:var(--{{ $open->isEmpty() ? 'green' : 'orange' }}-ink)">{{ $open->isEmpty() ? 'None' : $open->count() }}</span>
+      <span class="v" style="color:var(--{{ $open->isEmpty() ? 'green' : 'orange' }}-ink)">{{ $open->isEmpty() ? __('None') : $open->count() }}</span>
       <span class="n">
         @if ($incident)
-          {{ $incident->status->label() }}, {{ $incident->updates->count() }} {{ \Illuminate\Support\Str::plural('update', $incident->updates->count()) }} {{ __('posted') }}
+          {{ __($incident->status->label() ?? '') }}, {{ $incident->updates->count() }} {{ \App\Services\Localization::plural('update', $incident->updates->count()) }} {{ __('posted') }}
         @else
           {{ __('Nothing needs attention') }}
         @endif
@@ -164,14 +164,14 @@
     </div>
     <div class="ov-kpi">
       <span class="k">{{ __('Last 30 days') }}</span>
-      <span class="v">{{ $data['incidents30'] }} <small>{{ \Illuminate\Support\Str::plural('incident', $data['incidents30']) }}</small></span>
+      <span class="v">{{ $data['incidents30'] }} <small>{{ \App\Services\Localization::plural('incident', $data['incidents30']) }}</small></span>
       <span class="n">{{ __('Typical time to resolve') }} <b>{{ PageOverview::duration($data['mttr']) }}</b></span>
     </div>
     <div class="ov-kpi">
       <span class="k">{{ __('Subscribers') }}</span>
       <span class="v">{{ $data['subscribers'] }}</span>
-      <span class="n"><span class="ov-onoff {{ $data['subscriptions'] ? 'on' : 'off' }}">{{ $data['subscriptions'] ? 'On' : 'Off' }}</span>
-        {{ $data['subscriptions'] ? 'Visitors can subscribe' : 'Sign up is switched off' }}</span>
+      <span class="n"><span class="ov-onoff {{ $data['subscriptions'] ? 'on' : 'off' }}">{{ $data['subscriptions'] ? __('On') : __('Off') }}</span>
+        {{ $data['subscriptions'] ? __('Visitors can subscribe') : __('Sign up is switched off') }}</span>
     </div>
   </div>
 
@@ -202,14 +202,14 @@
               @php($c = $row['component'])
               <div class="ov-row{{ $c->status === ComponentStatus::Operational ? '' : ' bad' }}">
                 <span class="ov-name">
-                  <span class="ov-dot s-{{ $c->status->tone() }}" role="img" aria-label="{{ $c->status->label() }}"></span>
+                  <span class="ov-dot s-{{ $c->status->tone() }}" role="img" aria-label="{{ __($c->status->label() ?? '') }}"></span>
                   @if ($canEdit)
                     <a href="{{ PageUrls::route('admin.components.edit', $c) }}"><strong>{{ $c->name }}</strong></a>
                   @else
                     <strong>{{ $c->name }}</strong>
                   @endif
-                  <span class="ov-src">{{ $sourceChip($c) ? $sourceChip($c).', reported' : ($c->check?->type?->value ?? $c->source) }}</span>
-                  @unless ($c->status === ComponentStatus::Operational)<span class="ov-lbl">{{ $c->status->label() }}</span>@endunless
+                  <span class="ov-src">{{ $sourceChip($c) ? $sourceChip($c).__(', reported') : ($c->check?->type?->value ?? $c->source) }}</span>
+                  @unless ($c->status === ComponentStatus::Operational)<span class="ov-lbl">{{ __($c->status->label() ?? '') }}</span>@endunless
                 </span>
                 <span class="ov-mini" aria-hidden="true">
                   @foreach ($row['days'] as $day)
@@ -228,13 +228,13 @@
 
     <div class="ov-col">
       <section class="ov-card" aria-labelledby="ov-incident">
-        <header><h3 id="ov-incident">{{ $incident ? 'Open incident' : 'Incidents' }}</h3>
+        <header><h3 id="ov-incident">{{ $incident ? __('Open incident') : __('Incidents') }}</h3>
           <a class="hint link" href="{{ PageUrls::route('admin.incidents') }}">{{ __('All incidents') }}</a></header>
         <div class="bd">
           @if ($incident)
             <div class="ov-inc">
               <div class="ov-pills">
-                <span class="ov-pill st">{{ $incident->status->label() }}</span>
+                <span class="ov-pill st">{{ __($incident->status->label() ?? '') }}</span>
                 @if ($incident->impact)<span class="ov-pill">{{ ucfirst($incident->impact->value) }} {{ __('impact') }}</span>@endif
                 @foreach ($incident->components->take(4) as $affected)<span class="ov-pill">{{ $affected->name }}</span>@endforeach
               </div>
@@ -244,13 +244,13 @@
               <ol class="ov-tl">
                 @foreach ($incident->updates->take(4) as $update)
                   <li>
-                    <div class="t"><b>{{ $update->status?->label() }}</b>{{ $update->created_at?->format('H:i') }}, {{ $update->created_at?->diffForHumans() }}</div>
+                    <div class="t"><b>{{ __($update->status?->label() ?? '') }}</b>{{ $update->created_at?->format('H:i') }}, {{ $update->created_at?->diffForHumans() }}</div>
                     <p>{{ \Illuminate\Support\Str::limit(strip_tags((string) $update->message), 220) }}</p>
                   </li>
                 @endforeach
               </ol>
               @if ($open->count() > 1)
-                <p class="sub" style="margin-top:12px">{{ $open->count() - 1 }} {{ __('more open') }} {{ \Illuminate\Support\Str::plural('incident', $open->count() - 1) }}.</p>
+                <p class="sub" style="margin-top:12px">{{ $open->count() - 1 }} {{ __('more open') }} {{ \App\Services\Localization::plural('incident', $open->count() - 1) }}.</p>
               @endif
             </div>
           @else
@@ -274,11 +274,11 @@
               <li data-health="{{ $check['key'] }}">
                 <span class="ic {{ $check['state'] }}" aria-hidden="true">{{ ['good' => '✓', 'warn' => '!', 'off' => '○'][$check['state']] }}</span>
                 <span>
-                  <span class="t">{{ $check['label'] }} <span class="sr-only">{{ ['good' => 'in order', 'warn' => 'needs attention', 'off' => 'not in use'][$check['state']] }}</span></span>
-                  <span class="d">{{ $check['detail'] }}</span>
+                  <span class="t">{{ __($check['label']) }} <span class="sr-only">{{ ['good' => __('in order'), 'warn' => __('needs attention'), 'off' => __('not in use')][$check['state']] }}</span></span>
+                  <span class="d">{{ __($check['detail']) }}</span>
                 </span>
                 @if ($check['url'])
-                  <a href="{{ $check['url'] }}" @if ($check['external'] ?? false) target="_blank" rel="noopener" @endif>{{ $check['action'] }}</a>
+                  <a href="{{ $check['url'] }}" @if ($check['external'] ?? false) target="_blank" rel="noopener" @endif>{{ __($check['action']) }}</a>
                 @else
                   <span></span>
                 @endif
