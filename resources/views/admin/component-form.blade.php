@@ -107,7 +107,7 @@
       <div class="fields">
         <div class="field">
           <span class="lblrow"><label for="source">Source</label>
-            @include('partials.tip', ['text' => 'Who sets this status. Checked by Pharos: Pharos tests it itself, over HTTP, TCP or a heartbeat from your job. Set from outside: Uptime Kuma, n8n or a script writes it through the API. Manual only: you set it here.'])</span>
+            @include('partials.tip', ['text' => 'Who sets this status. Checked by Pharos: Pharos tests it itself, over HTTP, TCP or a heartbeat from your job. Set from outside: Uptime Kuma, n8n or a script writes it through the API. Manual only: you set it here. Pharos marks a service as set from outside by itself the first time the API or Uptime Kuma writes its status.'])</span>
           <select id="source" name="source">
             @foreach (['Checked by Pharos' => ['check' => 'HTTP or TCP check', 'heartbeat' => 'Heartbeat from your job'], 'Set from outside' => ['kuma' => 'Uptime Kuma', 'webhook' => 'API or webhook (n8n, scripts)', 'upstream' => 'Upstream provider'], 'Set by hand' => ['manual' => 'Manual only']] as $sourceGroup => $sourceOptions)
               <optgroup label="{{ $sourceGroup }}">

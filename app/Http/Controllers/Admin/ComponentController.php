@@ -26,7 +26,7 @@ class ComponentController extends Controller
 
     public function index()
     {
-        $components = Component::with('group', 'check')->orderBy('position')->get();
+        $components = Component::with('group', 'check', 'reportedBy')->orderBy('position')->get();
         $groups = ComponentGroup::orderBy('position')->get();
         $enabled = $components->where('enabled', true);
 
@@ -46,8 +46,9 @@ class ComponentController extends Controller
                 'total' => $components->count(),
                 'down' => $enabled->filter(fn ($c) => $c->status->isDown())->count(),
                 'degraded' => $enabled->where('status', ComponentStatus::PerformanceIssues)->count(),
-                'checked' => $components->filter(fn ($c) => $c->check?->enabled)->count(),
-                'outside' => $components->filter(fn ($c) => ! $c->check?->enabled && in_array($c->source, ['kuma', 'webhook', 'upstream'], true))->count(),
+                'checked' => $components->filter(fn ($c) => $c->isChecked())->count(),
+                'outside' => $components->filter(fn ($c) => $c->isSetFromOutside())->count(),
+                'byHand' => $components->filter(fn ($c) => $c->isSetByHand())->count(),
                 'uptime' => Uptime::average($enabled->map(fn ($c) => $this->uptime->percentage($c))),
             ],
         ]);

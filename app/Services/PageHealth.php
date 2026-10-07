@@ -27,8 +27,8 @@ class PageHealth
         $global = $user->isAdmin();
         $published = $page->is_published && $page->archived_at === null;
 
-        $components = Component::query()->where('enabled', true)->get(['id', 'source']);
-        $automatic = $components->where('source', '!=', 'manual')->count();
+        $components = Component::query()->where('enabled', true)->with('check:id,component_id,enabled')->get(['id', 'source']);
+        $automatic = $components->filter(fn (Component $c) => $c->isChecked() || $c->isSetFromOutside())->count();
         $total = $components->count();
         $delivery = $this->delivery();
         $subscriptions = Subscriptions::enabled();

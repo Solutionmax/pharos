@@ -28,7 +28,7 @@ class PageOverview
     public function build(?Carbon $today = null): array
     {
         $components = Component::query()->where('enabled', true)
-            ->with('check:id,component_id,type')
+            ->with('check:id,component_id,type,enabled')
             ->orderBy('position')->get();
         $bars = $this->uptime->barsFor($components, $today);
         $percentages = array_map($this->uptime->percentageOf(...), $bars);

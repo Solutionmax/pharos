@@ -18,8 +18,8 @@
   ];
   $checked = $components->filter(fn ($c) => $c->check?->enabled && $c->check->type !== \App\Enums\CheckType::Heartbeat);
   $heartbeatComponents = $components->filter(fn ($c) => $c->check?->type === \App\Enums\CheckType::Heartbeat);
-  $outside = $components->filter(fn ($c) => ! $c->check?->enabled && in_array($c->source, ['kuma', 'webhook', 'upstream'], true));
-  $manual = $components->filter(fn ($c) => ! $c->check?->enabled && ! in_array($c->source, ['kuma', 'webhook', 'upstream', 'heartbeat'], true));
+  $outside = $components->filter(fn ($c) => $c->isSetFromOutside());
+  $manual = $components->filter(fn ($c) => $c->isSetByHand() && $c->check?->type !== \App\Enums\CheckType::Heartbeat);
 @endphp
 
 <div class="ix-cols">

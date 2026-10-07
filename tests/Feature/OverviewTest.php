@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\ComponentStatus;
 use App\Enums\IncidentStatus;
 use App\Enums\UserRole;
+use App\Models\Check;
 use App\Models\Component;
 use App\Models\Incident;
 use App\Models\StatusPage;
@@ -158,7 +159,8 @@ class OverviewTest extends TestCase
     public function test_checks_coverage_counts_components_without_automation(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin]);
-        Component::create(['name' => 'a', 'source' => 'check']);
+        $a = Component::create(['name' => 'a', 'source' => 'check']);
+        Check::create(['component_id' => $a->id, 'type' => 'http', 'target' => 'https://example.test/', 'enabled' => true]);
         Component::create(['name' => 'b', 'source' => 'manual']);
         Component::create(['name' => 'c', 'source' => 'manual']);
 

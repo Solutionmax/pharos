@@ -33,7 +33,7 @@
     <div class="op-kpi">
       <span class="k">Set from outside</span>
       <span class="v">{{ $summary['outside'] }}</span>
-      <span class="n">{{ $summary['total'] - $summary['checked'] - $summary['outside'] }} set by hand</span>
+      <span class="n">{{ $summary['byHand'] }} set by hand</span>
     </div>
   </div>
 @endif
@@ -66,8 +66,8 @@
         @foreach ($section['components'] as $component)
           @php
             $check = $component->check;
-            $checked = $check?->enabled;
-            $outside = ! $checked && in_array($component->source, ['kuma', 'webhook', 'upstream'], true);
+            $checked = $component->isChecked();
+            $outside = $component->isSetFromOutside();
             $strip = $strips[$component->id];
             $badDays = collect($strip)->whereIn('tone', ['b', 'p', 'w'])->count();
           @endphp
@@ -82,14 +82,16 @@
                 @if ($canEditPage && $check->type !== \App\Enums\CheckType::Heartbeat)<small>{{ \Illuminate\Support\Str::limit($check->target, 34) }}</small>@endif
               @elseif ($outside)
                 <span class="op-src-tag ext">Set from outside · {{ ['kuma' => 'Uptime Kuma', 'webhook' => 'API', 'upstream' => 'Upstream'][$component->source] }}</span>
+                @if ($canEditPage && $component->reportedBy)<small>via {{ $component->reportedBy->name }}</small>@endif
               @else
-                <span class="op-src-tag ext">Set by hand or API</span>
+                <span class="op-src-tag ext">Set by hand</span>
+                <small>not measured</small>
               @endif
             </span>
             <span class="op-mini" role="img" tabindex="0" aria-label="{{ $component->name }}, last 30 days: {{ $badDays ? $badDays.' '.\Illuminate\Support\Str::plural('day', $badDays).' with a disruption' : 'no disruptions' }}">
-              @foreach ($strip as $d)<i class="{{ $d['tone'] === 'ok' ? '' : $d['tone'] }}" data-tip="{{ \Carbon\Carbon::parse($d['day'])->format('j M') }}{{ $d['known'] ? ' · '.number_format($d['pct'], 2).'%' : ' · no data' }}"></i>@endforeach
+              @foreach ($strip as $d)<i class="{{ $d['tone'] === 'ok' ? '' : $d['tone'] }}" data-tip="{{ \Carbon\Carbon::parse($d['day'])->format('j M') }}{{ $d['known'] ? ' · '.number_format($d['pct'], 2).'%'.($outside ? ', reported' : '') : ' · not measured' }}"></i>@endforeach
             </span>
-            <span class="op-pct">{{ \App\Services\Uptime::format($uptime[$component->id]) }}</span>
+            <span class="op-pct">{{ $uptime[$component->id] === null && $component->isSetByHand() ? '' : \App\Services\Uptime::format($uptime[$component->id]) }}</span>
             <span class="op-status st-{{ $component->status->tone() }}">
               @if ($canEditPage)
                 <form method="POST" action="{{ \App\Services\PageUrls::route('admin.components.status', $component) }}" data-autosubmit>

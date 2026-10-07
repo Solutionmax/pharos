@@ -3,6 +3,7 @@
 @section('content')
 @php
   use App\Enums\ComponentStatus;
+  use App\Models\Component;
   use App\Services\PageOverview;
   use App\Services\PageUrls;
   use App\Services\Uptime;
@@ -54,7 +55,8 @@
   }
   // No uptime yet (a new page): a flat baseline, so the path still starts with a moveto.
   $sparkPath = $sparkPath !== '' ? $sparkPath : 'M0 32 L220 32 ';
-  $cellTip = fn (array $day) => $day['known'] ? Uptime::format($day['pct']).' up' : 'No data';
+  $cellTip = fn (array $day, bool $reported = false) => $day['known'] ? Uptime::format($day['pct']).' up'.($reported ? ', reported' : '') : 'Not measured';
+  $sourceChip = fn (Component $c) => $c->isSetFromOutside() ? ['webhook' => 'api'][$c->source] ?? $c->source : null;
   $cellDay = fn (array $day) => \Illuminate\Support\Carbon::parse($day['day'])->format('j M Y');
   $good = collect($health)->where('state', 'good')->count();
 @endphp
@@ -186,13 +188,13 @@
           <div class="ov-axis" aria-hidden="true"><span>90 days ago</span><span>60</span><span>30</span><span>Today</span></div>
           <div class="ov-legend">
             <span><i class="s-ok"></i>Fully up</span><span><i class="s-w"></i>Below 99.99%</span>
-            <span><i class="s-p"></i>Below 99%</span><span><i class="s-b"></i>Below 95%</span><span><i class="s-n"></i>No data</span>
+            <span><i class="s-p"></i>Below 99%</span><span><i class="s-b"></i>Below 95%</span><span><i class="s-n"></i>Not measured</span>
           </div>
         </div>
       </section>
 
       <section class="ov-card" aria-labelledby="ov-services">
-        <header><h3 id="ov-services">Services</h3><span class="hint">30 days, uptime</span></header>
+        <header><h3 id="ov-services">Services</h3><span class="hint">30 days, uptime: measured by Pharos or reported from outside</span></header>
         <div class="bd">
           @forelse ($data['services'] as $section)
             <div class="ov-grp">{{ $section['name'] }}</div>
@@ -206,12 +208,12 @@
                   @else
                     <strong>{{ $c->name }}</strong>
                   @endif
-                  <span class="ov-src">{{ $c->check?->type?->value ?? $c->source }}</span>
+                  <span class="ov-src">{{ $sourceChip($c) ? $sourceChip($c).', reported' : ($c->check?->type?->value ?? $c->source) }}</span>
                   @unless ($c->status === ComponentStatus::Operational)<span class="ov-lbl">{{ $c->status->label() }}</span>@endunless
                 </span>
                 <span class="ov-mini" aria-hidden="true">
                   @foreach ($row['days'] as $day)
-                    <i class="s-{{ $day['known'] ? $day['tone'] : 'n' }}" data-tip-title="{{ $cellDay($day) }}" data-tip="{{ $cellTip($day) }}"></i>
+                    <i class="s-{{ $day['known'] ? $day['tone'] : 'n' }}" data-tip-title="{{ $cellDay($day) }}" data-tip="{{ $cellTip($day, $c->isSetFromOutside()) }}"></i>
                   @endforeach
                 </span>
                 <span class="ov-pct">{{ $row['uptime'] === null ? 'no data' : Uptime::format($row['uptime']) }}</span>
