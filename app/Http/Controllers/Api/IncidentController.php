@@ -82,7 +82,7 @@ class IncidentController extends Controller
             $message ??= $template->render('body_template', $vars);
         }
 
-        $incident = DB::transaction(function () use ($data, $name, $message, $status) {
+        $incident = DB::transaction(function () use ($data, $name, $message, $status, $request) {
             $incident = Incident::create([
                 'name' => $name,
                 'status' => $status,
@@ -101,7 +101,7 @@ class IncidentController extends Controller
                 'automatic' => false,
             ]);
 
-            $this->applyComponents($incident, $this->componentMap($data));
+            $this->applyComponents($incident, $this->componentMap($data), $request->attributes->get('api_token'));
 
             return $incident;
         });
@@ -127,7 +127,7 @@ class IncidentController extends Controller
             return response()->json(['error' => 'Unknown status.'], 422);
         }
 
-        DB::transaction(function () use ($incident, $status, $data) {
+        DB::transaction(function () use ($incident, $status, $data, $request) {
             IncidentUpdate::create([
                 'incident_id' => $incident->id,
                 'status' => $status,
@@ -140,14 +140,17 @@ class IncidentController extends Controller
                 'resolved_at' => $status === IncidentStatus::Resolved ? now() : $incident->resolved_at,
             ]);
 
-            $this->applyComponents($incident, $data['components'] ?? []);
+            $this->applyComponents($incident, $data['components'] ?? [], $request->attributes->get('api_token'));
 
             // Same rule as the admin: closing an incident puts its components
             // back, unless this request said otherwise explicitly.
             if ($status === IncidentStatus::Resolved) {
                 foreach ($incident->components as $component) {
                     if (! array_key_exists($component->id, $data['components'] ?? [])) {
-                        $component->update(['status' => ComponentStatus::Operational]);
+                        $component->update([
+                            'status' => ComponentStatus::Operational,
+                            ...$component->reportedAttributes($request->attributes->get('api_token'), 'webhook'),
+                        ]);
                     }
                 }
             }
@@ -198,7 +201,7 @@ class IncidentController extends Controller
         return $components;
     }
 
-    protected function applyComponents(Incident $incident, array $components): void
+    protected function applyComponents(Incident $incident, array $components, ?ApiToken $token): void
     {
         foreach ($components as $id => $status) {
             $component = Component::find($id) ?? Component::where('name', $id)->first();
@@ -215,7 +218,7 @@ class IncidentController extends Controller
                 $component->id => ['status' => $value->value],
             ]);
 
-            $component->update(['status' => $value]);
+            $component->update(['status' => $value, ...$component->reportedAttributes($token, 'webhook')]);
         }
     }
 
