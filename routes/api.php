@@ -28,6 +28,8 @@ Route::prefix('v1')->group(function () {
     });
 });
 
+require __DIR__.'/public-features-api.php';
+
 foreach (Route::getRoutes()->getRoutes() as $original) {
     if (! str_starts_with($original->uri(), 'api/v1/')) {
         continue;

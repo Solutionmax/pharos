@@ -17,7 +17,8 @@ class ResolveStatusPage
         $id = $route->parameter('statusPage');
         $slug = $route->parameter('slug');
         $admin = $request->is('admin/*');
-        $api = $request->is('api/*');
+        $protectedRead = str_starts_with(preg_replace('/^page\./', '', (string) $route->getName()), 'api.features.');
+        $api = $request->is('api/*') || $protectedRead;
         $explicit = $id !== null || $slug !== null;
         $page = $id !== null ? StatusPage::findOrFail($id)
             : ($slug !== null ? StatusPage::where('slug', $slug)->firstOrFail() : StatusPage::default());
@@ -41,7 +42,8 @@ class ResolveStatusPage
             $unsubscribe = str_ends_with((string) $route->getName(), 'unsubscribe')
                 || str_contains($route->uri(), 'unsubscribe/');
             $writeApi = $api && ! $request->isMethod('GET');
-            abort_if(! $unsubscribe && ! $writeApi && (! $page->is_published || $page->archived_at), 404);
+            abort_if(! $unsubscribe && ! $writeApi && ! $protectedRead && (! $page->is_published || $page->archived_at), 404);
+            abort_if($protectedRead && $page->archived_at, 404);
             abort_if($writeApi && $page->archived_at, 404);
         }
 
