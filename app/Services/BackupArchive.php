@@ -42,9 +42,13 @@ class BackupArchive
             }
             $zip->addFile($snapshot, $databaseName);
             $root = base_path();
-            $iterator = new \RecursiveIteratorIterator(new \RecursiveCallbackFilterIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS), function ($file) use ($root) {
+            $publicRoot = realpath(public_path());
+            if ($publicRoot === false || ! is_dir($publicRoot)) {
+                throw new \RuntimeException('Configured public directory is unavailable');
+            }
+            $iterator = new \RecursiveIteratorIterator(new \RecursiveCallbackFilterIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS), function ($file) use ($root, $publicRoot) {
                 $relative = substr($file->getPathname(), strlen($root) + 1);
-                if ($file->isLink()) {
+                if ($file->isLink() || $file->getPathname() === $publicRoot || $relative === 'public' || str_starts_with($relative, 'public/')) {
                     return false;
                 }
                 if (preg_match('#^(?:\.git|vendor|node_modules|bootstrap/cache)(?:/|$)#', $relative)) {
@@ -68,7 +72,17 @@ class BackupArchive
                     $zip->addFile($file->getPathname(), $relative);
                 }
             }
-            $zip->addFromString('BACKUP-README.txt', "Pharos backup. Restore the application files and .env (preserves APP_KEY), uploaded storage/app/public, then restore database/database.sqlite or import database/database.sql. Install Composer dependencies from composer.lock. Keep this archive private: it contains credentials and account data.\n");
+            // One authoritative public tree, independent of a split-hosting application layout.
+            $publicFiles = new \RecursiveIteratorIterator(new \RecursiveCallbackFilterIterator(new \RecursiveDirectoryIterator($publicRoot, \FilesystemIterator::SKIP_DOTS), function ($file) {
+                return ! $file->isLink() && ! str_starts_with($file->getFilename(), '.env') && ! in_array($file->getFilename(), ['.git', 'vendor', 'node_modules'], true);
+            }));
+            foreach ($publicFiles as $file) {
+                if ($file->isFile()) {
+                    $zip->addFile($file->getPathname(), 'public/'.substr($file->getPathname(), strlen($publicRoot) + 1));
+                }
+            }
+            $zip->addFromString('BACKUP-LAYOUT.json', json_encode(['public_prefix' => 'public/', 'public_source' => $publicRoot, 'application_source' => $root], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+            $zip->addFromString('BACKUP-README.txt', "Pharos backup. Restore application files and .env (preserves APP_KEY), uploaded storage/app/public; restore the public/ archive prefix into the CURRENT configured document root (see BACKUP-LAYOUT.json), then restore database/database.sqlite or import database/database.sql. Install Composer dependencies from composer.lock. Keep this archive private: it contains credentials and account data.\n");
             if (! $zip->close()) {
                 throw new \RuntimeException('Archive failed');
             }chmod($path, 0600);

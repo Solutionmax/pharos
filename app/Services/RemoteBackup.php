@@ -23,6 +23,9 @@ class RemoteBackup
         $secret = $destination->credentials;
         $allow = (bool) ($c['allow_private'] ?? false);
         if ($destination->driver === 'sftp') {
+            if (! SftpFingerprint::valid($c['fingerprint'] ?? null)) {
+                throw new \RuntimeException('A verified SSH host fingerprint is required.');
+            }
             $ip = $allow ? $this->safe->resolveOwn($c['host']) : $this->safe->resolve($c['host']);
 
             return new Filesystem(new SftpAdapter(new SftpConnectionProvider(host: $ip, username: $c['username'], password: $secret['password'], port: (int) ($c['port'] ?? 22), timeout: 20, maxTries: 1, hostFingerprint: $c['fingerprint']), $c['root'] ?? '/'));

@@ -7,6 +7,7 @@ use App\Models\BackupDestination;
 use App\Models\Setting;
 use App\Services\RemoteBackup;
 use App\Services\SafeHttp;
+use App\Services\SftpFingerprint;
 use Illuminate\Http\Request;
 
 class MonitoringSystemController extends Controller
@@ -33,7 +34,11 @@ class MonitoringSystemController extends Controller
         $driver = $input['driver'] ?? '';
         $rules = ['name' => 'required|string|max:100', 'driver' => 'required|in:s3,sftp', 'allow_private' => 'sometimes|boolean'];
         if ($driver === 'sftp') {
-            $rules += ['host' => 'required|string|max:253|regex:/^[a-zA-Z0-9.:_-]+$/', 'port' => 'nullable|integer|min:1|max:65535', 'username' => 'required|string|max:100', 'password' => 'required|string|max:4096', 'fingerprint' => 'required|string|max:200', 'root' => 'required|string|max:255|starts_with:/'];
+            $rules += ['host' => 'required|string|max:253|regex:/^[a-zA-Z0-9.:_-]+$/', 'port' => 'nullable|integer|min:1|max:65535', 'username' => 'required|string|max:100', 'password' => 'required|string|max:4096', 'fingerprint' => ['required', 'string', 'max:200', function ($attribute, $value, $fail) {
+                if (! SftpFingerprint::valid($value)) {
+                    $fail(__('Use a complete SHA256 or SHA512 SSH host fingerprint.'));
+                }
+            }], 'root' => 'required|string|max:255|starts_with:/'];
         } else {
             $rules += ['endpoint' => 'nullable|url:https|max:255', 'region' => 'required|string|max:100|regex:/^[a-z0-9-]+$/', 'bucket' => 'required|string|max:63|regex:/^[a-z0-9][a-z0-9.-]+$/', 'prefix' => 'nullable|string|max:200|regex:/^[a-zA-Z0-9_\/-]*$/', 'key' => 'required|string|max:200', 'secret' => 'required|string|max:4096'];
         }

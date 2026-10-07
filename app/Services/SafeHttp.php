@@ -107,7 +107,12 @@ class SafeHttp
             return $request;
         }
 
-        $port = parse_url($url, PHP_URL_PORT) ?: (str_starts_with($url, 'http://') ? 80 : 443);
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        $port = parse_url($url, PHP_URL_PORT) ?? match ($scheme) {
+            'http' => 80,
+            'https' => 443,
+            default => throw new \RuntimeException('Only HTTP and HTTPS targets are allowed.'),
+        };
 
         // Pinned: curl connects to the address we vetted, not to whatever a
         // second lookup would return.

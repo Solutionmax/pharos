@@ -19,6 +19,7 @@ class ProbeController extends Controller
         abort_unless(is_string($token) && strlen($token) <= 200, 401);
         $location = ProbeLocation::withoutGlobalScopes()->where('token_hash', hash('sha256', $token))->where('enabled', true)->first();
         abort_unless($location !== null, 401);
+        abort_unless($location->canProbe(), 403);
         $location->update(['last_seen_at' => now()]);
 
         return $location;
@@ -51,7 +52,7 @@ class ProbeController extends Controller
             $job = ProbeJob::whereKey($data['job'])->where('probe_location_id', $location->id)->lockForUpdate()->first();
             abort_unless($job !== null, 404);
             abort_if($job->consumed_at || $job->expires_at->isPast(), 409);
-            $check = $location->checks()->where('checks.id', $job->check_id)->where('checks.enabled', true)->whereHas('component')->first();
+            $check = $location->checks()->where('checks.id', $job->check_id)->where('checks.enabled', true)->whereHas('component', fn ($query) => $query->where('enabled', true))->first();
             abort_unless($check !== null, 404);
             $job->update(['consumed_at' => now()]);
             ProbeSample::create(['check_id' => $check->id, 'probe_location_id' => $location->id, 'ok' => $data['ok'], 'latency_ms' => $data['latency_ms'] ?? null, 'checked_at' => now()]);

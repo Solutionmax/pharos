@@ -29,8 +29,8 @@ class ProbeLocationsTest extends TestCase
     {
         $c = Component::create(['name' => 'Web']);
         $check = Check::create(['component_id' => $c->id, 'type' => 'http', 'target' => 'https://example.net']);
-        $a = ProbeLocation::create(['name' => 'A', 'token_hash' => hash('sha256', 'a')]);
-        $b = ProbeLocation::create(['name' => 'B', 'token_hash' => hash('sha256', 'b')]);
+        $a = ProbeLocation::create(['owner_id' => User::factory()->create(['role' => 'admin'])->id, 'name' => 'A', 'token_hash' => hash('sha256', 'a')]);
+        $b = ProbeLocation::create(['owner_id' => User::factory()->create(['role' => 'admin'])->id, 'name' => 'B', 'token_hash' => hash('sha256', 'b')]);
         $check->locations()->attach([$a->id, $b->id]);
         ProbeSample::create(['check_id' => $check->id, 'probe_location_id' => $a->id, 'ok' => true, 'checked_at' => now(), 'latency_ms' => 20]);
         ProbeSample::create(['check_id' => $check->id, 'probe_location_id' => $b->id, 'ok' => false, 'checked_at' => now()]);
@@ -42,7 +42,7 @@ class ProbeLocationsTest extends TestCase
 
     public function test_probe_token_only_receives_assigned_checks_and_result_nonce_is_one_use(): void
     {
-        $a = ProbeLocation::create(['name' => 'A', 'token_hash' => hash('sha256', 'secret')]);
+        $a = ProbeLocation::create(['owner_id' => User::factory()->create(['role' => 'admin'])->id, 'name' => 'A', 'token_hash' => hash('sha256', 'secret')]);
         $c = Component::create(['name' => 'Web']);
         $check = Check::create(['component_id' => $c->id, 'type' => 'http', 'target' => 'https://example.net']);
         $check->locations()->attach($a);
@@ -69,7 +69,7 @@ class ProbeLocationsTest extends TestCase
         });
         $this->actingAs($admin)->post('/admin/locations', ['name' => 'Attempt', 'checks' => [$outside->id]])->assertSessionHasErrors('checks.0');
         $this->assertSame(0, ProbeLocation::count());
-        $foreign = app(PageContext::class)->run($other->id, fn () => ProbeLocation::create(['name' => 'Foreign', 'token_hash' => hash('sha256', 'foreign')]));
+        $foreign = app(PageContext::class)->run($other->id, fn () => ProbeLocation::create(['owner_id' => User::factory()->create(['role' => 'admin'])->id, 'name' => 'Foreign', 'token_hash' => hash('sha256', 'foreign')]));
         $this->actingAs($admin)->delete('/admin/locations/'.$foreign->id)->assertNotFound();
         $admin->statusPages()->updateExistingPivot($page->id, ['role' => 'viewer']);
         $this->get('/admin/locations')->assertForbidden();
@@ -79,8 +79,8 @@ class ProbeLocationsTest extends TestCase
 
     public function test_another_location_cannot_submit_job_and_expired_or_malformed_results_fail(): void
     {
-        $a = ProbeLocation::create(['name' => 'A', 'token_hash' => hash('sha256', 'secret-a')]);
-        $b = ProbeLocation::create(['name' => 'B', 'token_hash' => hash('sha256', 'secret-b')]);
+        $a = ProbeLocation::create(['owner_id' => User::factory()->create(['role' => 'admin'])->id, 'name' => 'A', 'token_hash' => hash('sha256', 'secret-a')]);
+        $b = ProbeLocation::create(['owner_id' => User::factory()->create(['role' => 'admin'])->id, 'name' => 'B', 'token_hash' => hash('sha256', 'secret-b')]);
         $c = Component::create(['name' => 'Web']);
         $check = Check::create(['component_id' => $c->id, 'type' => 'http', 'target' => 'https://example.net']);
         $check->locations()->attach($a);
@@ -96,8 +96,8 @@ class ProbeLocationsTest extends TestCase
     {
         $c = Component::create(['name' => 'Web']);
         $check = Check::create(['component_id' => $c->id, 'type' => 'http', 'target' => 'https://example.net', 'retries' => 1]);
-        $a = ProbeLocation::create(['name' => 'A', 'token_hash' => hash('sha256', 'a')]);
-        $b = ProbeLocation::create(['name' => 'B', 'token_hash' => hash('sha256', 'b')]);
+        $a = ProbeLocation::create(['owner_id' => User::factory()->create(['role' => 'admin'])->id, 'name' => 'A', 'token_hash' => hash('sha256', 'a')]);
+        $b = ProbeLocation::create(['owner_id' => User::factory()->create(['role' => 'admin'])->id, 'name' => 'B', 'token_hash' => hash('sha256', 'b')]);
         $check->locations()->attach([$a->id, $b->id]);
         $probe = new class extends Probe
         {

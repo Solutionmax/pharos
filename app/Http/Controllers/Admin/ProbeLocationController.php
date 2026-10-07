@@ -32,7 +32,7 @@ class ProbeLocationController extends Controller
         $data = $r->validate(['name' => ['required', 'string', 'max:100'], 'checks' => ['required', 'array', 'min:1', 'max:100'], 'checks.*' => ['integer', Rule::exists('checks', 'id')->whereIn('component_id', Component::pluck('id'))]]);
         abort_if(ProbeLocation::count() >= 20, 422);
         $token = Str::random(64);
-        $location = ProbeLocation::create(['name' => $data['name'], 'token_hash' => hash('sha256', $token)]);
+        $location = ProbeLocation::create(['name' => $data['name'], 'owner_id' => $r->user()->id, 'token_hash' => hash('sha256', $token)]);
         $location->checks()->sync($data['checks']);
         $r->session()->put('probe.setup', ['token' => $token, 'id' => $location->id]);
 

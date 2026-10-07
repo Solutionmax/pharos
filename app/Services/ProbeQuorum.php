@@ -17,6 +17,11 @@ class ProbeQuorum
         $down = $local->ok ? 0 : 1;
         $stale = 0;
         foreach ($locations as $location) {
+            if (! $location->canProbe()) {
+                $stale++;
+
+                continue;
+            }
             $sample = ProbeSample::where('check_id', $check->id)->where('probe_location_id', $location->id)->latest('checked_at')->latest('id')->first();
             if (! $sample || $sample->checked_at < now()->subSeconds(max(120, $check->interval_seconds * 2))) {
                 $stale++;
