@@ -23,16 +23,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', AuthenticateSession:
     Route::get('system-monitoring', [MonitoringSystemController::class, 'index'])->name('system-monitoring');
     Route::put('system-monitoring/cron', [MonitoringSystemController::class, 'cron'])->name('system-monitoring.cron');
     Route::post('backup-destinations', [MonitoringSystemController::class, 'store'])->name('backup-destinations.store');
-    Route::post('backup-destinations/{destination}/run', [MonitoringSystemController::class, 'run'])->middleware('throttle:2,1')->name('backup-destinations.run');
+    Route::post('backup-destinations/{destination}/run', [MonitoringSystemController::class, 'run'])->middleware('throttle:2,1,pharos-backup-run:')->name('backup-destinations.run');
     Route::delete('backup-destinations/{destination}', [MonitoringSystemController::class, 'destroy'])->name('backup-destinations.destroy');
 });
-Route::prefix('admin/passkeys')->name('admin.passkeys.')->middleware(['guest', NoStore::class, 'throttle:10,1'])->group(function () {
+Route::prefix('admin/passkeys')->name('admin.passkeys.')->middleware(['guest', NoStore::class, 'throttle:10,1,pharos-passkey-login:'])->group(function () {
     Route::post('login/options', [PasskeyController::class, 'loginOptions'])->name('login.options');
     Route::post('login', [PasskeyController::class, 'login'])->name('login');
 });
-Route::prefix('admin/profile/passkeys')->name('admin.profile.passkeys.')->middleware(['auth', AuthenticateSession::class, NoStore::class, 'throttle:10,1'])->group(function () {
+Route::prefix('admin/profile/passkeys')->name('admin.profile.passkeys.')->middleware(['auth', AuthenticateSession::class, NoStore::class, 'throttle:10,1,pharos-passkey-profile:'])->group(function () {
     Route::post('options', [PasskeyController::class, 'createOptions'])->name('options');
     Route::post('/', [PasskeyController::class, 'register'])->name('store');
     Route::delete('{passkey}', [PasskeyController::class, 'destroy'])->name('destroy');
 });
-Route::get('cron/run', WebCronController::class)->middleware([NoStore::class, 'throttle:2,1'])->name('cron.run');
+Route::get('cron/run', WebCronController::class)->middleware([NoStore::class, 'throttle:2,1,pharos-web-cron:'])->name('cron.run');
