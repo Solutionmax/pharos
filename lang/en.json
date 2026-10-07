@@ -1665,5 +1665,6 @@
     "Recovery code": "Recovery code",
     "Each recovery code works once.": "Each recovery code works once.",
     "Use the six digit code": "Use the six digit code",
-    "Use an HTTPS endpoint without credentials, query strings or fragments.": "Use an HTTPS endpoint without credentials, query strings or fragments."
+    "Use an HTTPS endpoint without credentials, query strings or fragments.": "Use an HTTPS endpoint without credentials, query strings or fragments.",
+    "Passkeys are unavailable here. Use a supported browser on the configured HTTPS hostname.": "Passkeys are unavailable here. Use a supported browser on the configured HTTPS hostname."
 }
