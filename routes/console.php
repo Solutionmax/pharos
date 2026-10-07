@@ -3,6 +3,7 @@
 use App\Models\CheckResult;
 use App\Services\Audit;
 use App\Services\OutgoingWebhook;
+use App\Services\ReportedUptime;
 use Illuminate\Support\Facades\Schedule;
 
 // One entry point for both deployment shapes: a real scheduler on a VPS, or a
@@ -14,6 +15,10 @@ Schedule::call(fn () => Audit::prune())->dailyAt('03:20')->name('prune-audit-log
 
 // Raw check results are only read for the beat strip; the uptime bar uses the daily roll-up.
 Schedule::call(fn () => CheckResult::prune())->dailyAt('03:25')->name('prune-check-results');
+
+// Components that something else keeps up to date have no probe to count; this credits
+// the time they spent in their reported status. Never overlaps itself, or one minute counts twice.
+Schedule::call(fn () => app(ReportedUptime::class)->tick())->everyMinute()->name('credit-reported-uptime')->withoutOverlapping();
 
 // Planned work: announce, start and complete maintenance windows. Runs before
 // pharos:notify in the same minute, so an announcement is mailed straight away.
