@@ -8,6 +8,7 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ### Fixed
 - Raw check results are now pruned once a day. The table grew for ever: about 140,000 rows and a 15 MB database after 33 days with five checks. Results older than 40 days go (set `PHAROS_CHECK_RESULT_DAYS` to change that), in small batches so the first run on a large table does not block the checks, and the newest result of every component always stays, so a paused check keeps its last run. Uptime figures and the 90 day bar come from the daily rollup and do not change. The beat strip on the component screen reads the last 40 runs; 40 days is what 40 runs of the slowest allowed interval (one day) need. An existing SQLite file does not shrink, it stops growing: the freed space is reused by new results.
+- The log is now one file per day and the last 14 days are kept (`storage/logs/laravel-YYYY-MM-DD.log`). Before, everything went into a single `laravel.log` that was never trimmed: one install with an error that repeated every minute had written 635 MB in a month. An existing `laravel.log` stays where it is and can be deleted. Set `LOG_STACK=single` to keep the old behaviour, or `LOG_DAILY_DAYS` to keep more or fewer days.
 - The incident form no longer offers "Signed in users only". Pharos has no sign in for visitors, so it behaved exactly like "Internal: team only". Incidents stored with that value and API clients that still send `authenticated` keep working, and such an incident stays off the public page.
 
 ### Security
