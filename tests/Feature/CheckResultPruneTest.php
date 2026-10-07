@@ -87,6 +87,14 @@ class CheckResultPruneTest extends TestCase
         $this->assertSame(1, CheckResult::count());
     }
 
+    /** SQLite before 3.32 (RHEL 8, CloudLinux) allows 999 bound variables; the delete binds one per id. */
+    public function test_the_default_batch_fits_the_old_sqlite_variable_limit(): void
+    {
+        $default = (new \ReflectionMethod(CheckResult::class, 'prune'))->getParameters()[1]->getDefaultValue();
+
+        $this->assertLessThanOrEqual(900, $default);
+    }
+
     public function test_the_uptime_bar_is_identical_before_and_after_pruning(): void
     {
         config(['pharos.check_result_days' => 40]);

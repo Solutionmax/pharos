@@ -37,9 +37,10 @@ class CheckResult extends Model
      * each component so a paused check keeps its last run. In batches, so the
      * first run on millions of rows never holds one long write lock. The ids are
      * read first and deleted second: MySQL refuses to delete from a table it is
-     * also selecting from. Returns how many rows went.
+     * also selecting from. The default batch of 500 keeps the delete under the 999
+     * bound variables SQLite before 3.32 allows (RHEL 8, CloudLinux). Returns how many rows went.
      */
-    public static function prune(?int $days = null, int $batch = 5000): int
+    public static function prune(?int $days = null, int $batch = 500): int
     {
         $cutoff = now()->subDays($days ?? (int) config('pharos.check_result_days'));
         $deleted = 0;
