@@ -6,7 +6,7 @@ The visual editor saves Markdown, as before. Bold, italic, lists, links, quotes 
 
 ## Availability
 
-Unknown days, including rollups with zero observed seconds, are grey and excluded from percentages. A component with no observations shows **No data**. Component percentages cover up to 90 days. Overall uptime averages the component percentages with observations. Service availability averages the daily mean of measured components over that same window. Service and component strips show the most recent 30 days; each day has a tooltip. This is an availability summary, not an SLA calculation.
+Unknown days, including rollups with zero observed seconds, are grey and excluded from percentages. A component with no observations shows **No data**, or **Not measured** in the admin cells. Components whose status is written from outside (the API, Uptime Kuma, an upstream page) have their time in each status counted every minute and are marked as reported; maintenance is never counted as an outage, and services set by hand stay unmeasured. Component percentages cover up to 90 days. Overall uptime averages the component percentages with observations. Service availability averages the daily mean of measured components over that same window. Service and component strips show the most recent 30 days; each day has a tooltip. This is an availability summary, not an SLA calculation.
 
 ## Automatic refresh
 

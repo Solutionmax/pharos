@@ -53,7 +53,7 @@ and token header; incident creation needs changes. See the compatibility guide b
 |---|---|
 | **Checks** | HTTP, TCP and heartbeat. Two failures turn a component red, three healthy checks in a row close the incident. |
 | **Incidents** | Opened and closed by the checks themselves, or by hand. One incident can span several components, each with its own status. Templates with `{{variables}}` for the API. |
-| **Uptime** | Daily roll-ups into a 90-day bar and a percentage. Days without data are grey and left out of the average, never counted as green. |
+| **Uptime** | Daily roll-ups into a 90-day bar and a percentage. Pharos measures the services it checks itself and counts the status that the API or Uptime Kuma reports for the others (marked as reported); services set by hand are not measured. Days without data are grey and left out of the average, never counted as green. |
 | **Public page** | Every section is a switch (banner, uptime bar, services, per-component bars, incident history, empty days, API link), per-service visibility, light and dark theme, and a live preview in the admin that renders the real page from values you have not saved yet. |
 | **Subscribers** | A *Get notified* button, double opt-in, one e-mail per incident update, one-click unsubscribe. The four mails are editable Markdown templates. |
 | **Integrations** | Cachet-shaped REST API for components and incidents, Uptime Kuma through a separately configured API workflow or heartbeat adapter, n8n in both directions with an HMAC-signed outgoing webhook, Zabbix and Grafana through the API, Slack and Discord webhooks, Telegram bot notifications, Signal through your own secured bridge. |
