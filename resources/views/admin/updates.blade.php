@@ -1,20 +1,20 @@
 @extends('layouts.admin')
-@section('title', 'Updates')
+@section('title', __('Updates'))
 @section('content')
 
 @if ($versionPinned)
   <x-note id="updates.pinned" warn>
-    <b>The version is pinned in .env.</b> <span class="mono">PHAROS_VERSION</span> is set there, and
-    an update never replaces <span class="mono">.env</span>, so after installing a release this
+    <b>{{ __('The version is pinned in .env.') }}</b> <span class="mono">{{ __('PHAROS_VERSION') }}</span> {{ __('is set there, and
+    an update never replaces') }} <span class="mono">{{ __('.env') }}</span>{{ __(', so after installing a release this
     screen would keep reporting the old version and offer the same update again. Remove that line;
-    the version then comes from the code, which is what an update actually replaces.
+    the version then comes from the code, which is what an update actually replaces.') }}
   </x-note>
 @endif
 
 @include('partials.pagehead', [
-  'title' => 'Updates',
-  'sub' => 'What you are running, and what is available',
-  'action' => ['url' => route('admin.updates', ['refresh' => 1]), 'label' => 'Check again'],
+  'title' => __('Updates'),
+  'sub' => __('What you are running, and what is available'),
+  'action' => ['url' => route('admin.updates', ['refresh' => 1]), 'label' => __('Check again')],
 ])
 
 @php
@@ -32,12 +32,12 @@
 
 <div class="op-kpis">
   <div class="op-kpi {{ $available ? 'warn' : ($confirmedCurrent ? 'good' : '') }}">
-    <span class="k">Installed</span>
+    <span class="k">{{ __('Installed') }}</span>
     <span class="v">{{ $current }}</span>
     <span class="n">{{ $available ? 'An update is available' : ($confirmedCurrent ? 'Up to date' : 'No newer release known') }}</span>
   </div>
   <div class="op-kpi">
-    <span class="k">Available</span>
+    <span class="k">{{ __('Available') }}</span>
     <span class="v">{{ $state === 'ok' ? $latest['version'] : 'Unknown' }}</span>
     <span class="n">
       @if ($state === 'ok')
@@ -48,61 +48,61 @@
     </span>
   </div>
   <div class="op-kpi">
-    <span class="k">How this install updates</span>
+    <span class="k">{{ __('How this install updates') }}</span>
     <span class="v" style="font-size:19px">{{ $managed ? 'From the host' : ($writable ? 'By itself' : 'By hand') }}</span>
-    <span class="n">{{ $managed ? 'Docker image, pulled outside the app' : ($writable ? 'Downloads and replaces its own files' : 'The directory is not writable') }}@if ($state !== 'disabled' && $manifestHost) · Checks {{ $manifestHost }} every hour @endif</span>
+    <span class="n">{{ $managed ? 'Docker image, pulled outside the app' : ($writable ? 'Downloads and replaces its own files' : 'The directory is not writable') }}@if ($state !== 'disabled' && $manifestHost) {{ __('· Checks') }} {{ $manifestHost }} {{ __('every hour') }} @endif</span>
   </div>
 </div>
 
 <p class="note" style="margin:-4px 0 16px">
   @if ($checkedAt)
-    Last checked {{ $checkedAt->gt(now()->subMinute()) ? 'just now' : $checkedAt->diffForHumans() }} · next automatic check in {{ $nextCheckAt->diffForHumans(['parts' => 1, 'syntax' => \Carbon\Carbon::DIFF_ABSOLUTE]) }}
+    {{ __('Last checked') }} {{ $checkedAt->gt(now()->subMinute()) ? 'just now' : $checkedAt->diffForHumans() }} {{ __('· next automatic check in') }} {{ $nextCheckAt->diffForHumans(['parts' => 1, 'syntax' => \Carbon\Carbon::DIFF_ABSOLUTE]) }}
   @else
-    Never checked yet
+    {{ __('Never checked yet') }}
   @endif
 </p>
 
 @if ($available && ($latest['notes'] ?? false))
   <div class="op-card" style="margin-bottom:18px">
-    <header><h3>What is in {{ $latest['version'] }}</h3></header>
+    <header><h3>{{ __('What is in') }} {{ $latest['version'] }}</h3></header>
     {{-- Same rules as an incident update: Markdown in, HTML escaped, no javascript: links. --}}
     <div class="panel-bd"><div class="md note">{!! Str::markdown($latest['notes'], ['html_input' => 'escape', 'allow_unsafe_links' => false]) !!}</div></div>
   </div>
 @endif
 
 <section class="op-card" style="margin-bottom:18px">
-  <header><h3>Install</h3>@if ($available)<span class="ix-state w" style="margin-left:auto">{{ $latest['version'] }} available</span>@else<span class="ix-state ok" style="margin-left:auto">Nothing to install</span>@endif</header>
+  <header><h3>{{ __('Install') }}</h3>@if ($available)<span class="ix-state w" style="margin-left:auto">{{ $latest['version'] }} {{ __('available') }}</span>@else<span class="ix-state ok" style="margin-left:auto">{{ __('Nothing to install') }}</span>@endif</header>
   <div class="bd" style="display:flex;flex-direction:column;gap:14px">
     @if (! $available)
-      <p class="note">Nothing to do. Pharos checks once an hour, and you can force it with <b>Check again</b>.</p>
+      <p class="note">{{ __('Nothing to do. Pharos checks once an hour, and you can force it with') }} <b>{{ __('Check again') }}</b>.</p>
     @elseif ($managed)
       <x-note id="updates.managed">
-        <b>Update on the Docker host.</b> This installation has no connected host updater.
-        The app cannot pull or restart its own container.
+        <b>{{ __('Update on the Docker host.') }}</b> {{ __('This installation has no connected host updater.
+        The app cannot pull or restart its own container.') }}
       </x-note>
-      <p class="note">On the Docker host, open the directory containing <span class="mono">compose.yaml</span> and run:</p>
-      <p class="note mono">docker compose pull &amp;&amp; docker compose up -d</p>
-      <p class="note">If <span class="mono">PHAROS_VERSION</span> is pinned in your Compose environment or <span class="mono">.env</span>, change it to <b>{{ $latest['version'] }}</b> first. After the containers restart, return here and check the installed version.</p>
+      <p class="note">{{ __('On the Docker host, open the directory containing') }} <span class="mono">{{ __('compose.yaml') }}</span> {{ __('and run:') }}</p>
+      <p class="note mono">{{ __('docker compose pull && docker compose up -d') }}</p>
+      <p class="note">{{ __('If') }} <span class="mono">{{ __('PHAROS_VERSION') }}</span> {{ __('is pinned in your Compose environment or') }} <span class="mono">{{ __('.env') }}</span>{{ __(', change it to') }} <b>{{ $latest['version'] }}</b> {{ __('first. After the containers restart, return here and check the installed version.') }}</p>
     @elseif ($writable)
       <x-note id="updates.how-it-installs">
-        The archive is downloaded, checked against a signature made with our key, and only then
-        unpacked. Your <b>.env</b>, database and uploads are left alone, and the version you are
-        running now is copied to <span class="mono">storage/app/backups</span> first.
-        @if ($sqlite) Your SQLite database is copied into the backup as well. @else Your database is <b>not</b> in that backup: take a dump before installing, because the update runs migrations. @endif
+        {{ __('The archive is downloaded, checked against a signature made with our key, and only then
+        unpacked. Your') }} <b>{{ __('.env') }}</b>{{ __(', database and uploads are left alone, and the version you are
+        running now is copied to') }} <span class="mono">{{ __('storage/app/backups') }}</span> {{ __('first.') }}
+        @if ($sqlite) {{ __('Your SQLite database is copied into the backup as well.') }} @else {{ __('Your database is') }} <b>{{ __('not') }}</b> {{ __('in that backup: take a dump before installing, because the update runs migrations.') }} @endif
       </x-note>
       <form method="POST" action="{{ route('admin.updates.apply') }}"
             data-job="update" data-progress="{{ route('admin.updates.backup.progress') }}"
             data-confirm-title="Install {{ $latest['version'] }}?"
-            data-confirm="Pharos replaces its own files and is <strong>briefly unavailable</strong> while it does. Your settings, uploads and database are kept, and the current version is backed up first."
-            data-confirm-action="Install update"
+            data-confirm="{{ __('Pharos replaces its own files and is <strong>briefly unavailable</strong> while it does. Your settings, uploads and database are kept, and the current version is backed up first.') }}"
+            data-confirm-action="{{ __('Install update') }}"
             data-confirm-safe="1">
         @csrf
-        <button class="btn" type="submit">Install {{ $latest['version'] }}</button>
+        <button class="btn" type="submit">{{ __('Install') }} {{ $latest['version'] }}</button>
       </form>
     @else
       <x-note id="updates.not-writable">
-        <b>The application directory is not writable</b>, so Pharos cannot update itself. Either give
-        the web user write access, or update over SSH:
+        <b>{{ __('The application directory is not writable') }}</b>{{ __(', so Pharos cannot update itself. Either give
+        the web user write access, or update over SSH:') }}
       </x-note>
 <pre>cd {{ base_path() }}
 php artisan pharos:update</pre>
@@ -111,24 +111,24 @@ php artisan pharos:update</pre>
 </section>
 
 <x-note id="updates.safe" style="margin-bottom:16px">
-  Every release manifest is signed with the key that also signs licences, with a different purpose
+  {{ __('Every release manifest is signed with the key that also signs licences, with a different purpose
   field so one can never be replayed as the other. An unsigned or tampered manifest, or an archive
-  whose checksum does not match, is refused before anything is written. A failed check reads as
-  <b>no news</b>, never as an error on your status page.
+  whose checksum does not match, is refused before anything is written. A failed check reads as') }}
+  <b>{{ __('no news') }}</b>{{ __(', never as an error on your status page.') }}
 </x-note>
 
 <section class="op-card" aria-labelledby="backups-title">
   <header>
-    <h3 id="backups-title">Backups kept</h3><span class="hint mono">storage/app/backups</span>
+    <h3 id="backups-title">{{ __('Backups kept') }}</h3><span class="hint mono">{{ __('storage/app/backups') }}</span>
     <form method="POST" action="{{ route('admin.updates.backup') }}" id="backup-form" data-job="backup" data-progress="{{ route('admin.updates.backup.progress') }}">
       @csrf
-      <button class="btn op-sm" type="submit">Back up now</button>
+      <button class="btn op-sm" type="submit">{{ __('Back up now') }}</button>
     </form>
   </header>
   @if ($backups)
     <div class="scroll">
       <table class="op-table">
-        <thead><tr><th>Version</th><th>Taken</th><th>Size</th><th></th></tr></thead>
+        <thead><tr><th>{{ __('Version') }}</th><th>{{ __('Taken') }}</th><th>{{ __('Size') }}</th><th></th></tr></thead>
         <tbody>
           @foreach ($backups as $backup)
             <tr>
@@ -137,21 +137,21 @@ php artisan pharos:update</pre>
               <td class="num">{{ \App\Support\Bytes::human($backup['size']) }}</td>
               <td>
                 <span class="rowacts">
-                  <a href="{{ route('admin.updates.backup.download', $backup['name']) }}">Download</a>
+                  <a href="{{ route('admin.updates.backup.download', $backup['name']) }}">{{ __('Download') }}</a>
                   <form method="POST" action="{{ route('admin.updates.backup.rollback', $backup['name']) }}"
                         data-job="rollback" data-progress="{{ route('admin.updates.backup.progress') }}" data-after="{{ route('admin.login', ['after' => 'rollback']) }}"
                         data-confirm-title="Roll back to {{ $backup['version'] }}?"
                         data-confirm="Pharos replaces its own files with the copy taken on {{ $backup['created_at']->copy()->setTimezone(\App\Services\Clock::timezone())->format('j M Y H:i') }} and, on SQLite, puts that copy of the database back too. Everything entered since then is lost from the app, but not from the safety backup Pharos makes first. The page is briefly unavailable."
-                        data-confirm-action="Roll back">
+                        data-confirm-action="{{ __('Roll back') }}">
                     @csrf
-                    <button type="submit">Roll back</button>
+                    <button type="submit">{{ __('Roll back') }}</button>
                   </form>
                   <form method="POST" action="{{ route('admin.updates.backup.destroy', $backup['name']) }}"
                         data-confirm-title="Remove backup {{ $backup['name'] }}?"
                         data-confirm="This is the copy of {{ $backup['version'] }} taken on {{ $backup['created_at']->copy()->setTimezone(\App\Services\Clock::timezone())->format('j M Y H:i') }}. Once removed, there is nothing to put back."
-                        data-confirm-action="Remove backup">
+                        data-confirm-action="{{ __('Remove backup') }}">
                     @csrf @method('DELETE')
-                    <button type="submit">Delete</button>
+                    <button type="submit">{{ __('Delete') }}</button>
                   </form>
                 </span>
               </td>
@@ -163,28 +163,28 @@ php artisan pharos:update</pre>
   @endif
   @if (! $backups)
     <div class="bd">
-      <p class="note">No backups yet. The first update creates one, or press <b>Back up now</b>.</p>
+      <p class="note">{{ __('No backups yet. The first update creates one, or press') }} <b>{{ __('Back up now') }}</b>.</p>
     </div>
   @endif
 </section>
 
 <x-note id="updates.backups" style="margin-top:18px">
-  @if ($sqlite)The SQLite database is copied into the backup, so putting a folder back puts the data of that moment back too. @else Your database is not in these backups: dump it before an update; the update runs migrations. @endif
-  Each update copies the version it replaces into <span class="mono">storage/app/backups</span>
-  before writing anything. Pharos keeps the newest {{ \App\Services\InstallSettings::keepBackups() ?: 'all' }} (set under <a href="{{ route('admin.settings') }}">Settings → General</a>); older ones go when a new one is made. <b>Roll back</b> puts a folder back, after copying what it replaces into a
-  backup of its own, so a rollback can be undone too.
+  @if ($sqlite){{ __('The SQLite database is copied into the backup, so putting a folder back puts the data of that moment back too.') }} @else {{ __('Your database is not in these backups: dump it before an update; the update runs migrations.') }} @endif
+  {{ __('Each update copies the version it replaces into') }} <span class="mono">{{ __('storage/app/backups') }}</span>
+  {{ __('before writing anything. Pharos keeps the newest') }} {{ \App\Services\InstallSettings::keepBackups() ?: 'all' }} {{ __('(set under') }} <a href="{{ route('admin.settings') }}">{{ __('Settings → General') }}</a>{{ __('); older ones go when a new one is made.') }} <b>{{ __('Roll back') }}</b> {{ __('puts a folder back, after copying what it replaces into a
+  backup of its own, so a rollback can be undone too.') }}
 </x-note>
 
 {{-- One dialog for the three jobs that rewrite the install: update, backup, rollback.
      Each shows its steps as the server reports them; without JS the forms post as before. --}}
 <dialog class="modal job" id="job-dialog" aria-labelledby="job-title">
   <div class="panel">
-    <div class="panel-hd"><span class="job-dot" aria-hidden="true"></span><h3 id="job-title">Working…</h3><span class="hint mono" data-pct></span></div>
+    <div class="panel-hd"><span class="job-dot" aria-hidden="true"></span><h3 id="job-title">{{ __('Working…') }}</h3><span class="hint mono" data-pct></span></div>
     <div class="panel-bd">
       <ol class="job-steps" data-steps></ol>
       <progress class="bar" data-bar></progress>
-      <p class="job-say mono" data-say>Starting…</p>
-      <div class="modal-act"><button type="button" class="btn ghost" data-close disabled>Close</button></div>
+      <p class="job-say mono" data-say>{{ __('Starting…') }}</p>
+      <div class="modal-act"><button type="button" class="btn ghost" data-close disabled>{{ __('Close') }}</button></div>
     </div>
   </div>
 </dialog>

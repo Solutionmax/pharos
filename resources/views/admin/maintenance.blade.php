@@ -1,21 +1,21 @@
 @extends('layouts.admin')
-@section('title', 'Scheduled maintenance')
+@section('title', __('Scheduled maintenance'))
 @section('content')
 @include('partials.pagehead', [
-  'title' => 'Scheduled maintenance',
-  'sub' => 'Planned work: announced ahead, shown on the status page, components set and restored for you',
-  'action' => $canEditPage ? ['url' => \App\Services\PageUrls::route('admin.maintenance.create'), 'label' => 'Schedule maintenance'] : null,
+  'title' => __('Scheduled maintenance'),
+  'sub' => __('Planned work: announced ahead, shown on the status page, components set and restored for you'),
+  'action' => $canEditPage ? ['url' => \App\Services\PageUrls::route('admin.maintenance.create'), 'label' => __('Schedule maintenance')] : null,
 ])
 
 @include('partials.page-context', [
-  'contextTitle' => 'Maintenance for',
-  'contextHelp' => 'Windows scheduled here appear only on this page and are announced only to its subscribers and destinations.',
+  'contextTitle' => __('Maintenance for'),
+  'contextHelp' => __('Windows scheduled here appear only on this page and are announced only to its subscribers and destinations.'),
 ])
 
 @error('maintenance')<div class="errors">{{ $message }}</div>@enderror
 
 <section class="op-section" aria-labelledby="maint-open">
-  <div class="op-section-hd"><h2 id="maint-open">Coming up and under way</h2><span class="hint">{{ $open->count() }} {{ \Illuminate\Support\Str::plural('window', $open->count()) }}</span></div>
+  <div class="op-section-hd"><h2 id="maint-open">{{ __('Coming up and under way') }}</h2><span class="hint">{{ $open->count() }} {{ \Illuminate\Support\Str::plural('window', $open->count()) }}</span></div>
   @forelse ($open as $maintenance)
     @php $state = $maintenance->state(); @endphp
     <article class="op-inc op-maint {{ $state === 'in_progress' ? 'is-live' : '' }}">
@@ -35,13 +35,13 @@
         </div>
         @if ($canEditPage)
           <div class="op-acts">
-            <a class="btn ghost op-sm" href="{{ \App\Services\PageUrls::route('admin.maintenance.edit', $maintenance) }}">Edit</a>
+            <a class="btn ghost op-sm" href="{{ \App\Services\PageUrls::route('admin.maintenance.edit', $maintenance) }}">{{ __('Edit') }}</a>
             <form method="POST" action="{{ \App\Services\PageUrls::route('admin.maintenance.cancel', $maintenance) }}"
                   data-confirm-title="Cancel {{ $maintenance->title }}?"
                   data-confirm="{{ $state === 'in_progress' ? 'The window stops now and the affected components go back to how they were.' : 'Nothing will be started or announced for this window.' }} Destinations that were told about it hear that it is cancelled."
-                  data-confirm-action="Cancel maintenance">
+                  data-confirm-action="{{ __('Cancel maintenance') }}">
               @csrf
-              <button class="btn ghost op-sm" type="submit">Cancel</button>
+              <button class="btn ghost op-sm" type="submit">{{ __('Cancel') }}</button>
             </form>
           </div>
         @endif
@@ -52,16 +52,16 @@
           @forelse ($maintenance->components as $component)
             <span class="op-chip">{{ $component->name }}</span>
           @empty
-            <span class="op-dim">No components are changed</span>
+            <span class="op-dim">{{ __('No components are changed') }}</span>
           @endforelse
         </span>
         <span class="op-dim">
           @if ($maintenance->announced_at)
-            Announced {{ $maintenance->announced_at->format('j M H:i') }}
+            {{ __('Announced') }} {{ $maintenance->announced_at->format('j M H:i') }}
           @elseif ($maintenance->announce_minutes > 0)
-            Announces {{ \Illuminate\Support\Str::lower(\App\Models\Maintenance::LEAD_TIMES[$maintenance->announce_minutes] ?? '') }}
+            {{ __('Announces') }} {{ \Illuminate\Support\Str::lower(\App\Models\Maintenance::LEAD_TIMES[$maintenance->announce_minutes] ?? '') }}
           @else
-            Not announced
+            {{ __('Not announced') }}
           @endif
         </span>
       </footer>
@@ -69,19 +69,19 @@
   @empty
     <div class="op-empty">
       @include('partials.icon', ['name' => 'empty', 'size' => 28])
-      <b>Nothing planned.</b>
-      <span>Schedule a window and Pharos announces it, marks the components as under maintenance while it runs, and puts them back afterwards.</span>
+      <b>{{ __('Nothing planned.') }}</b>
+      <span>{{ __('Schedule a window and Pharos announces it, marks the components as under maintenance while it runs, and puts them back afterwards.') }}</span>
     </div>
   @endforelse
 </section>
 
 <section class="op-card" aria-labelledby="maint-past">
-  <header><h3 id="maint-past">History</h3><span class="hint">Completed and cancelled</span></header>
+  <header><h3 id="maint-past">{{ __('History') }}</h3><span class="hint">{{ __('Completed and cancelled') }}</span></header>
   @if ($past->isEmpty())
-    <div class="bd"><p class="op-dim">No past maintenance yet.</p></div>
+    <div class="bd"><p class="op-dim">{{ __('No past maintenance yet.') }}</p></div>
   @else
     <div class="scroll"><table class="op-table">
-      <thead><tr><th>Maintenance</th><th>When</th><th class="hide-sm">Components</th><th>Outcome</th></tr></thead>
+      <thead><tr><th>{{ __('Maintenance') }}</th><th>{{ __('When') }}</th><th class="hide-sm">{{ __('Components') }}</th><th>{{ __('Outcome') }}</th></tr></thead>
       <tbody>
       @foreach ($past as $maintenance)
         <tr>

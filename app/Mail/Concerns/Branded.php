@@ -4,6 +4,7 @@ namespace App\Mail\Concerns;
 
 use App\Services\Branding;
 use App\Services\Clock;
+use App\Services\Localization;
 use App\Services\MailConfig;
 use App\Services\MailTemplates;
 use App\Services\PageContext;
@@ -21,7 +22,7 @@ trait Branded
     protected function captureBrandContext(): void
     {
         $this->brandPageId = app(PageContext::class)->id();
-        $this->locale(\App\Services\Localization::page());
+        $this->locale(Localization::page());
     }
 
     /**
@@ -32,7 +33,7 @@ trait Branded
     {
         return Clock::withInstallationZone(
             fn () => app(PageContext::class)->run($this->brandPageId ?? app(PageContext::class)->id(),
-                fn () => \App\Services\Localization::run(\App\Services\Localization::page(), $callback)),
+                fn () => Localization::run(Localization::page(), $callback)),
         );
     }
 

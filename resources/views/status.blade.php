@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 @include('partials.theme-early', ['theme' => $theme ?? $branding->theme(), 'rememberTheme' => $chrome ?? true])
-<title>{{ $branding->name() }} Status</title>
+<title>{{ $branding->name() }} {{ __('Status') }}</title>
 <link rel="icon" href="{{ $branding->faviconUrl() }}">
 @if ($branding->name() === 'Pharos' && ! $branding->logoUrl())
 <link rel="apple-touch-icon" href="{{ $branding->builtInAssetUrl('apple-touch-icon.png') }}">
@@ -160,8 +160,8 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 @if (($chrome ?? true) && auth()->check())
 <div class="adminbar">
   <div class="in">
-    <span>Signed in as {{ auth()->user()->name }}</span>
-    <a href="{{ \App\Services\PageUrls::route('admin.components') }}" style="margin-left:auto">← Back to admin</a>
+    <span>{{ __('Signed in as') }} {{ auth()->user()->name }}</span>
+    <a href="{{ \App\Services\PageUrls::route('admin.components') }}" style="margin-left:auto">{{ __('← Back to admin') }}</a>
   </div>
 </div>
 @endif
@@ -174,20 +174,20 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
            and a mail transport that can actually send: a form that ends in a 500 helps nobody. --}}
       @if ($modules['page.show_subscribe'] && \App\Services\Subscriptions::enabled() && app(\App\Services\MailConfig::class)->configured())
         <details class="subscribe" @if (session('subscribed') || $errors->has('email')) open @endif>
-          <summary class="sub">Get notified</summary>
+          <summary class="sub">{{ __('Get notified') }}</summary>
           <div class="subscribe-box">
             @if (session('subscribed'))
               <p>{{ session('subscribed') }}</p>
             @else
               <form method="POST" action="{{ \App\Services\PageUrls::route('subscribe') }}">
                 @csrf
-                <p>Get an email when an incident is reported, and when it is resolved.</p>
-                <label for="sub-email" style="display:block;margin-top:8px">Email address</label>
+                <p>{{ __('Get an email when an incident is reported, and when it is resolved.') }}</p>
+                <label for="sub-email" style="display:block;margin-top:8px">{{ __('Email address') }}</label>
                 <input id="sub-email" name="email" type="email" value="{{ old('email') }}" required autocomplete="email" style="margin-top:6px">
                 <input class="hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
                 @error('email')<span class="err" style="display:block;margin-top:6px">{{ $message }}</span>@enderror
-                <button class="go" type="submit" style="margin-top:10px">Subscribe</button>
-                <span class="fine" style="display:block;margin-top:8px">A confirmation link comes first. Every mail carries an unsubscribe link.</span>
+                <button class="go" type="submit" style="margin-top:10px">{{ __('Subscribe') }}</button>
+                <span class="fine" style="display:block;margin-top:8px">{{ __('A confirmation link comes first. Every mail carries an unsubscribe link.') }}</span>
               </form>
             @endif
           </div>
@@ -198,7 +198,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
   </header>
   @include('partials.theme-script', ['rememberTheme' => $chrome ?? true])
 
-  @if ($chrome)<p id="live-refresh" class="live-refresh">Refreshes every 30 seconds</p>@endif
+  @if ($chrome)<p id="live-refresh" class="live-refresh">{{ __('Refreshes every 30 seconds') }}</p>@endif
   <div @if ($chrome) id="pharos-live" @endif>
   @if ($modules['page.show_overall'] || $modules['page.show_uptime'])
     <section class="hero tone-{{ $worst->tone() }}" data-live-key="overall" data-live-value="{{ $worst->value }}:{{ $overall }}">
@@ -206,7 +206,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
         <div class="hero-top">
           <span class="dot" style="color:var(--{{ ['ok' => 'green', 'w' => 'amber', 'p' => 'orange', 'b' => 'red', 'm' => 'blue'][$worst->tone()] }})"></span>
           <h1>{{ __($worst === \App\Enums\ComponentStatus::Operational ? 'All systems operational' : $worst->label()) }}</h1>
-          <span class="when">checked {{ \App\Services\Clock::now()->format('H:i') }}</span>
+          <span class="when">{{ __('checked') }} {{ \App\Services\Clock::now()->format('H:i') }}</span>
         </div>
       @endif
 
@@ -214,8 +214,8 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
         <div class="uptime @unless($modules['page.show_overall']) solo @endunless">
           <div class="row">
             <span class="big">{{ \App\Services\Uptime::format($overall) }}</span>
-            <span class="cap">uptime</span>
-            <span class="rng">last {{ \App\Services\Uptime::WINDOW_DAYS }} days</span>
+            <span class="cap">{{ __('uptime') }}</span>
+            <span class="rng">{{ __('last') }} {{ \App\Services\Uptime::WINDOW_DAYS }} {{ __('days') }}</span>
           </div>
           @php
             $overallBar = []; $overallDays = [];
@@ -234,7 +234,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
                aria-label="Daily availability over the last {{ \App\Services\Uptime::WINDOW_DAYS }} days: {{ \App\Services\Uptime::format($overall) }} uptime, {{ $overall === null ? 'awaiting measurements' : ($badDays ? $badDays.' '.\Illuminate\Support\Str::plural('day', $badDays).' with a disruption' : 'no recorded disruptions') }}">
             @foreach ($overallBar as $i => $tone)<span class="{{ $tone }}" data-tip="{{ $overallDays[$i] ? \Carbon\Carbon::parse($overallDays[$i])->format('j M') : '' }}{{ ['b' => ' · major outage', 'p' => ' · partial outage', 'w' => ' · degraded', 'unknown' => ' · no data'][$tone] ?? ' · all operational' }}"></span>@endforeach
           </div>
-          <div class="scale"><span>{{ \App\Services\Uptime::WINDOW_DAYS }} days ago</span><span>today</span></div>
+          <div class="scale"><span>{{ \App\Services\Uptime::WINDOW_DAYS }} {{ __('days ago') }}</span><span>{{ __('today') }}</span></div>
         </div>
       @endif
     </section>
@@ -242,17 +242,17 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 
   @if ($maintenances->isNotEmpty())
     <section class="sec" aria-labelledby="maintenance-heading">
-      <h2 id="maintenance-heading">Maintenance</h2>
+      <h2 id="maintenance-heading">{{ __('Maintenance') }}</h2>
       @foreach ($maintenances as $maintenance)
         @php $live = $maintenance->starts_at->lte(now()); @endphp
         <article class="plan @if ($live) live @endif" data-live-key="maintenance-{{ $maintenance->id }}" data-live-value="{{ $live ? 'on' : 'planned' }}:{{ $maintenance->updated_at?->timestamp }}">
           <span class="pill m">{{ $live ? 'Maintenance in progress' : 'Scheduled maintenance' }}</span>
           <div class="tx">
             <b>{{ $maintenance->title }}</b>
-            @if ($maintenance->components->isNotEmpty())<span class="aff">Affects {{ $maintenance->components->pluck('name')->join(', ', ' and ') }}</span>@endif
+            @if ($maintenance->components->isNotEmpty())<span class="aff">{{ __('Affects') }} {{ $maintenance->components->pluck('name')->join(', ', ' and ') }}</span>@endif
             @if ($maintenance->message)<div class="md">{!! \Illuminate\Support\Str::markdown($maintenance->message, \App\Services\MailTemplates::MARKDOWN) !!}</div>@endif
           </div>
-          <time datetime="{{ $maintenance->starts_at->toIso8601String() }}">{{ $maintenance->starts_at->format('j M H:i') }} to {{ $maintenance->ends_at->isSameDay($maintenance->starts_at) ? $maintenance->ends_at->format('H:i') : $maintenance->ends_at->format('j M H:i') }}</time>
+          <time datetime="{{ $maintenance->starts_at->toIso8601String() }}">{{ $maintenance->starts_at->format('j M H:i') }} {{ __('to') }} {{ $maintenance->ends_at->isSameDay($maintenance->starts_at) ? $maintenance->ends_at->format('H:i') : $maintenance->ends_at->format('j M H:i') }}</time>
         </article>
       @endforeach
     </section>
@@ -260,7 +260,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 
   @if ($modules['page.show_services'] && ($groups->isNotEmpty() || $loose->isNotEmpty()))
     <section class="sec">
-      <h2>Services</h2>
+      <h2>{{ __('Services') }}</h2>
 
       {{-- Components that belong to no service still belong on the page. Leaving
            them out made "Ungrouped" a silent way to publish nothing, and made
@@ -304,13 +304,13 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 
   @if ($modules['page.show_incidents'])
     <section class="sec">
-      <h2>Incidents</h2>
+      <h2>{{ __('Incidents') }}</h2>
       @if ($ongoing->isNotEmpty())
         <div class="day">
           <div class="day-hd">
-            <h3>Ongoing</h3>
+            <h3>{{ __('Ongoing') }}</h3>
             <span class="ln"></span>
-            <span class="none">since {{ $ongoing->last()->occurred_at->timezone(\App\Services\Clock::timezone())->format('j F') }}</span>
+            <span class="none">{{ __('since') }} {{ $ongoing->last()->occurred_at->timezone(\App\Services\Clock::timezone())->format('j F') }}</span>
           </div>
           @foreach ($ongoing as $incident)
             @include('partials.incident', ['incident' => $incident])
@@ -323,7 +323,7 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
           <div class="day-hd">
             <h3>{{ $carbon->isToday() ? 'Today · '.$carbon->format('j F') : $carbon->format('j F') }}</h3>
             <span class="ln"></span>
-            @if ($incidents->isEmpty())<span class="none">No incidents</span>@endif
+            @if ($incidents->isEmpty())<span class="none">{{ __('No incidents') }}</span>@endif
           </div>
           @foreach ($incidents as $incident)
             @include('partials.incident', ['incident' => $incident])
@@ -331,13 +331,13 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
         </div>
       @empty
         @if ($ongoing->isEmpty())
-          <div class="day"><div class="day-hd"><h3>No incidents reported</h3><span class="ln"></span></div></div>
+          <div class="day"><div class="day-hd"><h3>{{ __('No incidents reported') }}</h3><span class="ln"></span></div></div>
         @endif
       @endforelse
       @if ($chrome && ($page > 1 || $hasOlder))
-        <nav class="pager" aria-label="Incident history">
-          @if ($page > 1)<a href="{{ \App\Services\PageUrls::route('status', $page === 2 ? [] : ['page' => $page - 1]) }}">&larr; Newer incidents</a>@endif
-          @if ($hasOlder)<a class="older" href="{{ \App\Services\PageUrls::route('status', ['page' => $page + 1]) }}">Older incidents &rarr;</a>@endif
+        <nav class="pager" aria-label="{{ __('Incident history') }}">
+          @if ($page > 1)<a href="{{ \App\Services\PageUrls::route('status', $page === 2 ? [] : ['page' => $page - 1]) }}">{{ __('← Newer incidents') }}</a>@endif
+          @if ($hasOlder)<a class="older" href="{{ \App\Services\PageUrls::route('status', ['page' => $page + 1]) }}">{{ __('Older incidents →') }}</a>@endif
         </nav>
       @endif
     </section>
@@ -345,8 +345,8 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
 
   </div>
   <footer class="foot">
-    @if ($modules['page.show_api_link'])<a href="{{ \App\Services\PageUrls::api('components') }}">API</a>@endif
-    @unless ($branding->creditHidden())<a class="cr" href="https://pharos.solutionmax.net" rel="noopener">Powered by Pharos</a>@endunless
+    @if ($modules['page.show_api_link'])<a href="{{ \App\Services\PageUrls::api('components') }}">{{ __('API') }}</a>@endif
+    @unless ($branding->creditHidden())<a class="cr" href="https://pharos.solutionmax.net" rel="noopener">{{ __('Powered by Pharos') }}</a>@endunless
   </footer>
 </div>
 @include('partials.daytip')

@@ -3,5 +3,5 @@
      otherwise it is announced twice. Shown on hover and on focus, which is
      also what makes it work on a touch screen. --}}
 <button type="button" class="tip" aria-label="{{ $text }}">
-  i<span class="tip-bubble" aria-hidden="true">{{ $text }}</span>
+  {{ __('i') }}<span class="tip-bubble" aria-hidden="true">{{ $text }}</span>
 </button>

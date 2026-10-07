@@ -13,6 +13,6 @@
 <p style="margin:0 0 10px;font-size:13px;color:#667085">{{ $line }}</p>
 @endforeach
 @if ($actionUrl)
-<p style="margin:14px 0 0;font-size:12px;color:#667085;word-break:break-all">If the button does not work, open this address in your browser: <a href="{{ $actionUrl }}" style="color:#667085">{{ $actionUrl }}</a></p>
+<p style="margin:14px 0 0;font-size:12px;color:#667085;word-break:break-all">{{ __('If the button does not work, open this address in your browser:') }} <a href="{{ $actionUrl }}" style="color:#667085">{{ $actionUrl }}</a></p>
 @endif
 @endsection

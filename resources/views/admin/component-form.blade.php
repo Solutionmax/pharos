@@ -4,7 +4,7 @@
 @php $check = $component->check; @endphp
 @include('partials.pagehead', [
   'title' => $component->exists ? 'Edit '.$component->name : 'Add a component',
-  'back' => ['url' => \App\Services\PageUrls::route('admin.components'), 'label' => 'Components'],
+  'back' => ['url' => \App\Services\PageUrls::route('admin.components'), 'label' => __('Components')],
 ])
 
 <form method="POST" action="{{ $component->exists ? \App\Services\PageUrls::route('admin.components.update', $component) : \App\Services\PageUrls::route('admin.components.store') }}">
@@ -12,16 +12,16 @@
   @if ($component->exists) @method('PUT') @endif
 
   <div class="panel">
-    <div class="panel-hd"><h3>What it is</h3></div>
+    <div class="panel-hd"><h3>{{ __('What it is') }}</h3></div>
     <div class="panel-bd">
       <div class="fields">
         <div class="field">
-          <span class="lblrow"><label for="name">Name</label>
+          <span class="lblrow"><label for="name">{{ __('Name') }}</label>
             @include('partials.tip', ['text' => 'The name shown on the public page and in this list. Use whatever your customers will recognise: a service name or a server name, whichever they know.'])</span>
-          <input id="name" name="name" type="text" value="{{ old('name', $component->name) }}" required placeholder="Website">
+          <input id="name" name="name" type="text" value="{{ old('name', $component->name) }}" required placeholder="{{ __('Website') }}">
         </div>
         <div class="field">
-          <span class="lblrow"><label for="status">Status</label>
+          <span class="lblrow"><label for="status">{{ __('Status') }}</label>
             @include('partials.tip', ['text' => 'The status shown right now. A Pharos check overwrites this on its next run, except Under maintenance, which stays until you clear it. With Manual only it stays exactly as you set it.'])</span>
           <select id="status" name="status">
             @foreach (\App\Enums\ComponentStatus::cases() as $case)
@@ -30,71 +30,71 @@
           </select>
         </div>
         <div class="field">
-          <span class="lblrow"><label for="component_group_id">Group</label>
+          <span class="lblrow"><label for="component_group_id">{{ __('Group') }}</label>
             @include('partials.tip', ['text' => 'The service this appears under on the public page. Ungrouped is published too, as a row of its own without a heading.'])</span>
 
           {{-- A select is the right control once there are a lot of services; up
                to a handful, chips show every option at once and take one click. --}}
           @if ($groups->count() > 10)
             <select id="component_group_id" name="component_group_id">
-              <option value="">Ungrouped</option>
+              <option value="">{{ __('Ungrouped') }}</option>
               @foreach ($groups as $group)
                 <option value="{{ $group->id }}" @selected(old('component_group_id', $component->component_group_id) == $group->id)>{{ $group->name }}</option>
               @endforeach
             </select>
-            <button type="button" class="linkbtn" data-new-service>+ New service</button>
+            <button type="button" class="linkbtn" data-new-service>{{ __('+ New service') }}</button>
           @else
             <input type="hidden" id="component_group_id" name="component_group_id"
                    value="{{ old('component_group_id', $component->component_group_id) }}">
             <span class="chips" data-group-picker>
               <span class="chip" data-value="" data-on="false">
-                <button type="button" class="pick">Ungrouped</button>
+                <button type="button" class="pick">{{ __('Ungrouped') }}</button>
               </span>
               @foreach ($groups as $group)
                 <span class="chip" data-value="{{ $group->id }}" data-on="false">
                   <button type="button" class="pick">{{ $group->name }}</button>
                   <button type="button" class="drop" data-drop-service="{{ $group->id }}"
                           data-count="{{ $group->components()->count() }}"
-                          aria-label="Delete the service {{ $group->name }}">&times;</button>
+                          aria-label="Delete the service {{ $group->name }}">{{ __('×') }}</button>
                 </span>
               @endforeach
-              <button type="button" class="add" data-new-service>+ New service</button>
+              <button type="button" class="add" data-new-service>{{ __('+ New service') }}</button>
             </span>
-            <span class="help">Click a service to put this component in it. The &times; deletes the service itself.</span>
+            <span class="help">{{ __('Click a service to put this component in it. The × deletes the service itself.') }}</span>
           @endif
         </div>
       </div>
 
       <div class="field wide">
-        <span class="lblrow"><label for="description">Description</label>
+        <span class="lblrow"><label for="description">{{ __('Description') }}</label>
           @include('partials.tip', ['text' => 'One sentence under the name on the public page. Write it for the customer reading it during an outage.'])</span>
         <input id="description" name="description" type="text" value="{{ old('description', $component->description) }}"
-               placeholder="Availability of your website">
-        <span class="help">Shown under the name on the status page. Keep it in customer language.</span>
+               placeholder="{{ __('Availability of your website') }}">
+        <span class="help">{{ __('Shown under the name on the status page. Keep it in customer language.') }}</span>
       </div>
 
       <div class="fields">
         <div class="field">
-          <span class="lblrow"><label for="link">Link</label>
+          <span class="lblrow"><label for="link">{{ __('Link') }}</label>
             @include('partials.tip', ['text' => 'Optional. Turns the name on the public page into a link that opens in a new tab. http and https only.'])</span>
           <input id="link" name="link" type="url" value="{{ old('link', $component->link) }}" placeholder="https://example.net">
         </div>
         <div class="field">
-          <span class="lblrow"><label for="tags">Tags</label>
+          <span class="lblrow"><label for="tags">{{ __('Tags') }}</label>
             @include('partials.tip', ['text' => 'Only returned by the API, for scripts written against Cachet. Nothing inside Pharos reads them.'])</span>
-          <input id="tags" name="tags" type="text" value="{{ old('tags', $component->tags) }}" placeholder="shared, nl-1, cpanel">
-          <span class="help">Comma separated.</span>
+          <input id="tags" name="tags" type="text" value="{{ old('tags', $component->tags) }}" placeholder="{{ __('shared, nl-1, cpanel') }}">
+          <span class="help">{{ __('Comma separated.') }}</span>
           @if ($knownTags !== [])
             <span class="chips" data-tag-picker>
               @foreach ($knownTags as $tag)
                 <span class="chip" data-value="{{ $tag }}" data-on="false">
                   <button type="button" class="pick">{{ $tag }}</button>
                   <button type="button" class="drop" data-drop-tag="{{ $tag }}"
-                          aria-label="Remove the tag {{ $tag }} from every component">&times;</button>
+                          aria-label="Remove the tag {{ $tag }} from every component">{{ __('×') }}</button>
                 </span>
               @endforeach
             </span>
-            <span class="help">Click a tag to put it on this component. The &times; removes it from every component.</span>
+            <span class="help">{{ __('Click a tag to put it on this component. The × removes it from every component.') }}</span>
           @endif
         </div>
       </div>
@@ -102,11 +102,11 @@
   </div>
 
   <div class="panel">
-    <div class="panel-hd"><h3>How it is checked</h3><span class="hint">Leave on Manual only to set the status by hand</span></div>
+    <div class="panel-hd"><h3>{{ __('How it is checked') }}</h3><span class="hint">{{ __('Leave on Manual only to set the status by hand') }}</span></div>
     <div class="panel-bd">
       <div class="fields">
         <div class="field">
-          <span class="lblrow"><label for="source">Source</label>
+          <span class="lblrow"><label for="source">{{ __('Source') }}</label>
             @include('partials.tip', ['text' => 'Who sets this status. Checked by Pharos: Pharos tests it itself, over HTTP, TCP or a heartbeat from your job. Set from outside: Uptime Kuma, n8n or a script writes it through the API. Manual only: you set it here. Pharos marks a service as set from outside by itself the first time the API or Uptime Kuma writes its status.'])</span>
           <select id="source" name="source">
             @foreach (['Checked by Pharos' => ['check' => 'HTTP or TCP check', 'heartbeat' => 'Heartbeat from your job'], 'Set from outside' => ['kuma' => 'Uptime Kuma', 'webhook' => 'API or webhook (n8n, scripts)', 'upstream' => 'Upstream provider'], 'Set by hand' => ['manual' => 'Manual only']] as $sourceGroup => $sourceOptions)
@@ -119,15 +119,15 @@
           </select>
         </div>
         <div class="field">
-          <span class="lblrow"><label for="check_type">Check</label>
+          <span class="lblrow"><label for="check_type">{{ __('Check') }}</label>
             @include('partials.tip', ['text' => 'HTTP GET fetches the URL and counts 200 through 399 as up. TCP port only opens a socket: for mail, databases, anything without a web page.'])</span>
           <select id="check_type" name="check_type">
-            <option value="http" @selected(old('check_type', $check?->type->value) === 'http')>HTTP GET</option>
-            <option value="tcp" @selected(old('check_type', $check?->type->value) === 'tcp')>TCP port</option>
+            <option value="http" @selected(old('check_type', $check?->type->value) === 'http')>{{ __('HTTP GET') }}</option>
+            <option value="tcp" @selected(old('check_type', $check?->type->value) === 'tcp')>{{ __('TCP port') }}</option>
           </select>
         </div>
         <div class="field">
-          <span class="lblrow"><label for="check_interval">Interval (seconds)</label>
+          <span class="lblrow"><label for="check_interval">{{ __('Interval (seconds)') }}</label>
             @include('partials.tip', ['text' => 'How often to look, minimum 30 seconds. Two failures in a row turn it red and open an incident; the first success turns it green, and three in a row close the incident.'])</span>
           <input id="check_interval" name="check_interval" type="number" min="30" max="86400"
                  value="{{ old('check_interval', $check?->interval_seconds ?? 60) }}">
@@ -135,32 +135,32 @@
       </div>
 
       <div class="field wide">
-        <span class="lblrow"><label for="check_target">Target</label>
+        <span class="lblrow"><label for="check_target">{{ __('Target') }}</label>
           @include('partials.tip', ['text' => 'What to contact: a full URL for HTTP, host:port for TCP. Only used by a Pharos check. Heartbeat generates its own address, and the other sources ignore this.'])</span>
         <input id="check_target" name="check_target" type="text" value="{{ old('check_target', $check?->type?->value === 'heartbeat' ? '' : $check?->target) }}"
                placeholder="https://example.net/ or mail.example.net:993">
-        <span class="help">A URL for HTTP, host:port for TCP. Leave empty for the other sources.</span>
+        <span class="help">{{ __('A URL for HTTP, host:port for TCP. Leave empty for the other sources.') }}</span>
       </div>
 
       @if ($check && $check->type === \App\Enums\CheckType::Heartbeat)
         <x-note id="component.heartbeat-url">
-          <b>Heartbeat URL.</b> Have the job call this when it finishes. Silence for two intervals is the alarm.
+          <b>{{ __('Heartbeat URL.') }}</b> {{ __('Have the job call this when it finishes. Silence for two intervals is the alarm.') }}
           <div class="mono" style="margin-top:8px;word-break:break-all">{{ \App\Services\PageUrls::api("heartbeat/{$check->target}") }}</div>
         </x-note>
       @endif
 
       <div class="switchrow">
-        <span class="t"><strong>Component enabled</strong><span class="s">Disabled components keep their history but are not checked and not shown.</span></span>
-        <label class="check"><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $component->exists ? $component->enabled : true))> Enabled</label>
+        <span class="t"><strong>{{ __('Component enabled') }}</strong><span class="s">{{ __('Disabled components keep their history but are not checked and not shown.') }}</span></span>
+        <label class="check"><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $component->exists ? $component->enabled : true))> {{ __('Enabled') }}</label>
       </div>
       <div class="switchrow">
-        <span class="t"><strong>Show the uptime bar</strong><span class="s">Turn this off where a percentage would confuse more than help.</span></span>
-        <label class="check"><input type="checkbox" name="show_uptime" value="1" @checked(old('show_uptime', $component->exists ? $component->show_uptime : true))> Show</label>
+        <span class="t"><strong>{{ __('Show the uptime bar') }}</strong><span class="s">{{ __('Turn this off where a percentage would confuse more than help.') }}</span></span>
+        <label class="check"><input type="checkbox" name="show_uptime" value="1" @checked(old('show_uptime', $component->exists ? $component->show_uptime : true))> {{ __('Show') }}</label>
       </div>
 
       <div class="actions">
         <button class="btn" type="submit">{{ $component->exists ? 'Save component' : 'Add component' }}</button>
-        <a class="btn ghost" href="{{ \App\Services\PageUrls::route('admin.components') }}">Cancel</a>
+        <a class="btn ghost" href="{{ \App\Services\PageUrls::route('admin.components') }}">{{ __('Cancel') }}</a>
       </div>
     </div>
   </div>
@@ -169,10 +169,10 @@
 @if ($component->exists && ($recent ?? null) !== null)
   {{-- Under the check settings, outside the form: nothing here is posted. --}}
   <div class="panel" id="recent-checks">
-    <div class="panel-hd"><h3>Recent checks</h3><span class="hint">Last {{ $recent['limit'] }} runs, oldest left</span></div>
+    <div class="panel-hd"><h3>{{ __('Recent checks') }}</h3><span class="hint">{{ __('Last') }} {{ $recent['limit'] }} {{ __('runs, oldest left') }}</span></div>
     <div class="panel-bd">
       @if ($recent['count'] === 0)
-        <span class="help">No runs yet. The first one lands within a minute once the cron line is in place.</span>
+        <span class="help">{{ __('No runs yet. The first one lands within a minute once the cron line is in place.') }}</span>
       @else
         <span class="beats" role="img" aria-label="{{ $component->name }}, last {{ $recent['count'] }} runs: {{ $recent['failed'] ? $recent['failed'].' failed' : 'all ok' }}">
           @foreach ($recent['beats'] as $beat)<span class="beat{{ $beat['tone'] !== 'ok' ? ' '.$beat['tone'] : '' }}" data-tip="{{ $beat['tip'] }}" tabindex="0"></span>@endforeach
@@ -188,18 +188,18 @@
      HTML, and the browser drops one of them. --}}
 <dialog class="modal" id="service-dialog" aria-labelledby="service-dialog-title">
   <div class="panel">
-    <div class="panel-hd"><h3 id="service-dialog-title">New service</h3></div>
+    <div class="panel-hd"><h3 id="service-dialog-title">{{ __('New service') }}</h3></div>
     <div class="panel-bd">
       <div class="field">
-        <label for="service-name">Name</label>
-        <input id="service-name" type="text" maxlength="80" placeholder="Shared hosting">
-        <span class="help">What a customer would call it. You can rename it later under Services.</span>
+        <label for="service-name">{{ __('Name') }}</label>
+        <input id="service-name" type="text" maxlength="80" placeholder="{{ __('Shared hosting') }}">
+        <span class="help">{{ __('What a customer would call it. You can rename it later under Services.') }}</span>
       </div>
-      <label class="check"><input id="service-visible" type="checkbox" checked> Show on the status page</label>
+      <label class="check"><input id="service-visible" type="checkbox" checked> {{ __('Show on the status page') }}</label>
       <span class="modal-err" id="service-error" role="alert"></span>
       <div class="modal-act">
-        <button type="button" class="btn" id="service-save">Add service</button>
-        <button type="button" class="btn ghost" id="service-cancel">Cancel</button>
+        <button type="button" class="btn" id="service-save">{{ __('Add service') }}</button>
+        <button type="button" class="btn ghost" id="service-cancel">{{ __('Cancel') }}</button>
       </div>
     </div>
   </div>

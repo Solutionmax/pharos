@@ -1,7 +1,7 @@
 {{-- Button only. The script lives in the layout, once: included twice it binds
      two click handlers to the same button, which flips the theme and flips it
      straight back. --}}
-<button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch between light and dark">
+<button class="theme-toggle" type="button" data-theme-toggle aria-label="{{ __('Switch between light and dark') }}">
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
        stroke-linecap="round" aria-hidden="true" data-icon="sun">
     <circle cx="12" cy="12" r="4.2"/>

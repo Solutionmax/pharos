@@ -8,12 +8,12 @@
      pressing Enter without reading. --}}
 <dialog class="modal" id="confirm-dialog" aria-labelledby="confirm-title">
   <div class="panel">
-    <div class="panel-hd"><h3 id="confirm-title">Are you sure?</h3></div>
+    <div class="panel-hd"><h3 id="confirm-title">{{ __('Are you sure?') }}</h3></div>
     <div class="panel-bd">
       <p class="modal-say" id="confirm-say"></p>
       <div class="modal-act">
-        <button type="button" class="btn ghost" id="confirm-no" autofocus>Cancel</button>
-        <button type="button" class="btn danger" id="confirm-yes">Delete</button>
+        <button type="button" class="btn ghost" id="confirm-no" autofocus>{{ __('Cancel') }}</button>
+        <button type="button" class="btn danger" id="confirm-yes">{{ __('Delete') }}</button>
       </div>
     </div>
   </div>

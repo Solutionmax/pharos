@@ -1,5 +1,5 @@
 @extends('layouts.admin')
-@section('title', 'Layout')
+@section('title', __('Layout'))
 @section('content')
 <style>
 .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
@@ -28,13 +28,13 @@
 
 @include('partials.pagehead', [
   'crumbs' => ['Appearance', 'Layout'],
-  'title' => 'Layout',
-  'sub' => 'What the status page shows, and how it looks',
+  'title' => __('Layout'),
+  'sub' => __('What the status page shows, and how it looks'),
 ])
 
 @include('partials.page-context', [
-  'contextTitle' => 'Layout for',
-  'contextHelp' => 'Layout, theme and modules apply only to this page.',
+  'contextTitle' => __('Layout for'),
+  'contextHelp' => __('Layout, theme and modules apply only to this page.'),
 ])
 
 <div class="split">
@@ -43,14 +43,14 @@
       @csrf @method('PUT')
 
       <div class="panel">
-        <div class="panel-hd"><h3>Sections</h3><span class="hint">The preview follows as you tick</span></div>
+        <div class="panel-hd"><h3>{{ __('Sections') }}</h3><span class="hint">{{ __('The preview follows as you tick') }}</span></div>
         <div class="panel-bd">
           <div class="modules" style="grid-template-columns:1fr">
             @foreach ($modules as $key => $module)
               <label class="switchrow" style="cursor:pointer">
                 <span class="t">
-                  <strong>{{ $module['label'] }}</strong>
-                  <span class="s">{{ $module['help'] }}</span>
+                  <strong>{{ __($module['label']) }}</strong>
+                  <span class="s">{{ __($module['help']) }}</span>
                 </span>
                 <span class="check">
                   <input type="checkbox" name="modules[{{ $key }}]" value="1" @checked($enabled[$key])>
@@ -63,8 +63,8 @@
 
       <div class="panel">
         <div class="panel-hd">
-          <h3>Services</h3>
-          <span class="hint"><a href="{{ \App\Services\PageUrls::route('admin.groups', ['from' => 'status-page']) }}">Rename or add</a></span>
+          <h3>{{ __('Services') }}</h3>
+          <span class="hint"><a href="{{ \App\Services\PageUrls::route('admin.groups', ['from' => 'status-page']) }}">{{ __('Rename or add') }}</a></span>
         </div>
         <div class="panel-bd">
           @forelse ($groups as $group)
@@ -80,15 +80,15 @@
             </label>
           @empty
             <x-note id="status-page.no-services">
-              No services yet. <a href="{{ \App\Services\PageUrls::route('admin.groups', ['from' => 'status-page']) }}">Add one</a> and it appears here
-              as its own switch.
+              {{ __('No services yet.') }} <a href="{{ \App\Services\PageUrls::route('admin.groups', ['from' => 'status-page']) }}">{{ __('Add one') }}</a> {{ __('and it appears here
+              as its own switch.') }}
             </x-note>
           @endforelse
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel-hd"><h3>Appearance and history</h3></div>
+        <div class="panel-hd"><h3>{{ __('Appearance and history') }}</h3></div>
         <div class="panel-bd">
           <div class="fields">
             <div class="field">
@@ -102,23 +102,23 @@
               @error('locale')<span class="err">{{ $message }}</span>@enderror
             </div>
             <div class="field">
-              <label for="theme">Default theme</label>
+              <label for="theme">{{ __('Default theme') }}</label>
               <select id="theme" name="theme">
-                <option value="system" @selected($theme === 'system')>Follow the visitor's device</option>
-                <option value="light" @selected($theme === 'light')>Always light</option>
-                <option value="dark" @selected($theme === 'dark')>Always dark</option>
+                <option value="system" @selected($theme === 'system')>{{ __('Follow the visitor\'s device') }}</option>
+                <option value="light" @selected($theme === 'light')>{{ __('Always light') }}</option>
+                <option value="dark" @selected($theme === 'dark')>{{ __('Always dark') }}</option>
               </select>
-              <span class="help">A visitor can still switch; their choice is remembered in their browser.</span>
+              <span class="help">{{ __('A visitor can still switch; their choice is remembered in their browser.') }}</span>
             </div>
             <div class="field">
-              <label for="incident_days">Days of incident history</label>
+              <label for="incident_days">{{ __('Days of incident history') }}</label>
               <input id="incident_days" name="incident_days" type="number" min="1" max="30" value="{{ $incidentDays }}">
-              <span class="help">Days per page. Visitors reach earlier days through the Older incidents link at the bottom of the page.</span>
+              <span class="help">{{ __('Days per page. Visitors reach earlier days through the Older incidents link at the bottom of the page.') }}</span>
             </div>
           </div>
           <div class="actions">
-            <button class="btn" type="submit">Save status page</button>
-            <button class="btn ghost" type="reset" id="reset-settings">Undo my changes</button>
+            <button class="btn" type="submit">{{ __('Save status page') }}</button>
+            <button class="btn ghost" type="reset" id="reset-settings">{{ __('Undo my changes') }}</button>
           </div>
         </div>
       </div>
@@ -129,19 +129,19 @@
     <div class="viewport">
       <div class="viewport-bar">
         <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span class="live" id="live"><span class="dot"></span> Live preview</span>
-        <span class="widths" role="group" aria-label="Preview width">
-          <button type="button" data-width="full" aria-pressed="true">Desktop</button>
-          <button type="button" data-width="phone" aria-pressed="false">Phone</button>
+        <span class="live" id="live"><span class="dot"></span> {{ __('Live preview') }}</span>
+        <span class="widths" role="group" aria-label="{{ __('Preview width') }}">
+          <button type="button" data-width="full" aria-pressed="true">{{ __('Desktop') }}</button>
+          <button type="button" data-width="phone" aria-pressed="false">{{ __('Phone') }}</button>
         </span>
       </div>
       <div class="stage" id="stage">
-        <iframe id="preview" title="Preview of the status page" loading="lazy"></iframe>
+        <iframe id="preview" title="{{ __('Preview of the status page') }}" loading="lazy"></iframe>
       </div>
       <p class="hint-row">
-        This is the real page, rendered from the values above.
-        Times are in {{ \App\Services\Clock::installationTimezone() }}, the zone customers see.
-        Nothing is saved until you press <b>Save status page</b>.
+        {{ __('This is the real page, rendered from the values above.
+        Times are in') }} {{ \App\Services\Clock::installationTimezone() }}{{ __(', the zone customers see.
+        Nothing is saved until you press') }} <b>{{ __('Save status page') }}</b>.
       </p>
     </div>
   </div>

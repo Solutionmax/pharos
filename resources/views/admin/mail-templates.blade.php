@@ -1,5 +1,5 @@
 @extends('layouts.admin')
-@section('title', 'Templates')
+@section('title', __('Templates'))
 @section('content')
 <style>
 .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
@@ -28,13 +28,13 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
 
 @include('partials.pagehead', [
   'crumbs' => ['Email', 'Templates'],
-  'title' => 'Templates',
-  'sub' => 'What subscribers receive',
+  'title' => __('Templates'),
+  'sub' => __('What subscribers receive'),
 ])
 
 @include('partials.page-context', [
-  'contextTitle' => 'Templates for',
-  'contextHelp' => 'These templates are used only for this page’s subscribers. Account emails remain separate. Switch page to edit another set.',
+  'contextTitle' => __('Templates for'),
+  'contextHelp' => __('These templates are used only for this page’s subscribers. Account emails remain separate. Switch page to edit another set.'),
 ])
 
 @php
@@ -63,44 +63,44 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
           @if ($licensed)
             <span class="hint">{{ $isDefault ? 'Default wording' : 'Your wording' }}</span>
           @else
-            <span class="pro">Brand pack</span>
+            <span class="pro">{{ __('Brand pack') }}</span>
           @endif
         </div>
         <div class="panel-bd">
           <div class="fields">
             <div class="field">
-              <label for="subject">Subject</label>
+              <label for="subject">{{ __('Subject') }}</label>
               <input id="subject" name="subject" type="text" value="{{ old('subject', $subject) }}" required maxlength="200" @disabled(! $licensed)>
             </div>
             <div class="field">
-              <label for="body">Body</label>
-              <div class="chips" aria-label="Tags: click to insert">
+              <label for="body">{{ __('Body') }}</label>
+              <div class="chips" aria-label="{{ __('Tags: click to insert') }}">
                 @foreach ($tags as $tag)
                   <button type="button" class="chip" data-tag="{{ $tag }}" title="Insert {{ $tag }}" @disabled(! $licensed)>{{ $tag }}</button>
                 @endforeach
               </div>
               <textarea id="body" name="body" class="body" rows="14" required maxlength="20000" @disabled(! $licensed)>{{ old('body', $body) }}</textarea>
-              <span class="help">Markdown: <code>**bold**</code>, <code>*italic*</code>, <code># heading</code>, <code>- list</code>, <code>[text](url)</code>. A link on a line of its own becomes a button.</span>
+              <span class="help">{{ __('Markdown:') }} <code>**bold**</code>, <code>*italic*</code>, <code># heading</code>, <code>- list</code>, <code>[text](url)</code>{{ __('. A link on a line of its own becomes a button.') }}</span>
             </div>
           </div>
 
           @if ($licensed)
             <div class="actions">
-              <button class="btn" type="submit">Save</button>
-              <button class="btn ghost" type="reset">Undo my changes</button>
-              <button class="btn ghost" type="submit" form="test-form">Send test to me</button>
-              <button class="btn ghost" type="submit" form="reset-form" @disabled($isDefault) title="{{ $isDefault ? 'This template is the default already' : 'Back to the built in wording' }}">Reset to default</button>
+              <button class="btn" type="submit">{{ __('Save') }}</button>
+              <button class="btn ghost" type="reset">{{ __('Undo my changes') }}</button>
+              <button class="btn ghost" type="submit" form="test-form">{{ __('Send test to me') }}</button>
+              <button class="btn ghost" type="submit" form="reset-form" @disabled($isDefault) title="{{ $isDefault ? 'This template is the default already' : 'Back to the built in wording' }}">{{ __('Reset to default') }}</button>
             </div>
           @else
             <div class="locked" style="margin-top:16px">
               <div>
-                <strong style="font-size:13.5px">Your own wording</strong>
+                <strong style="font-size:13.5px">{{ __('Your own wording') }}</strong>
                 <p class="sub" style="margin-top:4px;font-size:13px;color:var(--ink-3)">
-                  This is what your subscribers receive today. Rewriting the subject and the body,
-                  in your own words and your own language, is part of the brand pack.
+                  {{ __('This is what your subscribers receive today. Rewriting the subject and the body,
+                  in your own words and your own language, is part of the brand pack.') }}
                 </p>
               </div>
-              <a class="btn" href="{{ config('pharos.buy_url') }}" target="_blank" rel="noopener">Buy the brand pack</a>
+              <a class="btn" href="{{ config('pharos.buy_url') }}" target="_blank" rel="noopener">{{ __('Buy the brand pack') }}</a>
             </div>
           @endif
         </div>
@@ -118,20 +118,20 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
       </form>
       <form method="POST" action="{{ \App\Services\PageUrls::route('admin.mail-templates.reset') }}" id="reset-form"
             data-confirm-title="Reset {{ strtolower($label ?? 'this template') }} to the default?"
-            data-confirm="Your wording for this template is thrown away and the built in text comes back. The other templates are untouched."
-            data-confirm-action="Reset to default">
+            data-confirm="{{ __('Your wording for this template is thrown away and the built in text comes back. The other templates are untouched.') }}"
+            data-confirm-action="{{ __('Reset to default') }}">
         @csrf
         <input type="hidden" name="template" value="{{ $key }}">
       </form>
     @endif
 
     <x-note id="mail-templates.frame">
-      <b>You edit the body, not the frame.</b> The logo, the accent colour, the link to the status
+      <b>{{ __('You edit the body, not the frame.') }}</b> {{ __('The logo, the accent colour, the link to the status
       page and, on every subscriber mail, the unsubscribe link sit in the frame around it and are
-      always there, whether or not you use <code>{unsubscribe}</code> in the body.
-      Tag values are printed as typed; only <code>{message}</code> is the operator's Markdown.
-      A line whose only tag is empty is left out, so <code>Affects {components}</code> disappears
-      when no component is affected.
+      always there, whether or not you use') }} <code>{unsubscribe}</code> {{ __('in the body.
+      Tag values are printed as typed; only') }} <code>{message}</code> {{ __('is the operator\'s Markdown.
+      A line whose only tag is empty is left out, so') }} <code>Affects {components}</code> {{ __('disappears
+      when no component is affected.') }}
     </x-note>
   </div>
 
@@ -139,20 +139,20 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
     <div class="viewport">
       <div class="viewport-bar">
         <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span class="live" id="live"><span class="dot"></span> Live preview</span>
+        <span class="live" id="live"><span class="dot"></span> {{ __('Live preview') }}</span>
       </div>
-      <div class="subject-line"><span class="k">Subject</span><span class="v" id="preview-subject">{{ $previewSubject }}</span></div>
+      <div class="subject-line"><span class="k">{{ __('Subject') }}</span><span class="v" id="preview-subject">{{ $previewSubject }}</span></div>
       <div class="stage">
-        <iframe id="preview" title="Preview of the mail" src="{{ \App\Support\BrowserUrl::route('admin.mail-templates.preview', ['template' => $key]) }}"></iframe>
+        <iframe id="preview" title="{{ __('Preview of the mail') }}" src="{{ \App\Support\BrowserUrl::route('admin.mail-templates.preview', ['template' => $key]) }}"></iframe>
       </div>
       <p class="hint-row" id="preview-error" role="alert" hidden></p>
       <p class="hint-row">
-        Rendered from the wording on the left with a sample incident, in the real frame.
-        Times are in {{ \App\Services\Clock::installationTimezone() }}, like the mails subscribers get.
+        {{ __('Rendered from the wording on the left with a sample incident, in the real frame.
+        Times are in') }} {{ \App\Services\Clock::installationTimezone() }}{{ __(', like the mails subscribers get.') }}
         @if ($licensed)
-          Nothing is saved until you press <b>Save</b>.
+          {{ __('Nothing is saved until you press') }} <b>{{ __('Save') }}</b>.
         @else
-          This is the built in wording; there is nothing to save without the brand pack.
+          {{ __('This is the built in wording; there is nothing to save without the brand pack.') }}
         @endif
       </p>
     </div>

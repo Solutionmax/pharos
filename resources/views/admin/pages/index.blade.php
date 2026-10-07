@@ -1,20 +1,20 @@
 @extends('layouts.admin')
-@section('title', 'Status pages')
+@section('title', __('Status pages'))
 @section('content')
 @include('partials.pagehead', [
   'crumbs' => ['Status pages'],
   'crumbScope' => 'installation',
-  'title' => 'Status pages',
+  'title' => __('Status pages'),
   'sub' => $pageLimit === null
       ? $pages->count().' '.\Illuminate\Support\Str::plural('page', $pages->count()).' on this installation'
       : $activePages.' of '.$pageLimit.' pages in use',
   'actions' => $pageLimit !== null && $activePages >= $pageLimit
-      ? [['url' => \App\Services\PageUrls::route('admin.branding').'#plan', 'label' => 'Page limit reached, see plans', 'ghost' => true]]
-      : [['url' => route('admin.pages.create'), 'label' => 'Create page']],
+      ? [['url' => \App\Services\PageUrls::route('admin.branding').'#plan', 'label' => __('Page limit reached, see plans'), 'ghost' => true]]
+      : [['url' => route('admin.pages.create'), 'label' => __('Create page')]],
 ])
 
-<p class="sub" style="margin-bottom:20px">Choose <strong>Manage</strong> to work on a page: its overview, services, branding and email.
-  <strong>View</strong> opens its public page in a new tab. Each page has its own services and subscribers. Archived pages keep their history and settings; a deleted page is gone for good.</p>
+<p class="sub" style="margin-bottom:20px">{{ __('Choose') }} <strong>{{ __('Manage') }}</strong> {{ __('to work on a page: its overview, services, branding and email.') }}
+  <strong>{{ __('View') }}</strong> {{ __('opens its public page in a new tab. Each page has its own services and subscribers. Archived pages keep their history and settings; a deleted page is gone for good.') }}</p>
 
 <div class="pg-cards">
   @foreach ($pages as $page)
@@ -31,11 +31,11 @@
           <div class="pg-tags">
             @include('partials.page-tag', ['tagPage' => $page])
             @if ($page->archived_at)
-              <span class="pill off">Archived</span>
+              <span class="pill off">{{ __('Archived') }}</span>
             @elseif ($page->is_published)
-              <span class="pill ok">Published</span>
+              <span class="pill ok">{{ __('Published') }}</span>
             @else
-              <span class="pill off">Unpublished</span>
+              <span class="pill off">{{ __('Unpublished') }}</span>
             @endif
           </div>
         </div>
@@ -53,31 +53,31 @@
       </p>
 
       <dl class="pg-stats">
-        <div><dt>Uptime, 90 days</dt><dd>{{ \App\Services\Uptime::format($uptimes[$page->id] ?? null) }}</dd></div>
-        <div><dt>Open incidents</dt><dd class="{{ $open ? 'hot' : '' }}">{{ $open ?: 'None' }}</dd></div>
-        <div><dt>Subscribers</dt>
+        <div><dt>{{ __('Uptime, 90 days') }}</dt><dd>{{ \App\Services\Uptime::format($uptimes[$page->id] ?? null) }}</dd></div>
+        <div><dt>{{ __('Open incidents') }}</dt><dd class="{{ $open ? 'hot' : '' }}">{{ $open ?: 'None' }}</dd></div>
+        <div><dt>{{ __('Subscribers') }}</dt>
           <dd data-subscriptions="{{ $page->id }}">
-            @if ($subscriptionsOn)<span class="pill ok">On</span>@else<span class="pill off">Off</span>@endif
+            @if ($subscriptionsOn)<span class="pill ok">{{ __('On') }}</span>@else<span class="pill off">{{ __('Off') }}</span>@endif
             <span class="pg-count">{{ (int) ($subscriberCounts[$page->id] ?? 0) }}</span>
           </dd></div>
-        <div><dt>Assigned users</dt><dd>{{ $page->users_count }}</dd></div>
+        <div><dt>{{ __('Assigned users') }}</dt><dd>{{ $page->users_count }}</dd></div>
       </dl>
 
       <footer class="rowacts">
         @unless ($page->archived_at)
-          <a class="primary" href="{{ route('page.admin.overview', ['statusPage' => $page->id]) }}">Manage</a>
+          <a class="primary" href="{{ route('page.admin.overview', ['statusPage' => $page->id]) }}">{{ __('Manage') }}</a>
           @if ($page->is_published)
-            <a href="{{ $page->publicUrl() }}" target="_blank" rel="noopener">View @include('partials.icon', ['name' => 'external', 'size' => 12])</a>
+            <a href="{{ $page->publicUrl() }}" target="_blank" rel="noopener">{{ __('View') }} @include('partials.icon', ['name' => 'external', 'size' => 12])</a>
           @endif
         @endunless
-        <a href="{{ route('admin.pages.edit', $page) }}">Edit</a>
+        <a href="{{ route('admin.pages.edit', $page) }}">{{ __('Edit') }}</a>
         @if (! $page->archived_at && $page->id !== $defaultPageId)
           <form method="POST" action="{{ route('admin.pages.archive', $page) }}"
                 data-confirm-title="Archive {{ $page->name }}?"
-                data-confirm="Its public page and notifications stop. Services, incidents, subscribers and settings are kept."
-                data-confirm-action="Archive page">
+                data-confirm="{{ __('Its public page and notifications stop. Services, incidents, subscribers and settings are kept.') }}"
+                data-confirm-action="{{ __('Archive page') }}">
             @csrf
-            <button type="submit">Archive</button>
+            <button type="submit">{{ __('Archive') }}</button>
           </form>
         @endif
         @if ($page->id !== $defaultPageId)
@@ -85,7 +85,7 @@
           <form class="pg-del" method="POST" action="{{ route('admin.pages.destroy', $page) }}"
                 data-confirm-title="Delete {{ $page->name }}?"
                 data-confirm="This permanently deletes the page{!! $lost ? ' and everything on it: <strong>'.$lost.'</strong>' : ' and its settings' !!}. {{ $page->archived_at ? '' : 'Its public page stops working right away. ' }}This cannot be undone.{{ $page->archived_at ? '' : ' To keep the history, archive the page instead.' }}"
-                data-confirm-action="Delete page">
+                data-confirm-action="{{ __('Delete page') }}">
             @csrf @method('DELETE')
             <button type="submit" title="Delete {{ $page->name }}" aria-label="Delete {{ $page->name }}">@include('partials.icon', ['name' => 'trash', 'size' => 13])</button>
           </form>

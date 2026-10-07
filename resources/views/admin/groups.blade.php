@@ -1,32 +1,32 @@
 @extends('layouts.admin')
-@section('title', 'Services')
+@section('title', __('Services'))
 @section('content')
 @php $canEditPage = auth()->user()->canEditPage(app(\App\Services\PageContext::class)->id()); @endphp
 @include('partials.pagehead', array_filter([
-  'title' => 'Services',
-  'sub' => 'The headings your customers read. Components live inside them.',
-  'action' => $canEditPage ? ['url' => \App\Services\PageUrls::route('admin.groups.create', array_filter(['from' => $from])), 'label' => 'Add a service'] : null,
+  'title' => __('Services'),
+  'sub' => __('The headings your customers read. Components live inside them.'),
+  'action' => $canEditPage ? ['url' => \App\Services\PageUrls::route('admin.groups.create', array_filter(['from' => $from])), 'label' => __('Add a service')] : null,
   'back' => $origin,
 ]))
 
 @include('partials.page-context', [
-  'contextTitle' => 'Services for',
-  'contextHelp' => 'Services, their order and their bars belong only to this page. Switch page to manage another set.',
+  'contextTitle' => __('Services for'),
+  'contextHelp' => __('Services, their order and their bars belong only to this page. Switch page to manage another set.'),
 ])
 
 <section class="op-card" aria-labelledby="services-title">
-  <header><h3 id="services-title">Your services</h3><span class="hint">In the order the status page shows them · 30 day bars, 90 day availability</span></header>
+  <header><h3 id="services-title">{{ __('Your services') }}</h3><span class="hint">{{ __('In the order the status page shows them · 30 day bars, 90 day availability') }}</span></header>
   @if ($groups->isEmpty())
     <div class="empty">
       @include('partials.icon', ['name' => 'empty', 'size' => 28])
-      <p><b>No services yet.</b></p>
-      <p>Add a service, then put components in it.</p>
-      @if ($canEditPage)<a class="btn" href="{{ \App\Services\PageUrls::route('admin.groups.create', array_filter(['from' => $from])) }}">Add a service</a>@endif
+      <p><b>{{ __('No services yet.') }}</b></p>
+      <p>{{ __('Add a service, then put components in it.') }}</p>
+      @if ($canEditPage)<a class="btn" href="{{ \App\Services\PageUrls::route('admin.groups.create', array_filter(['from' => $from])) }}">{{ __('Add a service') }}</a>@endif
     </div>
   @else
   <div class="scroll">
     <table class="op-table">
-      <thead><tr><th>Service</th><th>Last 30 days</th><th class="hide-sm">On the page</th>@if ($canEditPage)<th class="hide-sm">Order</th><th><span class="sr-only">Actions</span></th>@endif</tr></thead>
+      <thead><tr><th>{{ __('Service') }}</th><th>{{ __('Last 30 days') }}</th><th class="hide-sm">{{ __('On the page') }}</th>@if ($canEditPage)<th class="hide-sm">{{ __('Order') }}</th><th><span class="sr-only">{{ __('Actions') }}</span></th>@endif</tr></thead>
       <tbody>
       @foreach ($groups as $group)
         @php $groupStatus = $group->status(); @endphp
@@ -42,7 +42,7 @@
                 @foreach ($group->components->take(8) as $component)
                   <span class="op-chip st-{{ $component->status->tone() }}" style="font-size:11px;padding:2px 8px"><i></i>{{ $component->name }}</span>
                 @endforeach
-                @if ($group->components->count() > 8)<span class="op-dim">and {{ $group->components->count() - 8 }} more</span>@endif
+                @if ($group->components->count() > 8)<span class="op-dim">{{ __('and') }} {{ $group->components->count() - 8 }} {{ __('more') }}</span>@endif
               </div>
             @endif
           </td>
@@ -63,13 +63,13 @@
           </td>
           <td class="right">
             <span class="rowacts">
-              <a href="{{ \App\Services\PageUrls::route('admin.groups.edit', array_filter(['group' => $group->id, 'from' => $from])) }}">Edit</a>
+              <a href="{{ \App\Services\PageUrls::route('admin.groups.edit', array_filter(['group' => $group->id, 'from' => $from])) }}">{{ __('Edit') }}</a>
               <form method="POST" action="{{ \App\Services\PageUrls::route('admin.groups.destroy', $group) }}"
                     data-confirm-title="Delete {{ $group->name }}?"
                     data-confirm="Its {{ $group->components_count }} {{ \Illuminate\Support\Str::plural('component', $group->components_count) }} and their uptime history are <strong>kept</strong>: they move to the page without a heading. Only the grouping is lost."
-                    data-confirm-action="Delete service">
+                    data-confirm-action="{{ __('Delete service') }}">
                 @csrf @method('DELETE')
-                <button type="submit">Delete</button>
+                <button type="submit">{{ __('Delete') }}</button>
               </form>
             </span>
           </td>
@@ -81,5 +81,5 @@
   </div>
   @endif
 </section>
-<p class="op-dim" style="margin-top:12px">Statuses are changed per component, on <a class="integration-link" href="{{ \App\Services\PageUrls::route('admin.components') }}">Components</a>. A service is as healthy as its worst enabled component.</p>
+<p class="op-dim" style="margin-top:12px">{{ __('Statuses are changed per component, on') }} <a class="integration-link" href="{{ \App\Services\PageUrls::route('admin.components') }}">{{ __('Components') }}</a>{{ __('. A service is as healthy as its worst enabled component.') }}</p>
 @endsection

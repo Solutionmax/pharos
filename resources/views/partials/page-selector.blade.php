@@ -13,7 +13,7 @@
     <span class="page-name">
       <span class="page-title">{{ $viewPages ? 'View status page' : ($selectedPage?->name ?? 'Choose a page') }}</span>
       @if ($viewPages)
-        <span class="page-tag page-tag--slate">{{ $menuPages->count() }} published</span>
+        <span class="page-tag page-tag--slate">{{ $menuPages->count() }} {{ __('published') }}</span>
       @elseif ($selectedPage)
         @include('partials.page-tag', ['tagPage' => $selectedPage])
         <span class="page-state"><span class="pdot s-{{ $stateOf($selectedPage)?->tone() ?? 'n' }}" aria-hidden="true"></span>{{ \App\Services\PageStatus::label($stateOf($selectedPage)) }}</span>
@@ -24,7 +24,7 @@
   <div class="page-picker-panel">
     @if ($menuPages->count() > 5)
       <div class="page-search">
-        <input type="search" data-page-filter placeholder="Find a page or tag" aria-label="{{ $viewPages ? 'Search published pages' : 'Search pages to manage' }}" autocomplete="off">
+        <input type="search" data-page-filter placeholder="{{ __('Find a page or tag') }}" aria-label="{{ $viewPages ? 'Search published pages' : 'Search pages to manage' }}" autocomplete="off">
       </div>
     @endif
     <div class="page-options">
@@ -45,6 +45,6 @@
         <span class="nav" aria-disabled="true">{{ $viewPages ? 'No published pages' : 'No pages assigned' }}</span>
       @endforelse
     </div>
-    <p class="page-note page-search-empty" data-page-empty role="status" hidden>No matching pages</p>
+    <p class="page-note page-search-empty" data-page-empty role="status" hidden>{{ __('No matching pages') }}</p>
   </div>
 </details>

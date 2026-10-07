@@ -1,5 +1,5 @@
 @extends('layouts.admin')
-@section('title', 'Settings')
+@section('title', __('Settings'))
 {{-- Every field on this screen shows its own error inline; opt out of the global list so it is not said twice. --}}
 @section('own-errors', 'yes')
 @section('content')
@@ -22,53 +22,53 @@
 
 @if ($tab === 'general')
 <div class="panel" id="general">
-  <div class="panel-hd"><h3>General</h3></div>
+  <div class="panel-hd"><h3>{{ __('General') }}</h3></div>
   <div class="panel-bd">
     <form method="POST" action="{{ route('admin.settings.update') }}">
       @csrf @method('PUT')
       <input type="hidden" name="_tab" value="general">
       {{-- Three small groups under one Save: each is a sentence or two, and a
            panel per group would be more chrome than content. --}}
-      <h4 class="grouphd">Time zone</h4>
+      <h4 class="grouphd">{{ __('Time zone') }}</h4>
       <div class="fields">
         <div class="field wide">
-          <label for="timezone">Time zone</label>
+          <label for="timezone">{{ __('Time zone') }}</label>
           @include('partials.timezone-select', ['selected' => $timezone])
-          <span class="help"><b>{{ $timezone }}, {{ $offset }} now.</b>
-            Times on the status page, in emails, in notifications and in the admin are shown in this zone.
+          <span class="help"><b>{{ $timezone }}, {{ $offset }} {{ __('now.') }}</b>
+            {{ __('Times on the status page, in emails, in notifications and in the admin are shown in this zone.
             Everything is stored in UTC, so you can change it any time.
-            Each user can pick a zone of their own for the admin screens under Profile, Preferences; everything customers see stays in this one.</span>
+            Each user can pick a zone of their own for the admin screens under Profile, Preferences; everything customers see stays in this one.') }}</span>
         </div>
       </div>
 
-      <h4 class="grouphd">Retention</h4>
+      <h4 class="grouphd">{{ __('Retention') }}</h4>
       <div class="fields">
         <div class="field">
-          <label for="audit_days">Audit log kept for</label>
+          <label for="audit_days">{{ __('Audit log kept for') }}</label>
           <span class="inline-unit"><input id="audit_days" name="audit_days" type="number" min="7" max="3650" required
-                 value="{{ old('audit_days', $general['audit_days']) }}"> days</span>
-          <span class="help">Older lines are removed nightly. 7 to 3650 days.</span>
+                 value="{{ old('audit_days', $general['audit_days']) }}"> {{ __('days') }}</span>
+          <span class="help">{{ __('Older lines are removed nightly. 7 to 3650 days.') }}</span>
           @error('audit_days')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
         </div>
         <div class="field">
-          <label for="keep_backups">Backups kept</label>
+          <label for="keep_backups">{{ __('Backups kept') }}</label>
           <input id="keep_backups" name="keep_backups" type="number" min="0" max="50" required
                  value="{{ old('keep_backups', $general['keep_backups']) }}">
-          <span class="help">The newest N copies an update makes of the version it replaces; the oldest go when a new one is made. 0 keeps all.</span>
+          <span class="help">{{ __('The newest N copies an update makes of the version it replaces; the oldest go when a new one is made. 0 keeps all.') }}</span>
           @error('keep_backups')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
         </div>
       </div>
 
-      <h4 class="grouphd">Updates</h4>
+      <h4 class="grouphd">{{ __('Updates') }}</h4>
       <div class="switchrow">
-        <span class="t"><strong>Check for updates automatically</strong>
-          <span class="s">Once an hour, from {{ $manifestHost ?? 'the release server' }}. Off means the Updates screen only checks when you press Check again.</span></span>
-        <label class="check"><input type="checkbox" name="update_check" value="1" @checked(old('update_check', $general['update_check']))> On</label>
+        <span class="t"><strong>{{ __('Check for updates automatically') }}</strong>
+          <span class="s">{{ __('Once an hour, from') }} {{ $manifestHost ?? 'the release server' }}{{ __('. Off means the Updates screen only checks when you press Check again.') }}</span></span>
+        <label class="check"><input type="checkbox" name="update_check" value="1" @checked(old('update_check', $general['update_check']))> {{ __('On') }}</label>
       </div>
 
       <div class="actions">
-        <button class="btn" type="submit">Save settings</button>
-        <button class="btn ghost" type="reset">Undo my changes</button>
+        <button class="btn" type="submit">{{ __('Save settings') }}</button>
+        <button class="btn ghost" type="reset">{{ __('Undo my changes') }}</button>
       </div>
     </form>
   </div>
@@ -78,110 +78,110 @@
 @if ($tab === 'mail')
 <div class="panel" id="mail">
   <div class="panel-hd">
-    <h3>Central mail</h3>
-    <span class="hint">For the whole installation</span>
+    <h3>{{ __('Central mail') }}</h3>
+    <span class="hint">{{ __('For the whole installation') }}</span>
   </div>
   <div class="panel-bd">
-    <p class="sub" style="margin-bottom:20px">This is the shared mail server for account recovery and all status pages using central transport.
-      Pages with custom SMTP keep their own server. To change one page’s sender or SMTP, select that page and open <strong>Email, Delivery</strong>.
-      Changing these central settings affects every page that inherits them.</p>
+    <p class="sub" style="margin-bottom:20px">{{ __('This is the shared mail server for account recovery and all status pages using central transport.
+      Pages with custom SMTP keep their own server. To change one page’s sender or SMTP, select that page and open') }} <strong>{{ __('Email, Delivery') }}</strong>{{ __('.
+      Changing these central settings affects every page that inherits them.') }}</p>
     <form method="POST" action="{{ route('admin.settings.mail') }}" style="display:flex;flex-direction:column;gap:16px">
       @csrf @method('PUT')
       <input type="hidden" name="_tab" value="mail">
       <div class="fields">
         <div class="field">
-          <label for="mailer">Mailer</label>
+          <label for="mailer">{{ __('Mailer') }}</label>
           <select id="mailer" name="mailer">
             @foreach (['smtp' => 'SMTP', 'sendmail' => 'Sendmail (local)', 'log' => 'Write to the log (testing)'] as $value => $label)
               <option value="{{ $value }}" @selected(old('mailer', $mailForm['mailer'] ?: $mail['mailer']) === $value)>{{ $label }}</option>
             @endforeach
           </select>
-          <span class="help">"Write to the log" puts every mail in <span class="mono">storage/logs</span> instead of sending it. Handy while you set things up.</span>
+          <span class="help">{{ __('"Write to the log" puts every mail in') }} <span class="mono">{{ __('storage/logs') }}</span> {{ __('instead of sending it. Handy while you set things up.') }}</span>
         </div>
         <div class="field">
-          <label for="encryption">Encryption</label>
+          <label for="encryption">{{ __('Encryption') }}</label>
           <select id="encryption" name="encryption">
             @foreach (['none' => 'None', 'tls' => 'TLS (STARTTLS, port 587)', 'ssl' => 'SSL (port 465)'] as $value => $label)
               <option value="{{ $value }}" @selected(old('encryption', $mailForm['encryption']) === $value)>{{ $label }}</option>
             @endforeach
           </select>
-          <span class="help">587 + TLS works for most providers; a few want 465 + SSL.</span>
+          <span class="help">{{ __('587 + TLS works for most providers; a few want 465 + SSL.') }}</span>
         </div>
       </div>
       <div class="fields">
         <div class="field">
-          <label for="host">SMTP host</label>
-          <input id="host" name="host" type="text" value="{{ old('host', $mailForm['host']) }}" placeholder="smtp.example.net" autocomplete="off">
+          <label for="host">{{ __('SMTP host') }}</label>
+          <input id="host" name="host" type="text" value="{{ old('host', $mailForm['host']) }}" placeholder="{{ __('smtp.example.net') }}" autocomplete="off">
           @error('host')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
         </div>
         <div class="field">
-          <label for="port">Port</label>
+          <label for="port">{{ __('Port') }}</label>
           <input id="port" name="port" type="number" min="1" max="65535" value="{{ old('port', $mailForm['port']) }}" placeholder="587">
           @error('port')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
         </div>
       </div>
       <div class="fields">
         <div class="field">
-          <label for="username">Username</label>
+          <label for="username">{{ __('Username') }}</label>
           <input id="username" name="username" type="text" value="{{ old('username', $mailForm['username']) }}" autocomplete="off">
         </div>
         <div class="field">
-          <label for="password">Password</label>
+          <label for="password">{{ __('Password') }}</label>
           <input id="password" name="password" type="password" autocomplete="new-password"
                  placeholder="{{ $mailHasPassword ? 'Stored, leave empty to keep' : '' }}">
-          <span class="help">Stored encrypted and never shown again. Empty means unchanged.</span>
+          <span class="help">{{ __('Stored encrypted and never shown again. Empty means unchanged.') }}</span>
         </div>
       </div>
       <div class="fields">
         <div class="field">
-          <label for="from_address">From address</label>
+          <label for="from_address">{{ __('From address') }}</label>
           <input id="from_address" name="from_address" type="email" value="{{ old('from_address', $mailForm['from_address']) }}" placeholder="status@example.net">
           @error('from_address')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
         </div>
         <div class="field">
-          <label for="from_name">From name</label>
+          <label for="from_name">{{ __('From name') }}</label>
           <input id="from_name" name="from_name" type="text" value="{{ old('from_name', $mailForm['from_name']) }}" placeholder="{{ $brandName }}">
-          <span class="help">Empty signs mail with the brand name, {{ $brandName }}.</span>
+          <span class="help">{{ __('Empty signs mail with the brand name,') }} {{ $brandName }}.</span>
         </div>
       </div>
       <div class="actions">
-        <button class="btn" type="submit">Save mail settings</button>
-        <button class="btn ghost" type="reset">Undo my changes</button>
+        <button class="btn" type="submit">{{ __('Save mail settings') }}</button>
+        <button class="btn ghost" type="reset">{{ __('Undo my changes') }}</button>
       </div>
     </form>
 
     {{-- What a mail would go out with right now: the database wins, .env fills the gaps. --}}
     <div class="field" style="margin-top:16px">
-      <label>Effective</label>
+      <label>{{ __('Effective') }}</label>
       @php $where = $mail['host'] !== '' ? ' via '.$mail['host'].($mail['port'] !== '' ? ':'.$mail['port'] : '') : ''; @endphp
-      <span class="mono" style="font-size:13px">{{ $mail['mailer'].$where }} as {{ $mail['from_name'] }} &lt;{{ $mail['from'] }}&gt;</span>
+      <span class="mono" style="font-size:13px">{{ $mail['mailer'].$where }} {{ __('as') }} {{ $mail['from_name'] }} {{ __('<') }}{{ $mail['from'] }}{{ __('>') }}</span>
     </div>
 
     <form method="POST" action="{{ route('admin.settings.mail-test') }}" style="margin-top:12px">
       @csrf
       <div class="actions">
-        <button class="btn" type="submit">Send test email</button>
-        <span class="help" style="align-self:center">Goes to {{ auth()->user()->email }}, with the settings as saved above.</span>
+        <button class="btn" type="submit">{{ __('Send test email') }}</button>
+        <span class="help" style="align-self:center">{{ __('Goes to') }} {{ auth()->user()->email }}{{ __(', with the settings as saved above.') }}</span>
       </div>
       @error('mail')<span class="help" style="color:var(--red-ink);display:block;margin-top:8px">{{ $message }}</span>@enderror
     </form>
 
     <x-note id="settings.mail-env" style="margin-top:16px">
-      <b>What is saved here wins;</b> anything left empty falls back to the
-      <span class="mono">MAIL_*</span> lines in <span class="mono">.env</span>. Save, then press the
-      button above to prove it works.
+      <b>{{ __('What is saved here wins;') }}</b> {{ __('anything left empty falls back to the') }}
+      <span class="mono">{{ __('MAIL_*') }}</span> {{ __('lines in') }} <span class="mono">{{ __('.env') }}</span>{{ __('. Save, then press the
+      button above to prove it works.') }}
     </x-note>
 
     {{-- Not an x-note: a state line must not be dismissable. --}}
     <div class="field" style="margin-top:12px">
-      <label>Subscriptions</label>
+      <label>{{ __('Subscriptions') }}</label>
       <span class="help">
         @if ($subscriptionsOn)
-          <b>Subscriptions are on.</b> Visitors can subscribe on the status page and get a mail per incident update.
+          <b>{{ __('Subscriptions are on.') }}</b> {{ __('Visitors can subscribe on the status page and get a mail per incident update.') }}
         @else
-          <b>Subscriptions are off.</b> No button on the status page and no new mail; existing addresses are kept.
+          <b>{{ __('Subscriptions are off.') }}</b> {{ __('No button on the status page and no new mail; existing addresses are kept.') }}
         @endif
-        The switch is on the <a href="{{ \App\Services\PageUrls::route('admin.subscribers') }}">Subscribers</a> screen.
+        {{ __('The switch is on the') }} <a href="{{ \App\Services\PageUrls::route('admin.subscribers') }}">{{ __('Subscribers') }}</a> {{ __('screen.') }}
       </span>
     </div>
   </div>
@@ -191,17 +191,17 @@
 @if ($tab === 'sso')
 <div class="panel" id="sso">
   <div class="panel-hd">
-    <h3>Single sign on</h3>
-    <span class="hint">{{ $sso->enabled() ? 'On · '.$sso->providerName() : 'Off' }} · OpenID Connect</span>
+    <h3>{{ __('Single sign on') }}</h3>
+    <span class="hint">{{ $sso->enabled() ? 'On · '.$sso->providerName() : 'Off' }} {{ __('· OpenID Connect') }}</span>
   </div>
   <div class="panel-bd">
     @include('admin.partials.sso-form')
 
     <x-note id="sso.what-still-applies" style="margin-top:16px">
-      <b>What still applies.</b> Anyone who switched two factor on keeps it, whatever door they
+      <b>{{ __('What still applies.') }}</b> {{ __('Anyone who switched two factor on keeps it, whatever door they
       came through. If your provider already enforces MFA and you would rather not be asked twice,
       switch your own two factor off on your profile. That stays your decision, not the login
-      screen's.
+      screen\'s.') }}
     </x-note>
   </div>
 </div>

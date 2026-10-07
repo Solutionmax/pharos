@@ -1,5 +1,5 @@
 @extends('layouts.admin')
-@section('title', 'Overview')
+@section('title', __('Overview'))
 @section('content')
 @php
   use App\Enums\ComponentStatus;
@@ -63,31 +63,31 @@
 
 @include('partials.pagehead', [
   'crumbs' => ['Overview'],
-  'title' => 'Overview',
-  'sub' => 'Everything on this page at a glance',
+  'title' => __('Overview'),
+  'sub' => __('Everything on this page at a glance'),
   'actions' => array_values(array_filter([
-      $canEdit ? ['url' => PageUrls::route('admin.incidents.create'), 'label' => 'Report an incident', 'ghost' => true] : null,
-      $published ? ['url' => $page->publicUrl(), 'label' => 'View status page', 'external' => true] : null,
+      $canEdit ? ['url' => PageUrls::route('admin.incidents.create'), 'label' => __('Report an incident'), 'ghost' => true] : null,
+      $published ? ['url' => $page->publicUrl(), 'label' => __('View status page'), 'external' => true] : null,
   ])),
 ])
 
 <div id="ov" class="ov" data-tips>
   @if ($readiness)
     <section class="ov-card ov-ready" aria-labelledby="ov-ready-title">
-      <header><h3 id="ov-ready-title">Get this page ready</h3>
-        <span class="hint">{{ collect($readiness)->where('done', true)->count() }} of {{ count($readiness) }} done</span></header>
+      <header><h3 id="ov-ready-title">{{ __('Get this page ready') }}</h3>
+        <span class="hint">{{ collect($readiness)->where('done', true)->count() }} {{ __('of') }} {{ count($readiness) }} {{ __('done') }}</span></header>
       <div class="bd">
         <ol class="ov-steps">
           @foreach ($readiness as $step)
             <li class="{{ $step['done'] ? 'done' : '' }}">
               <div>
-                <h4>{{ $step['label'] }} @if ($step['done'])<span class="sr-only">(done)</span>@endif</h4>
+                <h4>{{ $step['label'] }} @if ($step['done'])<span class="sr-only">{{ __('(done)') }}</span>@endif</h4>
                 <p>{{ $step['detail'] }}</p>
               </div>
               @if (! $step['done'] && $step['url'])
                 <a class="btn ghost" href="{{ $step['url'] }}">{{ $step['action'] }}</a>
               @elseif (! $step['done'])
-                <span class="sub">Ask an administrator</span>
+                <span class="sub">{{ __('Ask an administrator') }}</span>
               @endif
             </li>
           @endforeach
@@ -100,31 +100,31 @@
     <div>
       <span class="ov-state"><span class="ov-pulse" aria-hidden="true"></span>{{ $published ? 'Live on the status page' : 'Draft, not public yet' }}</span>
       <h2 id="ov-state-title">
-        @if ($total === 0) No components yet
-        @elseif ($worst === ComponentStatus::Operational) All systems operational
+        @if ($total === 0) {{ __('No components yet') }}
+        @elseif ($worst === ComponentStatus::Operational) {{ __('All systems operational') }}
         @else {{ $worst->label() }}
         @endif
       </h2>
       <p>
         @if ($total === 0)
-          Add components to show visitors how your services are doing.
+          {{ __('Add components to show visitors how your services are doing.') }}
         @elseif ($worst === ComponentStatus::Operational)
-          Every component is up. Visitors see a green page.
+          {{ __('Every component is up. Visitors see a green page.') }}
         @else
-          {{ $data['affected']->pluck('name')->take(4)->implode(', ') }}@if ($data['affected']->count() > 4) and {{ $data['affected']->count() - 4 }} more @endif
-          {{ $data['affected']->count() === 1 ? 'is' : 'are' }} affected.
-          {{ $data['operational'] }} of {{ $total }} components are fully operational.
+          {{ $data['affected']->pluck('name')->take(4)->implode(', ') }}@if ($data['affected']->count() > 4) {{ __('and') }} {{ $data['affected']->count() - 4 }} {{ __('more') }} @endif
+          {{ $data['affected']->count() === 1 ? 'is' : 'are' }} {{ __('affected.') }}
+          {{ $data['operational'] }} {{ __('of') }} {{ $total }} {{ __('components are fully operational.') }}
         @endif
       </p>
       <div class="ov-meta">
         @if ($incident)
-          <span>Incident <b>{{ $incident->name }}</b></span>
-          <span>Status <b>{{ $incident->status->label() }}</b></span>
-          <span>Started <b>{{ $incident->occurred_at?->diffForHumans() }}</b></span>
+          <span>{{ __('Incident') }} <b>{{ $incident->name }}</b></span>
+          <span>{{ __('Status') }} <b>{{ $incident->status->label() }}</b></span>
+          <span>{{ __('Started') }} <b>{{ $incident->occurred_at?->diffForHumans() }}</b></span>
         @else
-          <span>No open incidents</span>
+          <span>{{ __('No open incidents') }}</span>
         @endif
-        <span>Public page <b>{{ $host }}</b></span>
+        <span>{{ __('Public page') }} <b>{{ $host }}</b></span>
       </div>
     </div>
     <div class="ov-ring">
@@ -137,38 +137,38 @@
                   data-tip-title="{{ $arc['title'] }}" data-tip="{{ $arc['names'] }}"/>
         @endforeach
       </svg>
-      <div class="c" aria-hidden="true"><b>{{ $data['operational'] }}/{{ $total }}</b><span>operational</span></div>
+      <div class="c" aria-hidden="true"><b>{{ $data['operational'] }}/{{ $total }}</b><span>{{ __('operational') }}</span></div>
     </div>
   </section>
 
   <div class="ov-kpis">
     <div class="ov-kpi">
-      <span class="k">Uptime, 90 days</span>
+      <span class="k">{{ __('Uptime, 90 days') }}</span>
       <span class="v">{{ Uptime::format($data['uptime']) }}</span>
-      <span class="n">All components, averaged per component</span>
+      <span class="n">{{ __('All components, averaged per component') }}</span>
       <svg width="100%" height="34" viewBox="0 0 220 34" preserveAspectRatio="none" aria-hidden="true">
         <path d="{{ $sparkPath }}L220 34 L0 34Z" fill="var(--brand-soft)"/>
         <path d="{{ $sparkPath }}" fill="none" stroke="var(--brand)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
       </svg>
     </div>
     <div class="ov-kpi">
-      <span class="k">Open incidents</span>
+      <span class="k">{{ __('Open incidents') }}</span>
       <span class="v" style="color:var(--{{ $open->isEmpty() ? 'green' : 'orange' }}-ink)">{{ $open->isEmpty() ? 'None' : $open->count() }}</span>
       <span class="n">
         @if ($incident)
-          {{ $incident->status->label() }}, {{ $incident->updates->count() }} {{ \Illuminate\Support\Str::plural('update', $incident->updates->count()) }} posted
+          {{ $incident->status->label() }}, {{ $incident->updates->count() }} {{ \Illuminate\Support\Str::plural('update', $incident->updates->count()) }} {{ __('posted') }}
         @else
-          Nothing needs attention
+          {{ __('Nothing needs attention') }}
         @endif
       </span>
     </div>
     <div class="ov-kpi">
-      <span class="k">Last 30 days</span>
+      <span class="k">{{ __('Last 30 days') }}</span>
       <span class="v">{{ $data['incidents30'] }} <small>{{ \Illuminate\Support\Str::plural('incident', $data['incidents30']) }}</small></span>
-      <span class="n">Typical time to resolve <b>{{ PageOverview::duration($data['mttr']) }}</b></span>
+      <span class="n">{{ __('Typical time to resolve') }} <b>{{ PageOverview::duration($data['mttr']) }}</b></span>
     </div>
     <div class="ov-kpi">
-      <span class="k">Subscribers</span>
+      <span class="k">{{ __('Subscribers') }}</span>
       <span class="v">{{ $data['subscribers'] }}</span>
       <span class="n"><span class="ov-onoff {{ $data['subscriptions'] ? 'on' : 'off' }}">{{ $data['subscriptions'] ? 'On' : 'Off' }}</span>
         {{ $data['subscriptions'] ? 'Visitors can subscribe' : 'Sign up is switched off' }}</span>
@@ -178,23 +178,23 @@
   <div class="ov-grid">
     <div class="ov-col">
       <section class="ov-card" aria-labelledby="ov-availability">
-        <header><h3 id="ov-availability">Availability</h3><span class="hint">Whole page, last 90 days, hover a day</span></header>
+        <header><h3 id="ov-availability">{{ __('Availability') }}</h3><span class="hint">{{ __('Whole page, last 90 days, hover a day') }}</span></header>
         <div class="bd">
           <div class="ov-days" role="img" aria-label="Daily availability over the last 90 days, {{ Uptime::format($data['uptime']) }} overall">
             @foreach ($data['days'] as $day)
               <i class="s-{{ $day['known'] ? $day['tone'] : 'n' }}" data-tip-title="{{ $cellDay($day) }}" data-tip="{{ $cellTip($day) }}"></i>
             @endforeach
           </div>
-          <div class="ov-axis" aria-hidden="true"><span>90 days ago</span><span>60</span><span>30</span><span>Today</span></div>
+          <div class="ov-axis" aria-hidden="true"><span>{{ __('90 days ago') }}</span><span>60</span><span>30</span><span>{{ __('Today') }}</span></div>
           <div class="ov-legend">
-            <span><i class="s-ok"></i>Fully up</span><span><i class="s-w"></i>Below 99.99%</span>
-            <span><i class="s-p"></i>Below 99%</span><span><i class="s-b"></i>Below 95%</span><span><i class="s-n"></i>Not measured</span>
+            <span><i class="s-ok"></i>{{ __('Fully up') }}</span><span><i class="s-w"></i>{{ __('Below 99.99%') }}</span>
+            <span><i class="s-p"></i>{{ __('Below 99%') }}</span><span><i class="s-b"></i>{{ __('Below 95%') }}</span><span><i class="s-n"></i>{{ __('Not measured') }}</span>
           </div>
         </div>
       </section>
 
       <section class="ov-card" aria-labelledby="ov-services">
-        <header><h3 id="ov-services">Services</h3><span class="hint">30 days, uptime: measured by Pharos or reported from outside</span></header>
+        <header><h3 id="ov-services">{{ __('Services') }}</h3><span class="hint">{{ __('30 days, uptime: measured by Pharos or reported from outside') }}</span></header>
         <div class="bd">
           @forelse ($data['services'] as $section)
             <div class="ov-grp">{{ $section['name'] }}</div>
@@ -220,7 +220,7 @@
               </div>
             @endforeach
           @empty
-            <p class="sub">No components on this page yet.</p>
+            <p class="sub">{{ __('No components on this page yet.') }}</p>
           @endforelse
         </div>
       </section>
@@ -229,13 +229,13 @@
     <div class="ov-col">
       <section class="ov-card" aria-labelledby="ov-incident">
         <header><h3 id="ov-incident">{{ $incident ? 'Open incident' : 'Incidents' }}</h3>
-          <a class="hint link" href="{{ PageUrls::route('admin.incidents') }}">All incidents</a></header>
+          <a class="hint link" href="{{ PageUrls::route('admin.incidents') }}">{{ __('All incidents') }}</a></header>
         <div class="bd">
           @if ($incident)
             <div class="ov-inc">
               <div class="ov-pills">
                 <span class="ov-pill st">{{ $incident->status->label() }}</span>
-                @if ($incident->impact)<span class="ov-pill">{{ ucfirst($incident->impact->value) }} impact</span>@endif
+                @if ($incident->impact)<span class="ov-pill">{{ ucfirst($incident->impact->value) }} {{ __('impact') }}</span>@endif
                 @foreach ($incident->components->take(4) as $affected)<span class="ov-pill">{{ $affected->name }}</span>@endforeach
               </div>
               <h4>
@@ -250,24 +250,24 @@
                 @endforeach
               </ol>
               @if ($open->count() > 1)
-                <p class="sub" style="margin-top:12px">{{ $open->count() - 1 }} more open {{ \Illuminate\Support\Str::plural('incident', $open->count() - 1) }}.</p>
+                <p class="sub" style="margin-top:12px">{{ $open->count() - 1 }} {{ __('more open') }} {{ \Illuminate\Support\Str::plural('incident', $open->count() - 1) }}.</p>
               @endif
             </div>
           @else
-            <p class="sub">Nothing open.</p>
+            <p class="sub">{{ __('Nothing open.') }}</p>
           @endif
           @if ($data['lastResolved'])
             <div class="ov-past">
               <span class="ov-dot s-ok" aria-hidden="true"></span>
               <span>{{ $data['lastResolved']->name }}</span>
-              <span class="ok">Resolved {{ $data['lastResolved']->resolved_at?->diffForHumans() }}</span>
+              <span class="ok">{{ __('Resolved') }} {{ $data['lastResolved']->resolved_at?->diffForHumans() }}</span>
             </div>
           @endif
         </div>
       </section>
 
       <section class="ov-card" aria-labelledby="ov-health">
-        <header><h3 id="ov-health">Page health</h3><span class="hint">{{ $good }} of {{ count($health) }} in order</span></header>
+        <header><h3 id="ov-health">{{ __('Page health') }}</h3><span class="hint">{{ $good }} {{ __('of') }} {{ count($health) }} {{ __('in order') }}</span></header>
         <div class="bd">
           <ul class="ov-health">
             @foreach ($health as $check)

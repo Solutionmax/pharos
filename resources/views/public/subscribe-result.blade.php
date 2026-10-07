@@ -8,7 +8,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>{{ ['subscribed' => "You're subscribed", 'confirm-unsubscribe' => 'Unsubscribe'][$outcome] ?? 'Unsubscribed' }} · {{ $branding->name() }} Status</title>
+<title>{{ ['subscribed' => "You're subscribed", 'confirm-unsubscribe' => 'Unsubscribe'][$outcome] ?? 'Unsubscribed' }} · {{ $branding->name() }} {{ __('Status') }}</title>
 <link rel="icon" href="{{ $branding->faviconUrl() }}">
 @if ($branding->name() === 'Pharos' && ! $branding->logoUrl())
 <link rel="apple-touch-icon" href="{{ $branding->builtInAssetUrl('apple-touch-icon.png') }}">
@@ -42,25 +42,25 @@ form{margin:0;display:flex}
   </header>
   <section class="card">
     @if ($outcome === 'subscribed')
-      <h1>You're subscribed</h1>
-      <p><span class="mail">{{ $subscriber->email }}</span> will get an email when an incident is
-        reported on the {{ $branding->name() }} status page, and when it is resolved.</p>
-      <a class="btn" href="{{ \App\Services\PageUrls::route('status') }}">Back to the status page</a>
-      <p class="small">Changed your mind? <a href="{{ $subscriber->unsubscribeUrl() }}">Unsubscribe</a>. The same link sits at the bottom of every mail.</p>
+      <h1>{{ __('You\'re subscribed') }}</h1>
+      <p><span class="mail">{{ $subscriber->email }}</span> {{ __('will get an email when an incident is
+        reported on the') }} {{ $branding->name() }} {{ __('status page, and when it is resolved.') }}</p>
+      <a class="btn" href="{{ \App\Services\PageUrls::route('status') }}">{{ __('Back to the status page') }}</a>
+      <p class="small">{{ __('Changed your mind?') }} <a href="{{ $subscriber->unsubscribeUrl() }}">{{ __('Unsubscribe') }}</a>{{ __('. The same link sits at the bottom of every mail.') }}</p>
     @elseif ($outcome === 'confirm-unsubscribe')
-      <h1>Unsubscribe from {{ $branding->name() }} status updates?</h1>
-      <p><span class="mail">{{ $subscriber->email }}</span> gets an email when an incident is reported
-        on the {{ $branding->name() }} status page, and when it is resolved. Unsubscribe to stop them.</p>
+      <h1>{{ __('Unsubscribe from') }} {{ $branding->name() }} {{ __('status updates?') }}</h1>
+      <p><span class="mail">{{ $subscriber->email }}</span> {{ __('gets an email when an incident is reported
+        on the') }} {{ $branding->name() }} {{ __('status page, and when it is resolved. Unsubscribe to stop them.') }}</p>
       <form method="post" action="{{ $action }}">
-        <button class="btn" type="submit">Unsubscribe</button>
+        <button class="btn" type="submit">{{ __('Unsubscribe') }}</button>
       </form>
-      <p class="small">Opened this link by mistake? Nothing changes until you press the button. <a href="{{ \App\Services\PageUrls::route('status') }}">Back to the status page</a>.</p>
+      <p class="small">{{ __('Opened this link by mistake? Nothing changes until you press the button.') }} <a href="{{ \App\Services\PageUrls::route('status') }}">{{ __('Back to the status page') }}</a>.</p>
     @else
-      <h1>Unsubscribed</h1>
-      <p><span class="mail">{{ $subscriber->email }}</span> will get no more incident emails from
-        the {{ $branding->name() }} status page.</p>
-      <a class="btn" href="{{ \App\Services\PageUrls::route('status') }}">Back to the status page</a>
-      <p class="small">Subscribed by mistake? Use "Get notified" on the status page and confirm again.</p>
+      <h1>{{ __('Unsubscribed') }}</h1>
+      <p><span class="mail">{{ $subscriber->email }}</span> {{ __('will get no more incident emails from
+        the') }} {{ $branding->name() }} {{ __('status page.') }}</p>
+      <a class="btn" href="{{ \App\Services\PageUrls::route('status') }}">{{ __('Back to the status page') }}</a>
+      <p class="small">{{ __('Subscribed by mistake? Use "Get notified" on the status page and confirm again.') }}</p>
     @endif
   </section>
 </div>

@@ -16,17 +16,17 @@
 
 @if ($stalled)
   <div class="alarm" role="alert">
-    <strong>Nothing is being checked.</strong>
+    <strong>{{ __('Nothing is being checked.') }}</strong>
     @if ($lastRun)
-      The scheduler last ran {{ $lastRun->diffForHumans() }}. It should run every minute.
+      {{ __('The scheduler last ran') }} {{ $lastRun->diffForHumans() }}{{ __('. It should run every minute.') }}
     @else
-      The scheduler has never run, so every status on this page is whatever someone typed.
+      {{ __('The scheduler has never run, so every status on this page is whatever someone typed.') }}
     @endif
-    Add this one line to cron:
+    {{ __('Add this one line to cron:') }}
     @if (app(\App\Services\CronSetup::class)->php())
       <code class="mono">* * * * * {{ app(\App\Services\CronSetup::class)->command() }}</code>
     @else
-      <span>Ask your host for the versioned CLI PHP path, then run <code>php artisan pharos:cron</code> with that PHP. The web PHP selector does not configure cron.</span>
+      <span>{{ __('Ask your host for the versioned CLI PHP path, then run') }} <code>php artisan pharos:cron</code> {{ __('with that PHP. The web PHP selector does not configure cron.') }}</span>
     @endif
     @if (\App\Models\Setting::get('checks.last_error'))
       <span>{{ \App\Models\Setting::get('checks.last_error') }}</span>

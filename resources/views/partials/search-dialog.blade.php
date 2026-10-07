@@ -11,29 +11,29 @@
      data-page="{{ $searchScope['id'] ?? '' }}" data-user="{{ auth()->id() }}">
   <div class="pui-scrim" data-close></div>
   <div class="pui-sheet search-sheet">
-    <h2 id="pharos-search-title" class="sr-only">Search</h2>
+    <h2 id="pharos-search-title" class="sr-only">{{ __('Search') }}</h2>
     <div class="search-field">
       <span class="search-glyph">@include('partials.icon', ['name' => 'search', 'size' => 20])</span>
       <input type="text" id="pharos-search-input" role="combobox" aria-expanded="false" aria-controls="pharos-search-results"
-             aria-autocomplete="list" aria-label="Search pages, services, components, incidents and screens" aria-describedby="pharos-search-keys"
+             aria-autocomplete="list" aria-label="{{ __('Search pages, services, components, incidents and screens') }}" aria-describedby="pharos-search-keys"
              autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go"
-             placeholder="Search or jump to" data-endpoint="{{ route('admin.search') }}" autofocus>
-      <button type="button" class="search-esc" data-close aria-label="Close search"><kbd>Esc</kbd><span>Cancel</span></button>
+             placeholder="{{ __('Search or jump to') }}" data-endpoint="{{ route('admin.search') }}" autofocus>
+      <button type="button" class="search-esc" data-close aria-label="{{ __('Close search') }}"><kbd>{{ __('Esc') }}</kbd><span>{{ __('Cancel') }}</span></button>
       <span class="search-bar" aria-hidden="true"></span>
     </div>
     <div class="search-body">
       <div class="search-state" data-search-state hidden></div>
-      <div id="pharos-search-results" class="search-results" role="listbox" aria-label="Search results"></div>
+      <div id="pharos-search-results" class="search-results" role="listbox" aria-label="{{ __('Search results') }}"></div>
     </div>
     <footer class="search-foot">
       <p class="search-keys" id="pharos-search-keys">
-        <span><kbd aria-label="Up">&uarr;</kbd><kbd aria-label="Down">&darr;</kbd> to move</span>
-        <span><kbd>Enter</kbd> to open</span>
-        <span><kbd>Esc</kbd> to close</span>
+        <span><kbd aria-label="{{ __('Up') }}">{{ __('↑') }}</kbd><kbd aria-label="{{ __('Down') }}">{{ __('↓') }}</kbd> {{ __('to move') }}</span>
+        <span><kbd>{{ __('Enter') }}</kbd> {{ __('to open') }}</span>
+        <span><kbd>{{ __('Esc') }}</kbd> {{ __('to close') }}</span>
       </p>
-      <button type="button" class="search-clear" data-search-clear hidden>Clear recent</button>
+      <button type="button" class="search-clear" data-search-clear hidden>{{ __('Clear recent') }}</button>
       @if ($searchScope)
-        <p class="search-scope"><span class="search-scope-k">Current page first</span>
+        <p class="search-scope"><span class="search-scope-k">{{ __('Current page first') }}</span>
           <span class="page-tag page-tag--{{ $searchScope['color'] }}">{{ $searchScope['tag'] }}</span>
           <span class="search-scope-name">{{ $searchScope['name'] }}</span></p>
       @endif

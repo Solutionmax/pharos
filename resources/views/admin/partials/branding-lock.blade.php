@@ -5,6 +5,6 @@
   <div>
     <p class="bx-lock-what">{{ $what }}</p>
     @if ($saved)<p class="bx-lock-saved">{{ $saved }}</p>@endif
-    <p class="bx-lock-how">Unlocked by the <b>Brand pack</b>, also included in Supported. <a href="#plan">See what this installation has</a></p>
+    <p class="bx-lock-how">{{ __('Unlocked by the') }} <b>{{ __('Brand pack') }}</b>{{ __(', also included in Supported.') }} <a href="#plan">{{ __('See what this installation has') }}</a></p>
   </div>
 </div>

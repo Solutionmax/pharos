@@ -23,9 +23,9 @@
         @yield('body')
       </td></tr>
       <tr><td style="padding:14px 28px 22px;border-top:1px solid #e8edf4;font-size:12px;line-height:1.6;color:#667085">
-        <a href="{{ $link }}" style="color:#667085">{{ $brand }} status page</a>
+        <a href="{{ $link }}" style="color:#667085">{{ $brand }} {{ __('status page') }}</a>
         @isset($unsubscribe)
-          &nbsp;·&nbsp; <a href="{{ $unsubscribe }}" style="color:#667085">Unsubscribe</a>
+          {{ __(' · ') }} <a href="{{ $unsubscribe }}" style="color:#667085">{{ __('Unsubscribe') }}</a>
         @endisset
       </td></tr>
     </table>

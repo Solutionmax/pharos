@@ -13,4 +13,4 @@
 {!! $line !!}
 
 @endforeach
-{!! $brand !!} status page: {!! $link !!}
+{!! $brand !!} {{ __('status page:') }} {!! $link !!}

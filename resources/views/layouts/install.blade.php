@@ -15,7 +15,7 @@ $journey = [
 ];
 @endphp
 <!doctype html>
-<html lang="en" @if ($adminTheme !== 'system') data-theme="{{ $adminTheme }}" @endif>
+<html lang="{{ app()->getLocale() }}" @if ($adminTheme !== 'system') data-theme="{{ $adminTheme }}" @endif>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -31,7 +31,7 @@ $journey = [
 <div class="pi">
   <aside class="pi-rail">
     @include('partials.logo', ['size' => 30])
-    <div class="pi-tag">Setup · {{ config('pharos.version') }}</div>
+    <div class="pi-tag">{{ __('Setup ·') }} {{ config('pharos.version') }}</div>
     <ol class="pi-steps" data-pi-steps>
       <span class="pi-fill" data-pi-fill aria-hidden="true"></span>
       @foreach ($journey as $i => [$label, $hint])
@@ -43,7 +43,7 @@ $journey = [
       @endforeach
     </ol>
     <svg class="pi-ekg" viewBox="0 0 268 40" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 20h96l8-14 10 28 9-20 7 6h138"/></svg>
-    <div class="pi-foot">Steps 1 to 5 ran on your hosting. These last two happen inside Pharos.</div>
+    <div class="pi-foot">{{ __('Steps 1 to 5 ran on your hosting. These last two happen inside Pharos.') }}</div>
   </aside>
   <main class="pi-main">
     @yield('content')

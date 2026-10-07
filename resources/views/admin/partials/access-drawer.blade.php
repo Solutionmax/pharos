@@ -19,7 +19,7 @@
     <input type="hidden" name="_drawer" value="{{ $drawerId }}">
     <header>
       <h2 id="{{ $drawerId }}-title">{{ $adding ? 'Add someone' : 'Edit access for '.$member->name }}</h2>
-      <button type="button" class="pui-x" data-close aria-label="Close">&times;</button>
+      <button type="button" class="pui-x" data-close aria-label="{{ __('Close') }}">{{ __('×') }}</button>
     </header>
     <div class="bd">
       @if ($oldHere && $errors->any())
@@ -28,22 +28,22 @@
 
       @if ($adding)
         <div class="ix-row">
-          <div><label class="ix-lbl" for="{{ $drawerId }}-name">Name</label>
+          <div><label class="ix-lbl" for="{{ $drawerId }}-name">{{ __('Name') }}</label>
             <input class="ix-input" id="{{ $drawerId }}-name" name="name" type="text" value="{{ $oldHere ? old('name') : '' }}" required autofocus></div>
-          <div><label class="ix-lbl" for="{{ $drawerId }}-email">Email</label>
+          <div><label class="ix-lbl" for="{{ $drawerId }}-email">{{ __('Email') }}</label>
             <input class="ix-input" id="{{ $drawerId }}-email" name="email" type="email" value="{{ $oldHere ? old('email') : '' }}" required autocomplete="off"></div>
         </div>
         <div>
-          <span class="ix-lbl">Signing in</span>
-          <div class="ix-note">They get an email with a link to choose their own password. Nobody has to share one.</div>
+          <span class="ix-lbl">{{ __('Signing in') }}</span>
+          <div class="ix-note">{{ __('They get an email with a link to choose their own password. Nobody has to share one.') }}</div>
           <details class="ix-more">
-            <summary>Set a password yourself instead</summary>
+            <summary>{{ __('Set a password yourself instead') }}</summary>
             <div>
-              <label class="ix-lbl" for="{{ $drawerId }}-password">Password</label>
+              <label class="ix-lbl" for="{{ $drawerId }}-password">{{ __('Password') }}</label>
               <input class="ix-input" id="{{ $drawerId }}-password" name="password" type="password" autocomplete="new-password" minlength="12">
-              <label class="ix-lbl" for="{{ $drawerId }}-password2">Repeat password</label>
+              <label class="ix-lbl" for="{{ $drawerId }}-password2">{{ __('Repeat password') }}</label>
               <input class="ix-input" id="{{ $drawerId }}-password2" name="password_confirmation" type="password" autocomplete="new-password" minlength="12">
-              <span class="sub">At least 12 characters. With a password here, no invitation is sent.</span>
+              <span class="sub">{{ __('At least 12 characters. With a password here, no invitation is sent.') }}</span>
             </div>
           </details>
         </div>
@@ -55,20 +55,20 @@
       @endif
 
       <fieldset class="pp-fieldset">
-        <legend class="ix-lbl">Account type</legend>
+        <legend class="ix-lbl">{{ __('Account type') }}</legend>
         <div class="pp-role">
-          <label><input type="radio" name="role" value="user" @checked($roleNow === 'user')><span><b>User</b><small>Works on the pages you pick below.</small></span></label>
-          <label><input type="radio" name="role" value="admin" @checked($roleNow === 'admin')><span><b>Administrator</b><small>Everything, on every page, including users and settings.</small></span></label>
+          <label><input type="radio" name="role" value="user" @checked($roleNow === 'user')><span><b>{{ __('User') }}</b><small>{{ __('Works on the pages you pick below.') }}</small></span></label>
+          <label><input type="radio" name="role" value="admin" @checked($roleNow === 'admin')><span><b>{{ __('Administrator') }}</b><small>{{ __('Everything, on every page, including users and settings.') }}</small></span></label>
         </div>
         @if ($isSelf)
-          <p class="sub" style="margin-top:8px">This is your own account. Making yourself a user takes the installation screens away at once.</p>
+          <p class="sub" style="margin-top:8px">{{ __('This is your own account. Making yourself a user takes the installation screens away at once.') }}</p>
         @endif
       </fieldset>
 
       <fieldset class="pp-fieldset">
-        <legend class="ix-lbl">Page access</legend>
+        <legend class="ix-lbl">{{ __('Page access') }}</legend>
         <div class="pp-matrix">
-          <div class="pp-allnote">Administrators always have every page.</div>
+          <div class="pp-allnote">{{ __('Administrators always have every page.') }}</div>
           @forelse ($pages as $page)
             @php($value = $oldHere ? old('access.'.$page->id, 'none') : ($current[$page->id] ?? 'none'))
             <div class="pp-mrow">
@@ -80,18 +80,18 @@
               </span>
             </div>
           @empty
-            <p class="sub" style="padding:12px 14px">No active pages yet.</p>
+            <p class="sub" style="padding:12px 14px">{{ __('No active pages yet.') }}</p>
           @endforelse
         </div>
-        <p class="sub" style="margin-top:8px">Read only: look, never change. Editor: day to day work. Page admin: also branding, email and API tokens.</p>
+        <p class="sub" style="margin-top:8px">{{ __('Read only: look, never change. Editor: day to day work. Page admin: also branding, email and API tokens.') }}</p>
       </fieldset>
 
       @if ($adding)
-        <label class="check"><input type="checkbox" name="require_two_factor" value="1" @checked($oldHere ? old('require_two_factor') : true)> Ask them to turn on two factor at their first sign in</label>
+        <label class="check"><input type="checkbox" name="require_two_factor" value="1" @checked($oldHere ? old('require_two_factor') : true)> {{ __('Ask them to turn on two factor at their first sign in') }}</label>
       @endif
     </div>
     <footer>
-      <button type="button" class="btn ghost" data-close>Cancel</button>
+      <button type="button" class="btn ghost" data-close>{{ __('Cancel') }}</button>
       <button type="submit" class="btn">{{ $adding ? 'Add and invite' : 'Save access' }}</button>
     </footer>
   </form>

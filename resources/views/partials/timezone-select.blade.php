@@ -2,7 +2,7 @@
      $default, when given, adds a first option with an empty value that follows the installation. --}}
 <select id="{{ $id ?? 'timezone' }}" name="timezone" @isset($describedBy) aria-describedby="{{ $describedBy }}" @endisset>
   @isset($default)
-    <option value="" @selected($selected === null || $selected === '')>Installation default ({{ $default }})</option>
+    <option value="" @selected($selected === null || $selected === '')>{{ __('Installation default (') }}{{ $default }})</option>
   @endisset
   @foreach (\App\Services\Clock::zones() as $region => $zones)
     <optgroup label="{{ $region }}">

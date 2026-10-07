@@ -383,9 +383,9 @@ pre .k{color:var(--brand)}
 @endphp
 <div class="shell">
   <div class="topbar">
-    <input type="checkbox" id="navtoggle" class="navtoggle" aria-label="Menu">
+    <input type="checkbox" id="navtoggle" class="navtoggle" aria-label="{{ __('Menu') }}">
     <span class="brand" style="padding:0;font-size:15px">@include('partials.logo', ['size' => 22])</span>
-    <button type="button" class="topsearch" data-search-open aria-haspopup="dialog" aria-controls="pharos-search" aria-label="Search">@include('partials.icon', ['name' => 'search', 'size' => 18])</button>
+    <button type="button" class="topsearch" data-search-open aria-haspopup="dialog" aria-controls="pharos-search" aria-label="{{ __('Search') }}">@include('partials.icon', ['name' => 'search', 'size' => 18])</button>
   </div>
   <label class="scrim" for="navtoggle" aria-hidden="true"></label>
   <aside class="side">
@@ -396,7 +396,7 @@ pre .k{color:var(--brand)}
     <span class="bottom">
       @include('partials.page-selector', ['viewPages' => true])
 
-      <a class="whorow" href="{{ route('admin.profile') }}" title="Your profile"
+      <a class="whorow" href="{{ route('admin.profile') }}" title="{{ __('Your profile') }}"
          @if(request()->routeIs('admin.profile', 'page.admin.profile')) aria-current="page" @endif>
         <span class="avatar" aria-hidden="true">{{ mb_substr(auth()->user()->name, 0, 1) }}</span>
         <span class="whotext">
@@ -405,7 +405,7 @@ pre .k{color:var(--brand)}
         </span>
       </a>
       <form method="POST" action="{{ route('admin.logout') }}">@csrf
-        <button class="nav" type="submit" style="width:100%">@include('partials.icon', ['name' => 'signout']) Sign out</button>
+        <button class="nav" type="submit" style="width:100%">@include('partials.icon', ['name' => 'signout']) {{ __('Sign out') }}</button>
       </form>
     </span>
   </aside>

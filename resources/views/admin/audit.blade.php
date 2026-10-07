@@ -1,9 +1,9 @@
 @extends('layouts.admin')
-@section('title', 'Audit log')
+@section('title', __('Audit log'))
 @section('content')
 @include('partials.pagehead', [
-  'title' => 'Audit log',
-  'sub' => 'Who changed what, and when',
+  'title' => __('Audit log'),
+  'sub' => __('Who changed what, and when'),
 ])
 @php
   $filtered = collect($filters)->filter(fn ($value) => $value !== '' && $value !== null)->isNotEmpty();
@@ -12,26 +12,26 @@
 
 <section class="op-card" aria-labelledby="activity-title">
   <header>
-    <h3 id="activity-title">Activity</h3>
-    <span class="hint">{{ $entries->total() }} recorded · kept {{ $retentionDays }} days</span>
+    <h3 id="activity-title">{{ __('Activity') }}</h3>
+    <span class="hint">{{ $entries->total() }} {{ __('recorded · kept') }} {{ $retentionDays }} {{ __('days') }}</span>
   </header>
 
   <form class="op-filters" method="GET" action="{{ route('admin.audit') }}" role="search">
-    <label class="sr-only" for="actor">Who, by name, email or token</label>
-    <input id="actor" name="actor" type="text" value="{{ $actor }}" placeholder="Name, email or token">
-    <label class="sr-only" for="audit-user">Person</label>
+    <label class="sr-only" for="actor">{{ __('Who, by name, email or token') }}</label>
+    <input id="actor" name="actor" type="text" value="{{ $actor }}" placeholder="{{ __('Name, email or token') }}">
+    <label class="sr-only" for="audit-user">{{ __('Person') }}</label>
     <select id="audit-user" name="user">
-      <option value="">Everyone</option>
+      <option value="">{{ __('Everyone') }}</option>
       @foreach ($people as $person)<option value="{{ $person->id }}" @selected($filters['user'] === $person->id)>{{ $person->name }}</option>@endforeach
     </select>
-    <label class="sr-only" for="audit-page">Status page</label>
+    <label class="sr-only" for="audit-page">{{ __('Status page') }}</label>
     <select id="audit-page" name="page_id">
-      <option value="">Every page</option>
+      <option value="">{{ __('Every page') }}</option>
       @foreach ($pages as $page)<option value="{{ $page->id }}" @selected($filters['page_id'] === $page->id)>{{ $page->name }}</option>@endforeach
     </select>
-    <label class="sr-only" for="audit-action">Action</label>
+    <label class="sr-only" for="audit-action">{{ __('Action') }}</label>
     <select id="audit-action" name="action">
-      <option value="">Every action</option>
+      <option value="">{{ __('Every action') }}</option>
       @foreach ($subjects as $option)
         <optgroup label="{{ ucfirst(str_replace('_', ' ', $option)) }}">
           @foreach ($actionOptions->filter(fn ($a) => str_starts_with($a, $option.'.') || $a === $option) as $fullAction)
@@ -41,26 +41,26 @@
       @endforeach
     </select>
     @if ($subject !== '')<input type="hidden" name="subject" value="{{ $subject }}">@endif
-    <button class="btn op-sm" type="submit">Filter</button>
-    @if ($filtered)<a class="btn ghost op-sm" href="{{ route('admin.audit') }}">Clear</a>@endif
+    <button class="btn op-sm" type="submit">{{ __('Filter') }}</button>
+    @if ($filtered)<a class="btn ghost op-sm" href="{{ route('admin.audit') }}">{{ __('Clear') }}</a>@endif
     @unless ($entries->isEmpty())
-      <a class="btn ghost op-sm push" href="{{ route('admin.audit.export', $exportQuery) }}" title="Every line that matches the filter, as CSV">Download CSV</a>
+      <a class="btn ghost op-sm push" href="{{ route('admin.audit.export', $exportQuery) }}" title="{{ __('Every line that matches the filter, as CSV') }}">{{ __('Download CSV') }}</a>
     @endunless
   </form>
 
   @if ($entries->isEmpty())
     <div class="bd"><p class="op-dim">
       @if ($filtered)
-        No lines match this filter. <a class="integration-link" href="{{ route('admin.audit') }}">Clear it</a> to see everything.
+        {{ __('No lines match this filter.') }} <a class="integration-link" href="{{ route('admin.audit') }}">{{ __('Clear it') }}</a> {{ __('to see everything.') }}
       @else
-        Nothing recorded yet. Changes made here or through the API appear on this page;
-        the automatic checks do not, because nobody made them.
+        {{ __('Nothing recorded yet. Changes made here or through the API appear on this page;
+        the automatic checks do not, because nobody made them.') }}
       @endif
     </p></div>
   @else
     <div class="scroll">
       <table class="op-table">
-        <thead><tr><th>When</th><th>Who</th><th>What</th><th>Change</th></tr></thead>
+        <thead><tr><th>{{ __('When') }}</th><th>{{ __('Who') }}</th><th>{{ __('What') }}</th><th>{{ __('Change') }}</th></tr></thead>
         <tbody>
         @foreach ($entries as $entry)
           <tr>
@@ -86,13 +86,13 @@
                     @if ($line['plain'])
                       {{ $line['to'] }}
                     @else
-                      @if ($line['from'] === null)<em class="op-dim">empty</em>@else<del>{{ $line['from'] }}</del>@endif
-                      <span aria-hidden="true">→</span><span class="sr-only">changed to</span>
-                      @if ($line['to'] === null)<em class="op-dim">empty</em>@else<ins>{{ $line['to'] }}</ins>@endif
+                      @if ($line['from'] === null)<em class="op-dim">{{ __('empty') }}</em>@else<del>{{ $line['from'] }}</del>@endif
+                      <span aria-hidden="true">→</span><span class="sr-only">{{ __('changed to') }}</span>
+                      @if ($line['to'] === null)<em class="op-dim">{{ __('empty') }}</em>@else<ins>{{ $line['to'] }}</ins>@endif
                     @endif
                   </span>
                 @empty
-                  <span class="op-dim">No field details</span>
+                  <span class="op-dim">{{ __('No field details') }}</span>
                 @endforelse
               </div>
             </td>
@@ -106,11 +106,11 @@
 </section>
 
 <x-note id="audit.record" style="margin-top:18px">
-  <p><b>This page is the record, not a backup.</b> Nothing here is edited or deleted from the
-  interface. Lines are pruned once they pass {{ $retentionDays }} days; change that under
-  <a href="{{ route('admin.settings') }}">Settings → General</a>.</p>
+  <p><b>{{ __('This page is the record, not a backup.') }}</b> {{ __('Nothing here is edited or deleted from the
+  interface. Lines are pruned once they pass') }} {{ $retentionDays }} {{ __('days; change that under') }}
+  <a href="{{ route('admin.settings') }}">{{ __('Settings → General') }}</a>.</p>
 
-  <p>Anyone who can open this page can read it, so treat it as what it is: a list of your components,
-  your integrations, and your colleagues' addresses.</p>
+  <p>{{ __('Anyone who can open this page can read it, so treat it as what it is: a list of your components,
+  your integrations, and your colleagues\' addresses.') }}</p>
 </x-note>
 @endsection

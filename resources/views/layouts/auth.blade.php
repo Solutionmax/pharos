@@ -28,10 +28,10 @@
       @yield('card')
     </div>
     <footer class="pa-foot">
-      <a href="{{ url('/') }}">Status page</a>
+      <a href="{{ url('/') }}">{{ __('Status page') }}</a>
       @unless ($whiteLabel)
-        <a href="{{ config('pharos.docs_url') }}" target="_blank" rel="noopener">Documentation</a>
-        <span>Powered by Pharos</span>
+        <a href="{{ config('pharos.docs_url') }}" target="_blank" rel="noopener">{{ __('Documentation') }}</a>
+        <span>{{ __('Powered by Pharos') }}</span>
       @endunless
     </footer>
   </section>
@@ -47,13 +47,13 @@
     </svg>
     {{-- Example hosts, not real ones: this page is public and shows no status. --}}
     <div class="pa-chips">
-      <div class="pa-chip pa-chip-keep" style="left:9%;top:14%"><i></i><div><b>web-01</b><span>HTTP check</span></div></div>
-      <div class="pa-chip" style="right:10%;top:24%;animation-delay:-2s"><i></i><div><b>mail</b><span>TCP port 993</span></div></div>
-      <div class="pa-chip" style="left:16%;bottom:24%;animation-delay:-4s"><i></i><div><b>backups</b><span>heartbeat</span></div></div>
+      <div class="pa-chip pa-chip-keep" style="left:9%;top:14%"><i></i><div><b>{{ __('web-01') }}</b><span>{{ __('HTTP check') }}</span></div></div>
+      <div class="pa-chip" style="right:10%;top:24%;animation-delay:-2s"><i></i><div><b>{{ __('mail') }}</b><span>{{ __('TCP port 993') }}</span></div></div>
+      <div class="pa-chip" style="left:16%;bottom:24%;animation-delay:-4s"><i></i><div><b>{{ __('backups') }}</b><span>{{ __('heartbeat') }}</span></div></div>
     </div>
     <div class="pa-cap">
-      <p class="pa-cap-line">Every check runs. <em>Every minute.</em></p>
-      <p class="pa-cap-kinds"><b>HTTP · TCP · heartbeat</b><span>kinds of checks</span></p>
+      <p class="pa-cap-line">{{ __('Every check runs.') }} <em>{{ __('Every minute.') }}</em></p>
+      <p class="pa-cap-kinds"><b>{{ __('HTTP · TCP · heartbeat') }}</b><span>{{ __('kinds of checks') }}</span></p>
     </div>
   </aside>
   @endif

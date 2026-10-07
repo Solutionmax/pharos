@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Mail\SubscribeConfirmMail;
+use App\Models\Component;
 use App\Models\Setting;
 use App\Models\Subscriber;
 use App\Models\User;
@@ -44,7 +45,7 @@ class LocalizationTest extends TestCase
     public function test_all_public_languages_render_and_api_status_names_stay_english(): void
     {
         User::factory()->create(['role' => UserRole::Admin]);
-        \App\Models\Component::create(['name' => 'Website', 'status' => 1, 'enabled' => true]);
+        Component::create(['name' => 'Website', 'status' => 1, 'enabled' => true]);
         foreach (['nl' => 'Alle systemen werken', 'de' => 'Alle Systeme funktionieren', 'es' => 'Todos los sistemas funcionan'] as $locale => $headline) {
             Setting::put('page.locale', $locale);
             $this->get('/')->assertOk()->assertSee('lang="'.$locale.'"', false)->assertSee($headline);
