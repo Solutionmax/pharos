@@ -25,17 +25,15 @@
 
 **A self-hosted status page that runs its own checks.**
 
-This branch contains the local `1.0.0-beta.1` preview. It adds DNS/keyword/TLS monitoring,
-remote probe quorum, latency charts, badges/RSS/incident pages/widgets, service subscriptions,
-monthly CSV/PDF reports, scoped API/Prometheus/Cachet import, four languages, remote backups
-and WebAuthn passkeys. See [the beta changelog](CHANGELOG.md) and
-[local hosting/Composer installation](docs/hosting-package.md). No public beta release has
-been published. Passkeys require an HTTPS hostname; live Plesk verification is pending.
+Pharos polls HTTP endpoints, TCP ports and DNS records, watches certificate expiry, listens
+for heartbeats from jobs it cannot see from outside, and sets component status without anyone
+pressing a button. A failing check opens an incident and posts the first update; a recovered
+check closes it and posts the closing update.
 
-Pharos polls HTTP endpoints and TCP
-ports, listens for heartbeats from jobs it cannot see from outside, and sets component status
-without anyone pressing a button. A failing check opens an incident and posts the first update;
-a recovered check closes it and posts the closing update.
+**1.0** adds DNS, keyword and certificate checks, remote probe locations that vote on a result,
+latency charts, badges, RSS, a page per incident and an embeddable widget, subscriptions per
+service, monthly CSV and PDF reports, Prometheus metrics, a Cachet 2.x importer, four interface
+languages, remote backups and passkeys. The [changelog](CHANGELOG.md) has the details.
 
 It is a PHP 8.3 application with SQLite or MySQL. Run it on compatible cPanel,
 DirectAdmin or Plesk hosting, another PHP host that meets the requirements, or in Docker.
@@ -58,14 +56,18 @@ and token header; incident creation needs changes. See the compatibility guide b
 
 | | |
 |---|---|
-| **Checks** | HTTP, TCP and heartbeat. Two failures turn a component red, three healthy checks in a row close the incident. |
+| **Checks** | HTTP (with optional expected text and a warning before the certificate expires), TCP, DNS (A, AAAA, CNAME, MX, TXT) and heartbeat. Two failures turn a component red, three healthy checks in a row close the incident. Optional remote probe locations vote on the result, and each service keeps a 24 hour latency chart. |
 | **Incidents** | Opened and closed by the checks themselves, or by hand. One incident can span several components, each with its own status. Templates with `{{variables}}` for the API. |
 | **Uptime** | Daily roll-ups into a 90-day bar and a percentage. Pharos measures the services it checks itself and counts the status that the API or Uptime Kuma reports for the others (marked as reported); services set by hand are not measured. Days without data are grey and left out of the average, never counted as green. |
 | **Public page** | Every section is a switch (banner, uptime bar, services, per-component bars, incident history, empty days, API link), per-service visibility, light and dark theme, and a live preview in the admin that renders the real page from values you have not saved yet. |
-| **Subscribers** | A *Get notified* button, double opt-in, one e-mail per incident update, one-click unsubscribe. The four mails are editable Markdown templates. |
-| **Integrations** | Cachet-shaped REST API for components and incidents, Uptime Kuma through a separately configured API workflow or heartbeat adapter, n8n in both directions with an HMAC-signed outgoing webhook, Zabbix and Grafana through the API, Slack and Discord webhooks, Telegram bot notifications, Signal through your own secured bridge. |
+| **Sharing** | SVG status badges per service or group, an RSS feed, a page per incident and a status widget you embed with one script tag. |
+| **Subscribers** | A *Get notified* button, double opt-in, one e-mail per incident update, one-click unsubscribe. Visitors follow every service or pick the ones they care about. The four mails are editable Markdown templates. |
+| **Reports** | Monthly uptime per service as a page, CSV or PDF, public or for the team. |
+| **Integrations** | Cachet-shaped REST API for components and incidents, Uptime Kuma through a separately configured API workflow or heartbeat adapter, n8n in both directions with an HMAC-signed outgoing webhook, Zabbix and Grafana through the API, Slack and Discord webhooks, Telegram bot notifications, Signal through your own secured bridge, Prometheus metrics, and an importer for Cachet 2.x history. |
 | **Updates** | Signed release manifests (Ed25519), one-click install from the admin with an automatic backup, rollback, download and retention. Docker hosts pull the image instead. |
-| **Users** | Per-user TOTP two-factor with recovery codes, OpenID Connect single sign-on, roles. |
+| **Users** | Per-user TOTP two-factor with recovery codes, passkeys, OpenID Connect single sign-on, roles. |
+| **Languages** | English, Dutch, German and Spanish, chosen per account and per public page, including mail and dates. |
+| **Backups** | A backup before every update, and optional daily copies to your own S3 or SFTP storage with encrypted credentials. |
 | **Audit log** | Who changed what and when, filterable, exportable as CSV, with a configurable retention. |
 | **Time zone** | Everything stored in UTC, shown in the zone you pick; change it any time. |
 
@@ -243,8 +245,8 @@ first run.
 
 #### A specific version
 
-Both installers take the newest release unless you pin one: `--version 0.7.0` on the command,
-or `pharos-install.php?version=0.7.0` in the browser. Every release on
+Both installers take the newest release unless you pin one: `--version 1.0.0` on the command,
+or `pharos-install.php?version=1.0.0` in the browser. Every release on
 [the releases page](https://pharos.solutionmax.net/releases/) also has a pre-pinned
 `pharos-install-<version>.php`. Pharos never downgrades by itself; use Roll back under Updates.
 
@@ -261,7 +263,7 @@ php artisan migrate --force && php artisan storage:link
 
 ### Docker
 
-The image is `ghcr.io/solutionmax/pharos`: one tag per release (`:0.7.0`) plus `:latest`,
+The image is `ghcr.io/solutionmax/pharos`: one tag per release (`:1.0.0`) plus `:latest`,
 built for `linux/amd64` and `linux/arm64` by GitHub Actions on every release tag.
 
 ```bash
@@ -287,7 +289,7 @@ after changing these values so generated links and redirects use HTTPS. Leave
 `TRUSTED_PROXIES` empty when connecting directly; do not trust arbitrary forwarded
 headers on a publicly reachable backend.
 
-Pin a release with `PHAROS_VERSION=0.7.0` in `.env`. To build the image from your own checkout
+Pin a release with `PHAROS_VERSION=1.0.0` in `.env`. To build the image from your own checkout
 instead of pulling it, `docker compose up -d --build`; the `build:` block in `compose.yaml` stamps
 the same version into the image.
 
@@ -313,22 +315,28 @@ scheduler.
 
 | Type | What it does | Good for |
 |---|---|---|
-| **HTTP** | Requests a URL, expects a status code | Websites, APIs, control panels |
+| **HTTP** | Requests a URL, expects a status code and, if you set one, a piece of text in the response. Warns before the certificate expires | Websites, APIs, control panels |
 | **TCP** | Opens a socket to host:port | Mail, databases, anything without HTTP |
+| **DNS** | Resolves an A, AAAA, CNAME, MX or TXT record and compares the answer | Domains, mail routing, records someone else can change |
 | **Heartbeat** | Waits for *your* job to call in; silence is the failure | Backups, cron scripts, anything you cannot poll from outside |
 
 A check has to fail twice before the component goes red, and has to succeed three times in a row
 before the incident closes. That is deliberate: one dropped packet should not publish an outage.
 
+Checks run from wherever Pharos runs. Add **probe locations** to have other Pharos installs run
+the same checks: a strict majority of locations decides, so one broken route does not publish an
+outage. See [docs/monitoring.md](docs/monitoring.md).
+
 ---
 
 ## Connecting it to what you already run
 
-The API is **Cachet-shaped**: components and incidents under `/api/v1`, the same
-`{"data": …}` envelope and status integers, and `X-Cachet-Token` accepted alongside
-`Authorization: Bearer`. Reads need no token. Not there: `ping`, `version`, component
-groups, metrics, subscribers and schedules. A Cachet client that starts with `/ping`
-will not find them.
+The API is **Cachet-shaped**: components, groups, incidents, maintenance windows and
+subscribers under `/api/v1`, the same `{"data": …}` envelope and status integers, and
+`X-Cachet-Token` accepted alongside `Authorization: Bearer`. Reading components and incidents
+needs no token. Not there: `version`, and Cachet's `schedules` path (maintenance windows live
+under `/maintenance`). Fields and limits are in
+[docs/public-features.md](docs/public-features.md#scoped-api-and-prometheus).
 
 ```bash
 curl -X POST https://status.example.com/api/v1/incidents \
@@ -347,12 +355,17 @@ curl -X POST https://status.example.com/api/v1/incidents \
 - **Zabbix and Grafana**: through the same API, no plugin needed
 - **Telegram**: bot notifications to a chat, group or channel; see [Telegram setup](docs/notifications.md#telegram-notifications)
 - **Slack**: an incoming webhook per incident update; see [docs/notifications.md](docs/notifications.md)
+- **Prometheus**: authenticated `/metrics` with status and uptime per service
+- **Cachet 2.x**: import groups, components, incidents and subscribers from a JSON export, with a preview first
 - **Anything else**: a token and a POST is the whole contract
 - **Your visitors**: a *Get notified* button on the status page; confirmed addresses get an
   e-mail per incident update, with one-click unsubscribe. See [docs/subscribers.md](docs/subscribers.md)
 
-Single sign-on and two-factor are covered in [docs/sso.md](docs/sso.md); how licence keys are
-issued and verified in [docs/licensing.md](docs/licensing.md).
+Checks, probe locations, web cron, remote backups and passkeys are covered in
+[docs/monitoring.md](docs/monitoring.md); badges, the feed, the widget, reports, the API and the
+Cachet importer in [docs/public-features.md](docs/public-features.md). Single sign-on and
+two-factor are covered in [docs/sso.md](docs/sso.md); how licence keys are issued and verified in
+[docs/licensing.md](docs/licensing.md).
 
 ---
 
@@ -378,10 +391,13 @@ The GitHub Releases here carry the same files as a mirror.
 
 Stated plainly rather than described as if it were finished:
 
-- **External probe locations.** Everything is checked from wherever Pharos runs, which is why
-  you should host it away from what it is watching.
-- **Cachet importer.** Moving from an existing Cachet install is manual for now; existing API
-  integrations must be checked against the supported endpoints and payloads.
+- **Verified Plesk support.** The procedure is written down in
+  [docs/hosting-package.md](docs/hosting-package.md#plesk), but it has not been run on a live
+  Plesk server yet. cPanel and DirectAdmin are the verified panels.
+- **Packagist.** Pharos is not published there. Install from the signed release zip, one of the
+  installers or the Docker image.
+- **Accounts for visitors.** A status page is public or it is not; there is no sign in for the
+  people who read it.
 
 ---
 

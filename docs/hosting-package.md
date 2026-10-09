@@ -1,12 +1,12 @@
 # Hosting package and Composer installation
 
-The local beta builder creates a flat hosting archive with production dependencies,
+`scripts/build-local-package.php` creates a flat hosting archive with production dependencies,
 an application `VERSION` file, SHA-256 checksums, `release-info.json`, a
 `pharos-latest.zip` alias and a local Composer repository (`packages.json`).
 
 ```sh
-php scripts/build-local-package.php 1.0.0-beta.1 /path/to/private/beta-output
-composer create-project --repository='{"type":"composer","url":"file:///path/to/private/beta-output/packages.json"}' --no-dev solutionmax/pharos pharos 1.0.0-beta.1
+php scripts/build-local-package.php 1.0.0 /path/to/private/output
+composer create-project --repository='{"type":"composer","url":"file:///path/to/private/output/packages.json"}' --no-dev solutionmax/pharos pharos 1.0.0
 ```
 
 The builder does not publish a release or register the project on Packagist.
