@@ -11,7 +11,7 @@ Open **Status pages** to create or edit a page. New pages have no copied service
 subscribers or branding and default to unpublished. The page selector opens explicit
 `/admin/pages/{id}/...` URLs, so separate browser tabs can manage different pages.
 
-![The Status pages screen with three cards: Harbor Logistics and Northwind Hosting published, Northwind Internal unpublished, each with its address, 90 day uptime, open incidents, subscribers and assigned users.](img/current-admin-pages.webp)
+![The Status pages screen with three cards: Harbor Logistics and Northwind Hosting published, Northwind Internal unpublished, each with its address, 90 day uptime, open incidents, subscribers and assigned users.](img/v1-admin-pages.webp)
 
 *Status pages as cards: live status, 90 day uptime, open incidents, subscribers and assigned users.*
 
@@ -45,7 +45,7 @@ screen. Existing assignments become **Editor** during upgrade. Use **Users → P
 access** to choose a different role for each page. Page access controls administration;
 it does not make a published status page private.
 
-![The Users screen: four accounts with their page roles (Page admin, Editor, Read only) per page, two factor state and last seen.](img/current-admin-users.webp)
+![The Users screen: four accounts with their page roles (Page admin, Editor, Read only) per page, two factor state and last seen.](img/v1-admin-users.webp)
 
 *Users with a role per page. The administrator holds all pages; the others only what they were given.*
 
@@ -65,9 +65,9 @@ Select the page before opening **Appearance** (Layout, Branding) or **Email** (D
 Each page has its own settings and uploaded images. Existing Brand Pack rights apply
 installation-wide; new pages start with Pharos defaults, not another customer's identity.
 
-![The Branding screen of the Harbor Logistics page: name, accent colour, logos for light and dark and the favicon, beside a live preview of the browser tab, both themes and the email header.](img/current-admin-branding.webp)
+![The Branding screen of the Harbor Logistics page: name, accent colour, logos for light and dark and the favicon, beside a live preview of the browser tab, both themes and the email header.](img/v1-admin-branding.webp)
 
-![The public page of Harbor Logistics with its own logo and green accent: all systems operational, a scheduled driver app API migration, two services and the incident history.](img/current-status-page-harbor.webp)
+![The public page of Harbor Logistics with its own logo and green accent: all systems operational, a scheduled driver app API migration, two services and the incident history.](img/v1-status-page-harbor.webp)
 
 *The same page in public: its own name, logo and colour, separate from Northwind Hosting.*
 
@@ -112,7 +112,7 @@ Uptime Kuma (`POST /api/v1/integrations/kuma/{component}`), scripts and heartbea
 shows counters and every delivery, filterable by destination, channel and result. The old
 `/admin/integrations` address redirects to the matching screen.
 
-![The Send out screen: add a destination in numbered steps (Slack, Microsoft Teams, Discord, Telegram, Signal or Generic JSON) and choose its moments, beside the destinations of this page with their health: working, failing or paused.](img/current-admin-integrations.webp)
+![The Send out screen: add a destination in numbered steps (Slack, Microsoft Teams, Discord, Telegram, Signal or Generic JSON) and choose its moments, beside the destinations of this page with their health: working, failing or paused.](img/v1-admin-integrations.webp)
 
 Notification destinations (including Slack), signing secrets, tokens, heartbeats and
 subscriber templates belong to that page only. Connecting Slack on the default page
@@ -137,7 +137,7 @@ chose Maintenance, sets the components to Under maintenance at the start and res
 previous status at the end unless someone changed it meanwhile. Cancelling stops the window
 and restores a running one. The public page shows upcoming and ongoing maintenance.
 
-![The Scheduled maintenance screen: a window for web-03 and web-04 starting in one day, announced 24 hours before, and a history with a completed nameserver update.](img/current-admin-maintenance.webp)
+![The Scheduled maintenance screen: a window for web-03 and web-04 starting in one day, announced 24 hours before, and a history with a completed nameserver update.](img/v1-admin-maintenance.webp)
 
 ## API tokens
 

@@ -75,40 +75,40 @@ and token header; incident creation needs changes. See the compatibility guide b
 
 ## What it looks like
 
-<img src="docs/img/current-status-page.webp" alt="The public status page: overall headline, a 90 day uptime bar, an upcoming maintenance window, services grouped into rows, and incidents listed per day." width="100%">
+<img src="docs/img/v1-status-page.webp" alt="The public status page: overall headline, a 90 day uptime bar, an upcoming maintenance window, services grouped into rows, and incidents listed per day." width="100%">
 
 <em>The public page. Every section on it is a switch on the Status page screen.</em>
 
-<img src="docs/img/current-admin-overview.webp" alt="The Overview of one status page: a partial outage banner with 11 of 12 components operational, tiles for 90 day uptime, open incidents, the last 30 days and subscribers, the 90 day availability bar, services and the open incident with its timeline." width="100%">
+<img src="docs/img/v1-admin-overview.webp" alt="The Overview of one status page: a partial outage banner with 11 of 12 components operational, tiles for 90 day uptime, open incidents, the last 30 days and subscribers, the 90 day availability bar, services and the open incident with its timeline." width="100%">
 
 <em>Overview. The first screen after sign in: what the public page says right now, the key
 figures, 90 days of availability and the open incident with its updates.</em>
 
-<img src="docs/img/current-admin-components.webp" alt="The Components screen grouped by service, with tiles showing what is down right now, average uptime, how many components Pharos checks and how many are set from outside." width="100%">
+<img src="docs/img/v1-admin-components.webp" alt="The Components screen grouped by service, with tiles showing what is down right now, average uptime, how many components Pharos checks and how many are set from outside." width="100%">
 
 <em>Components. The tiles answer “what is wrong right now” before the table does, including how
 many components still rely on someone noticing.</em>
 
-<img src="docs/img/current-admin-status-page.webp" alt="The Layout screen with one switch per section on the left and a live preview of the public page on the right, with a desktop and phone toggle." width="100%">
+<img src="docs/img/v1-admin-status-page.webp" alt="The Layout screen with one switch per section on the left and a live preview of the public page on the right, with a desktop and phone toggle." width="100%">
 
 <em>Status page. Tick a section off and it disappears from the preview beside it: the real page,
 rendered from values you have not saved yet.</em>
 
-<img src="docs/img/current-admin-incidents.webp" alt="The Incidents screen: open now, the last 30 days, typical time to resolve, the open incident with its timeline, and the history of resolved incidents." width="100%">
+<img src="docs/img/v1-admin-incidents.webp" alt="The Incidents screen: open now, the last 30 days, typical time to resolve, the open incident with its timeline, and the history of resolved incidents." width="100%">
 
 <em>Incidents. Each row says whether a check, the API or a person opened it.</em>
 
-<img src="docs/img/current-admin-maintenance.webp" alt="The Scheduled maintenance screen: a window for web-03 and web-04 starting in one day, announced 24 hours before, and a history with a completed nameserver update." width="100%">
+<img src="docs/img/v1-admin-maintenance.webp" alt="The Scheduled maintenance screen: a window for web-03 and web-04 starting in one day, announced 24 hours before, and a history with a completed nameserver update." width="100%">
 
 <em>Scheduled maintenance. Pick the components and the window; Pharos announces it ahead, sets
 them to Under maintenance at the start and puts them back at the end.</em>
 
-<img src="docs/img/current-admin-integrations.webp" alt="The Send out screen: add a destination in numbered steps (Slack, Microsoft Teams, Discord, Telegram, Signal or generic JSON), then the moments it receives, beside the list of destinations with their health." width="100%">
+<img src="docs/img/v1-admin-integrations.webp" alt="The Send out screen: add a destination in numbered steps (Slack, Microsoft Teams, Discord, Telegram, Signal or generic JSON), then the moments it receives, beside the list of destinations with their health." width="100%">
 
 <em>Send out. Add a destination in a few steps, choose which moments it receives, and see at a
 glance which one is working, failing or paused.</em>
 
-<img src="docs/img/current-admin-search.webp" alt="The search palette opened over the admin with the query web: six components, one incident and a maintenance window, each with its page and status." width="100%">
+<img src="docs/img/v1-admin-search.webp" alt="The search palette opened over the admin with the query web: six components, one incident and a maintenance window, each with its page and status." width="100%">
 
 <em>Search. Ctrl K or Cmd K finds pages, components, incidents, maintenance and admin screens,
 limited to the pages you hold a role on.</em>
@@ -118,15 +118,15 @@ limited to the pages you hold a role on.</em>
 One installation can run more than one status page, each with its own services, subscribers,
 branding, email and integrations, and a role per page for every user.
 
-<img src="docs/img/current-admin-pages.webp" alt="The Status pages screen with three cards: Harbor Logistics and Northwind Hosting published, Northwind Internal unpublished, each with its address, 90 day uptime, open incidents, subscribers and assigned users." width="100%">
+<img src="docs/img/v1-admin-pages.webp" alt="The Status pages screen with three cards: Harbor Logistics and Northwind Hosting published, Northwind Internal unpublished, each with its address, 90 day uptime, open incidents, subscribers and assigned users." width="100%">
 
 <em>Status pages. Each card shows the live status, 90 day uptime, open incidents and subscribers.</em>
 
-<img src="docs/img/current-status-page-harbor.webp" alt="The public page of Harbor Logistics with its own logo and green accent: all systems operational, a scheduled driver app API migration, two services and the incident history." width="100%">
+<img src="docs/img/v1-status-page-harbor.webp" alt="The public page of Harbor Logistics with its own logo and green accent: all systems operational, a scheduled driver app API migration, two services and the incident history." width="100%">
 
 <em>A second public page with its own brand, next to the Northwind one above.</em>
 
-<img src="docs/img/current-admin-updates.webp" alt="The Updates screen: installed version, available release, how this install updates, and the backups kept." width="100%">
+<img src="docs/img/v1-admin-updates.webp" alt="The Updates screen: installed version, available release, how this install updates, and the backups kept." width="100%">
 
 <em>Updates. Signed releases, one click, a backup before anything is written, and roll back if you
 change your mind.</em>
