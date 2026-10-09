@@ -11,7 +11,7 @@
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
         "@toast-ui/editor": "3.2.2",
-        "concurrently": "^10.0.3",
+        "concurrently": "^10.0.6",
         "dompurify": "3.4.15",
         "esbuild": "0.28.2",
         "laravel-vite-plugin": "^3.1",
