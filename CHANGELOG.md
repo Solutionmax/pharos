@@ -4,29 +4,31 @@ All notable changes to Pharos. The format follows [Keep a Changelog](https://kee
 versions follow [SemVer](https://semver.org/). The signed manifest at
 `https://pharos.solutionmax.net/releases/latest.json` points at the newest published release.
 
-## [1.0.0-beta.1] — local preview, 2026-10-07
-
-This preview is for the internal test installation. It is not a published release.
-
-### Added
-- TLS certificate expiry warnings, HTTP keyword checks, A/AAAA/CNAME/MX/TXT DNS checks, 24-hour latency charts and authenticated remote probe locations with quorum decisions.
-- Public SVG badges, RSS, individual incident pages, service subscriptions and a refreshable status widget.
-- Monthly CSV and PDF uptime reports, expanded scoped API endpoints, authenticated Prometheus metrics and transactional Cachet 2.x import with preview and replay protection.
-- Independent English, Dutch, German and Spanish preferences for accounts and public pages, including default mail, dates and validation messages.
-- Clean hosting archives with VERSION, readable local release metadata and a local Composer create-project repository. Plesk installation and rollback procedure; live Plesk verification still requires a test server.
-- Token-protected web cron, encrypted S3/SFTP backup destinations and verified WebAuthn passkeys. Passkeys require an HTTPS hostname; the HTTP test address keeps password login.
-
-### Security
-- Bound report/feed/import workloads; protect subscriber data with current page administrator authority; enforce probe issuer revocation, DNS pinning and SFTP host key verification.
-- Exclude overlapping started maintenance intervals from new uptime observations while retaining raw evidence and legacy totals. Include separately hosted public files in backups; restrict server diagnostics to installation administrators.
-
 ## [Unreleased]
 
+## [1.0.0] — 2026-10-09
+
 ### Added
+- Certificate expiry warnings and keyword checks on HTTP monitors, DNS checks for A, AAAA, CNAME, MX and TXT records, and a 24 hour latency chart per service.
+- Remote probe locations: other Pharos installs run the same checks and a strict majority decides, so one broken route does not publish an outage.
+- Public SVG badges, an RSS feed, a page per incident and a status widget to embed on another site.
+- Subscriptions per service: visitors follow every service or only the ones they pick.
+- Monthly uptime reports as a page, CSV and PDF.
+- More of the API: component groups, maintenance windows, subscribers, creating and deleting components, deleting incidents and `ping`, all also under `/api/v1/pages/{slug}`. Authenticated Prometheus metrics at `/metrics`.
+- A Cachet 2.x importer with a preview before anything is written. The same export cannot be imported twice into the same page.
+- English, Dutch, German and Spanish, chosen per account and per public page, including the default mail, dates and validation messages.
+- Passkeys for signing in. They need an HTTPS hostname; an install on plain HTTP or on an IP address keeps password sign in.
+- Remote backups to your own S3 or SFTP storage, with encrypted credentials and an upload that is downloaded again and checked.
+- A token protected web cron, as a fallback for hosts where a cron job is not available.
+- A flat hosting archive with a VERSION file and a local Composer repository, and a written procedure for installing and rolling back on Plesk. That procedure has not been run on a live Plesk server yet.
 - Uptime for services whose status is written from outside. Until now only the checks Pharos runs itself produced uptime, so a service fed through the API (Zabbix, n8n, a script) or by Uptime Kuma showed grey cells for ever. Every minute, Pharos now counts the time such a service spends in its reported status: Operational and Degraded performance count as up, Partial outage and Major outage count as down, and Under maintenance counts as neither, so maintenance is never an outage. A long gap, for example a stalled scheduler, is credited for at most two minutes. History starts with this update and earlier days stay grey. Services set by hand stay unmeasured and say "Not measured", and reported days are marked "reported" in the admin.
 - The first time the API or the Uptime Kuma endpoint writes a status for a service that has no enabled check of its own, Pharos marks the service as set from outside by itself, with the time and the API token that reported it. The service list shows "via" and the token name to people who may edit the page. A status set by hand in the admin changes nothing, and a service with its own check is left alone. The same goes for a status that comes in through an incident in the API (a components map, the Cachet component_id and component_status pair, an update, or the resolve that puts components back to Operational), so a service fed that way, as with Zabbix, gets its label and its uptime too. Services stored with the old source "api" now read "webhook".
-
 - The Components screen now says how much is watched at all: "Watched 47/47", with how many Pharos checks itself and how many are reported from outside, and next to it how many are set by hand. Before, "Checked by Pharos 13/47" read like a failing score while the other 34 were watched through the API.
+
+### Changed
+- A two factor code that was right but already used now says "That code has already been used. Wait for the next one." instead of "That code did not match." It still counts as a failed attempt.
+- The README no longer lists Plesk in the supported panels badge, and marks the Plesk install row as documented but not yet verified on a live Plesk server. cPanel and DirectAdmin are the verified hosts.
+- The README no longer links to the website source repository, which is not public.
 
 ### Fixed
 - Raw check results are now pruned once a day. The table grew for ever: about 140,000 rows and a 15 MB database after 33 days with five checks. Results older than 40 days go (set `PHAROS_CHECK_RESULT_DAYS` to change that), in small batches so the first run on a large table does not block the checks, and the newest result of every component always stays, so a paused check keeps its last run. Uptime figures and the 90 day bar come from the daily rollup and do not change. The beat strip on the component screen reads the last 40 runs; 40 days is what 40 runs of the slowest allowed interval (one day) need. An existing SQLite file does not shrink, it stops growing: the freed space is reused by new results.
@@ -34,12 +36,10 @@ This preview is for the internal test installation. It is not a published releas
 - The incident form no longer offers "Signed in users only". Pharos has no sign in for visitors, so it behaved exactly like "Internal: team only". Incidents stored with that value and API clients that still send `authenticated` keep working, and such an incident stays off the public page.
 
 ### Security
+- Bound report/feed/import workloads; protect subscriber data with current page administrator authority; enforce probe issuer revocation, DNS pinning and SFTP host key verification.
+- Exclude overlapping started maintenance intervals from new uptime observations while retaining raw evidence and legacy totals. Include separately hosted public files in backups; restrict server diagnostics to installation administrators.
 - Incident messages and update messages are limited to 20,000 characters, in the admin and in the API (a longer one is refused with a validation error, 422 in the API). They were unbounded and are rendered as Markdown on every page view, so one multi megabyte message could make every view slow. Messages already stored keep rendering as before.
 - Updated `laravel/framework` to 12.69.3 (XSS in the debug page, CVE-2026-102279) and `league/commonmark` to 2.10.3 (a bypass of the disallowed raw HTML filter and a quadratic time denial of service in the table extension). `composer audit` reports no advisories again.
-
-### Changed
-- The README no longer lists Plesk in the supported panels badge, and marks the Plesk install row as documented but not yet verified on a live Plesk server. cPanel and DirectAdmin are the verified hosts.
-- The README no longer links to the website source repository, which is not public.
 
 ## [0.7.2] — 2026-10-04
 
