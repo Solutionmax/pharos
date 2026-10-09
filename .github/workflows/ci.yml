@@ -15,7 +15,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, sodium, sqlite3, pdo_sqlite, zip
+          extensions: mbstring, sodium, sqlite3, pdo_sqlite, zip, gd, dom, curl, fileinfo
           coverage: none
 
       - name: Install dependencies
@@ -32,6 +32,10 @@ jobs:
           cp .env.example .env
           php artisan key:generate
           touch database/database.sqlite
+
+      # the report tests read the generated PDF back with pdftotext and pdffonts
+      - name: PDF tools for the report tests
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
 
       - name: Tests (PHPUnit)
         run: php artisan test --compact
