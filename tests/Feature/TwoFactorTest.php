@@ -138,7 +138,8 @@ class TwoFactorTest extends TestCase
         $this->enrol();
 
         $this->post('/admin/login', ['email' => 'raymon@example.com', 'password' => 'correct-horse-battery']);
-        $this->post('/admin/two-factor', ['code' => '000000'])->assertSessionHasErrors('code');
+        $this->post('/admin/two-factor', ['code' => '000000'])
+            ->assertSessionHasErrors(['code' => 'That code did not match.']);
 
         $this->assertGuest();
     }
@@ -174,6 +175,47 @@ class TwoFactorTest extends TestCase
         $this->post('/admin/two-factor', ['code' => $code])->assertSessionHasErrors('code');
 
         $this->assertGuest();
+    }
+
+    /** The code was right, only spent: "did not match" sends the owner looking for a typo that is not there. */
+    public function test_a_used_code_is_told_apart_from_a_wrong_one(): void
+    {
+        $secret = $this->enrol();
+        $code = $this->code($secret);
+
+        $this->post('/admin/login', ['email' => 'raymon@example.com', 'password' => 'correct-horse-battery']);
+        $this->post('/admin/two-factor', ['code' => $code]);
+        $this->post('/admin/logout');
+
+        $this->post('/admin/login', ['email' => 'raymon@example.com', 'password' => 'correct-horse-battery']);
+        $this->post('/admin/two-factor', ['code' => $code])
+            ->assertSessionHasErrors(['code' => 'That code has already been used. Wait for the next one.']);
+
+        $this->assertGuest();
+        $this->assertDatabaseHas('audit_log', ['action' => 'auth.2fa_failed']);
+    }
+
+    /** A clearer message must not become a way to keep trying: a spent code is still a failed attempt. */
+    public function test_a_used_code_still_counts_against_the_throttle(): void
+    {
+        $secret = $this->enrol();
+        $code = $this->code($secret);
+
+        $this->post('/admin/login', ['email' => 'raymon@example.com', 'password' => 'correct-horse-battery']);
+        $this->post('/admin/two-factor', ['code' => $code]);
+        $this->post('/admin/logout');
+
+        $this->post('/admin/login', ['email' => 'raymon@example.com', 'password' => 'correct-horse-battery']);
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/admin/two-factor', ['code' => $code]);
+        }
+
+        // The sixth is stopped by the limiter before it is judged, so it leaves no failed attempt behind.
+        $this->post('/admin/two-factor', ['code' => $code])->assertSessionHasErrors('code');
+
+        $this->assertGuest();
+        $this->assertSame(5, AuditEntry::where('action', 'auth.2fa_failed')->count());
     }
 
     // ---------- recovery ----------

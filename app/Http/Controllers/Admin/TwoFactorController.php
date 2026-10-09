@@ -71,7 +71,12 @@ class TwoFactorController extends Controller
         RateLimiter::hit($key, 300);
         Audit::recordAs($user->email, 'auth.2fa_failed');
 
-        throw ValidationException::withMessages(['code' => 'That code did not match.']);
+        // A right code that is already spent: say so, or the owner hunts for a typo that is not there.
+        $spent = $this->totp->verify($user->totp_secret, $code) !== null;
+
+        throw ValidationException::withMessages([
+            'code' => $spent ? 'That code has already been used. Wait for the next one.' : 'That code did not match.',
+        ]);
     }
 
     protected function signIn(Request $request, User $user)
