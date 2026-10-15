@@ -6,6 +6,12 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-10-15
+
+### Changed
+- Laravel 12.70.0, with the matching Symfony 7.4 components.
+- DOMPurify 3.4.17 in the editor: the HTML that editors paste is cleaned with several upstream hardening fixes.
+
 ## [1.0.0] — 2026-10-09
 
 ### Added
