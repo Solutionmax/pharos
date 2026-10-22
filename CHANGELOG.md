@@ -6,11 +6,18 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
-## [1.0.1] — 2026-10-15
+## [1.0.1] — 2026-10-22
+
+### Security
+- The Docker image now runs PHP 8.5.12 instead of PHP 8.3. PHP 8.5.12, 8.4.27 and 8.3.36, released on 21 October 2026, fix two critical vulnerabilities (CVE-2026-109618 and CVE-2026-109619) that allow remote code execution without signing in; the PHP team rates Apache with mod_php, which the image uses, as the most exposed. Docker installs get the fix by pulling this image. On cPanel, DirectAdmin or Plesk, Pharos runs on the PHP of your host: make sure it is one of those versions or newer.
 
 ### Changed
 - Laravel 12.70.0, with the matching Symfony 7.4 components.
 - DOMPurify 3.4.17 in the editor: the HTML that editors paste is cleaned with several upstream hardening fixes.
+- Every change is now tested on PHP 8.3, the lowest version Pharos supports, and on PHP 8.5.
+
+### Fixed
+- The subscriber and audit log CSV exports and the webhook delivery log no longer raise deprecation notices on PHP 8.5. A quote that follows a backslash in those exports is now doubled like any other quote (RFC 4180), as the monthly report CSV already did, so a spreadsheet reads the cell back as it was typed.
 
 ## [1.0.0] — 2026-10-09
 

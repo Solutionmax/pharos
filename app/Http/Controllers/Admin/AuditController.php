@@ -56,14 +56,14 @@ class AuditController extends Controller
         return response()->streamDownload(fn () => Clock::withZone($zone, function () use ($filters, $zone) {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF"); // BOM: Excel then reads the arrows and dashes as UTF-8
-            fputcsv($out, ["when ($zone)", 'actor', 'ip', 'action', 'subject', 'changes']);
+            fputcsv($out, ["when ($zone)", 'actor', 'ip', 'action', 'subject', 'changes'], ',', '"', '');
 
             $this->query($filters)->chunkById(500, function ($rows) use ($out) {
                 foreach ($rows as $e) {
                     $changes = collect($e->changes ?? [])
                         ->map(fn ($c, $field) => is_array($c) ? $field.': '.($c['from'] ?? 'empty').' → '.($c['to'] ?? 'empty') : $field.': '.$c)
                         ->implode('; ');
-                    fputcsv($out, array_map(Csv::cell(...), [$e->created_at->toIso8601String(), $e->actor, $e->ip, $e->action, $e->subject_label, $changes]));
+                    fputcsv($out, array_map(Csv::cell(...), [$e->created_at->toIso8601String(), $e->actor, $e->ip, $e->action, $e->subject_label, $changes]), ',', '"', '');
                 }
             }, 'id');
 

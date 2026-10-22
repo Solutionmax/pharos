@@ -46,8 +46,8 @@
         @endphp
         <tr>
           <td class="num" style="white-space:nowrap">{{ $delivery->created_at?->setTimezone(\App\Services\Clock::timezone())->translatedFormat('j M H:i') }}</td>
-          <td>{{ \App\Models\WebhookEndpoint::EVENTS[$delivery->event] ?? __('Incident event') }}</td>
-          <td><b>{{ $delivery->endpoint?->label ?? __('Removed') }}</b><div class="op-dim">{{ $channels[$delivery->endpoint?->format] ?? '' }}</div></td>
+          <td>{{ \App\Models\WebhookEndpoint::EVENTS[$delivery->event ?? ''] ?? __('Incident event') }}</td>
+          <td><b>{{ $delivery->endpoint?->label ?? __('Removed') }}</b><div class="op-dim">{{ $channels[$delivery->endpoint?->format ?? ''] ?? '' }}</div></td>
           <td class="num hide-sm">{{ $delivery->attempts }}</td>
           <td><span class="ix-state {{ $tone }}">{{ $word }}{{ $delivery->last_status && ! $delivery->sent_at ? ' · '.$delivery->last_status : '' }}</span>
             @if ($canEditIntegrations && $delivery->error && ! $delivery->sent_at)<div class="op-dim" style="margin-top:3px">{{ $delivery->error }}</div>@endif</td>

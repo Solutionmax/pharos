@@ -7,14 +7,18 @@ on:
 
 jobs:
   check:
-    name: Pint · PHPStan · PHPUnit · audit
+    name: Pint · PHPStan · PHPUnit · audit (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
+    # the lowest PHP the hosting package supports, and the one the Docker image runs
+    strategy:
+      matrix:
+        php: ['8.3', '8.5']
     steps:
       - uses: actions/checkout@v4
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: ${{ matrix.php }}
           extensions: mbstring, sodium, sqlite3, pdo_sqlite, zip, gd, dom, curl, fileinfo
           coverage: none
 

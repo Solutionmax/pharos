@@ -272,13 +272,13 @@ cd pharos
 cp .env.docker.example .env
 
 # an application key is required; generate one and put it in .env as APP_KEY=
-docker run --rm php:8.3-cli php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
+docker run --rm php:8.5-cli php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
 
 docker compose up -d
 ```
 
 `up` pulls the tagged image, or builds it from this checkout when the registry cannot be
-reached. Two containers from one image: the application on `php:8.3-apache` (port `8080` by
+reached. Two containers from one image: the application on `php:8.5-apache` (port `8080` by
 default, change `PHAROS_PORT` in `.env`), and a second one running `php artisan schedule:work`.
 The database is SQLite on a volume; point `DB_CONNECTION` at MySQL if you prefer.
 

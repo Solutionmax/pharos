@@ -100,11 +100,11 @@ class SubscriberController extends Controller
         return response()->streamDownload(fn () => Clock::withZone($zone, function () {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF"); // BOM: Excel then reads the arrows and dashes as UTF-8
-            fputcsv($out, ['email', 'subscribed_at']);
+            fputcsv($out, ['email', 'subscribed_at'], ',', '"', '');
 
             Subscriber::active()->chunkById(500, function ($rows) use ($out) {
                 foreach ($rows as $s) {
-                    fputcsv($out, [Csv::cell($s->email), $s->verified_at->toIso8601String()]);
+                    fputcsv($out, [Csv::cell($s->email), $s->verified_at->toIso8601String()], ',', '"', '');
                 }
             });
 

@@ -1,18 +1,18 @@
 # Apache with mod_php, not because it is fashionable but because it is the same
 # shape as the shared hosting this has to run on. One image, one process.
-FROM php:8.3-apache
+FROM php:8.5-apache
 
 # Passed by CI from the git tag, so the running app knows its own version.
 ARG VERSION=0.5.6
 ENV PHAROS_VERSION=${VERSION}
 
 # unzip is not in the base image, and without it composer cannot unpack a single
-# package from dist.
+# package from dist. OPcache is part of PHP itself since 8.5; the ini below tunes it.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends unzip libzip-dev \
  && rm -rf /var/lib/apt/lists/* \
  && a2enmod rewrite \
- && docker-php-ext-install -j"$(nproc)" pdo_mysql opcache bcmath zip \
+ && docker-php-ext-install -j"$(nproc)" pdo_mysql bcmath zip \
  && printf 'opcache.enable=1\nopcache.validate_timestamps=0\nopcache.memory_consumption=128\n' \
     > /usr/local/etc/php/conf.d/opcache.ini \
  && printf 'expose_php=Off\n' > /usr/local/etc/php/conf.d/hardening.ini

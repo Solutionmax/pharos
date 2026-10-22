@@ -30,7 +30,7 @@ class MonthlyReportTest extends TestCase
         $this->get('/reports?month=2026-09')->assertOk()->assertSee('95.00%')->assertSee('UTC')->assertDontSee('SECRET')->assertSee('Historical daily totals may include maintenance observations.');
         $csv = $this->get('/reports.csv?month=2026-09')->assertOk();
         $csv->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $rows = array_map('str_getcsv', explode("\n", trim($csv->getContent())));
+        $rows = array_map(fn (string $line) => str_getcsv($line, ',', '"', ''), explode("\n", trim($csv->getContent())));
         $this->assertSame("'=1+1", $rows[1][0]);
         $this->assertSame('1140', $rows[1][1]);
         $this->assertSame('60', $rows[1][2]);

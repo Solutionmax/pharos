@@ -234,6 +234,19 @@ class AuditTest extends TestCase
         $this->assertDatabaseHas('audit_log', ['created_at' => '2026-08-28 08:24:00']);
     }
 
+    /** RFC 4180: a quote is doubled, also after a backslash, so a spreadsheet reads the cell back as typed. */
+    public function test_the_csv_quotes_a_backslash_before_a_quote_the_standard_way(): void
+    {
+        $user = $this->admin();
+        AuditEntry::create(['actor' => 'Anita', 'action' => 'component.updated', 'subject_label' => 'C:\\"web"', 'changes' => [], 'created_at' => now()]);
+
+        $csv = $this->actingAs($user)->get(route('admin.audit.export'))->streamedContent();
+
+        $this->assertStringContainsString(',"C:\\""web"""', $csv);
+        $row = str_getcsv(explode("\n", trim($csv))[1], ',', '"', '');
+        $this->assertSame('C:\\"web"', $row[4]);
+    }
+
     /** A backup line stores a plain name, not a from/to pair; it must not read as "— → —". */
     public function test_a_plain_value_change_is_shown_as_is_on_the_page_and_in_the_csv(): void
     {
