@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\StatusPage;
 use App\Models\User;
 use App\Support\AdminMenu;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -59,7 +60,7 @@ class NavLayoutTest extends TestCase
     {
         // A viewer on the default page: no Setup tab, no page administration screens, in either menu.
         $viewer = User::factory()->create(['role' => UserRole::User]);
-        $viewer->statusPages()->attach(\App\Models\StatusPage::default()->id, ['role' => 'viewer']);
+        $viewer->statusPages()->attach(StatusPage::default()->id, ['role' => 'viewer']);
 
         $html = $this->actingAs($viewer)->get('/admin/overview')->assertOk()->getContent();
         $dom = new \DOMDocument;
