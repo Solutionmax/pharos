@@ -55,6 +55,26 @@ class NavLayoutTest extends TestCase
         $this->assertSame(['Services', 'Components*', 'Probe locations'], $labels);
     }
 
+    public function test_the_top_bar_hides_what_the_sidebar_hides(): void
+    {
+        // A viewer on the default page: no Setup tab, no page administration screens, in either menu.
+        $viewer = User::factory()->create(['role' => UserRole::User]);
+        $viewer->statusPages()->attach(\App\Models\StatusPage::default()->id, ['role' => 'viewer']);
+
+        $html = $this->actingAs($viewer)->get('/admin/overview')->assertOk()->getContent();
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($html);
+        $xpath = new \DOMXPath($dom);
+        $tabs = [];
+        foreach ($xpath->query('//header[@class="topnav"]//nav[contains(@class,"tabs")]//a') as $a) {
+            $tabs[] = trim($a->textContent);
+        }
+        $this->assertNotContains('Setup', $tabs);
+        $this->assertNotContains('Appearance', $tabs);
+        $this->assertStringNotContainsString(route('admin.integrations.tokens'), $html);
+        $this->assertStringNotContainsString(route('admin.users'), $html);
+    }
+
     public function test_a_signed_out_screen_has_no_layout_script(): void
     {
         User::factory()->create(['role' => UserRole::Admin]);
