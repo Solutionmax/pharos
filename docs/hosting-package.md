@@ -5,8 +5,8 @@ an application `VERSION` file, SHA-256 checksums, `release-info.json`, a
 `pharos-latest.zip` alias and a local Composer repository (`packages.json`).
 
 ```sh
-php scripts/build-local-package.php 1.0.1 /path/to/private/output
-composer create-project --repository='{"type":"composer","url":"file:///path/to/private/output/packages.json"}' --no-dev solutionmax/pharos pharos 1.0.1
+php scripts/build-local-package.php 1.1.0 /path/to/private/output
+composer create-project --repository='{"type":"composer","url":"file:///path/to/private/output/packages.json"}' --no-dev solutionmax/pharos pharos 1.1.0
 ```
 
 The builder does not publish a release or register the project on Packagist.

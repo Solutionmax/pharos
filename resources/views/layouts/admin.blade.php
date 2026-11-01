@@ -482,7 +482,9 @@ document.addEventListener('click', function (event) {
 @endif
 @if (session('theme_saved'))
 {{-- A saved preference replaces whatever the quick toggles remembered in this browser. --}}
-<script>try { localStorage.removeItem('pharos-theme'); localStorage.removeItem('pharos-layout'); } catch (e) {}</script>
+<script>try { localStorage.removeItem('pharos-theme'); localStorage.removeItem('pharos-layout'); } catch (e) {}
+// The early script may have painted the browser's old quick choice; the saved preference wins from here.
+document.documentElement.setAttribute('data-layout', @json($navLayout));</script>
 @endif
 @include('partials.theme-script', ['theme' => $adminTheme])
 <script defer src="{{ asset('assets/pharos-v06.js') }}?v={{ @filemtime(public_path('assets/pharos-v06.js')) }}"></script>

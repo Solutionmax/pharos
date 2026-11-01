@@ -11,10 +11,14 @@
     @include('partials.page-selector', ['viewPages' => false])
     <nav class="tabs" aria-label="{{ __('Sections') }}">
       @foreach ($sections as $section)
-        <a href="{{ $section['url'] }}" @if ($section['active']) aria-current="page" @endif>{{ __($section['label']) }}</a>
+        {{-- "true", not "page": the screen itself is marked on the second row, and a reader should hear one current page. --}}
+        <a href="{{ $section['url'] }}" @if ($section['active']) aria-current="true" @endif>{{ __($section['label']) }}</a>
       @endforeach
     </nav>
     <div class="right">
+      @if ($selectedPage?->is_published)
+        <a class="iconbtn" href="{{ $selectedPage->publicUrl() }}" target="_blank" rel="noopener" title="{{ __('View status page') }}" aria-label="{{ __('View status page') }}">@include('partials.icon', ['name' => 'external', 'size' => 16])</a>
+      @endif
       <button type="button" class="navsearch" data-search-open aria-haspopup="dialog" aria-controls="pharos-search">
         @include('partials.icon', ['name' => 'search', 'size' => 15])
         <span>{{ __('Search') }}</span>

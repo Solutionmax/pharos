@@ -149,8 +149,8 @@ html[data-layout="topbar"] .main{max-width:1280px;margin:0 auto;padding:32px 32p
 .topnav .tabs{display:flex;align-self:stretch;gap:2px;margin-left:6px}
 .topnav .tabs a{position:relative;display:flex;align-items:center;padding:0 12px;font-size:13.5px;font-weight:500;color:var(--ink-2);text-decoration:none;white-space:nowrap}
 .topnav .tabs a:hover{color:var(--ink)}
-.topnav .tabs a[aria-current="page"]{color:var(--ink);font-weight:600}
-.topnav .tabs a[aria-current="page"]::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:var(--brand);border-radius:2px 2px 0 0}
+.topnav .tabs a[aria-current]{color:var(--ink);font-weight:600}
+.topnav .tabs a[aria-current]::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:var(--brand);border-radius:2px 2px 0 0}
 .topnav .right{margin-left:auto;display:flex;align-items:center;gap:6px}
 .topnav .right form{margin:0}
 .topnav .navsearch{order:0;margin:0;width:auto;border:1px solid var(--line);border-radius:8px;padding:6px 9px;gap:8px}
@@ -164,6 +164,14 @@ html[data-layout="topbar"] .main{max-width:1280px;margin:0 auto;padding:32px 32p
 .topnav .subrow a:hover{color:var(--ink)}
 .topnav .subrow a[aria-current="page"]{color:var(--brand);font-weight:600}
 .topnav .subrow a[aria-current="page"]::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:var(--brand)}
+/* A narrow desktop: the search keeps its icon, the tabs sit closer, the page picker keeps only its name. */
+@media(max-width:1180px){
+  .topnav .row{gap:10px;padding:0 20px}
+  .topnav .navsearch span,.topnav .navsearch kbd{display:none}
+  .topnav .tabs a{padding:0 9px}
+  .topnav .tabs a[aria-current]::after{left:9px;right:9px}
+  .topnav .page-switcher>summary .page-title{max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
 /* A phone always gets the drawer: six tabs do not fit. */
 @media(max-width:900px){
   html[data-layout="topbar"] .topnav{display:none}

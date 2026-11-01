@@ -6,6 +6,18 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-11-01
+
+### Added
+- The admin menu can sit in the sidebar, as before, or in a top bar with six sections (Overview, Services, Incidents, Audience, Appearance, Setup) and the screens of the open section on a second row. Choose under Profile, Preferences, next to Theme. Every screen also has a quick switch next to the theme switch; like the theme, that choice is remembered in the browser until you save a preference. On a phone the menu stays a drawer. Both menus follow the same rules, so a user never sees a screen in one that the other would hide.
+
+### Changed
+- A calmer admin: thin lines instead of boxed cards, the numbers of a screen in one row instead of tiles, a status as a dot and a word instead of a coloured pill, grey icons with one accent colour, a compact page picker and no banner repeating which page you are on. The information is the same; the screens are quieter.
+
+### Security
+- symfony/mime 7.4.22 closes CVE-2026-45070 (header injection through characters in a MIME parameter name).
+- vite 8.3.5 in the development tooling; not part of a release.
+
 ## [1.0.1] — 2026-10-22
 
 ### Security
