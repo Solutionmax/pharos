@@ -1,0 +1,174 @@
+/* Pharos admin, the calm pass (Nov 2026). Loaded after every other admin
+   stylesheet and overrides it: hairlines instead of cards, one accent colour,
+   grey icons, numbers in a row instead of tiles, and the top bar layout.
+   Tokens come from partials/tokens.blade.php, so dark needs no rules here.
+   ponytail: an override sheet rather than edits in four stylesheets; fold it
+   into pharos-ui.css once the old look is gone for good. */
+
+/* ---------- sidebar ---------- */
+.side{padding:18px 14px 14px}
+.side .brand{padding:4px 8px 14px}
+.side .lbl{padding:14px 10px 6px}
+.nav{height:34px;padding:0 10px;border-radius:8px;font-size:13.5px}
+.nav svg{opacity:1;color:var(--ink-3)}
+.nav:hover svg{color:var(--ink)}
+.nav[aria-current="page"]{background:none;color:var(--brand)}
+.nav[aria-current="page"] svg{color:var(--brand)}
+.nav.nav-sub{height:30px;padding:0 11px;font-size:13px}
+.nav.nav-sub[aria-current="page"]{background:var(--brand-soft)}
+.nav.nav-sub[aria-current="page"]::before{display:none}
+.navgroup .chev{opacity:1;color:var(--unknown)}
+.navgroup.has-current>.nav-parent{color:var(--ink-2);font-weight:500}
+.navgroup .navkids{margin:2px 0 6px 17px;padding-left:8px}
+/* Search sits with the profile at the bottom, the way the mockup has it. */
+.navsearch{order:5;margin:auto 0 2px;border:0;background:none;padding:8px 10px}
+.navsearch:hover{background:var(--bg-tint);border-color:transparent}
+.side .bottom{order:6;margin-top:0}
+.side .bottom .nav{height:32px;font-size:13px}
+.whorow{padding:8px 10px}
+
+/* The page picker as one row: a dot, the name, a caret. Tag, state and note
+   only show inside the open list. */
+.page-switcher{margin:0 0 6px;background:var(--bg);border-radius:9px;box-shadow:none}
+.page-switcher>summary{padding:8px 10px;align-items:center;gap:9px}
+.page-switcher>summary>svg{display:none}
+.page-switcher>summary .page-name{display:flex;align-items:center;gap:8px;min-width:0}
+.page-switcher>summary .page-title{display:block;-webkit-line-clamp:1;font-weight:600;font-size:13px}
+.page-switcher>summary .page-tag,.page-switcher>summary .page-state,.page-switcher>summary .page-note{display:none}
+.page-switcher>summary .summary-dot{margin:0}
+.page-switcher>summary::after{color:var(--ink-3)}
+.page-switcher .page-options .nav{height:auto;padding:8px}
+
+/* ---------- head ---------- */
+.head{margin-bottom:22px}
+.head .act{gap:8px}
+.theme-toggle,.layout-toggle{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);color:var(--ink-3);background:var(--card);flex:none;transition:.15s var(--ease)}
+.theme-toggle:hover,.layout-toggle:hover{color:var(--ink);border-color:var(--ink-3)}
+/* The layout toggle shows the layout you would switch to. */
+[data-icon="to-sidebar"]{display:none}
+html[data-layout="topbar"] [data-icon="to-topbar"]{display:none}
+html[data-layout="topbar"] [data-icon="to-sidebar"]{display:block}
+
+/* ---------- the context banner is one quiet line ---------- */
+.page-context{padding:0;margin:-10px 0 18px;border:0;border-radius:0;background:none}
+.page-context h2{font-size:13.5px;font-weight:600;margin:0;color:var(--ink-2)}
+.page-context .page-tag,.page-context p{display:none}
+
+/* ---------- panels: hairlines, no boxes ---------- */
+.panel{border:0;border-radius:0;box-shadow:none;background:none}
+.panel-hd{padding:14px 0 10px}
+.panel-bd{padding:18px 0}
+.panel+.panel{margin-top:26px}
+.scroll{border-radius:0}
+.filters{padding:12px 0;background:none}
+.filters input[type=text]{background:var(--card)}
+th{padding:12px 12px 10px;background:var(--bg)}
+td{padding:12px}
+th:first-child,td:first-child{padding-left:0}
+th:last-child,td:last-child{padding-right:0}
+.tiles{gap:0;padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.tile{border:0;border-left:1px solid var(--line);border-radius:0;background:none;box-shadow:none;padding:0 22px}
+.tile:first-child{border-left:0;padding-left:0}
+.tile .v{font-size:22px}
+
+/* A status is a dot and a word, not a coloured pill. */
+.pill{background:none!important;border:0;padding:0;font-weight:600;font-size:13px}
+.pill::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-right:7px;vertical-align:1px}
+.pill.off{color:var(--ink-3)}
+.rowacts a,.rowacts button{border-color:transparent;color:var(--ink-3);padding:5px 8px}
+.rowacts a:hover{border-color:var(--line);background:none;color:var(--ink)}
+.rowacts button:hover{border-color:var(--red)}
+
+/* ---------- Overview ---------- */
+.ov{gap:0}
+.ov-hero{display:flex;flex-wrap:wrap;align-items:center;gap:6px 28px;padding:20px 0;margin-top:4px;
+  border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0;background:none;overflow:visible}
+.ov-hero::before,.ov-hero::after{display:none}
+.ov-hero>div:first-child{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;flex:1;min-width:0}
+.ov-hero h2{display:inline-flex;align-items:center;gap:10px;font-size:22px;margin:0;line-height:1.3}
+.ov-hero h2::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--st);flex:none}
+.ov-hero p{font-size:13.5px;margin:0}
+.ov-state{order:3;flex-basis:100%;padding:0;margin-top:2px;background:none;border:0;color:var(--ink-3)}
+.ov-pulse{display:none}
+.ov-meta{flex-basis:100%;margin-top:0;font-size:12.5px}
+.ov-ring{width:64px;height:64px;flex:none}
+.ov-ring svg{width:64px;height:64px}
+.ov-ring .c{display:none}
+.ov-kpis{gap:0;padding:16px 0;border-bottom:1px solid var(--line)}
+.ov-kpi{border:0;border-left:1px solid var(--line);border-radius:0;background:none;padding:0 22px;box-shadow:none;transition:none}
+.ov-kpi:first-child{border-left:0;padding-left:0}
+.ov-kpi:hover{transform:none;box-shadow:none}
+.ov-kpi .v{font-size:22px}
+.ov-kpi svg{display:none}
+.ov-grid{gap:48px;margin-top:26px}
+.ov-col{gap:30px}
+.ov-card{border:0;border-radius:0;background:none}
+.ov-card>header{padding:0}
+.ov-card>header h3{font-size:14.5px}
+.ov-card>header h3::before{content:"";display:inline-block;width:3px;height:13px;border-radius:2px;background:var(--brand);margin-right:9px;vertical-align:-1px}
+.ov-card>.bd{padding:10px 0 0}
+.ov-row{padding:11px 0}
+.ov-src{border:0;padding:0}
+.ov-pills{gap:12px}
+.ov-pill{background:none;border:0;padding:0;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--ink-3)}
+.ov-pill.st{background:none;color:var(--orange-ink)}
+.ov-ready>.bd{padding-top:12px}
+
+/* ---------- Components and the other op- screens ---------- */
+.op-kpis,.ix-kpis{gap:0;padding:14px 0;margin-bottom:8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.op-kpi,.ix-kpi{border:0;border-left:1px solid var(--line);border-radius:0;background:none;padding:0 22px;box-shadow:none;transition:none}
+.op-kpi:first-child,.ix-kpi:first-child{border-left:0;padding-left:0}
+a.op-kpi:hover{transform:none;box-shadow:none}
+.op-kpi .v,.ix-kpi .v{font-size:22px}
+.op-card{border:0;border-radius:0;background:none;box-shadow:none}
+.op-card>header{padding:12px 0 6px}
+.op-filters{padding:12px 0}
+.op-svc{border-top:0}
+.op-svc-hd{background:none;padding:20px 0 4px}
+.op-svc-hd h4{font-family:var(--mono);font-size:9.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.op-row{padding:12px 0}
+.op-pill[class*="st-"]{background:none;border:0;padding:0;color:var(--ink-2);font-weight:500}
+.op-src-tag,.op-src-tag.auto,.op-src-tag.ext{background:none;border:0;padding:0;border-radius:0;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.02em;color:var(--ink-3)}
+.op-src-tag svg{display:none}
+.op-status select{background-color:transparent;color:var(--st-ink);border:1px solid transparent;border-radius:7px;padding:5px 26px 5px 8px;font-weight:600}
+.op-status select:hover{border-color:var(--line);background-color:var(--card)}
+.op-table td,.op-table th,.ix-table td,.ix-table th{padding:11px 12px}
+
+/* ---------- the top bar layout ---------- */
+.topnav{display:none}
+html[data-layout="topbar"] .shell{display:block}
+html[data-layout="topbar"] .side{display:none}
+html[data-layout="topbar"] .topnav{display:block;position:sticky;top:0;z-index:40;background:var(--card);border-bottom:1px solid var(--line)}
+html[data-layout="topbar"] .main{max-width:1280px;margin:0 auto;padding:32px 32px 90px}
+.topnav .row{max-width:1280px;margin:0 auto;padding:0 32px;display:flex;align-items:center;gap:16px;height:56px}
+.topnav .brand{display:flex;align-items:center}
+.topnav .page-switcher{margin:0;border:0;background:none;position:relative;width:auto;flex:none}
+.topnav .page-switcher>summary{padding:6px 10px;border-radius:8px}
+.topnav .page-switcher>summary:hover{background:var(--bg-tint)}
+.topnav .page-picker-panel{position:absolute;top:calc(100% + 6px);left:0;min-width:300px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-md);z-index:50}
+.topnav .tabs{display:flex;align-self:stretch;gap:2px;margin-left:6px}
+.topnav .tabs a{position:relative;display:flex;align-items:center;padding:0 12px;font-size:13.5px;font-weight:500;color:var(--ink-2);text-decoration:none;white-space:nowrap}
+.topnav .tabs a:hover{color:var(--ink)}
+.topnav .tabs a[aria-current="page"]{color:var(--ink);font-weight:600}
+.topnav .tabs a[aria-current="page"]::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:var(--brand);border-radius:2px 2px 0 0}
+.topnav .right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.topnav .right form{margin:0}
+.topnav .navsearch{order:0;margin:0;width:auto;border:1px solid var(--line);border-radius:8px;padding:6px 9px;gap:8px}
+.topnav .navsearch:hover{border-color:var(--ink-3)}
+.topnav .avatar{text-decoration:none}
+.topnav .avatar[aria-current="page"]{outline:2px solid var(--brand);outline-offset:1px}
+.topnav .iconbtn{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--ink-3)}
+.topnav .iconbtn:hover{background:var(--bg-tint);color:var(--ink)}
+.topnav .subrow{height:42px;gap:2px;border-top:1px solid var(--line)}
+.topnav .subrow a{position:relative;display:flex;align-items:center;height:100%;padding:0 10px;font-size:13px;font-weight:500;color:var(--ink-3);text-decoration:none;white-space:nowrap}
+.topnav .subrow a:hover{color:var(--ink)}
+.topnav .subrow a[aria-current="page"]{color:var(--brand);font-weight:600}
+.topnav .subrow a[aria-current="page"]::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:var(--brand)}
+/* A phone always gets the drawer: six tabs do not fit. */
+@media(max-width:900px){
+  html[data-layout="topbar"] .topnav{display:none}
+  html[data-layout="topbar"] .side{display:flex}
+  html[data-layout="topbar"] .main{padding:22px 18px 70px}
+  .ov-kpis,.op-kpis,.ix-kpis{grid-template-columns:1fr 1fr;gap:14px 0}
+  .ov-kpi:nth-child(odd),.op-kpi:nth-child(odd){border-left:0;padding-left:0}
+}

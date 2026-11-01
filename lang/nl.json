@@ -1683,5 +1683,13 @@
     "Add a location to measure your services from another network.": "Voeg een locatie toe om je diensten vanuit een ander netwerk te meten.",
     "No checks available": "Geen controles beschikbaar",
     "No backup destinations yet": "Nog geen bestemmingen voor back ups",
-    "Choose S3 or SFTP below to store a verified copy off this server.": "Kies hieronder S3 of SFTP om een gecontroleerde kopie buiten deze server op te slaan."
+    "Choose S3 or SFTP below to store a verified copy off this server.": "Kies hieronder S3 of SFTP om een gecontroleerde kopie buiten deze server op te slaan.",
+    "Navigation": "Navigatie",
+    "Sidebar": "Zijbalk",
+    "Top bar": "Bovenbalk",
+    "Audience": "Publiek",
+    "Setup": "Installatie",
+    "Email templates": "E-mail sjablonen",
+    "Switch between sidebar and top bar": "Wissel tussen zijbalk en bovenbalk",
+    "Where the menu sits in the admin screens. The quick switch at the top of each screen still works for this browser.": "Waar het menu staat in de beheerschermen. De snelle schakelaar bovenaan elk scherm werkt nog steeds voor deze browser."
 }

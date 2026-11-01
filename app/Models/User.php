@@ -20,6 +20,7 @@ use Illuminate\Notifications\Notifiable;
  * @property string|null $theme
  * @property string|null $timezone
  * @property string $locale
+ * @property string $nav_layout
  */
 class User extends Authenticatable
 {
@@ -28,9 +29,12 @@ class User extends Authenticatable
 
     protected $fillable = ['name', 'email', 'password', 'role'];
 
-    protected $auditIgnore = ['totp_secret', 'totp_last_step', 'totp_confirmed_at', 'dismissed_notes', 'theme', 'timezone'];
+    protected $auditIgnore = ['totp_secret', 'totp_last_step', 'totp_confirmed_at', 'dismissed_notes', 'theme', 'timezone', 'nav_layout'];
 
     public const THEMES = ['light', 'system', 'dark'];
+
+    /** Where the admin menu sits: the classic sidebar, or a top bar with the screens of the open section underneath. */
+    public const NAV_LAYOUTS = ['sidebar', 'topbar'];
 
     protected $hidden = ['password', 'remember_token'];
 

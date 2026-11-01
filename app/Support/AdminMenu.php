@@ -108,6 +108,53 @@ class AdminMenu
         ]));
     }
 
+    /**
+     * The same menu as six sections for the top bar: one tab per section, the
+     * screens of the open section underneath. Pure, so it is tested without a request.
+     *
+     * @param  array{page: list<array<string, mixed>>, installation: list<array<string, mixed>>}  $menu
+     * @return list<array{label: string, icon: string, url: string, active: bool, items: list<array{label: string, url: string, active: bool}>}>
+     */
+    public static function sections(array $menu): array
+    {
+        $page = collect($menu['page'])->keyBy('label');
+        $screens = function (string $label, ?string $prefix = null) use ($page): array {
+            $item = $page->get($label);
+            if (! $item) {
+                return [];
+            }
+            $children = $item['children'] ?: [$item];
+
+            // "Delivery" and "Templates" exist under Email and under Incidents; in one row they need their family name.
+            return array_map(fn (array $child) => [
+                'label' => $prefix && $item['children'] ? $prefix.' '.mb_strtolower($child['label']) : $child['label'],
+                'url' => $child['url'],
+                'active' => $child['active'],
+            ], $children);
+        };
+        // An installation group (Settings) stays one screen: its tabs live on that
+        // screen, and the link follows the open tab so it never points away from it.
+        $setup = array_map(fn (array $item) => [
+            'label' => $item['label'],
+            'url' => collect($item['children'])->firstWhere('active', true)['url'] ?? $item['url'],
+            'active' => $item['active'],
+        ], $menu['installation']);
+
+        $sections = [
+            ['label' => 'Overview', 'icon' => 'overview', 'items' => [...$screens('Overview'), ...$screens('Reports')]],
+            ['label' => 'Services', 'icon' => 'services', 'items' => $screens('Services')],
+            ['label' => 'Incidents', 'icon' => 'incidents', 'items' => $screens('Incidents')],
+            ['label' => 'Audience', 'icon' => 'subscribers', 'items' => [...$screens('Subscribers'), ...$screens('Email', 'Email'), ...$screens('Integrations & API')]],
+            ['label' => 'Appearance', 'icon' => 'sliders', 'items' => $screens('Appearance')],
+            ['label' => 'Setup', 'icon' => 'settings', 'items' => $setup],
+        ];
+
+        return array_values(array_map(fn (array $section) => $section + [
+            'url' => $section['items'][0]['url'],
+            'active' => collect($section['items'])->contains('active', true),
+        ], array_filter($sections, fn (array $section) => $section['items'] !== [])));
+    }
+
     /** @param list<string> $patterns */
     private static function pageLink(string $label, string $route, string $current, array $patterns, ?string $icon = null, ?string $hint = null): ?array
     {

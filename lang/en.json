@@ -1683,5 +1683,13 @@
     "Add a location to measure your services from another network.": "Add a location to measure your services from another network.",
     "No checks available": "No checks available",
     "No backup destinations yet": "No backup destinations yet",
-    "Choose S3 or SFTP below to store a verified copy off this server.": "Choose S3 or SFTP below to store a verified copy off this server."
+    "Choose S3 or SFTP below to store a verified copy off this server.": "Choose S3 or SFTP below to store a verified copy off this server.",
+    "Navigation": "Navigation",
+    "Sidebar": "Sidebar",
+    "Top bar": "Top bar",
+    "Audience": "Audience",
+    "Setup": "Setup",
+    "Email templates": "Email templates",
+    "Switch between sidebar and top bar": "Switch between sidebar and top bar",
+    "Where the menu sits in the admin screens. The quick switch at the top of each screen still works for this browser.": "Where the menu sits in the admin screens. The quick switch at the top of each screen still works for this browser."
 }

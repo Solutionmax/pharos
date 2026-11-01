@@ -10,6 +10,7 @@
 <details class="page-menu page-switcher" name="status-page-picker" aria-label="{{ $viewPages ? __('View a published status page') : __('Choose a page to manage') }}">
   <summary class="nav">
     @include('partials.icon', ['name' => $viewPages ? 'external' : 'pages'])
+    @if (! $viewPages && $selectedPage)<span class="pdot summary-dot s-{{ $stateOf($selectedPage)?->tone() ?? 'n' }}" aria-hidden="true"></span>@endif
     <span class="page-name">
       <span class="page-title">{{ $viewPages ? __('View status page') : ($selectedPage?->name ?? __('Choose a page')) }}</span>
       @if ($viewPages)

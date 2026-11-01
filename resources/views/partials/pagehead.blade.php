@@ -27,6 +27,7 @@
     @isset($action)
       <a class="btn" href="{{ $action['url'] }}">{{ __($action['label']) }}</a>
     @endisset
+    @auth @include('partials.layout-toggle') @endauth
     @include('partials.theme-toggle')
   </span>
 </div>

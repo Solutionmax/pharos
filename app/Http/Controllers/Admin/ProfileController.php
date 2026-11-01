@@ -94,11 +94,15 @@ class ProfileController extends Controller
             // Empty means the installation default. Only zones PHP knows, so a
             // stored value can never break a page.
             'timezone' => ['sometimes', 'nullable', 'string', Rule::in(\DateTimeZone::listIdentifiers())],
+            'nav_layout' => ['sometimes', 'string', Rule::in(User::NAV_LAYOUTS)],
         ], ['timezone.in' => 'Choose a time zone from the list.']);
 
         $changes = ['theme' => $data['theme']];
         if (isset($data['locale'])) {
             $changes['locale'] = $data['locale'];
+        }
+        if (isset($data['nav_layout'])) {
+            $changes['nav_layout'] = $data['nav_layout'];
         }
         if ($request->has('timezone')) {
             $changes['timezone'] = $data['timezone'] ?? null;

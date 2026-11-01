@@ -2,13 +2,16 @@
 $branding = app(\App\Services\Branding::class);
 // A signed in person's own choice (Profile, Preferences) wins over the installation default.
 $adminTheme = in_array(auth()->user()?->theme, \App\Models\User::THEMES, true) ? auth()->user()->theme : $branding->theme();
+// Sidebar or top bar: the saved preference; the quick switch in the page head may override it per browser.
+$navLayout = in_array(auth()->user()?->nav_layout, \App\Models\User::NAV_LAYOUTS, true) ? auth()->user()->nav_layout : 'sidebar';
 @endphp
 <!doctype html>
-<html lang="{{ app()->getLocale() }}" @if ($adminTheme !== 'system') data-theme="{{ $adminTheme }}" @endif>
+<html lang="{{ app()->getLocale() }}" @if ($adminTheme !== 'system') data-theme="{{ $adminTheme }}" @endif data-layout="{{ $navLayout }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 @include('partials.theme-early', ['theme' => $adminTheme])
+@auth @include('partials.layout-early', ['layout' => $navLayout]) @endauth
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', 'Admin') · {{ $branding->name() }}</title>
 <link rel="icon" href="{{ $branding->faviconUrl() }}">
@@ -376,6 +379,8 @@ pre .k{color:var(--brand)}
 @if (is_file(public_path('assets/pharos-ops.css')))
 <link rel="stylesheet" href="{{ asset('assets/pharos-ops.css') }}?v={{ @filemtime(public_path('assets/pharos-ops.css')) }}">
 @endif
+{{-- The calm admin (Nov 2026): hairlines instead of cards, the top bar layout. Loads last so it wins. --}}
+<link rel="stylesheet" href="{{ asset('assets/pharos-calm.css') }}?v={{ @filemtime(public_path('assets/pharos-calm.css')) }}">
 </head>
 <body>
 {{-- A page that declares itself standalone (the 404) owns the whole canvas, signed in or not. --}}
@@ -389,6 +394,7 @@ pre .k{color:var(--brand)}
   $selectedPageId = app(\App\Services\PageContext::class)->id();
   $selectedPage = $selectorPages->firstWhere('id', $selectedPageId);
   $pageStates = \App\Services\PageStatus::worstByPage();
+  $adminMenu = \App\Support\AdminMenu::build(auth()->user(), request());
 @endphp
 <div class="shell">
   <div class="topbar">
@@ -397,6 +403,7 @@ pre .k{color:var(--brand)}
     <button type="button" class="topsearch" data-search-open aria-haspopup="dialog" aria-controls="pharos-search" aria-label="{{ __('Search') }}">@include('partials.icon', ['name' => 'search', 'size' => 18])</button>
   </div>
   <label class="scrim" for="navtoggle" aria-hidden="true"></label>
+  @include('partials.nav.topbar')
   <aside class="side">
     <span class="brand">@include('partials.logo', ['size' => 26])</span>
 
@@ -447,6 +454,14 @@ document.addEventListener('input', function (event) {
   menu.querySelector('.page-options').scrollTop = 0;
 });
 
+// Sidebar or top bar: flip the attribute the stylesheet reads and remember it for this browser.
+document.addEventListener('click', function (event) {
+  if (!event.target.closest('[data-layout-toggle]')) return;
+  var next = document.documentElement.getAttribute('data-layout') === 'topbar' ? 'sidebar' : 'topbar';
+  document.documentElement.setAttribute('data-layout', next);
+  try { localStorage.setItem('pharos-layout', next); } catch (e) {}
+});
+
 // "Got it" on a note: tell the server over fetch and take the box away at once.
 // Without JavaScript the form around the button posts and the page comes back without it.
 document.addEventListener('click', function (event) {
@@ -466,8 +481,8 @@ document.addEventListener('click', function (event) {
 @yield('content')
 @endif
 @if (session('theme_saved'))
-{{-- A saved preference replaces whatever the quick toggle remembered in this browser. --}}
-<script>try { localStorage.removeItem('pharos-theme'); } catch (e) {}</script>
+{{-- A saved preference replaces whatever the quick toggles remembered in this browser. --}}
+<script>try { localStorage.removeItem('pharos-theme'); localStorage.removeItem('pharos-layout'); } catch (e) {}</script>
 @endif
 @include('partials.theme-script', ['theme' => $adminTheme])
 <script defer src="{{ asset('assets/pharos-v06.js') }}?v={{ @filemtime(public_path('assets/pharos-v06.js')) }}"></script>

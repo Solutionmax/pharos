@@ -1683,5 +1683,13 @@
     "Add a location to measure your services from another network.": "Añade una ubicación para medir tus servicios desde otra red.",
     "No checks available": "No hay comprobaciones disponibles",
     "No backup destinations yet": "Todavía no hay destinos de copia de seguridad",
-    "Choose S3 or SFTP below to store a verified copy off this server.": "Elige S3 o SFTP a continuación para guardar una copia verificada fuera de este servidor."
+    "Choose S3 or SFTP below to store a verified copy off this server.": "Elige S3 o SFTP a continuación para guardar una copia verificada fuera de este servidor.",
+    "Navigation": "Navegación",
+    "Sidebar": "Barra lateral",
+    "Top bar": "Barra superior",
+    "Audience": "Público",
+    "Setup": "Configuración",
+    "Email templates": "Plantillas de correo",
+    "Switch between sidebar and top bar": "Cambiar entre barra lateral y barra superior",
+    "Where the menu sits in the admin screens. The quick switch at the top of each screen still works for this browser.": "Dónde está el menú en las pantallas de administración. El cambio rápido en la parte superior de cada pantalla sigue valiendo para este navegador."
 }

@@ -4,6 +4,7 @@
 @php
   $palette = ['#0b6bcb', '#7a5af8', '#0e9384', '#e8590c', '#c11574', '#667085'];
   $themeNow = in_array($user->theme, \App\Models\User::THEMES, true) ? $user->theme : app(\App\Services\Branding::class)->theme();
+  $layoutNow = in_array($user->nav_layout, \App\Models\User::NAV_LAYOUTS, true) ? $user->nav_layout : 'sidebar';
   $installationZone = \App\Services\Clock::installationTimezone();
   $zoneNow = \App\Services\Clock::timezone();
   $securityGood = ($user->hasTwoFactor() ? 1 : 0) + 1;
@@ -85,6 +86,16 @@
               <span class="pp-seg" role="radiogroup" aria-labelledby="pf-theme-label">
                 @foreach (['light' => 'Light', 'system' => 'System', 'dark' => 'Dark'] as $value => $label)
                   <label><input type="radio" name="theme" value="{{ $value }}" @checked($themeNow === $value)><span>{{ __($label) }}</span></label>
+                @endforeach
+              </span>
+            </span>
+          </div>
+          <div class="pf-pref">
+            <span><b id="pf-layout-label">{{ __('Navigation') }}</b><span>{{ __('Where the menu sits in the admin screens. The quick switch at the top of each screen still works for this browser.') }}</span></span>
+            <span class="pf-prefctl">
+              <span class="pp-seg" role="radiogroup" aria-labelledby="pf-layout-label">
+                @foreach (['sidebar' => 'Sidebar', 'topbar' => 'Top bar'] as $value => $label)
+                  <label><input type="radio" name="nav_layout" value="{{ $value }}" @checked($layoutNow === $value)><span>{{ __($label) }}</span></label>
                 @endforeach
               </span>
             </span>
