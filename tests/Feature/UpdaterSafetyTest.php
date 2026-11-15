@@ -195,6 +195,12 @@ class UpdaterSafetyTest extends TestCase
         $this->assertSame('2026-11-20T14:04:05Z', $manifest['released_at']);
         $this->assertSame(strtotime('2026-11-20T14:04:05Z'), Updater::releasedAt($manifest));
         $this->assertSame(hash('sha256', 'release'), $manifest['sha256']);
+
+        // A test manifest is signed with the moment of latest.json, so the install that took it
+        // does not refuse the real manifest of the same release as older.
+        $this->assertSame(0, Artisan::call('pharos:release:sign', ['version' => '1.2.0', 'url' => 'https://upload.example.net/pharos-1.2.0.zip', 'archive' => $dir.'/pharos-1.2.0.zip', '--key' => $dir.'/key.hex', '--released-at' => '2026-11-19T08:00:00Z']));
+        $this->assertSame('2026-11-19T08:00:00Z', app(Updater::class)->verify(trim(Artisan::output()))['released_at']);
+        $this->assertSame(1, Artisan::call('pharos:release:sign', ['version' => '1.2.0', 'url' => 'https://upload.example.net/pharos-1.2.0.zip', 'archive' => $dir.'/pharos-1.2.0.zip', '--key' => $dir.'/key.hex', '--released-at' => 'tomorrow']));
     }
 
     // ---------- one at a time ----------
