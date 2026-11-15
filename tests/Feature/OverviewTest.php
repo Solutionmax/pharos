@@ -243,4 +243,17 @@ class OverviewTest extends TestCase
         $this->actingAs($admin)->get('/admin/pages')->assertOk()
             ->assertSee('href="'.route('page.admin.overview', ['statusPage' => $this->other->id]).'"', false);
     }
+
+    /** Review U2: the admin strip uses the public page's tones and words. */
+    public function test_the_availability_legend_matches_the_public_page(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+        $component = Component::create(['name' => 'Docs']);
+        UptimeDay::create(['component_id' => $component->id, 'day' => Carbon::today()->subDay(), 'up_seconds' => 86340, 'down_seconds' => 60]);
+
+        $this->actingAs($admin)->get('/admin/overview')->assertOk()
+            ->assertSeeInOrder(['Fully up', 'Brief blip (under 5 min)', 'Slow', 'Disruption', 'Outage', 'Not measured'])
+            ->assertDontSee('Below 99.99%')
+            ->assertSee('class="s-t"', false);
+    }
 }

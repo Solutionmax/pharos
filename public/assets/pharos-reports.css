@@ -44,7 +44,7 @@
 .month-years button{border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink-2);width:34px;height:36px;cursor:pointer}
 .month-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .month-grid button{font-family:var(--sans);font-size:12.5px;font-weight:500;padding:11px 3px;border:1px solid transparent;border-radius:8px;background:var(--bg-tint);color:var(--ink-2);cursor:pointer}
-.month-grid button:hover:not(:disabled){border-color:var(--brand);color:var(--brand)}
+.month-grid button:hover:not(:disabled){border-color:var(--brand);color:var(--link)}
 .month-grid button[aria-pressed=true]{background:var(--brand);color:var(--brand-ink);font-weight:700}
 .month-picker button:disabled{opacity:.35;cursor:not-allowed}
 .month-picker :focus-visible,.report :focus-visible{outline:2px solid var(--brand);outline-offset:3px}

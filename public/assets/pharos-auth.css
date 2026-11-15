@@ -33,7 +33,7 @@
 .pa-trace path{fill:none;stroke:var(--brand);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:180;stroke-dashoffset:180;animation:pa-trace 2.4s var(--ease) infinite}
 @keyframes pa-trace{0%{stroke-dashoffset:180}55%{stroke-dashoffset:0}100%{stroke-dashoffset:-180}}
 
-.pa-kicker{margin:0 0 12px;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--brand)}
+.pa-kicker{margin:0 0 12px;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--link,var(--brand))}
 .pa-kicker i{width:7px;height:7px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 3px var(--pa-brand-soft);flex:none}
 .pa-h1{margin:0;font-size:clamp(32px,3.2vw,44px);font-weight:800;letter-spacing:-.04em;line-height:1.05;overflow-wrap:anywhere}
 .pa-lede{margin:12px 0 30px;color:var(--ink-2);font-size:15px;line-height:1.55;max-width:38ch}
@@ -65,7 +65,7 @@
 .pa-switch input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .2s var(--ease)}
 .pa-switch input:checked{background:var(--brand)}
 .pa-switch input:checked::after{transform:translateX(14px)}
-.pa a{color:var(--brand);font-weight:600;text-decoration:none;text-underline-offset:3px}
+.pa a{color:var(--link,var(--brand));font-weight:600;text-decoration:none;text-underline-offset:3px}
 .pa a:hover{text-decoration:underline}
 
 .pa-btn{position:relative;width:100%;height:50px;font:inherit;font-size:15px;font-weight:700;color:var(--pa-btn-ink);background:var(--pa-btn);border:0;border-radius:14px;cursor:pointer;overflow:hidden;transition:transform .15s var(--ease),box-shadow .2s,background .3s}
@@ -87,7 +87,7 @@
 .pa .pa-ghost{max-width:400px;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;font-weight:600;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px;text-decoration:none;transition:background .15s}
 .pa .pa-ghost:hover{background:var(--pa-tint);text-decoration:none}
 
-.pa-link{align-self:flex-start;margin-top:14px;padding:4px 0;font:inherit;font-size:13px;font-weight:600;color:var(--brand);background:none;border:0;cursor:pointer;text-underline-offset:3px}
+.pa-link{align-self:flex-start;margin-top:14px;padding:4px 0;font:inherit;font-size:13px;font-weight:600;color:var(--link,var(--brand));background:none;border:0;cursor:pointer;text-underline-offset:3px}
 .pa-link:hover{text-decoration:underline}
 .pa-link[hidden]{display:none}
 .pa-back{margin:18px 0 0;font-size:13px}
@@ -144,7 +144,7 @@
 .pa-cap{position:absolute;left:48px;right:48px;bottom:36px;z-index:3;display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
 .pa-cap p{margin:0}
 .pa-cap-line{font-size:clamp(22px,2vw,30px);font-weight:800;letter-spacing:-.03em;line-height:1.15;max-width:18ch;color:var(--ink)}
-.pa-cap-line em{font-style:normal;color:var(--brand)}
+.pa-cap-line em{font-style:normal;color:var(--link,var(--brand))}
 .pa-cap-kinds{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:right}
 .pa-cap-kinds b{display:block;font-family:var(--sans);font-size:15px;font-weight:700;letter-spacing:-.01em;text-transform:none;color:var(--ink)}
 

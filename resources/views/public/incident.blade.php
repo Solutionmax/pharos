@@ -25,9 +25,13 @@
 @section('title', $incident->name)
 @section('document-class', 'narrow incident-page is-'.$tone)
 @push('head')
-<link rel="canonical" href="{{ \App\Services\PageUrls::route('public.incident', $incident) }}">
 <link rel="stylesheet" href="{{ asset('assets/pharos-status.css') }}?v={{ @filemtime(public_path('assets/pharos-status.css')) }}">
 <link rel="stylesheet" href="{{ asset('assets/pharos-incident.css') }}?v={{ @filemtime(public_path('assets/pharos-incident.css')) }}">
+@include('partials.share-meta', [
+  'shareTitle' => $incident->name.' · '.$lead,
+  'shareDescription' => \Illuminate\Support\Str::limit(implode(' · ', array_merge([$lead], $facts)).'.', 155, '…'),
+  'shareUrl' => \App\Services\PageUrls::route('public.incident', $incident),
+])
 @endpush
 @section('subtitle')
 <p class="incident-facts"><b @class(['done' => ! $open])>{{ $lead }}</b>@foreach ($facts as $fact) · {{ $fact }}@endforeach</p>

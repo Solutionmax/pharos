@@ -187,8 +187,9 @@
           </div>
           <div class="ov-axis" aria-hidden="true"><span>{{ __('90 days ago') }}</span><span>60</span><span>30</span><span>{{ __('Today') }}</span></div>
           <div class="ov-legend">
-            <span><i class="s-ok"></i>{{ __('Fully up') }}</span><span><i class="s-w"></i>{{ __('Below 99.99%') }}</span>
-            <span><i class="s-p"></i>{{ __('Below 99%') }}</span><span><i class="s-b"></i>{{ __('Below 95%') }}</span><span><i class="s-n"></i>{{ __('Not measured') }}</span>
+            <span><i class="s-ok"></i>{{ __('Fully up') }}</span>
+            @foreach (\App\Services\StatusTimeline::dayToneLabels() as $legendTone => $legendLabel)<span><i class="s-{{ $legendTone }}"></i>{{ $legendLabel }}</span>@endforeach
+            <span><i class="s-n"></i>{{ __('Not measured') }}</span>
           </div>
         </div>
       </section>

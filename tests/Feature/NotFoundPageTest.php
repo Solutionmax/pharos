@@ -5,7 +5,12 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\StatusPage;
 use App\Models\User;
+use App\Services\Branding;
+use App\Services\License;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\View;
+use RuntimeException;
 use Tests\TestCase;
 
 class NotFoundPageTest extends TestCase
@@ -84,5 +89,82 @@ class NotFoundPageTest extends TestCase
     protected function withoutCsrfNoise(string $html): string
     {
         return (string) preg_replace(['/<meta name="csrf-token" content="[^"]*">/', '/ nonce="[^"]*"/'], '', $html);
+    }
+
+    /** Review S7: light, so a stray link or a scanner costs little. */
+    public function test_the_404_is_light(): void
+    {
+        $body = $this->get('/status/nothing-here')->assertNotFound()->getContent();
+
+        $this->assertLessThan(15 * 1024, strlen($body));
+        $this->assertStringNotContainsString('pharos-ui.css', $body);
+        $this->assertStringNotContainsString('<i class="o">', $body);
+    }
+
+    /** Review S7: the other errors wear the same shell instead of the framework's bare page. */
+    public function test_other_errors_are_branded_too(): void
+    {
+        User::factory()->create();
+
+        $this->post('/')->assertStatus(405)
+            ->assertSee('Error 405')->assertSee('This address does not work that way')
+            ->assertSee('Go to the status page')->assertDontSee('Oops');
+
+        foreach ([419 => 'This form has expired', 429 => 'Slow down for a moment', 500 => 'Something went wrong on our side', 503 => 'Back in a moment'] as $code => $heading) {
+            Route::get('/__error-'.$code, fn () => abort($code));
+            $out = $this->get('/__error-'.$code)->assertStatus($code);
+            $out->assertSee('Error '.$code)->assertSee($heading)->assertSee('class="pa-wall"', false);
+            $this->assertLessThan(15 * 1024, strlen((string) $out->getContent()), (string) $code);
+        }
+    }
+
+    public function test_a_public_form_that_expired_gets_the_419_page_not_the_admin_sign_in(): void
+    {
+        User::factory()->create();
+        $this->app['env'] = 'production';
+        try {
+            $this->post('/subscribe', ['email' => 'ann@example.net'])->assertStatus(419)->assertSee('This form has expired');
+            $this->post('/admin/login', ['email' => 'a@example.net', 'password' => 'x'])->assertRedirect(route('admin.login'));
+        } finally {
+            $this->app['env'] = 'testing';
+        }
+    }
+
+    public function test_a_server_error_still_renders_when_the_branding_cannot_be_read(): void
+    {
+        // What a missing database looks like to the page: every branding read throws.
+        View::share('branding', new class(app(License::class)) extends Branding
+        {
+            public function name(): string
+            {
+                throw new RuntimeException('database is gone');
+            }
+
+            public function accent(): string
+            {
+                throw new RuntimeException('database is gone');
+            }
+
+            public function theme(): string
+            {
+                throw new RuntimeException('database is gone');
+            }
+
+            public function creditHidden(): bool
+            {
+                throw new RuntimeException('database is gone');
+            }
+
+            public function faviconUrl(): string
+            {
+                throw new RuntimeException('database is gone');
+            }
+        });
+
+        $html = view('errors.500')->render();
+
+        $this->assertStringContainsString('Something went wrong on our side', $html);
+        $this->assertStringContainsString('--brand:#0079d2;', $html);
+        $this->assertStringContainsString('<title>Server error · Pharos</title>', $html);
     }
 }

@@ -5,7 +5,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 @include('partials.theme-early', ['theme' => $theme ?? $branding->theme(), 'rememberTheme' => $chrome ?? true])
-<title>{{ $branding->name() }} {{ __('Status') }}</title>
+@php
+  // The headline leads the title, unless the page was set not to show it.
+  $shareTitle = ($modules['page.show_overall'] ? $hero['headline'].' · ' : '').$branding->name().' '.__('Status');
+  $shareUrl = \App\Services\PageUrls::route('status', ($page ?? 1) > 1 ? ['page' => $page] : []);
+@endphp
+<title>{{ $shareTitle }}</title>
+@include('partials.share-meta', ['shareTitle' => $shareTitle, 'shareDescription' => $description, 'shareUrl' => $shareUrl])
 <link rel="icon" href="{{ $branding->faviconUrl() }}">
 @if ($branding->name() === 'Pharos' && ! $branding->logoUrl())
 <link rel="apple-touch-icon" href="{{ $branding->builtInAssetUrl('apple-touch-icon.png') }}">
@@ -46,7 +52,7 @@
             @if (session('subscribed'))
               <p>{{ session('subscribed') }}</p>
             @else
-              <form method="POST" action="{{ \App\Services\PageUrls::route('subscribe') }}" style="display:grid;gap:10px">
+              <form method="POST" action="{{ \App\Services\PageUrls::route('subscribe') }}" data-token-url="{{ \App\Services\PageUrls::route('subscribe.token') }}" style="display:grid;gap:10px">
                 @csrf
                 <p>{{ __('Get an email when an incident is reported, and when it is resolved.') }}</p>
                 <label for="sub-email">{{ __('Email address') }}</label>
@@ -119,13 +125,13 @@
       <div class="chart-head">
         <h2 id="h-days">{{ $hasTracks ? __('Past :n days', ['n' => $daysShown]) : __('Services') }}</h2>
         @if ($hasTracks)
-          <div class="key" aria-hidden="true"><span><i class="k-w"></i>{{ __('Slow') }}</span><span><i class="k-p"></i>{{ __('Partly down') }}</span><span><i class="k-b"></i>{{ __('Down') }}</span><span>{{ __('Taller means longer') }}</span></div>
+          <div class="key" aria-hidden="true">@foreach (\App\Services\StatusTimeline::dayToneLabels() as $keyTone => $keyLabel)<span><i class="k-{{ $keyTone }}"></i>{{ $keyLabel }}</span>@endforeach<span>{{ __('Taller means longer') }}</span></div>
         @endif
       </div>
-      <div class="chart" @if ($hasTracks) tabindex="0" role="group" data-hint="{{ __('Point at a day, or use the arrow keys, to read what happened.') }}"
+      <div class="chart" @if ($hasTracks) tabindex="0" role="group" data-hint="{{ __('Point at a day, or use the arrow keys, to read what happened.') }}" data-hint-touch="{{ __('Tap a day to read what happened.') }}"
            aria-label="{{ __('Uptime per day for every service. Use the left and right arrow keys to read a day.') }}" @endif>
         @if ($hasTracks)
-          <div class="readout" aria-live="polite">{{ __('Point at a day, or use the arrow keys, to read what happened.') }}</div>
+          <div class="readout" aria-live="polite"><span class="hint-point">{{ __('Point at a day, or use the arrow keys, to read what happened.') }}</span><span class="hint-tap">{{ __('Tap a day to read what happened.') }}</span></div>
           <script @nonce type="application/json" data-notes class="when">@json($dayNotes)</script>
         @endif
 
@@ -189,11 +195,11 @@
     <section aria-labelledby="h-log">
       <div class="log-head">
         <h2 id="h-log">{{ __('Incident log') }}</h2>
-        @if ($ongoing->isEmpty() && $live->isEmpty() && ($hero['ago'] ?? 0) >= 2)
+        @if (! $quiet && $ongoing->isEmpty() && $live->isEmpty() && ($hero['ago'] ?? 0) >= 2)
           <p class="when">{{ __('Nothing in the past :n days', ['n' => $hero['ago']]) }}</p>
         @endif
       </div>
-      <div class="log">
+      <div class="log{{ $quiet && $live->isEmpty() && $planned->isEmpty() ? ' is-quiet' : '' }}">
         @if ($ongoing->isNotEmpty() || $live->isNotEmpty())
           <h3 class="label sect">{{ __('Ongoing') }}</h3>
           @foreach ($ongoing as $incident)
@@ -211,8 +217,12 @@
           @endforeach
         @endif
 
+        @if ($quiet)
+          @include('partials.quiet-log')
+        @endif
+
         @php $month = null; $anyDay = false; $openDays = $ongoing->map(fn ($i) => $i->occurred_at->format('Y-m-d'))->all(); @endphp
-        @foreach ($days as $date => $incidents)
+        @foreach ($quiet ? [] : $days as $date => $incidents)
           @continue($incidents->isEmpty() && in_array($date, $openDays, true))
           @php $carbon = \Illuminate\Support\Carbon::parse($date, \App\Services\Clock::timezone()); $anyDay = true; @endphp
           @if ($carbon->format('Y-m') !== $month)
@@ -229,11 +239,11 @@
             </div>
           @endforelse
         @endforeach
-        @if (! $anyDay && $ongoing->isEmpty() && $modules['page.show_incidents'])
+        @if (! $quiet && ! $anyDay && $ongoing->isEmpty() && $modules['page.show_incidents'])
           <p class="label sect">{{ __('No incidents reported') }}</p>
         @endif
       </div>
-      @if ($chrome && ($page > 1 || $hasOlder))
+      @if ($chrome && ! $quiet && ($page > 1 || $hasOlder))
         <nav class="pager" aria-label="{{ __('Incident history') }}">
           @if ($page > 1)<a href="{{ \App\Services\PageUrls::route('status', $page === 2 ? [] : ['page' => $page - 1]) }}">{{ __('← Newer incidents') }}</a>@endif
           @if ($hasOlder)<a class="older" href="{{ \App\Services\PageUrls::route('status', ['page' => $page + 1]) }}">{{ __('Older incidents →') }}</a>@endif
@@ -243,19 +253,17 @@
   @endif
   </main>
 
-  @unless ($branding->creditHidden())
-    <div class="sign">
-      @include('partials.mark')
-      <p>{{ __('This page runs on Pharos.') }} <span>{{ __('Status pages you host yourself.') }}</span></p>
-      <a href="https://pharos.solutionmax.net" rel="noopener">pharos.solutionmax.net <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
-    </div>
-  @endunless
   <footer>
-    <a href="{{ \App\Services\PageUrls::route('public.feed') }}">{{ __('RSS feed') }}</a>
-    <a href="{{ \App\Services\PageUrls::route('public.reports') }}">{{ __('Monthly reports') }}</a>
-    @if ($modules['page.show_api_link'])<a href="{{ \App\Services\PageUrls::api('components') }}">{{ __('API') }}</a>@endif
-    <span>{{ __('Times in :zone', ['zone' => \App\Services\Clock::offsetLabel()]) }}</span>
-    @if ($chrome)<span id="live-refresh" class="live-refresh">{{ __('Refreshes every 30 seconds') }}</span>@endif
+    <div class="links">
+      <a href="{{ \App\Services\PageUrls::route('public.feed') }}">{{ __('RSS feed') }}</a>
+      <a href="{{ \App\Services\PageUrls::route('public.reports') }}">{{ __('Monthly reports') }}</a>
+      @if ($modules['page.show_api_link'])<a href="{{ \App\Services\PageUrls::api('components') }}">{{ __('API') }}</a>@endif
+      <span>{{ __('Times in :zone', ['zone' => \App\Services\Clock::offsetLabel()]) }}</span>
+      @if ($chrome)<span id="live-refresh" class="live-refresh">{{ __('Refreshes every 30 seconds') }}</span>@endif
+    </div>
+    @unless ($branding->creditHidden())
+      <p class="sign">{{ __('This page runs on Pharos.') }} {{ __('Status pages you host yourself.') }} <a href="https://pharos.solutionmax.net" rel="noopener">pharos.solutionmax.net</a></p>
+    @endunless
   </footer>
 </div></div>
 @include('partials.daytip')

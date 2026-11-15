@@ -29,7 +29,9 @@
     if (i === null || !list[i]) {
       delete chart.dataset.day;
       chart.style.removeProperty('--i');
-      out.textContent = chart.dataset.hint || '';
+      // A finger cannot point: on a touch screen the hint says tap.
+      var touch = window.matchMedia && window.matchMedia('(hover: none)').matches;
+      out.textContent = (touch && chart.dataset.hintTouch) || chart.dataset.hint || '';
       return;
     }
     chart.dataset.day = i;
@@ -103,5 +105,36 @@
   });
   document.addEventListener('focusout', function (e) {
     if (e.target.classList && e.target.classList.contains('chart')) select(e.target, null);
+  });
+
+  // "Get notified": the page reaches a new visitor without a session (it may come
+  // from a cache), so the form asks for its token when it opens. That request
+  // starts the session the sign-up needs. A submit before the answer waits for it.
+  var pending = new WeakMap();
+
+  function fetchToken(form) {
+    var field = form.querySelector('input[name="_token"]');
+    if (!field || !window.fetch) return Promise.resolve();
+    if (pending.has(form)) return pending.get(form);
+    var request = fetch(form.dataset.tokenUrl, {credentials: 'same-origin', cache: 'no-store', headers: {Accept: 'application/json'}})
+      .then(function (response) { return response.ok ? response.json() : null; })
+      .then(function (data) { if (data && data.token) field.value = data.token; })
+      .catch(function () {})
+      .then(function () { pending.delete(form); });
+    pending.set(form, request);
+    return request;
+  }
+
+  document.addEventListener('toggle', function (e) {
+    var details = e.target;
+    if (!details.matches || !details.matches('details.updates') || !details.open) return;
+    var form = details.querySelector('form[data-token-url]');
+    if (form) fetchToken(form);
+  }, true);
+  document.addEventListener('submit', function (e) {
+    var form = e.target.closest && e.target.closest('form[data-token-url]'), field = form && form.querySelector('input[name="_token"]');
+    if (!field || field.value) return;
+    e.preventDefault();
+    fetchToken(form).then(function () { form.submit(); });
   });
 })();

@@ -11,6 +11,7 @@ use App\Services\SubscribeLimits;
 use App\Services\SubscriberPreferences;
 use App\Services\Subscriptions;
 use App\Support\EqualTime;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -24,6 +25,17 @@ use Illuminate\Support\Facades\Mail;
 class SubscribeController extends Controller
 {
     public const REPLY = 'If that address is new, a confirmation is on its way.';
+
+    /**
+     * A CSRF token for the sign-up form. The page around it is cached and has
+     * no session, so the form fetches one when it opens; asking starts the session.
+     */
+    public function token(Request $request): JsonResponse
+    {
+        abort_unless(Subscriptions::enabled(), 404);
+
+        return response()->json(['token' => $request->session()->token()]);
+    }
 
     public function store(Request $request)
     {

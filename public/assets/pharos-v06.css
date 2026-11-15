@@ -27,7 +27,7 @@
 .service-history{display:flex;align-items:center;gap:12px;min-width:180px}
 .history-bar{display:flex;gap:2px;height:22px;flex:1;min-width:90px}
 .history-bar>span{flex:1;border-radius:2px;background:var(--green)}
-.history-bar>.unknown{background:var(--unknown)}.history-bar>.w{background:var(--amber)}.history-bar>.p{background:var(--orange)}.history-bar>.b{background:var(--red)}
+.history-bar>.unknown{background:var(--unknown)}.history-bar>.t{background:var(--lime)}.history-bar>.w{background:var(--amber)}.history-bar>.p{background:var(--orange)}.history-bar>.b{background:var(--red)}
 .history-pct{font-family:var(--mono);font-size:11px;white-space:nowrap;color:var(--ink-2)}
 .pharos-toasts{position:fixed;bottom:24px;right:24px;z-index:9999;display:grid;gap:10px;width:min(380px,calc(100vw - 32px));pointer-events:none}
 .pharos-toast{pointer-events:auto;display:flex;gap:12px;align-items:flex-start;padding:17px;border:1px solid var(--line);border-left:3px solid var(--green);background:var(--card);border-radius:14px;box-shadow:0 12px 42px #0002;color:var(--ink);animation:toast-in .25s ease-out}

@@ -86,7 +86,7 @@ class PageOverview
      * last SERVICE_DAYS of its bar and the uptime over those days.
      *
      * @param  Collection<int, Component>  $components
-     * @param  array<int, array<int, array{day: string, tone: string, pct: float, known: bool}>>  $bars
+     * @param  array<int, array<int, array{day: string, tone: string, pct: float, known: bool, lost: float}>>  $bars
      * @return list<array{name: string, rows: list<array{component: Component, days: array, uptime: ?float}>}>
      */
     protected function services(Collection $components, array $bars): array

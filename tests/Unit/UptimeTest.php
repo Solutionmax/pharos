@@ -2,7 +2,10 @@
 
 namespace Tests\Unit;
 
+use App\Enums\ComponentStatus;
+use App\Enums\IncidentStatus;
 use App\Models\Component;
+use App\Models\Incident;
 use App\Models\UptimeDay;
 use App\Services\Uptime;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -99,16 +102,48 @@ class UptimeTest extends TestCase
         $this->assertSame('ok', $this->uptime->bar($this->component)[Uptime::WINDOW_DAYS - 2]['tone']);
 
         UptimeDay::query()->delete();
-        $this->day(daysAgo: 1, downSeconds: 900);   // 98.96%
+        $this->day(daysAgo: 1, downSeconds: 900);   // 15 min lost
+        $this->assertSame('p', $this->uptime->bar($this->component)[Uptime::WINDOW_DAYS - 2]['tone']);
+
+        // One missed check is a blip, not a slow day.
+        UptimeDay::query()->delete();
+        $this->day(daysAgo: 1, downSeconds: 60);    // 1 min lost, 99.93%
+        $this->assertSame('t', $this->uptime->bar($this->component)[Uptime::WINDOW_DAYS - 2]['tone']);
+        $this->assertEqualsWithDelta(1.0, $this->uptime->bar($this->component)[Uptime::WINDOW_DAYS - 2]['lost'], 0.001);
+
+        // Exactly five minutes is no longer a blip, whatever the rounding of the percentage.
+        UptimeDay::query()->delete();
+        $this->day(daysAgo: 1, downSeconds: 300);
         $this->assertSame('p', $this->uptime->bar($this->component)[Uptime::WINDOW_DAYS - 2]['tone']);
 
         UptimeDay::query()->delete();
-        $this->day(daysAgo: 1, downSeconds: 60);    // 99.93%
-        $this->assertSame('w', $this->uptime->bar($this->component)[Uptime::WINDOW_DAYS - 2]['tone']);
-
-        UptimeDay::query()->delete();
-        $this->day(daysAgo: 1, downSeconds: 7200);  // 91.67%
+        $this->day(daysAgo: 1, downSeconds: 7200);  // 2 h lost
         $this->assertSame('b', $this->uptime->bar($this->component)[Uptime::WINDOW_DAYS - 2]['tone']);
+    }
+
+    public function test_a_public_incident_colours_every_day_it_ran_for_the_components_it_set(): void
+    {
+        $this->day(daysAgo: 1, downSeconds: 60);    // a blip on its own
+        $this->day(daysAgo: 2, downSeconds: 0);
+        $this->day(daysAgo: 3, downSeconds: 0);
+        $other = Component::create(['name' => 'web-07']);
+        $incident = Incident::create(['name' => 'Slow disks', 'status' => IncidentStatus::Resolved, 'visibility' => 'public',
+            'occurred_at' => Carbon::today()->subDays(2)->setTime(22, 0), 'resolved_at' => Carbon::today()->subDay()->setTime(2, 0)]);
+        $incident->components()->attach($this->component->id, ['status' => ComponentStatus::PerformanceIssues->value]);
+        $private = Incident::create(['name' => 'Internal', 'status' => IncidentStatus::Resolved, 'visibility' => 'private',
+            'occurred_at' => Carbon::today()->subDays(3)->setTime(9, 0), 'resolved_at' => Carbon::today()->subDays(3)->setTime(10, 0)]);
+        $private->components()->attach($this->component->id, ['status' => ComponentStatus::MajorOutage->value]);
+
+        $bars = $this->uptime->barsFor(Component::whereIn('id', [$this->component->id, $other->id])->get());
+        $bar = $bars[$this->component->id];
+
+        // The blip day and the day before both ran the incident: slow, not a blip and not green.
+        $this->assertSame('w', $bar[Uptime::WINDOW_DAYS - 2]['tone']);
+        $this->assertSame('w', $bar[Uptime::WINDOW_DAYS - 3]['tone']);
+        // A private incident says nothing on the public strip.
+        $this->assertSame('ok', $bar[Uptime::WINDOW_DAYS - 4]['tone']);
+        // A component the incident did not set keeps its own measurement.
+        $this->assertSame('unknown', $bars[$other->id][Uptime::WINDOW_DAYS - 2]['tone']);
     }
 
     public function test_a_component_with_no_history_reports_unknown_uptime(): void
@@ -116,18 +151,23 @@ class UptimeTest extends TestCase
         $this->assertNull($this->uptime->percentage($this->component));
     }
 
-    public function test_many_components_cost_one_query_and_match_the_single_bar(): void
+    public function test_many_components_cost_no_more_queries_than_one_and_match_the_single_bar(): void
     {
         $this->day(1, 3600);
         $other = Component::create(['name' => 'web-07']);
         $components = Component::whereIn('id', [$this->component->id, $other->id])->get();
+        $this->uptime->barsFor($components->take(1));
 
         DB::enableQueryLog();
+        $this->uptime->barsFor($components->take(1));
+        $one = count(DB::getQueryLog());
+        DB::flushQueryLog();
         $bars = $this->uptime->barsFor($components);
         $queries = count(DB::getQueryLog());
         DB::disableQueryLog();
 
-        $this->assertSame(1, $queries);
+        // The days in one query, the incidents that colour them in one more.
+        $this->assertSame($one, $queries);
         $this->assertSame($this->uptime->bar($this->component), $bars[$this->component->id]);
         $this->assertSame($this->uptime->bar($other), $bars[$other->id]);
         $this->assertSame($this->uptime->percentage($this->component), $this->uptime->percentageOf($bars[$this->component->id]));

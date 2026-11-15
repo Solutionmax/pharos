@@ -209,7 +209,7 @@ class SignInStatus
         return [
             'strip' => array_map(fn (array $day) => [
                 'tone' => $day['known'] ? $day['tone'] : 'none',
-                'h' => $day['known'] ? StatusTimeline::height($day['pct']) : null,
+                'h' => StatusTimeline::height($day),
             ], $overall),
             'uptime' => $percentage === null ? null : Uptime::format($percentage),
             'days' => count($overall),

@@ -46,6 +46,9 @@ Route::get('/', [StatusPageController::class, 'show'])->name('status');
 // are signed on their path (signed:relative), so a proxy that speaks http to
 // Laravel cannot break an https link.
 Route::post('subscribe', [SubscribeController::class, 'store'])->middleware('throttle:5,10')->name('subscribe');
+// The status page is served without a session to a new visitor (StatelessRoutes),
+// so the sign-up form asks for its token when it opens. This starts the session.
+Route::get('subscribe/token', [SubscribeController::class, 'token'])->middleware(['throttle:30,1', NoStore::class])->name('subscribe.token');
 Route::get('subscribe/confirm/{subscriber}', [SubscribeController::class, 'confirm'])->middleware('signed:relative')->name('subscribe.confirm');
 Route::get('unsubscribe/{subscriber}', [SubscribeController::class, 'confirmUnsubscribe'])->middleware('signed:relative')->name('unsubscribe');
 // Opening the link only asks: mail scanners follow links. The answer is a POST
@@ -243,7 +246,7 @@ require __DIR__.'/monitoring.php';
 
 // Register explicit page routes from the same actions, so legacy and page routes
 // cannot drift in validation or middleware. Account/install routes remain central.
-$pageRouteNames = ['status', 'subscribe', 'subscribe.confirm', 'unsubscribe', 'public.badge', 'public.feed', 'public.incident', 'public.widget', 'public.embed', 'subscribe.preferences', 'subscribe.preferences.update', 'public.reports', 'public.reports.csv', 'public.reports.pdf', 'api.features.metrics.web'];
+$pageRouteNames = ['status', 'subscribe', 'subscribe.token', 'subscribe.confirm', 'unsubscribe', 'public.badge', 'public.feed', 'public.incident', 'public.widget', 'public.embed', 'subscribe.preferences', 'subscribe.preferences.update', 'public.reports', 'public.reports.csv', 'public.reports.pdf', 'api.features.metrics.web'];
 $pageAdminPrefixes = ['overview', 'components', 'groups', 'incidents', 'maintenance', 'status-page', 'subscribers', 'integrations', 'branding', 'mail-templates', 'mail', 'reports'];
 $originalRoutes = Route::getRoutes()->getRoutes();
 foreach ($originalRoutes as $original) {

@@ -8,8 +8,10 @@ use App\Models\Component;
 use App\Models\Incident;
 use App\Models\IncidentUpdate;
 use App\Models\Setting;
+use App\Models\UptimeDay;
 use App\Models\User;
 use App\Services\StatusTimeline;
+use App\Services\Uptime;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -20,17 +22,22 @@ class StatusTimelineTest extends TestCase
 
     public function test_a_day_grows_with_the_time_it_lost(): void
     {
-        $this->assertNull(StatusTimeline::height(null));
-        $this->assertNull(StatusTimeline::height(100.0));
-        $this->assertNull(StatusTimeline::height(99.995));
+        $day = fn (string $tone, float $lost, bool $known = true) => ['tone' => $tone, 'lost' => $lost, 'known' => $known];
 
-        $minute = StatusTimeline::height(100 - 100 / 1440);
-        $hour = StatusTimeline::height(100 - 6000 / 1440);
-        $day = StatusTimeline::height(0.0);
+        $this->assertNull(StatusTimeline::height($day('unknown', 0, false)));
+        $this->assertNull(StatusTimeline::height($day('ok', 0)));
 
-        $this->assertGreaterThan(34, $minute);
-        $this->assertGreaterThan($minute, $hour);
-        $this->assertSame(100, $day);
+        // A blip keeps one short height, below every real loss.
+        $blip = StatusTimeline::height($day('t', 1));
+        $this->assertSame($blip, StatusTimeline::height($day('t', 4.9)));
+        $disruption = StatusTimeline::height($day('p', 6));
+        $hour = StatusTimeline::height($day('b', 100));
+        $whole = StatusTimeline::height($day('b', 1440));
+
+        $this->assertLessThan(34, $blip);
+        $this->assertGreaterThan(34, $disruption);
+        $this->assertGreaterThan($disruption, $hour);
+        $this->assertSame(100, $whole);
     }
 
     public function test_durations_read_like_a_person_would_say_them(): void
@@ -44,14 +51,14 @@ class StatusTimelineTest extends TestCase
     public function test_the_overall_row_takes_the_worst_of_each_day(): void
     {
         $bars = [
-            1 => [['day' => '2026-11-14', 'tone' => 'ok', 'pct' => 100.0, 'known' => true], ['day' => '2026-11-15', 'tone' => 'unknown', 'pct' => 0.0, 'known' => false]],
-            2 => [['day' => '2026-11-14', 'tone' => 'b', 'pct' => 90.0, 'known' => true], ['day' => '2026-11-15', 'tone' => 'w', 'pct' => 99.5, 'known' => true]],
+            1 => [['day' => '2026-11-14', 'tone' => 't', 'pct' => 99.93, 'known' => true, 'lost' => 1.0], ['day' => '2026-11-15', 'tone' => 'unknown', 'pct' => 0.0, 'known' => false, 'lost' => 0.0]],
+            2 => [['day' => '2026-11-14', 'tone' => 'b', 'pct' => 90.0, 'known' => true, 'lost' => 144.0], ['day' => '2026-11-15', 'tone' => 'w', 'pct' => 99.5, 'known' => true, 'lost' => 7.2]],
         ];
 
         $overall = StatusTimeline::overall($bars);
 
-        $this->assertSame(['day' => '2026-11-14', 'tone' => 'b', 'pct' => 90.0, 'known' => true], $overall[0]);
-        $this->assertSame(['day' => '2026-11-15', 'tone' => 'w', 'pct' => 99.5, 'known' => true], $overall[1]);
+        $this->assertSame(['day' => '2026-11-14', 'tone' => 'b', 'pct' => 90.0, 'known' => true, 'lost' => 144.0], $overall[0]);
+        $this->assertSame(['day' => '2026-11-15', 'tone' => 'w', 'pct' => 99.5, 'known' => true, 'lost' => 7.2], $overall[1]);
     }
 
     public function test_messages_sit_on_the_strip_by_their_time(): void
@@ -122,5 +129,50 @@ class StatusTimelineTest extends TestCase
     private function seedAdmin(): void
     {
         User::factory()->create();
+    }
+
+    /** Review U1: one missed check is a blip, a quarter of an hour a disruption; the readout says which. */
+    public function test_the_readout_names_blips_and_disruptions_by_their_minutes(): void
+    {
+        $this->seedAdmin();
+        $docs = Component::create(['name' => 'Pharos docs']);
+        $api = Component::create(['name' => 'API']);
+        UptimeDay::create(['component_id' => $docs->id, 'day' => Carbon::today()->subDay(), 'up_seconds' => 86340, 'down_seconds' => 60]);
+        UptimeDay::create(['component_id' => $api->id, 'day' => Carbon::today()->subDays(2), 'up_seconds' => 85680, 'down_seconds' => 720]);
+
+        $body = $this->get('/')->assertOk()->getContent();
+        $notes = $this->notes($body);
+
+        $this->assertSame('A brief blip of about 1 min on Pharos docs. No incident.', $notes[Uptime::WINDOW_DAYS - 2]['text']);
+        $this->assertSame('Disruption of 12 min on API. No incident.', $notes[Uptime::WINDOW_DAYS - 3]['text']);
+        // A blip is calm and short; a disruption is orange and stands taller.
+        $this->assertStringContainsString('<i class="t" style="--d:88;--h:30%"></i>', $body);
+        $this->assertMatchesRegularExpression('/<i class="p" style="--d:87;--h:\d+%"><\/i>/', $body);
+    }
+
+    public function test_an_incident_colours_its_days_and_the_readout_names_services_not_titles(): void
+    {
+        $this->seedAdmin();
+        $docs = Component::create(['name' => 'Pharos docs']);
+        UptimeDay::create(['component_id' => $docs->id, 'day' => Carbon::today()->subDay(), 'up_seconds' => 86400, 'down_seconds' => 0]);
+        $incident = Incident::create(['name' => 'Secret supplier trouble', 'status' => IncidentStatus::Resolved,
+            'occurred_at' => Carbon::yesterday()->setTime(9, 0), 'resolved_at' => Carbon::yesterday()->setTime(9, 40)]);
+        $incident->components()->attach($docs->id, ['status' => ComponentStatus::PerformanceIssues->value]);
+
+        $body = $this->get('/')->assertOk()->getContent();
+        $notes = $this->notes($body);
+
+        // Nothing was lost, yet the day was reported slow: it is amber, not green.
+        $this->assertStringContainsString('<i class="w" style="--d:88;--h:34%"></i>', $body);
+        $this->assertSame('Pharos docs: degraded performance for 40 min.', $notes[Uptime::WINDOW_DAYS - 2]['text']);
+        $this->assertStringNotContainsString('Secret supplier trouble', json_encode($notes));
+    }
+
+    /** @return list<array{label: string, text: string, day: string}> */
+    private function notes(string $body): array
+    {
+        preg_match('#<script[^>]*data-notes[^>]*>(.*?)</script>#s', $body, $match);
+
+        return json_decode($match[1], true);
     }
 }

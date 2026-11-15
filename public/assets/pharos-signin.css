@@ -154,6 +154,7 @@
    (from StatusTimeline::height, as on the public chart) for how long. */
 .pa-strip{display:grid;grid-template-columns:repeat(var(--days,90),minmax(0,1fr));gap:2px;align-items:end;height:38px;margin-top:40px}
 .pa-strip i{height:max(62%,var(--h,0%));border-radius:2px;background:var(--green);opacity:.85}
+.pa-strip i.t{background:var(--lime);opacity:1}
 .pa-strip i.w{background:var(--amber);opacity:1}
 .pa-strip i.p{background:var(--orange);opacity:1}
 .pa-strip i.b{background:var(--red);opacity:1}

@@ -69,11 +69,15 @@ details.updates>summary::-webkit-details-marker{display:none}
 h2{font-weight:800;font-size:19px;letter-spacing:-.02em}
 .key{margin-left:auto;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink-3)}
 .key i{display:inline-block;width:3px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px}
-.key .k-w{background:var(--amber)}.key .k-p{background:var(--orange)}.key .k-b{background:var(--red)}
+.key .k-t{background:var(--lime)}.key .k-w{background:var(--amber)}.key .k-p{background:var(--orange)}.key .k-b{background:var(--red)}
 .chart{position:relative;outline-offset:8px}
 .readout{min-height:48px;display:flex;align-items:center;font-size:13px;color:var(--ink-3);padding-left:var(--name)}
 .readout b{font:600 12px/1 var(--mono);color:var(--ink);margin-right:10px;white-space:nowrap}
 .readout span{color:var(--ink-2)}
+/* The hint names the gesture the visitor has: a finger taps, a mouse points. */
+.readout .hint-point,.readout .hint-tap{color:inherit}
+.readout .hint-tap{display:none}
+@media (hover:none){.readout .hint-point{display:none}.readout .hint-tap{display:inline}}
 .row{display:grid;grid-template-columns:var(--name) 1fr var(--pct);align-items:end;padding:10px 0}
 .row .nm{font-size:14px;font-weight:500;align-self:center;padding-right:16px;min-width:0}
 .row .nm>a,.row .nm>span:first-child{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -98,7 +102,7 @@ details.grp>summary .nm em{white-space:nowrap}
   transform-origin:bottom;animation:grow .8s var(--ease) backwards;animation-delay:calc(.5s + var(--d)*7ms)}
 @keyframes grow{from{transform:scaleY(0)}}
 .track i.none{height:3px;min-height:0;background:var(--unknown);border-radius:50%}
-.track i.w{background:var(--amber)}.track i.p{background:var(--orange)}.track i.b{background:var(--red)}
+.track i.t{background:var(--lime)}.track i.w{background:var(--amber)}.track i.p{background:var(--orange)}.track i.b{background:var(--red)}
 .axis{display:grid;grid-template-columns:var(--name) 1fr var(--pct);padding-top:8px;border-top:1px solid var(--line);margin-top:10px}
 .axis .ticks{grid-column:2;position:relative;height:18px}
 .axis .ticks span{position:absolute;top:0;font:500 11px/1.6 var(--mono);color:var(--ink-3);white-space:nowrap}
@@ -137,7 +141,7 @@ details.grp>summary .nm em{white-space:nowrap}
 .entry.quiet .node{top:26px;border-color:var(--line)}
 .entry.quiet p{padding-top:14px;font-size:13px;color:var(--ink-3)}
 .inc-update{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border:1px solid var(--line);border-radius:9px;font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap}
-.inc-update:hover{color:var(--brand);border-color:var(--brand);text-decoration:none}
+.inc-update:hover{color:var(--link);border-color:var(--brand);text-decoration:none}
 /* course strip: start to end, one dot per message, colour fades as the cause gets clearer */
 .strip{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;margin:40px 0 22px;max-width:660px;font:500 11px/1 var(--mono);color:var(--ink-3)}
 .strip .bar{position:relative;height:6px;border-radius:3px;background:var(--line)}
@@ -182,22 +186,29 @@ details.grp>summary .nm em{white-space:nowrap}
 .entry.pin .node{background:var(--state)}
 .entry.pin .date b{color:var(--state-ink)}
 .entry.flash .card{animation:flash 1.6s ease-out}
+/* a quiet span: one line, and the last incident as a small card */
+.log.is-quiet::before{display:none}
+.quiet{padding-left:max(0px,calc(var(--name) - 28px))}
+.quiet-line{padding:36px 0 14px;font-size:15px;color:var(--ink-2)}
+.last-incident{display:grid;gap:4px;max-width:520px;padding:18px 20px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--state);border-radius:14px;transition:border-color .3s}
+.last-incident:hover{text-decoration:none;border-color:color-mix(in srgb,var(--state) 40%,var(--line));border-left-color:var(--state)}
+.last-incident b{font-weight:700;font-size:16px;letter-spacing:-.015em;overflow-wrap:anywhere}
+.last-incident:hover b{text-decoration:underline;text-underline-offset:3px}
+.last-incident .meta{font-size:13px;color:var(--ink-2)}
+.last-incident .aff{font-size:13px;color:var(--ink-3)}
 .pager{display:flex;justify-content:space-between;gap:12px;margin-top:8px;padding-top:22px}
 .pager a{font-size:13px;font-weight:600;color:var(--ink-2)}
 .pager .older{margin-left:auto}
 .md>:first-child{margin-top:0}.md>:last-child{margin-bottom:0}
 .md p{margin:0 0 8px}.md ul,.md ol{margin:0 0 8px;padding-left:20px}.md li{margin:2px 0}
-.md a{color:var(--brand)}
+.md a{color:var(--link)}
 .md code{font-family:var(--mono);font-size:.92em;background:rgba(127,127,127,.12);padding:1px 5px;border-radius:4px}
 
-/* sign off */
-.sign{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:96px;padding:26px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.sign svg{width:26px;height:28px;color:var(--ink)}
-.sign p{font-weight:800;font-size:19px;letter-spacing:-.02em;line-height:1.15}
-.sign p span{color:var(--ink-3)}
-.sign a{margin-left:auto;font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:8px}
-footer{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding-top:20px;font-size:12px;color:var(--ink-3)}
+/* sign off: the links, then the credit as one quiet line */
+footer{display:grid;gap:12px;margin-top:96px;padding-top:20px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-3)}
+footer .links{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
 footer .live-refresh{margin:0 0 0 auto}
+footer .sign a{text-decoration:underline;text-underline-offset:3px}
 
 @media(max-width:720px){
   .wrap{--name:0px;--pct:0px;padding:0 16px}
@@ -219,7 +230,7 @@ footer .live-refresh{margin:0 0 0 auto}
   .entry .node,.log::before{display:none}
   .card{padding:20px 18px 22px;border-radius:14px}
   .msgs li{grid-template-columns:auto 1fr;gap:2px 10px}.msgs .md{grid-column:1/-1}
-  .sign{margin-top:80px}.sign a{margin-left:0}
+  footer{margin-top:80px}
 }
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}

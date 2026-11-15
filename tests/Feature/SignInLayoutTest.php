@@ -191,8 +191,10 @@ class SignInLayoutTest extends TestCase
         preg_match('~<div class="pa-strip"[^>]*>(.*?)</div>~s', $html, $strip);
         $this->assertSame(90, substr_count($strip[1], '<i'));
         // Three days ago, oldest first: the worst day of the overall row, as tall as the public chart draws it.
-        $this->assertSame(1, substr_count($strip[1], 'class="b"'));
+        // Today is red as well: the open incident set Mail to a major outage.
+        $this->assertSame(2, substr_count($strip[1], 'class="b"'));
         $this->assertStringContainsString('<i class="b" style="--h:100%"></i>', $strip[1]);
+        $this->assertStringEndsWith('<i class="b" style="--h:34%"></i>', trim($strip[1]));
         // On wide screens the footer takes the link back from the hidden line.
         $this->assertStringContainsString('class="pa-foot-status"', $html);
     }

@@ -18,29 +18,93 @@ class StatusTimeline
 {
     private const DAY_MINUTES = 1440;
 
+    /** Lost minutes below this, with no incident, are a brief blip; from here a disruption. */
+    public const BLIP_MINUTES = 5;
+
+    /** From this many lost minutes a day without an incident counts as an outage. */
+    public const OUTAGE_MINUTES = 60;
+
+    /** A blip stands a little above a good day and never grows: it is not news. */
+    private const BLIP_HEIGHT = 30;
+
     /** The worst tone wins a day: one red service makes the whole day red. */
-    private const TONE_ORDER = ['unknown' => 0, 'ok' => 1, 'w' => 2, 'p' => 3, 'b' => 4];
+    private const TONE_ORDER = ['unknown' => 0, 'ok' => 1, 't' => 2, 'w' => 3, 'p' => 4, 'b' => 5];
 
     /**
-     * Height of a day in percent of the track, or null for a day without loss.
-     * Log scale: a single lost minute is still visible, ten hours fill the track.
+     * The colour of one service on one day, the single rule behind every day
+     * strip. An incident that touched the day sets the floor: slow, disruption
+     * or outage, as it was reported. Without one the minutes lost decide, so a
+     * single missed check is a blip and not a slow day.
+     *
+     * @param  float  $lostMinutes  (100 - pct) / 100 × the minutes measured that day
+     * @param  string|null  $incidentTone  'w', 'p' or 'b' of the worst incident on the day
      */
-    public static function height(?float $pct): ?int
+    public static function dayTone(float $lostMinutes, ?string $incidentTone = null): string
     {
-        if ($pct === null || $pct >= 99.99) {
-            return null;
-        }
+        $measured = match (true) {
+            $lostMinutes <= 0 => 'ok',
+            $lostMinutes < self::BLIP_MINUTES => 't',
+            $lostMinutes < self::OUTAGE_MINUTES => 'p',
+            default => 'b',
+        };
 
-        $minutes = (100 - $pct) / 100 * self::DAY_MINUTES;
-
-        return (int) min(100, round(34 + 24 * log10(1 + $minutes)));
+        return in_array($incidentTone, ['w', 'p', 'b'], true) ? self::worse($measured, $incidentTone) : $measured;
     }
 
     /**
-     * One row for all services: per day the worst tone and the lowest percentage.
+     * The legend under every day strip, public and admin alike, mildest first.
      *
-     * @param  array<int, list<array{day: string, tone: string, pct: float, known: bool}>>  $bars
-     * @return list<array{day: string, tone: string, pct: float, known: bool}>
+     * @return array<string, string> tone => label
+     */
+    public static function dayToneLabels(): array
+    {
+        return [
+            't' => __('Brief blip (under :n min)', ['n' => self::BLIP_MINUTES]),
+            'w' => __('Slow'),
+            'p' => __('Disruption'),
+            'b' => __('Outage'),
+        ];
+    }
+
+    /** Of two day tones the one that weighs more. */
+    public static function worse(string $a, string $b): string
+    {
+        return (self::TONE_ORDER[$b] ?? 0) > (self::TONE_ORDER[$a] ?? 0) ? $b : $a;
+    }
+
+    /**
+     * Height of a day in percent of the track, or null for a day at rest.
+     * Log scale on the minutes lost: a single lost minute is still visible, ten
+     * hours fill the track. A blip keeps one short height whatever it lost.
+     *
+     * @param  array{tone: string, known: bool, lost?: float}  $day
+     */
+    public static function height(array $day): ?int
+    {
+        if (! $day['known'] || in_array($day['tone'], ['ok', 'unknown'], true)) {
+            return null;
+        }
+        if ($day['tone'] === 't') {
+            return self::BLIP_HEIGHT;
+        }
+
+        return (int) min(100, round(34 + 24 * log10(1 + ($day['lost'] ?? 0.0))));
+    }
+
+    /** Whether something that ran from $from to $to (or until now) touched the given day, in the zone of the bars. */
+    public static function overlaps(CarbonInterface $from, ?CarbonInterface $to, string $day, CarbonInterface $now): bool
+    {
+        $start = Carbon::parse($day, 'UTC');
+
+        return $from->lt($start->copy()->addDay()) && ($to ?? $now)->gt($start);
+    }
+
+    /**
+     * One row for all services: per day the worst tone, the lowest percentage
+     * and the most minutes lost by any one of them.
+     *
+     * @param  array<int, list<array{day: string, tone: string, pct: float, known: bool, lost: float}>>  $bars
+     * @return list<array{day: string, tone: string, pct: float, known: bool, lost: float}>
      */
     public static function overall(array $bars): array
     {
@@ -56,9 +120,10 @@ class StatusTimeline
                 $known = $seen['known'] || $day['known'];
                 $result[$i] = [
                     'day' => $day['day'],
-                    'tone' => self::TONE_ORDER[$day['tone']] > self::TONE_ORDER[$seen['tone']] ? $day['tone'] : $seen['tone'],
+                    'tone' => self::worse($seen['tone'], $day['tone']),
                     'pct' => ! $seen['known'] ? $day['pct'] : (! $day['known'] ? $seen['pct'] : min($seen['pct'], $day['pct'])),
                     'known' => $known,
+                    'lost' => max($seen['lost'], $day['lost']),
                 ];
             }
         }
@@ -215,17 +280,19 @@ class StatusTimeline
      * that day and for how long, or how the day measured when nothing was reported.
      * Services, not incident titles: the log below holds the titles, for its own window.
      *
-     * @param  list<array{day: string, tone: string, pct: float, known: bool}>  $overall
+     * @param  list<array{day: string, tone: string, pct: float, known: bool, lost: float}>  $overall
      * @param  Collection<int, Incident>  $incidents  public incidents of the window
+     * @param  array<int, list<array{day: string, tone: string, pct: float, known: bool, lost: float}>>  $bars  per component, what $overall was built from
+     * @param  array<int, string>  $names  component names by id
      * @return list<array{label: string, text: string, day: string}>
      */
-    public static function dayNotes(array $overall, Collection $incidents, CarbonInterface $now): array
+    public static function dayNotes(array $overall, Collection $incidents, CarbonInterface $now, array $bars = [], array $names = []): array
     {
-        $byDay = $incidents->groupBy(fn (Incident $i) => $i->occurred_at->format('Y-m-d'));
-
-        return array_map(function (array $day) use ($byDay, $now) {
+        return array_map(function (array $day, int $index) use ($incidents, $now, $bars, $names) {
             $label = Carbon::parse($day['day'])->translatedFormat('D j M');
-            $hits = $byDay->get($day['day'], collect());
+            // Every incident that ran on the day, also one that started the day before:
+            // the same test that coloured the day.
+            $hits = $incidents->filter(fn (Incident $i) => self::overlaps($i->occurred_at, $i->resolved_at, $day['day'], $now));
 
             $text = match (true) {
                 $hits->isNotEmpty() => $hits->map(function (Incident $i) use ($now) {
@@ -235,11 +302,49 @@ class StatusTimeline
                 })->join(' · ').'.',
                 ! $day['known'] => __('No measurements this day.'),
                 $day['tone'] === 'ok' => __('No problems.'),
-                default => __('No incident reported. Lowest uptime :pct.', ['pct' => Uptime::format($day['pct'])]),
+                default => self::lossNote(array_map(fn (array $bar) => $bar[$index], $bars), $names)
+                    ?? __('No incident reported. Lowest uptime :pct.', ['pct' => Uptime::format($day['pct'])]),
             };
 
             return ['label' => $label, 'text' => $text, 'day' => $day['day']];
-        }, $overall);
+        }, $overall, array_keys($overall));
+    }
+
+    /**
+     * "Disruption of 12 min on API. A brief blip of about 1 min on Docs. No incident."
+     * Worst first; per tone the longest loss of the services named.
+     *
+     * @param  array<int, array{tone: string, known: bool, lost: float}>  $days  one day per component id
+     * @param  array<int, string>  $names
+     */
+    private static function lossNote(array $days, array $names): ?string
+    {
+        $byTone = [];
+        foreach ($days as $id => $day) {
+            if ($day['known'] && ! in_array($day['tone'], ['ok', 'unknown'], true) && isset($names[$id])) {
+                $byTone[$day['tone']][] = ['name' => $names[$id], 'lost' => $day['lost']];
+            }
+        }
+        if ($byTone === []) {
+            return null;
+        }
+        uksort($byTone, fn ($a, $b) => (self::TONE_ORDER[$b] ?? 0) <=> (self::TONE_ORDER[$a] ?? 0));
+
+        $parts = [];
+        foreach ($byTone as $tone => $hits) {
+            $replace = [
+                'duration' => self::duration(max(1, (int) round(max(array_column($hits, 'lost'))))),
+                'names' => implode(', ', array_column($hits, 'name')),
+            ];
+            $parts[] = match ($tone) {
+                'b' => __('Outage of :duration on :names.', $replace),
+                'p' => __('Disruption of :duration on :names.', $replace),
+                'w' => __('Slow on :names.', $replace),
+                default => __('A brief blip of about :duration on :names.', $replace),
+            };
+        }
+
+        return implode(' ', $parts).' '.__('No incident.');
     }
 
     /** Times on a strip: just the clock, or the date as well when the ends fall on different days. */
