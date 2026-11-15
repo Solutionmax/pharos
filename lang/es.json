@@ -1815,5 +1815,9 @@
     ":service could not be checked. We are looking into it.": "No se pudo comprobar :service. Lo estamos investigando.",
     ":service could not be reached. We are looking into it.": "No se pudo acceder a :service. Lo estamos investigando.",
     ":service is working again and has stayed up for :n checks in a row.": ":service vuelve a funcionar y ha superado :n comprobaciones seguidas.",
-    ":service is working again.": ":service vuelve a funcionar."
+    ":service is working again.": ":service vuelve a funcionar.",
+    "Security contact": "Contacto de seguridad",
+    "Where to report a vulnerability": "Dónde informar de una vulnerabilidad",
+    "An email address or a link that starts with https://. With one filled in, :url tells security researchers where to write; empty, there is no such file.": "Una dirección de correo o un enlace que empiece por https://. Si lo rellenas, :url indica a los investigadores de seguridad dónde escribir; si está vacío, ese archivo no existe.",
+    "The security contact must be an email address or a link that starts with https://.": "El contacto de seguridad debe ser una dirección de correo o un enlace que empiece por https://."
 }

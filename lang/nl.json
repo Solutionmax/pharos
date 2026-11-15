@@ -1815,5 +1815,9 @@
     ":service could not be checked. We are looking into it.": ":service kon niet worden gecontroleerd. We zoeken het uit.",
     ":service could not be reached. We are looking into it.": ":service was niet bereikbaar. We zoeken het uit.",
     ":service is working again and has stayed up for :n checks in a row.": ":service werkt weer en bleef :n controles op rij bereikbaar.",
-    ":service is working again.": ":service werkt weer."
+    ":service is working again.": ":service werkt weer.",
+    "Security contact": "Beveiligingscontact",
+    "Where to report a vulnerability": "Waar je een kwetsbaarheid meldt",
+    "An email address or a link that starts with https://. With one filled in, :url tells security researchers where to write; empty, there is no such file.": "Een e-mailadres of een link die met https:// begint. Is dit ingevuld, dan vertelt :url beveiligingsonderzoekers waar ze terechtkunnen; leeg bestaat dat bestand niet.",
+    "The security contact must be an email address or a link that starts with https://.": "Het beveiligingscontact moet een e-mailadres zijn of een link die met https:// begint."
 }

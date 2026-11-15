@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\MetricsController;
 use App\Http\Controllers\PublicFeatures\CachetImportController;
 use App\Http\Controllers\PublicFeatures\PublicationController;
 use App\Http\Controllers\PublicFeatures\ReportController;
+use App\Http\Controllers\PublicFeatures\SecurityTxtController;
 use App\Http\Controllers\SubscribeController;
 use App\Http\Middleware\ApiTokenAuth;
 use App\Http\Middleware\NoStore;
@@ -18,6 +19,8 @@ Route::withoutMiddleware(StatelessRoutes::MIDDLEWARE)->group(function () {
     Route::get('feed.xml', [PublicationController::class, 'feed'])->name('public.feed');
     Route::get('widget.json', [PublicationController::class, 'widgetData'])->name('public.widget');
     Route::get('embed.js', [PublicationController::class, 'widgetScript'])->name('public.embed');
+    // One file for the whole installation, on every domain it answers to.
+    Route::get('.well-known/security.txt', SecurityTxtController::class)->name('security.txt');
 });
 Route::get('incidents/{incident}', [PublicationController::class, 'incident'])->whereNumber('incident')->name('public.incident');
 

@@ -1815,5 +1815,9 @@
     ":service could not be checked. We are looking into it.": ":service could not be checked. We are looking into it.",
     ":service could not be reached. We are looking into it.": ":service could not be reached. We are looking into it.",
     ":service is working again and has stayed up for :n checks in a row.": ":service is working again and has stayed up for :n checks in a row.",
-    ":service is working again.": ":service is working again."
+    ":service is working again.": ":service is working again.",
+    "Security contact": "Security contact",
+    "Where to report a vulnerability": "Where to report a vulnerability",
+    "An email address or a link that starts with https://. With one filled in, :url tells security researchers where to write; empty, there is no such file.": "An email address or a link that starts with https://. With one filled in, :url tells security researchers where to write; empty, there is no such file.",
+    "The security contact must be an email address or a link that starts with https://.": "The security contact must be an email address or a link that starts with https://."
 }

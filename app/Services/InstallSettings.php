@@ -23,6 +23,8 @@ class InstallSettings
 
     public const EDITOR_PRIVATE_TARGETS = 'network.editor_private_targets';
 
+    public const SECURITY_CONTACT = 'security.contact';
+
     /** How long the audit trail keeps a line. */
     public static function auditDays(): int
     {
@@ -69,9 +71,18 @@ class InstallSettings
     }
 
     /**
+     * Where to report a vulnerability: an email address or an https:// link,
+     * served as /.well-known/security.txt. Empty means there is no such file.
+     */
+    public static function securityContact(): string
+    {
+        return (string) Setting::get(self::SECURITY_CONTACT, '');
+    }
+
+    /**
      * Current values in form shape, for the screen and for the audit diff.
      *
-     * @return array{audit_days:int,keep_backups:int,update_check:bool,admin_two_factor:bool,private_targets:bool}
+     * @return array{audit_days:int,keep_backups:int,update_check:bool,admin_two_factor:bool,private_targets:bool,security_contact:string}
      */
     public static function all(): array
     {
@@ -81,10 +92,11 @@ class InstallSettings
             'update_check' => self::updateCheckEnabled(),
             'admin_two_factor' => self::adminTwoFactorRequired(),
             'private_targets' => self::editorsMayTargetPrivate(),
+            'security_contact' => self::securityContact(),
         ];
     }
 
-    /** @param  array{audit_days:int,keep_backups:int,update_check:bool,admin_two_factor:bool,private_targets:bool}  $values */
+    /** @param  array{audit_days:int,keep_backups:int,update_check:bool,admin_two_factor:bool,private_targets:bool,security_contact:string}  $values */
     public static function save(array $values): void
     {
         Setting::put(self::AUDIT_DAYS, (string) $values['audit_days']);
@@ -92,5 +104,6 @@ class InstallSettings
         Setting::put(self::UPDATE_CHECK, $values['update_check'] ? '1' : '0');
         Setting::put(self::ADMIN_TWO_FACTOR, $values['admin_two_factor'] ? '1' : '0');
         Setting::put(self::EDITOR_PRIVATE_TARGETS, $values['private_targets'] ? '1' : '0');
+        Setting::put(self::SECURITY_CONTACT, $values['security_contact']);
     }
 }

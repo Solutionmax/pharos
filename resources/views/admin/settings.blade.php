@@ -80,6 +80,17 @@
         <label class="check"><input type="checkbox" name="private_targets" value="1" @checked(old('private_targets', $general['private_targets']))> {{ __('On') }}</label>
       </div>
 
+      <h4 class="grouphd">{{ __('Security contact') }}</h4>
+      <div class="fields">
+        <div class="field wide">
+          <label for="security_contact">{{ __('Where to report a vulnerability') }}</label>
+          <input id="security_contact" name="security_contact" type="text" maxlength="255" autocomplete="off" placeholder="security@example.com"
+                 value="{{ old('security_contact', $general['security_contact']) }}">
+          <span class="help">{{ __('An email address or a link that starts with https://. With one filled in, :url tells security researchers where to write; empty, there is no such file.', ['url' => url('/.well-known/security.txt')]) }}</span>
+          @error('security_contact')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
+        </div>
+      </div>
+
       <div class="actions">
         <button class="btn" type="submit">{{ __('Save settings') }}</button>
         <button class="btn ghost" type="reset">{{ __('Undo my changes') }}</button>
