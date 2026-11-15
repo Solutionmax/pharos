@@ -41,6 +41,9 @@ return [
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
+            // "Remember me", in minutes. Laravel's own default is about 400 days;
+            // 30 days keeps a lost laptop from staying signed in for a year.
+            'remember' => 60 * 24 * (int) env('PHAROS_REMEMBER_DAYS', 30),
         ],
     ],
 

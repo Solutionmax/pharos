@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\LocalTimestamps;
 use App\Notifications\ResetAccountPassword;
+use App\Services\InstallSettings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -80,17 +81,29 @@ class User extends Authenticatable
 
     public function canAccessPage(int $pageId): bool
     {
-        return $this->isAdmin() || $this->statusPages()->whereKey($pageId)->exists();
+        return $this->isAdmin() || $this->activePage($pageId)->exists();
     }
 
     public function canEditPage(int $pageId): bool
     {
-        return $this->isAdmin() || $this->statusPages()->whereKey($pageId)->wherePivotIn('role', ['editor', 'admin'])->exists();
+        return $this->isAdmin() || $this->activePage($pageId)->wherePivotIn('role', ['editor', 'admin'])->exists();
     }
 
     public function canAdministerPage(int $pageId): bool
     {
-        return $this->isAdmin() || $this->statusPages()->whereKey($pageId)->wherePivot('role', 'admin')->exists();
+        return $this->isAdmin() || $this->activePage($pageId)->wherePivot('role', 'admin')->exists();
+    }
+
+    /**
+     * This account's membership of a page that is not archived. Archiving
+     * closes a page for its members (and their API tokens) too; only an
+     * installation admin still reaches it, to bring it back or delete it.
+     *
+     * @return BelongsToMany<StatusPage, $this>
+     */
+    protected function activePage(int $pageId): BelongsToMany
+    {
+        return $this->statusPages()->whereKey($pageId)->whereNull('status_pages.archived_at');
     }
 
     /** @return HasMany<RecoveryCode, $this> */
@@ -126,10 +139,19 @@ class User extends Authenticatable
         $this->forceFill(['dismissed_notes' => null])->save();
     }
 
-    /** Invited with "turn on two factor first", and not done yet. */
+    /**
+     * Two factor is asked of this account and not on yet: invited with "turn on
+     * two factor first", or an administrator while the installation requires it
+     * for administrators (Settings, General).
+     */
     public function mustSetUpTwoFactor(): bool
     {
-        return $this->require_two_factor && ! $this->hasTwoFactor();
+        return $this->twoFactorRequired() && ! $this->hasTwoFactor();
+    }
+
+    public function twoFactorRequired(): bool
+    {
+        return $this->require_two_factor || ($this->isAdmin() && InstallSettings::adminTwoFactorRequired());
     }
 
     /** A secret that was never confirmed with a real code does not count. */

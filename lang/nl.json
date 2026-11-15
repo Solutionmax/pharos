@@ -1755,5 +1755,9 @@
     "Sign in page": "Aanmeldpagina",
     "Simple": "Eenvoudig",
     "With status": "Met status",
-    "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.": "Voor iedereen die inlogt op deze installatie. Met status toont de standaard statuspagina naast het formulier, alleen zolang die pagina gepubliceerd is."
+    "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.": "Voor iedereen die inlogt op deze installatie. Met status toont de standaard statuspagina naast het formulier, alleen zolang die pagina gepubliceerd is.",
+    "Require two factor for administrators": "Tweestapsverificatie verplicht voor beheerders",
+    "An administrator without two factor can only open their profile until it is set up. That includes you.": "Een beheerder zonder tweestapsverificatie kan alleen het eigen profiel openen tot die is ingesteld. Dat geldt ook voor jou.",
+    "This installation requires two factor authentication for administrators. Turn it on before you continue.": "Deze installatie vereist tweestapsverificatie voor beheerders. Schakel die in voordat je verdergaat.",
+    "The provider's :endpoint is not on https. Use https, or add its host to the internal provider hosts.": "Het :endpoint van de aanbieder gebruikt geen https. Gebruik https, of zet de host bij de interne hosts van aanbieders."
 }

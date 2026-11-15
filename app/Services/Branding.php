@@ -88,10 +88,19 @@ class Branding
     /** Content-based URLs also refresh assets when the configured release version is stale. */
     public function builtInAssetUrl(string $name): string
     {
+        return asset($this->builtInAssetPath($name));
+    }
+
+    /**
+     * The same file as a path under public/, for a caller that must pick its
+     * own host: a mail is built from the configured URL, not the request's.
+     */
+    public function builtInAssetPath(string $name): string
+    {
         $path = public_path('brand/'.$name);
         $revision = is_file($path) ? hash_file('sha256', $path) : (string) config('pharos.version');
 
-        return asset('brand/'.$name).'?v='.rawurlencode((string) $revision);
+        return 'brand/'.$name.'?v='.rawurlencode((string) $revision);
     }
 
     public function faviconUrl(): string
