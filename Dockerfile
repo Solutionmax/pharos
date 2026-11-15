@@ -11,7 +11,7 @@ ENV PHAROS_VERSION=${VERSION}
 RUN apt-get update \
  && apt-get install -y --no-install-recommends unzip libzip-dev \
  && rm -rf /var/lib/apt/lists/* \
- && a2enmod rewrite \
+ && a2enmod rewrite headers \
  && docker-php-ext-install -j"$(nproc)" pdo_mysql bcmath zip \
  && printf 'opcache.enable=1\nopcache.validate_timestamps=0\nopcache.memory_consumption=128\n' \
     > /usr/local/etc/php/conf.d/opcache.ini \
@@ -20,6 +20,11 @@ RUN apt-get update \
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
       /etc/apache2/sites-available/*.conf /etc/apache2/apache2.conf
+
+# No version banner and no dotfiles; public/.htaccess adds nosniff and a
+# sandbox for uploads that Apache serves itself (mod_headers, enabled above).
+COPY docker/apache-hardening.conf /etc/apache2/conf-available/zz-pharos-hardening.conf
+RUN a2enconf zz-pharos-hardening
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html

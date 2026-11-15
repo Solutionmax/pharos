@@ -189,7 +189,7 @@ php artisan pharos:update</pre>
   </div>
 </dialog>
 
-<script>
+<script @nonce>
 (function () {
   var dialog = document.getElementById('job-dialog');
   if (!dialog || !window.fetch || !dialog.showModal) return;

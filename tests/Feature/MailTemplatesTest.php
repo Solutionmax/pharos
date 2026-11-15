@@ -341,9 +341,9 @@ class MailTemplatesTest extends TestCase
     {
         $get = $this->actingAs($this->admin)->get('/admin/mail-templates/preview?template=incident_updated');
 
+        $this->assertStringEndsWith("frame-ancestors 'self'", (string) $get->headers->get('Content-Security-Policy'));
         $get->assertOk()
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
-            ->assertHeader('Content-Security-Policy', "frame-ancestors 'self'")
             ->assertSee('Outbound email delayed')
             ->assertSee('Mail, Outbound queue')
             ->assertSee('<strong>', false)

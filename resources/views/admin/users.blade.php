@@ -145,7 +145,7 @@
   @include('admin.partials.access-drawer', ['member' => $user])
 @endforeach
 
-<script>
+<script @nonce>
 (function () {
   var q = document.getElementById('pp-q'), chips = document.getElementById('pp-f');
   var rows = document.querySelectorAll('.pp-user'), count = document.getElementById('pp-count'), empty = document.getElementById('pp-empty');

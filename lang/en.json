@@ -1759,5 +1759,7 @@
     "Require two factor for administrators": "Require two factor for administrators",
     "An administrator without two factor can only open their profile until it is set up. That includes you.": "An administrator without two factor can only open their profile until it is set up. That includes you.",
     "This installation requires two factor authentication for administrators. Turn it on before you continue.": "This installation requires two factor authentication for administrators. Turn it on before you continue.",
-    "The provider's :endpoint is not on https. Use https, or add its host to the internal provider hosts.": "The provider's :endpoint is not on https. Use https, or add its host to the internal provider hosts."
+    "The provider's :endpoint is not on https. Use https, or add its host to the internal provider hosts.": "The provider's :endpoint is not on https. Use https, or add its host to the internal provider hosts.",
+    "Remove the key?": "Remove the key?",
+    "Your logo, favicon and mail wording stay saved; they show again the moment you paste a key.": "Your logo, favicon and mail wording stay saved; they show again the moment you paste a key."
 }

@@ -2,7 +2,7 @@
      the right theme. partials/theme-script (end of body) keeps the toggle and
      icons; this only avoids a flash of the system theme when someone chose the
      other one with the quick toggle. --}}
-<script data-theme-early>
+<script @nonce data-theme-early>
 (function () {
   var fallback = @json($theme ?? app(\App\Services\Branding::class)->theme());
   var choice = null;

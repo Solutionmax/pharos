@@ -40,7 +40,7 @@
   'contextHelp' => __('Name, colour and images apply to this page only. Nothing is inherited from the default page: a new page starts with the Pharos defaults.'),
 ])
 
-<script type="application/json" id="bx-config">{!! json_encode([
+<script @nonce type="application/json" id="bx-config">{!! json_encode([
   'licensed' => $licensed,
   'defaults' => $defaults,
   'current' => ['logo' => $brand['logo'], 'logo_dark' => $brand['logo_dark'], 'favicon' => $brand['favicon_custom'] ? $brand['favicon'] : null],
@@ -381,7 +381,9 @@
 
           @if ($plan->hasKey)
             <form method="POST" action="{{ route('admin.branding.deactivate') }}" class="bx-remove-key"
-                  onsubmit="return confirm('Remove the key? Your logo, favicon and mail wording stay saved; they show again the moment you paste a key.')">
+                  data-confirm-title="{{ __('Remove the key?') }}"
+                  data-confirm="{{ __('Your logo, favicon and mail wording stay saved; they show again the moment you paste a key.') }}"
+                  data-confirm-action="{{ __('Remove key') }}">
               @csrf
               <button class="linkbtn" type="submit">{{ __('Remove key') }}</button>
               <span class="help">{{ __('Uploads stay saved and come back when a key is pasted again.') }}</span>
@@ -393,5 +395,5 @@
   </div>
 </div>
 
-<script defer src="{{ asset('assets/pharos-branding.js') }}?v={{ @filemtime(public_path('assets/pharos-branding.js')) }}"></script>
+<script @nonce defer src="{{ asset('assets/pharos-branding.js') }}?v={{ @filemtime(public_path('assets/pharos-branding.js')) }}"></script>
 @endsection

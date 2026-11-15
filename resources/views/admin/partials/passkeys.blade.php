@@ -28,4 +28,4 @@
     </form>
   </div>
 </section>
-<script defer src="{{ asset('assets/pharos-passkeys.js') }}"></script>
+<script @nonce defer src="{{ asset('assets/pharos-passkeys.js') }}"></script>

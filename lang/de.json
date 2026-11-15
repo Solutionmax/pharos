@@ -1759,5 +1759,7 @@
     "Require two factor for administrators": "Zwei-Faktor-Authentifizierung für Administratoren verlangen",
     "An administrator without two factor can only open their profile until it is set up. That includes you.": "Ein Administrator ohne Zwei-Faktor-Authentifizierung kann nur das eigene Profil öffnen, bis sie eingerichtet ist. Das gilt auch für Sie.",
     "This installation requires two factor authentication for administrators. Turn it on before you continue.": "Diese Installation verlangt Zwei-Faktor-Authentifizierung für Administratoren. Schalten Sie sie ein, bevor Sie fortfahren.",
-    "The provider's :endpoint is not on https. Use https, or add its host to the internal provider hosts.": "Der :endpoint des Anbieters verwendet kein https. Verwenden Sie https oder tragen Sie den Host bei den internen Anbieter-Hosts ein."
+    "The provider's :endpoint is not on https. Use https, or add its host to the internal provider hosts.": "Der :endpoint des Anbieters verwendet kein https. Verwenden Sie https oder tragen Sie den Host bei den internen Anbieter-Hosts ein.",
+    "Remove the key?": "Den Schlüssel entfernen?",
+    "Your logo, favicon and mail wording stay saved; they show again the moment you paste a key.": "Logo, Favicon und die Texte deiner E-Mails bleiben gespeichert; sie erscheinen wieder, sobald du einen Schlüssel einfügst."
 }

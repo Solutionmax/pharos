@@ -217,7 +217,7 @@
   </div>
 </dialog>
 
-<script>
+<script @nonce>
 (function () {
   var CSRF = document.querySelector('meta[name=csrf-token]').content;
 

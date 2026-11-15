@@ -5,6 +5,18 @@
 
     RewriteEngine On
 
+    # Dotfiles (.htaccess, storage/.gitignore) are never served from disk; the
+    # app answers 404. ACME challenges under .well-known stay reachable.
+    RewriteCond %{REQUEST_URI} !/\.well-known/
+    RewriteRule (^|/)\. index.php [L]
+
+    # Files Apache serves itself carry no headers from the app: mark them,
+    # and uploads under storage/ apart (see mod_headers below).
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [E=PHAROS_STATIC:1]
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^storage/ - [E=PHAROS_UPLOAD:1]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -22,4 +34,11 @@
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    # Static files are never sniffed into another type. An uploaded file is
+    # never a page either: opened on its own it runs nothing (CSP sandbox).
+    Header set X-Content-Type-Options "nosniff" env=PHAROS_STATIC
+    Header set Content-Security-Policy "sandbox; default-src 'none'" env=PHAROS_UPLOAD
 </IfModule>

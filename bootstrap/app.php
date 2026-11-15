@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ApiTokenAuth;
+use App\Http\Middleware\BaselineHeaders;
 use App\Http\Middleware\CentralAdministration;
 use App\Http\Middleware\EnsurePageCapability;
 use App\Http\Middleware\FeatureRequestLimits;
@@ -9,12 +10,14 @@ use App\Http\Middleware\RequireTwoFactorSetup;
 use App\Http\Middleware\ResolveStatusPage;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\UseLocale;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\TokenMismatchException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 $app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -33,7 +36,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(FeatureRequestLimits::class);
         $middleware->prepend(MonitoringRequestLimits::class);
 
-        $middleware->web(append: SecurityHeaders::class);
+        // nosniff and friends on every answer, also the API and /up.
+        $middleware->append(BaselineHeaders::class);
+        // First in the group, so that what the session, CSRF and binding steps
+        // answer themselves (a 419, a 404 for a missing record) gets it too.
+        $middleware->web(prepend: SecurityHeaders::class);
         $middleware->appendToGroup('web', UseLocale::class);
         $middleware->appendToGroup('web', CentralAdministration::class);
         // Invited with "two factor first": only the profile until it is on.
@@ -63,6 +70,16 @@ $app = Application::configure(basePath: dirname(__DIR__))
             }
 
             return redirect()->route('admin.login')->with('status', 'Your session had expired, so that was not saved. Sign in and try again.');
+        });
+        // One answer for every missing API record. A record of another page, a
+        // hidden service and an id that never existed must read the same, and
+        // the default message names the model class and the id it looked for.
+        $exceptions->render(function (NotFoundHttpException|ModelNotFoundException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['message' => 'Not found.'], 404);
+            }
+
+            return null;
         });
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),

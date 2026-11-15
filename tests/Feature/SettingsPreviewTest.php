@@ -69,10 +69,10 @@ class SettingsPreviewTest extends TestCase
         // Every other page carries frame-ancestors 'none'. The status page screen
         // embeds this one in an iframe, so it alone must allow its own origin,
         // otherwise the live preview is a blank box in every browser.
-        $this->preview(['page.show_overall' => true])
+        $response = $this->preview(['page.show_overall' => true])
             ->assertOk()
-            ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
-            ->assertHeader('Content-Security-Policy', "frame-ancestors 'self'");
+            ->assertHeader('X-Frame-Options', 'SAMEORIGIN');
+        $this->assertStringEndsWith("frame-ancestors 'self'", (string) $response->headers->get('Content-Security-Policy'));
     }
 
     public function test_it_renders_the_sections_that_are_ticked(): void

@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\SecurityHeaders;
 use App\Services\Branding;
 use App\Services\DisplayZone;
 use App\Services\MailConfig;
 use App\Services\PageContext;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -32,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
         // Shared with every view: the layout, the child view and the partials all
         // need it, and a child does not inherit variables defined in its layout.
         View::share('branding', $this->app->make(Branding::class));
+        // <script @nonce>: the nonce SecurityHeaders puts in this response's policy.
+        Blade::directive('nonce', fn () => '<?php echo '.SecurityHeaders::class.'::nonceAttribute(); ?>');
         // Before anything resolves a mailer: the admin's mail settings sit in
         // the database and have to be in config by the time one is built.
         $this->app->make(MailConfig::class)->apply();

@@ -26,7 +26,7 @@ $journey = [
 @include('partials.tokens')
 @include('partials.messages')
 <link rel="stylesheet" href="{{ asset('assets/pharos-install.css') }}?v={{ @filemtime(public_path('assets/pharos-install.css')) }}">
-<script>document.documentElement.classList.add('js')</script>
+<script @nonce>document.documentElement.classList.add('js')</script>
 </head>
 <body>
 <div class="pi">
@@ -51,6 +51,6 @@ $journey = [
   </main>
 </div>
 @include('partials.theme-script', ['theme' => $adminTheme])
-<script defer src="{{ asset('assets/pharos-install.js') }}?v={{ @filemtime(public_path('assets/pharos-install.js')) }}"></script>
+<script @nonce defer src="{{ asset('assets/pharos-install.js') }}?v={{ @filemtime(public_path('assets/pharos-install.js')) }}"></script>
 </body>
 </html>

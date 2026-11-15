@@ -147,7 +147,7 @@
   </div>
 </div>
 
-<script>
+<script @nonce>
 (function () {
   var form = document.getElementById('settings-form');
   var frame = document.getElementById('preview');

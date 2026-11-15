@@ -159,7 +159,7 @@ textarea.body{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:2
   </div>
 </div>
 
-<script>
+<script @nonce>
 (function () {
   var form = document.getElementById('template-form');
   var frame = document.getElementById('preview');

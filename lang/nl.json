@@ -1759,5 +1759,7 @@
     "Require two factor for administrators": "Tweestapsverificatie verplicht voor beheerders",
     "An administrator without two factor can only open their profile until it is set up. That includes you.": "Een beheerder zonder tweestapsverificatie kan alleen het eigen profiel openen tot die is ingesteld. Dat geldt ook voor jou.",
     "This installation requires two factor authentication for administrators. Turn it on before you continue.": "Deze installatie vereist tweestapsverificatie voor beheerders. Schakel die in voordat je verdergaat.",
-    "The provider's :endpoint is not on https. Use https, or add its host to the internal provider hosts.": "Het :endpoint van de aanbieder gebruikt geen https. Gebruik https, of zet de host bij de interne hosts van aanbieders."
+    "The provider's :endpoint is not on https. Use https, or add its host to the internal provider hosts.": "Het :endpoint van de aanbieder gebruikt geen https. Gebruik https, of zet de host bij de interne hosts van aanbieders.",
+    "Remove the key?": "De sleutel verwijderen?",
+    "Your logo, favicon and mail wording stay saved; they show again the moment you paste a key.": "Je logo, favicon en de teksten van je mails blijven bewaard; ze komen terug zodra je weer een sleutel plakt."
 }
