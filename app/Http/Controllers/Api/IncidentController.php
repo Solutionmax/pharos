@@ -84,19 +84,26 @@ class IncidentController extends Controller
             $message ??= $template->render('body_template', $vars);
         }
 
-        $incident = DB::transaction(function () use ($data, $name, $message, $status, $request) {
+        $components = $this->componentMap($data);
+        // A monitoring system (Zabbix, a script) that does not say otherwise
+        // must not announce the outage of a hidden service to the world.
+        $visibility = $data['visibility'] ?? PublicComponents::automaticVisibility(
+            collect(array_keys($components))->map(fn ($id) => $this->findComponent($id)?->id)->filter()->values()->all(),
+        );
+
+        $incident = DB::transaction(function () use ($data, $components, $visibility, $name, $message, $status, $request) {
             $incident = Incident::create([
                 'name' => $name,
                 'status' => $status,
                 'impact' => $data['impact'] ?? 'minor',
-                'visibility' => $data['visibility'] ?? 'public',
+                'visibility' => $visibility,
                 'auto_resolve' => $data['auto_resolve'] ?? false,
                 'source' => 'api',
                 'occurred_at' => $data['occurred_at'] ?? now(),
                 'resolved_at' => $status === IncidentStatus::Resolved ? now() : null,
             ]);
 
-            $this->applyComponents($incident, $this->componentMap($data), $request->attributes->get('api_token'));
+            $this->applyComponents($incident, $components, $request->attributes->get('api_token'));
 
             IncidentUpdate::create([
                 'incident_id' => $incident->id,
@@ -209,7 +216,7 @@ class IncidentController extends Controller
     protected function applyComponents(Incident $incident, array $components, ?ApiToken $token): void
     {
         foreach ($components as $id => $status) {
-            $component = Component::find($id) ?? Component::where('name', $id)->first();
+            $component = $this->findComponent($id);
 
             if (! $component) {
                 throw ValidationException::withMessages(['components' => __('Choose components from this page.')]);
@@ -230,6 +237,12 @@ class IncidentController extends Controller
 
             $component->update(['status' => $value, ...$component->reportedAttributes($token, 'webhook')]);
         }
+    }
+
+    /** A component of this page by id, or by name as older scripts send it. */
+    protected function findComponent(int|string $id): ?Component
+    {
+        return Component::find($id) ?? Component::where('name', $id)->first();
     }
 
     protected function statusFromSlug(string $slug): ?ComponentStatus

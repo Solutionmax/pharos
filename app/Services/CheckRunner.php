@@ -190,6 +190,8 @@ class CheckRunner
                 'status' => IncidentStatus::Investigating,
                 'impact' => 'major',
                 'source' => 'check',
+                // A hidden or switched off service keeps its outage off the public page.
+                'visibility' => PublicComponents::automaticVisibility([$check->component_id]),
                 'auto_resolve' => true,
                 'grouping_key' => 'check:'.$check->component_id,
                 'occurred_at' => $now,
