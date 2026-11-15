@@ -1790,5 +1790,7 @@
     "Remove the backup passphrase?": "Sicherungs-Passphrase entfernen?",
     "Remote archives are then no longer encrypted and leave .env out. Archives made before keep needing the passphrase.": "Externe Archive werden dann nicht mehr verschlüsselt und lassen .env weg. Früher erstellte Archive brauchen weiterhin die Passphrase.",
     "Remove passphrase": "Passphrase entfernen",
-    "Manifest refused: older than a release this installation already saw": "Manifest abgelehnt: älter als ein Release, das diese Installation bereits gesehen hat"
+    "Manifest refused: older than a release this installation already saw": "Manifest abgelehnt: älter als ein Release, das diese Installation bereits gesehen hat",
+    "Ongoing since :time": "Laufend seit :time",
+    ":from to :to": ":from bis :to"
 }

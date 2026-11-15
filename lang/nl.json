@@ -1790,5 +1790,7 @@
     "Remove the backup passphrase?": "Backupwachtzin verwijderen?",
     "Remote archives are then no longer encrypted and leave .env out. Archives made before keep needing the passphrase.": "Externe archieven worden dan niet meer versleuteld en laten .env weg. Eerder gemaakte archieven hebben de wachtzin nog steeds nodig.",
     "Remove passphrase": "Wachtzin verwijderen",
-    "Manifest refused: older than a release this installation already saw": "Manifest geweigerd: ouder dan een release die deze installatie al heeft gezien"
+    "Manifest refused: older than a release this installation already saw": "Manifest geweigerd: ouder dan een release die deze installatie al heeft gezien",
+    "Ongoing since :time": "Lopend sinds :time",
+    ":from to :to": ":from tot :to"
 }
