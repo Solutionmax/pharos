@@ -22,18 +22,34 @@ final class IpAddress
     /**
      * Not private to filter_var, but not the public internet either: carrier
      * grade NAT (and Tailscale), the IETF protocol block, benchmarking, multicast.
+     * Two IPv6 blocks that carry an IPv4 address canonical() cannot unwrap: the
+     * local use NAT64 prefix (any embedding) and the old IPv4 compatible form.
      */
     public const SHARED = [
         '100.64.0.0/10', '192.0.0.0/24', '198.18.0.0/15',
         '224.0.0.0/4', 'ff00::/8',
+        '64:ff9b:1::/48', '::/96',
     ];
+
+    /** NAT64, RFC 6052: the IPv4 address is the last four bytes. */
+    private const NAT64_PREFIX = "\x00\x64\xff\x9b\0\0\0\0\0\0\0\0";
+
+    /** IPv4 mapped: ::ffff:0:0/96. */
+    private const MAPPED_PREFIX = "\0\0\0\0\0\0\0\0\0\0\xff\xff";
+
+    /** 6to4, RFC 3056: 2002::/16 with the IPv4 address in bytes two to five. */
+    private const SIX_TO_FOUR_PREFIX = "\x20\x02";
 
     public static function isNeverReachable(string $ip): bool
     {
         return self::inAny($ip, self::NEVER);
     }
 
-    /** Not private and not reserved, as filter_var sees it. */
+    /**
+     * Not private and not reserved, as filter_var sees it. Looser than
+     * isInternal(): CGNAT and the other SHARED blocks pass. Every decision
+     * about where a request may go uses isInternal().
+     */
     public static function isPublic(string $ip): bool
     {
         return filter_var(
@@ -54,17 +70,25 @@ final class IpAddress
 
     /**
      * ::ffff:169.254.169.254 is IPv6 to filter_var and inet_pton, and
-     * 169.254.169.254 to the socket. Every check has to see the latter.
+     * 169.254.169.254 to the socket. Every check has to see the latter. The
+     * same goes for NAT64 (64:ff9b::a9fe:a9fe) and 6to4 (2002:a9fe:a9fe::),
+     * which a gateway turns back into the IPv4 address they carry.
      */
     public static function canonical(string $ip): string
     {
         $bin = @inet_pton($ip);
 
-        if ($bin !== false && strlen($bin) === 16 && substr($bin, 0, 12) === str_repeat("\0", 10)."\xff\xff") {
-            return inet_ntop(substr($bin, 12)) ?: $ip;
+        if ($bin === false || strlen($bin) !== 16) {
+            return $ip;
         }
 
-        return $ip;
+        $embedded = match (true) {
+            str_starts_with($bin, self::MAPPED_PREFIX), str_starts_with($bin, self::NAT64_PREFIX) => substr($bin, 12, 4),
+            str_starts_with($bin, self::SIX_TO_FOUR_PREFIX) => substr($bin, 2, 4),
+            default => null,
+        };
+
+        return $embedded === null ? $ip : (inet_ntop($embedded) ?: $ip);
     }
 
     public static function inRange(string $ip, string $cidr): bool

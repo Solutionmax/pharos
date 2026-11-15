@@ -51,6 +51,20 @@ class SafeHttp
     }
 
     /**
+     * For a target typed by someone who may not reach private networks, such as
+     * a page editor's check: public addresses only, and the internal hosts list
+     * (meant for the identity provider) does not open anything here.
+     *
+     * @throws \RuntimeException when the host is missing, unresolvable or not public
+     */
+    public function toPublic(string $url): PendingRequest
+    {
+        $host = $this->host($url);
+
+        return $this->pinned($url, $host, $this->resolvePublic($host));
+    }
+
+    /**
      * For a target the administrator owns, such as an n8n on the same LAN:
      * private networks are fine here, this machine and link-local are not. A
      * name that does not resolve is left to curl, which fails on it by itself.
@@ -82,6 +96,22 @@ class SafeHttp
     public function forbiddenAddress(string $url): ?string
     {
         return $this->forbiddenAmong($this->addresses($this->host($url)));
+    }
+
+    /**
+     * The first address of a host that is not on the public internet, as the
+     * socket would see it, or null when every answer is public. A name that
+     * does not resolve has no such address.
+     */
+    public function internalAddress(string $host): ?string
+    {
+        foreach ($this->addresses(trim($host, '[]')) as $ip) {
+            if (! $this->isPublic($ip)) {
+                return $this->canonical($ip);
+            }
+        }
+
+        return null;
     }
 
     /** @throws \RuntimeException */
@@ -154,13 +184,27 @@ class SafeHttp
     /** @throws \RuntimeException */
     public function resolve(string $host): string
     {
+        return $this->vet($host, $this->isAllowed($host));
+    }
+
+    /**
+     * resolve() without the internal hosts list.
+     *
+     * @throws \RuntimeException
+     */
+    public function resolvePublic(string $host): string
+    {
+        return $this->vet($host, false);
+    }
+
+    /** @throws \RuntimeException */
+    protected function vet(string $host, bool $vouchedFor): string
+    {
         $candidates = $this->addresses($host);
 
         if ($candidates === []) {
             throw new \RuntimeException("Could not resolve {$host}.");
         }
-
-        $vouchedFor = $this->isAllowed($host);
 
         // Every answer has to pass: one private address among them is enough to
         // make the destination unsafe.
@@ -190,9 +234,14 @@ class SafeHttp
         return IpAddress::isNeverReachable($ip);
     }
 
+    /**
+     * The strict reading, the same as the page SMTP rule: carrier grade NAT
+     * (Tailscale), benchmarking, the IETF block and multicast are not public.
+     * An administrator who means one of those adds it to the internal hosts list.
+     */
     public function isPublic(string $ip): bool
     {
-        return IpAddress::isPublic($ip);
+        return ! IpAddress::isInternal($ip);
     }
 
     protected function canonical(string $ip): string

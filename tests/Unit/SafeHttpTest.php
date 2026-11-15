@@ -162,4 +162,81 @@ class SafeHttpTest extends TestCase
 
         (new SafeHttp(allowedHosts: []))->toOwn('http://169.254.169.254/latest/meta-data');
     }
+
+    // ---------- one reading of "public" everywhere ----------
+
+    public static function sharedAddresses(): array
+    {
+        return [
+            'CGNAT, Tailscale' => ['100.100.100.100'],
+            'benchmarking' => ['198.18.0.7'],
+            'IETF protocol block' => ['192.0.0.9'],
+            'multicast' => ['239.1.2.3'],
+            'IPv6 multicast' => ['ff05::2'],
+            'NAT64 to a private address' => ['64:ff9b::c0a8:101'],
+            '6to4 around a private address' => ['2002:a00:1::1'],
+        ];
+    }
+
+    #[DataProvider('sharedAddresses')]
+    public function test_shared_and_special_ranges_are_refused_like_private_ones(string $ip): void
+    {
+        $safe = new SafeHttp(allowedHosts: []);
+        $this->assertFalse($safe->isPublic($ip));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('private or local network');
+        $safe->resolve($ip);
+    }
+
+    public function test_a_shared_range_host_on_the_allowlist_is_accepted(): void
+    {
+        $safe = new SafeHttp(allowedHosts: ['100.100.100.100']);
+
+        $this->assertSame('100.100.100.100', $safe->resolve('100.100.100.100'));
+    }
+
+    public function test_nat64_cannot_carry_cloud_metadata_past_the_never_list(): void
+    {
+        $safe = new SafeHttp(allowedHosts: ['64:ff9b::a9fe:a9fe']);
+
+        $this->assertSame('169.254.169.254', $safe->forbiddenAddress('http://[64:ff9b::a9fe:a9fe]/latest'));
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('never allowed');
+        $safe->resolve('64:ff9b::a9fe:a9fe');
+    }
+
+    public function test_a_public_address_behind_nat64_or_6to4_still_passes(): void
+    {
+        $safe = new SafeHttp(allowedHosts: []);
+
+        $this->assertSame('64:ff9b::101:101', $safe->resolve('64:ff9b::101:101'));
+        $this->assertSame('2002:101:101::1', $safe->resolve('2002:101:101::1'));
+    }
+
+    public function test_the_public_only_variant_ignores_the_internal_hosts_list(): void
+    {
+        // The list is for the identity provider; it opens nothing for a page editor.
+        $safe = new SafeHttp(allowedHosts: ['192.168.10.163']);
+        $this->assertSame('192.168.10.163', $safe->resolve('192.168.10.163'));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('private or local network');
+        $safe->resolvePublic('192.168.10.163');
+    }
+
+    public function test_internal_address_names_the_first_answer_that_is_not_public(): void
+    {
+        $safe = new class extends SafeHttp
+        {
+            public function addresses(string $host): array
+            {
+                return ['mixed.test' => ['203.0.113.5', '::ffff:10.1.1.1'], 'public.test' => ['203.0.113.5']][$host] ?? [];
+            }
+        };
+
+        $this->assertSame('10.1.1.1', $safe->internalAddress('mixed.test'));
+        $this->assertNull($safe->internalAddress('public.test'));
+        $this->assertNull($safe->internalAddress('nowhere.test'));
+    }
 }
