@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Component;
+use App\Models\ComponentGroup;
 use App\Models\StatusPage;
 use App\Models\User;
 
@@ -32,8 +33,11 @@ class PageHealth
         $total = $components->count();
         $delivery = $this->delivery();
         $subscriptions = Subscriptions::enabled();
+        $subscribeButton = $this->branding->module('page.show_subscribe');
+        $edit = $user->canEditPage($page->id);
+        $technical = $this->technicalNames();
 
-        return [
+        return array_values(array_filter([
             [
                 'key' => 'published',
                 'state' => $published ? 'good' : 'warn',
@@ -59,14 +63,33 @@ class PageHealth
                 'action' => $administerPage ? 'Change' : null,
                 'url' => $administerPage ? PageUrls::route('admin.mail.edit') : null,
             ],
-            [
-                'key' => 'subscriptions',
-                'state' => $subscriptions ? 'good' : 'off',
-                'label' => 'Subscriptions',
-                'detail' => $subscriptions ? 'On for this page' : 'Off, visitors cannot subscribe',
-                'action' => 'Manage',
-                'url' => PageUrls::route('admin.subscribers'),
-            ],
+            // What the public page needs for its "Get notified" button, and what is missing.
+            match (true) {
+                ! $subscriptions || ! $subscribeButton => [
+                    'key' => 'subscriptions',
+                    'state' => 'off',
+                    'label' => 'Subscriptions',
+                    'detail' => __('Visitors cannot get notified by email: subscribing is switched off.'),
+                    'action' => $subscriptions ? ($edit ? 'Change' : null) : 'Manage',
+                    'url' => $subscriptions ? ($edit ? PageUrls::route('admin.status-page') : null) : PageUrls::route('admin.subscribers'),
+                ],
+                ! $delivery['ready'] => [
+                    'key' => 'subscriptions',
+                    'state' => 'warn',
+                    'label' => 'Subscriptions',
+                    'detail' => __('Visitors cannot get notified by email: mail is not set up.'),
+                    'action' => $administerPage ? 'Set up' : null,
+                    'url' => $administerPage ? PageUrls::route('admin.mail.edit') : null,
+                ],
+                default => [
+                    'key' => 'subscriptions',
+                    'state' => 'good',
+                    'label' => 'Subscriptions',
+                    'detail' => 'On for this page',
+                    'action' => 'Manage',
+                    'url' => PageUrls::route('admin.subscribers'),
+                ],
+            },
             [
                 'key' => 'checks',
                 'state' => $total === 0 ? 'off' : ($automatic === $total ? 'good' : 'warn'),
@@ -74,6 +97,14 @@ class PageHealth
                 'detail' => $this->coverage($automatic, $total),
                 'action' => $total === 0 ? 'Add components' : ($automatic === $total ? 'Review' : 'Add checks'),
                 'url' => PageUrls::route('admin.components'),
+            ],
+            $technical === [] ? null : [
+                'key' => 'names',
+                'state' => 'warn',
+                'label' => 'Service names',
+                'detail' => __('Some service names look technical (:names). Name services the way visitors know them.', ['names' => implode(', ', array_slice(array_keys($technical), 0, 3))]),
+                'action' => $edit ? 'Rename' : null,
+                'url' => $edit ? PageUrls::route($technical[array_key_first($technical)]) : null,
             ],
             [
                 'key' => 'brand',
@@ -85,7 +116,32 @@ class PageHealth
                 'action' => $administerPage ? 'Details' : null,
                 'url' => $administerPage ? PageUrls::route('admin.branding') : null,
             ],
-        ];
+        ]));
+    }
+
+    /**
+     * Names on the public page that read like the target of a check: a link, a
+     * path, a file or a bare host name. Name => the screen where it is renamed.
+     *
+     * @return array<string, string>
+     */
+    protected function technicalNames(): array
+    {
+        $names = PublicComponents::query()->orderBy('position')->pluck('name')->mapWithKeys(fn ($name) => [$name => 'admin.components'])
+            ->union(ComponentGroup::where('visible', true)->orderBy('position')->pluck('name')->mapWithKeys(fn ($name) => [$name => 'admin.groups']));
+
+        return $names->filter(fn ($route, $name) => self::looksTechnical((string) $name))->all();
+    }
+
+    public static function looksTechnical(string $name): bool
+    {
+        $name = trim($name);
+
+        return str_contains(strtolower($name), '.php')
+            || str_contains($name, '/')
+            || str_starts_with(strtolower($name), 'http')
+            // pharos-install.php, status.example.com, 192.0.2.10, db01:5432
+            || preg_match('/^[\w-]+(\.[\w-]+)+(:\d+)?$|^[\w.-]+:\d+$/u', $name) === 1;
     }
 
     /**

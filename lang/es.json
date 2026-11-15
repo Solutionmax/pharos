@@ -1819,5 +1819,10 @@
     "Security contact": "Contacto de seguridad",
     "Where to report a vulnerability": "Dónde informar de una vulnerabilidad",
     "An email address or a link that starts with https://. With one filled in, :url tells security researchers where to write; empty, there is no such file.": "Una dirección de correo o un enlace que empiece por https://. Si lo rellenas, :url indica a los investigadores de seguridad dónde escribir; si está vacío, ese archivo no existe.",
-    "The security contact must be an email address or a link that starts with https://.": "El contacto de seguridad debe ser una dirección de correo o un enlace que empiece por https://."
+    "The security contact must be an email address or a link that starts with https://.": "El contacto de seguridad debe ser una dirección de correo o un enlace que empiece por https://.",
+    "Visitors cannot get notified by email: subscribing is switched off.": "Los visitantes no pueden recibir avisos por correo: la suscripción está desactivada.",
+    "Visitors cannot get notified by email: mail is not set up.": "Los visitantes no pueden recibir avisos por correo: el correo no está configurado.",
+    "Some service names look technical (:names). Name services the way visitors know them.": "Algunos nombres de servicio parecen técnicos (:names). Nombra los servicios como los conocen los visitantes.",
+    "Service names": "Nombres de servicio",
+    "Rename": "Renombrar"
 }

@@ -7,7 +7,9 @@ use App\Enums\IncidentStatus;
 use App\Enums\UserRole;
 use App\Models\Check;
 use App\Models\Component;
+use App\Models\ComponentGroup;
 use App\Models\Incident;
+use App\Models\Setting;
 use App\Models\StatusPage;
 use App\Models\Subscriber;
 use App\Models\UptimeDay;
@@ -15,6 +17,7 @@ use App\Models\User;
 use App\Services\PageContext;
 use App\Services\PageHealth;
 use App\Services\PageOverview;
+use App\Services\Subscriptions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -184,6 +187,53 @@ class OverviewTest extends TestCase
 
         $this->get('/admin/pages/'.$this->other->id.'/overview')->assertOk()->assertDontSee('Get this page ready');
         $this->assertSame([], $this->onPage($this->other, fn () => app(PageHealth::class)->readiness($admin, $this->other)));
+    }
+
+    public function test_health_points_at_service_names_visitors_would_not_use(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+        Component::create(['name' => 'Website']);
+        $checks = collect(app(PageHealth::class)->checks($admin))->keyBy('key');
+        $this->assertArrayNotHasKey('names', $checks->all());
+
+        Component::create(['name' => 'pharos-install.php']);
+        Component::create(['name' => 'status.example.com']);
+        $hidden = ComponentGroup::create(['name' => 'Back office', 'visible' => false]);
+        Component::create(['name' => 'https://intranet.example', 'component_group_id' => $hidden->id]);
+
+        $names = collect(app(PageHealth::class)->checks($admin))->keyBy('key')['names'];
+        $this->assertSame('warn', $names['state']);
+        $this->assertSame('Some service names look technical (pharos-install.php, status.example.com). Name services the way visitors know them.', $names['detail']);
+        $this->assertStringEndsWith('/admin/components', (string) $names['url']);
+
+        foreach (['api/v2', 'HTTP check', '192.0.2.10', 'db01:5432', 'backup.sh'] as $technical) {
+            $this->assertTrue(PageHealth::looksTechnical($technical), $technical);
+        }
+        foreach (['Website', 'Customer portal', 'Mail (EU)', 'API v2.1'] as $plain) {
+            $this->assertFalse(PageHealth::looksTechnical($plain), $plain);
+        }
+    }
+
+    public function test_health_says_why_visitors_cannot_subscribe(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+        $line = fn () => collect(app(PageHealth::class)->checks($admin))->keyBy('key')['subscriptions'];
+
+        // The suite sends mail to an array, which reaches nobody.
+        $this->assertSame('Visitors cannot get notified by email: mail is not set up.', $line()['detail']);
+        $this->assertSame('warn', $line()['state']);
+
+        config(['mail.default' => 'smtp', 'mail.mailers.smtp.host' => 'smtp.example.net', 'mail.from.address' => 'status@example.net']);
+        $this->assertSame('good', $line()['state']);
+
+        Subscriptions::set(false);
+        $this->assertSame('Visitors cannot get notified by email: subscribing is switched off.', $line()['detail']);
+        $this->assertSame('off', $line()['state']);
+
+        Subscriptions::set(true);
+        Setting::put('page.show_subscribe', '0');
+        $this->assertSame('Visitors cannot get notified by email: subscribing is switched off.', $line()['detail']);
+        $this->assertStringEndsWith('/admin/status-page', (string) $line()['url']);
     }
 
     public function test_status_pages_manage_opens_the_overview(): void

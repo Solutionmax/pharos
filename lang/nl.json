@@ -1819,5 +1819,10 @@
     "Security contact": "Beveiligingscontact",
     "Where to report a vulnerability": "Waar je een kwetsbaarheid meldt",
     "An email address or a link that starts with https://. With one filled in, :url tells security researchers where to write; empty, there is no such file.": "Een e-mailadres of een link die met https:// begint. Is dit ingevuld, dan vertelt :url beveiligingsonderzoekers waar ze terechtkunnen; leeg bestaat dat bestand niet.",
-    "The security contact must be an email address or a link that starts with https://.": "Het beveiligingscontact moet een e-mailadres zijn of een link die met https:// begint."
+    "The security contact must be an email address or a link that starts with https://.": "Het beveiligingscontact moet een e-mailadres zijn of een link die met https:// begint.",
+    "Visitors cannot get notified by email: subscribing is switched off.": "Bezoekers kunnen geen meldingen per e-mail krijgen: abonneren staat uit.",
+    "Visitors cannot get notified by email: mail is not set up.": "Bezoekers kunnen geen meldingen per e-mail krijgen: e-mail is niet ingesteld.",
+    "Some service names look technical (:names). Name services the way visitors know them.": "Sommige dienstnamen zien er technisch uit (:names). Noem diensten zoals bezoekers ze kennen.",
+    "Service names": "Dienstnamen",
+    "Rename": "Hernoemen"
 }
