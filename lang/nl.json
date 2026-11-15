@@ -1755,5 +1755,9 @@
     "Sign in page": "Aanmeldpagina",
     "Simple": "Eenvoudig",
     "With status": "Met status",
-    "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.": "Voor iedereen die inlogt op deze installatie. Met status toont de standaard statuspagina naast het formulier, alleen zolang die pagina gepubliceerd is."
+    "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.": "Voor iedereen die inlogt op deze installatie. Met status toont de standaard statuspagina naast het formulier, alleen zolang die pagina gepubliceerd is.",
+    "That address is on a private network (:ip). Only an installation administrator can use private addresses, unless page editors are allowed to under Settings, General.": "Dat adres ligt op een privénetwerk (:ip). Alleen een installatiebeheerder kan privéadressen gebruiken, tenzij paginaredacteuren dat mogen onder Instellingen, Algemeen.",
+    "Network": "Netwerk",
+    "Let page editors check private network addresses": "Paginaredacteuren mogen adressen op een privénetwerk controleren",
+    "Off: checks and notification destinations that page editors save must be on the public internet, so a check cannot be used to scan your own network. Installation administrators can always use private addresses. Turning this off also stops private checks and destinations an editor saved earlier; save them again as an installation administrator to keep them.": "Uit: controles en meldingsbestemmingen die paginaredacteuren opslaan moeten op het openbare internet staan, zodat een controle niet gebruikt kan worden om je eigen netwerk af te tasten. Installatiebeheerders kunnen altijd privéadressen gebruiken. Uitzetten stopt ook privécontroles en bestemmingen die een redacteur eerder heeft opgeslagen; sla ze opnieuw op als installatiebeheerder om ze te houden."
 }

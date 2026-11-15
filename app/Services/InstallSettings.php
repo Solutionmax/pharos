@@ -19,6 +19,8 @@ class InstallSettings
 
     public const UPDATE_CHECK = 'update.check_enabled';
 
+    public const EDITOR_PRIVATE_TARGETS = 'network.editor_private_targets';
+
     /** How long the audit trail keeps a line. */
     public static function auditDays(): int
     {
@@ -40,9 +42,24 @@ class InstallSettings
     }
 
     /**
+     * May page editors (anyone who is not an installation administrator) point
+     * checks and notification destinations at private network addresses? Off
+     * unless an administrator turned it on, or the 1.2.0 update found such
+     * targets already in use. Unreadable counts as off.
+     */
+    public static function editorsMayTargetPrivate(): bool
+    {
+        try {
+            return Setting::get(self::EDITOR_PRIVATE_TARGETS) === '1';
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
      * Current values in form shape, for the screen and for the audit diff.
      *
-     * @return array{audit_days:int,keep_backups:int,update_check:bool}
+     * @return array{audit_days:int,keep_backups:int,update_check:bool,private_targets:bool}
      */
     public static function all(): array
     {
@@ -50,14 +67,16 @@ class InstallSettings
             'audit_days' => self::auditDays(),
             'keep_backups' => self::keepBackups(),
             'update_check' => self::updateCheckEnabled(),
+            'private_targets' => self::editorsMayTargetPrivate(),
         ];
     }
 
-    /** @param  array{audit_days:int,keep_backups:int,update_check:bool}  $values */
+    /** @param  array{audit_days:int,keep_backups:int,update_check:bool,private_targets:bool}  $values */
     public static function save(array $values): void
     {
         Setting::put(self::AUDIT_DAYS, (string) $values['audit_days']);
         Setting::put(self::KEEP_BACKUPS, (string) $values['keep_backups']);
         Setting::put(self::UPDATE_CHECK, $values['update_check'] ? '1' : '0');
+        Setting::put(self::EDITOR_PRIVATE_TARGETS, $values['private_targets'] ? '1' : '0');
     }
 }

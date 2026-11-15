@@ -114,11 +114,14 @@ message anyone ever sees from the status page has the wrong name on it.
 | **Shape** | **Slack**. |
 | **Address** | The Incoming Webhook URL from step 1. |
 
-Plain `http://` is fine and so is the rest of your LAN; an n8n next door is the
-common case. Addresses on the Pharos machine itself (`127.0.0.1`, `::1`) and
-link-local ranges (`169.254.0.0/16`, `fe80::/10`) are refused, both when the
+Plain `http://` is fine. An installation administrator may also use the rest of
+the LAN; an n8n next door is the common case. A page editor's destination has to
+be on the public internet unless **Settings → General → Let page editors check
+private network addresses** is on (see [Private network targets](monitoring.md#private-network-targets)).
+Addresses on the Pharos machine itself (`127.0.0.1`, `::1`) and
+link-local ranges (`169.254.0.0/16`, `fe80::/10`) are refused for everyone, both when the
 endpoint is saved and again on every delivery, including IPv4 hidden inside
-IPv6 (`::ffff:…`). Redirects are not followed.
+IPv6 (`::ffff:…`, NAT64, 6to4). Redirects are not followed.
 
 The **Shape** field is the one that matters. Slack and Teams each demand their
 own JSON, and a raw payload sent to a Slack webhook is answered with `400

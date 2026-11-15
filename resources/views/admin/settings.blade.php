@@ -66,6 +66,13 @@
         <label class="check"><input type="checkbox" name="update_check" value="1" @checked(old('update_check', $general['update_check']))> {{ __('On') }}</label>
       </div>
 
+      <h4 class="grouphd">{{ __('Network') }}</h4>
+      <div class="switchrow">
+        <span class="t"><strong>{{ __('Let page editors check private network addresses') }}</strong>
+          <span class="s">{{ __('Off: checks and notification destinations that page editors save must be on the public internet, so a check cannot be used to scan your own network. Installation administrators can always use private addresses. Turning this off also stops private checks and destinations an editor saved earlier; save them again as an installation administrator to keep them.') }}</span></span>
+        <label class="check"><input type="checkbox" name="private_targets" value="1" @checked(old('private_targets', $general['private_targets']))> {{ __('On') }}</label>
+      </div>
+
       <div class="actions">
         <button class="btn" type="submit">{{ __('Save settings') }}</button>
         <button class="btn ghost" type="reset">{{ __('Undo my changes') }}</button>

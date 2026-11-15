@@ -14,6 +14,7 @@ use App\Models\IncidentUpdate;
 use App\Services\CheckHistory;
 use App\Services\PageContext;
 use App\Services\PageUrls;
+use App\Services\PrivateTargets;
 use App\Services\Uptime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -117,10 +118,11 @@ class ComponentController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request);
+        $savedByAdmin = (bool) $request->user()?->isAdmin();
 
-        $component = DB::transaction(function () use ($data) {
+        $component = DB::transaction(function () use ($data, $savedByAdmin) {
             $component = Component::create($this->componentAttributes($data));
-            $this->syncCheck($component, $data);
+            $this->syncCheck($component, $data, $savedByAdmin);
 
             return $component;
         });
@@ -131,11 +133,12 @@ class ComponentController extends Controller
 
     public function update(Request $request, Component $component)
     {
-        $data = $this->validated($request);
+        $data = $this->validated($request, $component);
+        $savedByAdmin = (bool) $request->user()?->isAdmin();
 
-        DB::transaction(function () use ($component, $data) {
+        DB::transaction(function () use ($component, $data, $savedByAdmin) {
             $component->update($this->componentAttributes($data));
-            $this->syncCheck($component, $data);
+            $this->syncCheck($component, $data, $savedByAdmin);
         });
 
         return redirect()->to(PageUrls::route('admin.components'))
@@ -163,10 +166,10 @@ class ComponentController extends Controller
             ->with('status', "Component {$name} deleted, along with its history.");
     }
 
-    protected function validated(Request $request): array
+    protected function validated(Request $request, ?Component $component = null): array
     {
         return $request->validate(
-            $this->rules($request),
+            $this->rules($request, $component),
             [
                 'check_target.required' => 'A built in check needs something to contact.',
                 'check_target.url' => 'An HTTP check needs a full URL, starting with http:// or https://.',
@@ -180,7 +183,7 @@ class ComponentController extends Controller
      * happily saves "192.168.1.8:5000" as an HTTP check — which can never
      * succeed, and reports it as an outage of a service that is running.
      */
-    protected function rules(Request $request): array
+    protected function rules(Request $request, ?Component $component = null): array
     {
         $rules = [
             'name' => ['required', 'string', 'max:255'],
@@ -212,11 +215,36 @@ class ComponentController extends Controller
                 return $rules;
             }
             $rules['check_target'] = $request->input('check_type') === 'tcp'
-                ? ['required', 'string', 'max:255', 'regex:/^[A-Za-z0-9._-]+:\d{1,5}$/']
-                : ['required', 'url:http,https', 'max:255'];
+                ? ['bail', 'required', 'string', 'max:255', 'regex:/^[A-Za-z0-9._-]+:\d{1,5}$/']
+                : ['bail', 'required', 'url:http,https', 'max:255'];
+            $rules['check_target'][] = $this->privateTargetRule($request, $component);
         }
 
         return $rules;
+    }
+
+    /**
+     * A page editor may not aim a check at a private network unless the
+     * installation allows it. A target an installation administrator saved
+     * may stay while an editor changes the rest of the component.
+     */
+    protected function privateTargetRule(Request $request, ?Component $component): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($request, $component) {
+            $type = $request->input('check_type') === 'tcp' ? 'tcp' : 'http';
+            if (PrivateTargets::mayChoose($request->user()) || $this->keepsCheckTarget($component?->check, $type, (string) $value)) {
+                return;
+            }
+            $host = PrivateTargets::host($type, (string) $value);
+            if ($host !== null && ($problem = PrivateTargets::problem($host)) !== null) {
+                $fail($problem);
+            }
+        };
+    }
+
+    protected function keepsCheckTarget(?Check $check, string $type, string $target): bool
+    {
+        return $check !== null && $check->type->value === $type && $check->target === $target;
     }
 
     protected function componentAttributes(array $data): array
@@ -236,7 +264,7 @@ class ComponentController extends Controller
     }
 
     /** A component whose source is not a check must not keep a stale one around. */
-    protected function syncCheck(Component $component, array $data): void
+    protected function syncCheck(Component $component, array $data, bool $savedByAdmin = false): void
     {
         $wantsCheck = in_array($data['source'], ['check', 'heartbeat'], true);
 
@@ -258,11 +286,17 @@ class ComponentController extends Controller
             return;
         }
 
+        $type = $isHeartbeat ? CheckType::Heartbeat : CheckType::from($data['check_type'] ?? 'http');
+        // Set by an installation administrator, private networks are fine at run
+        // time too. An editor keeps that only while the target stays the same.
+        $allowPrivate = $savedByAdmin || ($component->check?->allow_private && $this->keepsCheckTarget($component->check, $type->value, $target));
+
         Check::updateOrCreate(
             ['component_id' => $component->id],
             [
-                'type' => $isHeartbeat ? CheckType::Heartbeat : CheckType::from($data['check_type'] ?? 'http'),
+                'type' => $type,
                 'target' => $target,
+                'allow_private' => $allowPrivate,
                 'interval_seconds' => $data['check_interval'] ?? 60,
                 'expected_keyword' => ($data['check_type'] ?? '') === 'http' ? ($data['expected_keyword'] ?? null) : null,
                 'dns_type' => ($data['check_type'] ?? '') === 'dns' ? ($data['dns_type'] ?? null) : null,

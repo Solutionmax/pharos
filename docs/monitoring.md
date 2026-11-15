@@ -2,6 +2,17 @@
 
 HTTP monitors capture the leaf certificate expiry from the same verified, pinned HTTP request. Certificates with 14 days or less show a renewal warning in the administration form; certificates with 3 days or less set Performance issues. Expired, untrusted and hostname-invalid certificates fail the check. Redirects are not followed. A response is capped at 1 MiB, compression is disabled, and optional expected text must occur exactly in the response. Targets must be HTTP(S), a TCP host/port, or a DNS record name. DNS supports A, AAAA, CNAME, MX and TXT; MX expectations are `priority hostname`, and split TXT character strings are joined. IPv6 comparisons use packed addresses. The 24-hour latency chart groups measured data in 288 five-minute buckets and leaves missing buckets empty. Public charts are opt-in per component and show no target or check message.
 
+## Private network targets
+
+A check (HTTP or TCP) or a notification destination on a private network turns the server into a scanner for its own LAN in the wrong hands: a TCP check answers which ports are open, a keyword check reads a page nobody outside can see. So since 1.2.0:
+
+- An installation administrator may always save private targets (RFC 1918, carrier grade NAT and Tailscale, IPv6 unique local and the like).
+- A page editor or page administrator may only when **Settings → General → Let page editors check private network addresses** is on. It is off on a new installation. An installation updated from 1.1 has it on when one of its checks or destinations already reached a private address at the time of the update, so nothing stops working.
+- The rule is applied when the target is saved and again on every run and delivery, so a name that later resolves to a private address gets no request. A target an installation administrator saved keeps working whatever the setting says; an editor who changes it takes that over. Remote probe locations receive the same decision from the hub with each job.
+- This machine and link local (cloud metadata) stay refused for everyone.
+
+Turning the setting off stops private checks and destinations that an editor saved. To keep one, open it and save it again as an installation administrator.
+
 ## Probe locations
 
 A page administrator creates a location and selects which checks it may run. Download the credential file immediately; it can be downloaded once. On a separate Pharos installation, put its `PHAROS_PROBE_HUB` and `PHAROS_PROBE_TOKEN` values in the private `.env`, then schedule `php artisan pharos:probe-remote` every minute (or use the ordinary Pharos scheduler, which includes this command). Hub requests require HTTPS. An installation administrator may explicitly approve a private hub host using the existing internal-host allow list. Neither a page editor nor an API token can configure a hub URL.

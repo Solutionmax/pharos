@@ -11,6 +11,7 @@ use App\Models\WebhookEndpoint;
 use App\Services\OutgoingWebhook;
 use App\Services\PageContext;
 use App\Services\PageUrls;
+use App\Services\PrivateTargets;
 use App\Services\SafeHttp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -149,14 +150,19 @@ class IntegrationController extends Controller
 
     public function storeEndpoint(Request $request, SafeHttp $safe)
     {
+        $mayUsePrivate = PrivateTargets::mayChoose($request->user());
         $data = $request->validate([
             'label' => ['required', 'string', 'max:60'],
             // http allowed on purpose: an n8n on the same LAN is the common case.
             // This machine and link-local are not: 169.254.169.254 hands out cloud
             // credentials to whoever asks, and a webhook must never be the one asking.
-            'url' => ['bail', 'exclude_if:format,telegram', 'required', 'url:http,https', 'max:255', function (string $attribute, mixed $value, \Closure $fail) use ($safe) {
+            'url' => ['bail', 'exclude_if:format,telegram', 'required', 'url:http,https', 'max:255', function (string $attribute, mixed $value, \Closure $fail) use ($safe, $mayUsePrivate) {
                 if (($ip = $safe->forbiddenAddress($value)) !== null) {
                     $fail("That address resolves to {$ip}, which Pharos will never send to.");
+                } elseif (! $mayUsePrivate && ($host = PrivateTargets::host('http', $value)) !== null && ($problem = PrivateTargets::problem($host)) !== null) {
+                    // A page editor's destination stays on the public internet
+                    // unless the installation allows private ones.
+                    $fail($problem);
                 }
             }],
             'format' => ['required', Rule::in(array_keys(WebhookEndpoint::FORMATS))],
@@ -196,6 +202,7 @@ class IntegrationController extends Controller
         }
         $endpoint = WebhookEndpoint::create([
             'label' => $data['label'], 'url' => $data['url'], 'format' => $data['format'], 'enabled' => true, 'options' => $options,
+            'allow_private' => (bool) $request->user()?->isAdmin(),
             'events' => isset($data['events']) ? array_values(array_unique($data['events'])) : null,
         ]);
 

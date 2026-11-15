@@ -1755,5 +1755,9 @@
     "Sign in page": "Anmeldeseite",
     "Simple": "Einfach",
     "With status": "Mit Status",
-    "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.": "Für alle, die sich bei dieser Installation anmelden. Mit Status zeigt die Standardstatusseite neben dem Formular, nur solange diese Seite veröffentlicht ist."
+    "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.": "Für alle, die sich bei dieser Installation anmelden. Mit Status zeigt die Standardstatusseite neben dem Formular, nur solange diese Seite veröffentlicht ist.",
+    "That address is on a private network (:ip). Only an installation administrator can use private addresses, unless page editors are allowed to under Settings, General.": "Diese Adresse liegt in einem privaten Netzwerk (:ip). Nur ein Installationsadministrator kann private Adressen verwenden, außer Seitenbearbeiter dürfen es unter Einstellungen, Allgemein.",
+    "Network": "Netzwerk",
+    "Let page editors check private network addresses": "Seitenbearbeiter dürfen Adressen in privaten Netzwerken prüfen",
+    "Off: checks and notification destinations that page editors save must be on the public internet, so a check cannot be used to scan your own network. Installation administrators can always use private addresses. Turning this off also stops private checks and destinations an editor saved earlier; save them again as an installation administrator to keep them.": "Aus: Prüfungen und Benachrichtigungsziele, die Seitenbearbeiter speichern, müssen im öffentlichen Internet liegen, damit eine Prüfung nicht zum Abtasten des eigenen Netzwerks dient. Installationsadministratoren können private Adressen immer verwenden. Ausschalten stoppt auch private Prüfungen und Ziele, die ein Bearbeiter zuvor gespeichert hat; speichern Sie sie als Installationsadministrator erneut, um sie zu behalten."
 }

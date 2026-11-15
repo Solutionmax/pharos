@@ -12,8 +12,10 @@ use Illuminate\Support\Carbon;
  * swapped out (an external probe network would implement the same contract).
  *
  * Targets go through SafeHttp like every other URL an operator types: a check
- * may watch the LAN it belongs to, never this machine or the cloud metadata
- * address, and it follows no redirect — the response code is the result.
+ * may watch the LAN it belongs to when an installation administrator saved it
+ * or page editors are allowed private targets (PrivateTargets), never this
+ * machine or the cloud metadata address, and it follows no redirect — the
+ * response code is the result.
  */
 class Probe
 {
@@ -35,9 +37,9 @@ class Probe
     protected function http(Check $check): ProbeResult
     {
         try {
-            $request = $this->safe->toOwn($check->target);
+            $request = $this->privateAllowed($check) ? $this->safe->toOwn($check->target) : $this->safe->toPublic($check->target);
         } catch (\RuntimeException $e) {
-            return new ProbeResult(false, null, str_contains($e->getMessage(), 'never allowed') ? 'Target is never allowed' : 'Target cannot be resolved or is invalid');
+            return new ProbeResult(false, null, $this->refusal($e));
         }
 
         $start = microtime(true);
@@ -106,9 +108,9 @@ class Probe
         $port = (int) $m[2];
 
         try {
-            $connectTo = $this->safe->resolveOwn($host);
+            $connectTo = $this->privateAllowed($check) ? $this->safe->resolveOwn($host) : $this->safe->resolvePublic($host);
         } catch (\RuntimeException $e) {
-            return new ProbeResult(false, null, str_contains($e->getMessage(), 'never allowed') ? 'Target is never allowed' : 'Target cannot be resolved or is invalid');
+            return new ProbeResult(false, null, $this->refusal($e));
         }
         $connectTo = str_contains($connectTo, ':') ? "[{$connectTo}]" : $connectTo;
 
@@ -122,6 +124,22 @@ class Probe
         fclose($sock);
 
         return new ProbeResult(true, $ms, 'Connected');
+    }
+
+    /** Checked on every run: a name can move to a private address after it was saved. */
+    protected function privateAllowed(Check $check): bool
+    {
+        return PrivateTargets::allowed((bool) $check->allow_private);
+    }
+
+    /** Why SafeHttp would not let the check through, in the words the admin shows. */
+    protected function refusal(\RuntimeException $e): string
+    {
+        return match (true) {
+            str_contains($e->getMessage(), 'never allowed') => 'Target is never allowed',
+            str_contains($e->getMessage(), 'private or local network') => 'Target is on a private network, which page editors may not check',
+            default => 'Target cannot be resolved or is invalid',
+        };
     }
 
     /** One line a person understands, without the curl error number. */
