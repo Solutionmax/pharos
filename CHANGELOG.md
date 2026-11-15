@@ -6,6 +6,39 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-11-15
+
+### Added
+- A new public status page. One chart shows the last 90 days of every service at once: the height of a day grows with the time lost, the colour says how bad it was, and a short note names the services that had trouble. Below it, incidents and maintenance read as a timeline of cards, each with a strip that shows how the incident went from first message to resolved; older messages fold away. Open incidents and running maintenance stay at the top and update live.
+- Two sign in pages: Simple, as before, and With status, which shows the state of your services next to the form. An administrator chooses under Profile, Preferences, next to Theme and Navigation.
+- An installation can require two factor for administrators (Settings, General, Sign in). An administrator without it is sent to set it up before anything else. Off by default.
+- Remote backups can be encrypted with a passphrase (Scheduler and backups). Without a passphrase, a remote backup no longer contains the `.env` file with the APP_KEY: keep that key somewhere safe yourself. `php artisan pharos:backup:decrypt` opens an encrypted backup.
+- Webhooks get a timestamp and a second signature over timestamp and body (`X-Pharos-Timestamp`, `X-Pharos-Signature-V2`), so a receiver can refuse a replayed delivery. The old `X-Pharos-Signature` still goes out. The signing secret is stored encrypted and masked in the admin.
+- A setting to let page editors check addresses on a private network (Settings, General). Until now any editor could; now only an installation administrator can, unless you switch this on.
+
+### Changed
+- Sessions are encrypted by default. Everyone is signed out once after the update.
+- "Remember me" now lasts 30 days.
+- The public monthly reports are cached.
+- Laravel 12.72.0 and Symfony 7.4.23.
+
+### Fixed
+- An incident opened by a check for a service in a hidden group, or a switched off service, was public: its name and outage showed on the public page. It is now internal. The update makes existing ones from the last 90 days internal too.
+- An open incident that started on an earlier day now says on which day.
+
+### Security
+- Sign in is limited per IP address as well as per account, and a two factor code cannot be used twice.
+- "Forgot password" and the subscribe form answer in the same time for known and unknown addresses, so they do not tell who has an account or a subscription.
+- At most one subscribe confirmation mail per address in ten minutes and three a day, and a limit per page, so the form cannot be used to flood someone's inbox.
+- Every call to the subscriber API needs a write token; a read token could list subscribers.
+- The logo in mails is built from the configured URL, not from the Host header of the request.
+- A Content-Security-Policy with a nonce for every script, and basic security headers on every response. The API answers one plain 404 for anything it does not know.
+- Badges, the feed, the widget and other machine reads no longer start a session or set a cookie.
+- Outgoing requests read a public address one strict way (NAT64 and 6to4 included). A page SMTP host is checked again on every send and the mail goes to the checked address.
+- One update at a time, and the updater refuses a release manifest older than the newest one it has seen.
+- Uploads served by Apache get nosniff and a sandbox, dotfiles are refused and the server version is not shown.
+- laravel/framework 12.72.0 (CVE-2026-128083), symfony/http-foundation, http-kernel, routing and filesystem 7.4.23 (CVE-2026-121619, CVE-2026-118514, CVE-2026-118516, CVE-2026-123339), phpseclib 3.0.58, league/commonmark 2.10.7 and guzzle 7.16.1.
+
 ## [1.1.0] — 2026-11-01
 
 ### Added
