@@ -47,7 +47,11 @@ return [
     |
     */
 
-    'encrypt' => env('SESSION_ENCRYPT', false),
+    // On by default: the session table holds a freshly made API token, recovery
+    // codes and SSO verifiers until they are used, and a database dump must not
+    // hand those out. A session written before this was on is unreadable once,
+    // which only means a new one starts (everyone signs in again after the update).
+    'encrypt' => env('SESSION_ENCRYPT', true),
 
     /*
     |--------------------------------------------------------------------------
