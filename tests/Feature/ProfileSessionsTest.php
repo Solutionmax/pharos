@@ -108,6 +108,8 @@ class ProfileSessionsTest extends TestCase
     {
         // Frozen clock: a second passing between insert and render would otherwise round to "2 days ago".
         $this->freezeTime();
+        // The session garbage collector runs on 2 in 100 requests and would remove a three day old row.
+        config(['session.lottery' => [0, 100]]);
         $this->addSession('seen', $this->other, 'Chrome/128.0', ago: 3 * 86400);
 
         $this->actingAs($this->me)->get('/admin/users')->assertOk()->assertSee('Last seen <b>3 days ago</b>', false);
