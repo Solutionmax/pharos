@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\Component;
 use App\Models\ComponentGroup;
+use App\Models\Incident;
 use App\Models\Maintenance;
 use App\Models\StatusPage;
 use App\Models\UptimeDay;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Services\MonthlyUptimeReport;
 use App\Services\PageContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
@@ -27,7 +29,8 @@ class MonthlyReportTest extends TestCase
         UptimeDay::create(['component_id' => $component->id, 'day' => '2026-10-01', 'up_seconds' => 0, 'down_seconds' => 10000]);
         $hidden = ComponentGroup::create(['name' => 'Hidden', 'visible' => false]);
         Component::create(['name' => 'SECRET', 'component_group_id' => $hidden->id]);
-        $this->get('/reports?month=2026-09')->assertOk()->assertSee('95.00%')->assertSee('UTC')->assertDontSee('SECRET')->assertSee('Historical daily totals may include maintenance observations.');
+        // Visitors read uptime and downtime; the seconds and the accounting note are in the CSV.
+        $this->get('/reports?month=2026-09')->assertOk()->assertSee('95.00%')->assertSee('1 min')->assertDontSee('SECRET')->assertDontSee('Coverage');
         $csv = $this->get('/reports.csv?month=2026-09')->assertOk();
         $csv->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
         $rows = array_map(fn (string $line) => str_getcsv($line, ',', '"', ''), explode("\n", trim($csv->getContent())));
@@ -77,5 +80,32 @@ class MonthlyReportTest extends TestCase
         StatusPage::default()->update(['is_published' => false]);
         $this->get('/reports.pdf?month=2026-09')->assertNotFound();
         $this->actingAs(User::factory()->create(['role' => UserRole::Admin]))->get('/admin/reports?month=2026-09')->assertOk();
+    }
+
+    public function test_visitors_read_downtime_incidents_and_how_the_month_was_measured(): void
+    {
+        Carbon::setTestNow('2026-11-15 12:00:00');
+        $website = Component::create(['name' => 'Website']);
+        $mail = Component::create(['name' => 'Mail']);
+        UptimeDay::create(['component_id' => $website->id, 'day' => '2026-11-03', 'up_seconds' => 86400 - 4320, 'down_seconds' => 4320]);
+        UptimeDay::create(['component_id' => $mail->id, 'day' => '2026-11-04', 'up_seconds' => 86400, 'down_seconds' => 0]);
+        $work = Maintenance::create(['title' => 'Work', 'starts_at' => '2026-11-06 01:00:00', 'ends_at' => '2026-11-06 02:00:00', 'started_at' => '2026-11-06 01:00:00', 'completed_at' => '2026-11-06 02:00:00']);
+        $work->components()->attach($mail->id);
+        foreach ([['2026-11-05 10:00:00', 'public'], ['2026-11-07 10:00:00', 'internal'], ['2026-10-30 10:00:00', 'public']] as [$at, $visibility]) {
+            Incident::create(['name' => 'Down', 'status' => 4, 'occurred_at' => $at, 'resolved_at' => $at, 'visibility' => $visibility])
+                ->components()->attach($website->id, ['status' => 4]);
+        }
+
+        $this->get('/reports?month=2026-11')->assertOk()
+            ->assertSee('Measured since 3 Nov. Planned maintenance does not count as downtime.')
+            ->assertSeeInOrder(['Website', '95.00%', '1 h 12 min', '1', 'Mail', '100.00%', 'none', '0'])
+            ->assertDontSee('Unobserved seconds');
+        $this->get('/reports.csv?month=2026-11')->assertOk()->assertSee('Unobserved seconds');
+        $this->get('/reports?month=2026-10')->assertOk()->assertSee('Nothing was measured this month.');
+
+        $this->assertSame('none', MonthlyUptimeReport::downtime(0));
+        $this->assertSame('< 1 min', MonthlyUptimeReport::downtime(20));
+        $this->assertSame('6 min', MonthlyUptimeReport::downtime(360));
+        $this->assertSame('2 d 3 h', MonthlyUptimeReport::downtime(2 * 86400 + 3 * 3600));
     }
 }

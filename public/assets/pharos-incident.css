@@ -1,0 +1,12 @@
+/* The page of one incident: the status page's course strip and messages, on the document frame. */
+.incident-page .document-head{margin-bottom:8px}
+.incident-page .incident-facts{font-size:14px;color:var(--ink-2)}
+.incident-page .incident-facts b{font-weight:600;color:var(--state-ink)}
+.incident-page .incident-facts b.done{color:var(--green-ink)}
+.incident-page .strip{margin:48px 0 30px}
+.incident-page .msgs{gap:18px}
+.incident-page .msgs li{grid-template-columns:108px 100px 1fr;scroll-margin-top:24px}
+.incident-page .msgs li:target{animation:flash 1.4s ease-out}
+.incident-page .msgs .md{color:var(--ink)}
+@media(max-width:720px){.incident-page .msgs li{grid-template-columns:auto 1fr}}
+@media(prefers-reduced-motion:reduce){.incident-page .msgs li:target{animation:none}}

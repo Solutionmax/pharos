@@ -25,14 +25,27 @@ class ExtendedController extends Controller
         return response()->json(['data' => 'Pong!']);
     }
 
-    public function groups()
+    /** With a token every group of the page; without one, as /components does, only what the public page shows. */
+    public function groups(Request $request)
     {
-        return response()->json(['data' => ComponentGroup::orderBy('position')->limit(500)->get()->map($this->groupData(...))]);
+        $groups = ComponentGroup::orderBy('position')
+            ->when($this->visitor($request), fn ($q) => $q->where('visible', true))
+            ->limit(500)->get();
+
+        return response()->json(['data' => $groups->map($this->groupData(...))]);
     }
 
-    public function group(ComponentGroup $group)
+    public function group(Request $request, ComponentGroup $group)
     {
+        abort_if($this->visitor($request) && ! $group->getAttribute('visible'), 404);
+
         return response()->json(['data' => $this->groupData($group)]);
+    }
+
+    /** A read that came in without a token (ApiTokenOrVisitor). */
+    private function visitor(Request $request): bool
+    {
+        return $request->attributes->get('api_token') === null;
     }
 
     public function storeGroup(Request $request)

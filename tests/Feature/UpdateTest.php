@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Mockery\MockInterface;
 use Tests\TestCase;
 
 class UpdateTest extends TestCase
@@ -331,6 +332,45 @@ class UpdateTest extends TestCase
         unset($_ENV['PHAROS_VERSION'], $_SERVER['PHAROS_VERSION']);
 
         $this->assertFalse(app(Updater::class)->versionIsPinned());
+    }
+
+    /**
+     * A web install mounted into an older image that only runs PHP: the image sets
+     * PHAROS_VERSION to its own release, config/pharos.php reads that first, and no
+     * update can change it. The Updates screen showed the image and offered the
+     * installed release again; the code on disk is what an update replaced.
+     */
+    public function test_inside_an_older_container_image_the_version_comes_from_the_code(): void
+    {
+        $shipped = (string) app(Updater::class)->shipped();
+        $this->assertMatchesRegularExpression('/^\d+\.\d+\.\d+/', $shipped);
+        $this->partialMock(Updater::class, fn (MockInterface $mock) => $mock->shouldReceive('inContainer')->andReturn(true));
+        Http::fake(['releases.example.net/*' => Http::response($this->manifest(['version' => $shipped]))]);
+        putenv('PHAROS_VERSION=1.0.1');
+
+        try {
+            $updater = app(Updater::class);
+            $this->assertSame('1.0.1', $updater->imageVersion());
+            $this->assertSame($shipped, $updater->current());
+            $this->assertFalse($updater->updateAvailable());
+            $this->assertFalse($updater->versionIsPinned());
+
+            $this->actingAs($this->user)->get('/admin/updates')->assertOk()
+                ->assertSee("This server runs the 1.0.1 container image. Pull ghcr.io/solutionmax/pharos:{$shipped} to get its server settings (Apache hardening).")
+                ->assertDontSee('The version is pinned in .env.');
+
+            // The image of the same release, or one the host manages: nothing to say.
+            putenv('PHAROS_VERSION='.$shipped);
+            $this->assertNull($updater->imageVersion());
+            $this->actingAs($this->user)->get('/admin/updates')->assertOk()->assertDontSee('container image');
+            putenv('PHAROS_VERSION=1.0.1');
+            File::ensureDirectoryExists(storage_path('app/testing'));
+            File::put(storage_path('app/testing/update-status.json'), '{"host":"docker"}');
+            $this->assertNull($updater->imageVersion());
+            $this->assertSame('1.0.0', $updater->current());
+        } finally {
+            putenv('PHAROS_VERSION');
+        }
     }
 
     // ---------- what an archive may contain ----------

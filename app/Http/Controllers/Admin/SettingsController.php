@@ -126,9 +126,10 @@ class SettingsController extends Controller
     }
 
     /**
-     * The General tab: time zone, retention, the update check and the two
-     * factor rule for administrators in one save. A checkbox is absent from the
-     * request when unticked, so it is read with boolean(), not validated as required.
+     * The General tab: time zone, retention, the update check, the two
+     * factor rule for administrators and the security contact in one save.
+     * A checkbox is absent from the request when unticked, so it is read with
+     * boolean(), not validated as required.
      */
     public function update(Request $request)
     {
@@ -139,6 +140,14 @@ class SettingsController extends Controller
             'update_check' => ['sometimes', 'boolean'],
             'admin_two_factor' => ['sometimes', 'boolean'],
             'private_targets' => ['sometimes', 'boolean'],
+            // security.txt wants a URI: mailto: for an address, and a link only over https.
+            'security_contact' => ['bail', 'nullable', 'string', 'max:255', function (string $attribute, mixed $value, \Closure $fail) {
+                $email = filter_var($value, FILTER_VALIDATE_EMAIL) !== false;
+                $https = str_starts_with(strtolower($value), 'https://') && filter_var($value, FILTER_VALIDATE_URL) !== false;
+                if (! $email && ! $https) {
+                    $fail(__('The security contact must be an email address or a link that starts with https://.'));
+                }
+            }],
         ], [
             'audit_days.*' => 'The audit log can be kept between 7 and 3650 days.',
             'keep_backups.*' => 'Backups kept must be a number from 0 (keep all) to 50.',
@@ -153,6 +162,7 @@ class SettingsController extends Controller
             'update_check' => $request->boolean('update_check'),
             'admin_two_factor' => $request->boolean('admin_two_factor'),
             'private_targets' => $request->boolean('private_targets'),
+            'security_contact' => trim((string) ($data['security_contact'] ?? '')),
         ]);
 
         $after = ['app.timezone' => Clock::installationTimezone()] + $this->keyed(InstallSettings::all());
@@ -173,7 +183,7 @@ class SettingsController extends Controller
     /**
      * Form fields → setting keys, so the audit line names what was stored.
      *
-     * @return array<string, int|bool>
+     * @return array<string, int|bool|string>
      */
     protected function keyed(array $general): array
     {
@@ -183,6 +193,7 @@ class SettingsController extends Controller
             InstallSettings::UPDATE_CHECK => $general['update_check'],
             InstallSettings::ADMIN_TWO_FACTOR => $general['admin_two_factor'],
             InstallSettings::EDITOR_PRIVATE_TARGETS => $general['private_targets'],
+            InstallSettings::SECURITY_CONTACT => $general['security_contact'],
         ];
     }
 }

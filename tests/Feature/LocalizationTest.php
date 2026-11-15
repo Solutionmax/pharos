@@ -122,7 +122,7 @@ class LocalizationTest extends TestCase
         (new CheckRunner($probe, app(OutgoingWebhook::class)))->runOne($check);
         $incident = Incident::firstOrFail();
         $this->assertSame('Website Ω onbereikbaar', $incident->name);
-        $this->assertSame('Automatische controle mislukt: Geen antwoord.', $incident->updates()->firstOrFail()->message);
+        $this->assertSame('Website Ω reageerde niet. We zoeken het uit.', $incident->updates()->firstOrFail()->message);
         $this->assertSame('en', app()->getLocale());
     }
 

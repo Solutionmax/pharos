@@ -94,9 +94,9 @@ class DemoPageContent
 
         $start = now()->subDays(2)->setTime(16, 53);
         $this->incident('web-06 unreachable', Impact::Major, 'check', $start, $start->copy()->addMinutes(34), [$this->id('web-06') => ComponentStatus::MajorOutage], [
-            [IncidentStatus::Investigating, 0, 'Automatic check failed: no response on HTTP.', true],
+            [IncidentStatus::Investigating, 0, 'web-06 did not respond. We are looking into it.', true],
             [IncidentStatus::Identified, 12, 'A kernel update left the web server stopped after the reboot. We are starting it by hand.', false],
-            [IncidentStatus::Resolved, 34, 'The component responded normally again for 3 consecutive checks.', true],
+            [IncidentStatus::Resolved, 34, 'web-06 is working again and has stayed up for 3 checks in a row.', true],
         ], auto: true);
 
         $start = now()->subDays(26)->setTime(8, 10);

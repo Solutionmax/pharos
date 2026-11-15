@@ -28,6 +28,7 @@ class UpdateController extends Controller
         }
 
         $check = $this->updater->lastCheck();
+        $image = $this->updater->imageVersion();
 
         return view('admin.updates', [
             'current' => $this->updater->current(),
@@ -43,6 +44,8 @@ class UpdateController extends Controller
             'writable' => $this->selfUpdater->canWrite(),
             'sqlite' => DB::getDriverName() === 'sqlite',
             'versionPinned' => $this->updater->versionIsPinned(),
+            // The app was updated past the container image it runs in.
+            'olderImage' => $image !== null && version_compare($image, $this->updater->current(), '<') ? $image : null,
         ]);
     }
 

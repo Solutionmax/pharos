@@ -37,7 +37,9 @@ class Updater
 
     public function current(): string
     {
-        return (string) config('pharos.version');
+        // The image's PHAROS_VERSION would win over the code (config/pharos.php
+        // reads it first), but the code is what an update replaced.
+        return $this->imageVersion() !== null ? (string) $this->shipped() : (string) config('pharos.version');
     }
 
     /**
@@ -49,9 +51,45 @@ class Updater
     {
         // The process environment, on purpose: a pin set by the host (Docker, SetEnv)
         // must be seen even when the config is cached, and .env is never the place for it.
+        // In a container the variable came with the image: imageVersion() tells that story.
         $pinned = getenv('PHAROS_VERSION');
 
-        return ! $this->managed() && $pinned !== false && $pinned !== '';
+        return ! $this->managed() && ! $this->inContainer() && $pinned !== false && $pinned !== '';
+    }
+
+    /**
+     * The release the code on disk was built as: the default config/pharos.php
+     * ships with, which every build stamps (Dockerfile, CI, build-release.sh)
+     * and every update replaces. Null when that line cannot be read.
+     */
+    public function shipped(): ?string
+    {
+        $config = @file_get_contents(config_path('pharos.php'));
+
+        return is_string($config) && preg_match("/'version'\s*=>\s*env\('PHAROS_VERSION',\s*'([^']+)'\)/", $config, $match) === 1 ? $match[1] : null;
+    }
+
+    /**
+     * A container image used only to run PHP, with an install that updates
+     * itself mounted into it. The image sets PHAROS_VERSION to its own release
+     * and no update of the app can change that. Its version when it is not the
+     * code's, or null.
+     */
+    public function imageVersion(): ?string
+    {
+        $image = getenv('PHAROS_VERSION');
+        if (! is_string($image) || $image === '' || $this->managed() || ! $this->inContainer()) {
+            return null;
+        }
+        $shipped = $this->shipped();
+
+        return $shipped !== null && $image !== $shipped ? $image : null;
+    }
+
+    /** Docker and Podman leave a marker at the root of every container. */
+    public function inContainer(): bool
+    {
+        return is_file('/.dockerenv') || is_file('/run/.containerenv');
     }
 
     /** True when application files are managed outside this process. */

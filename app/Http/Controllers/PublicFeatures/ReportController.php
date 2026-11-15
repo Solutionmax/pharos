@@ -29,8 +29,12 @@ class ReportController extends Controller
         $format = str_ends_with($request->path(), '.csv') ? 'csv' : (str_ends_with($request->path(), '.pdf') ? 'pdf' : 'html');
         if ($format === 'html') {
             $report = $reports->build($month, ! $admin);
+            if ($admin) {
+                return view('admin.reports', compact('report', 'admin'));
+            }
 
-            return view($admin ? 'admin.reports' : 'public.report', compact('report', 'admin'));
+            // Visitors get uptime, downtime and incidents; the seconds stay in the CSV.
+            return view('public.report', ['report' => $report, 'notes' => $reports->visitorNotes($report)]);
         }
 
         $render = fn () => $format === 'csv' ? $this->csv($reports->build($month, ! $admin)) : $this->pdf($reports->build($month, ! $admin));

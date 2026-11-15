@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\ApiToken;
 use App\Models\Component;
+use App\Models\ComponentGroup;
 use App\Models\Incident;
 use App\Models\Maintenance;
 use App\Models\StatusPage;
@@ -24,7 +25,8 @@ class ExtendedApiTest extends TestCase
         [, $write] = ApiToken::issue('write', $owner);
         [, $read] = ApiToken::issue('read', $owner, null, 'read');
         $this->getJson('/api/v1/ping')->assertOk()->assertJsonPath('data', 'Pong!');
-        $this->getJson('/api/v1/groups')->assertUnauthorized();
+        $this->getJson('/api/v1/groups')->assertOk()->assertExactJson(['data' => []]);
+        $this->postJson('/api/v1/groups', ['name' => 'No token'])->assertUnauthorized();
         $group = $this->withToken($write)->postJson('/api/v1/groups', ['name' => 'Group'])->assertCreated()->json('data.id');
         $this->withToken($read)->getJson('/api/v1/groups')->assertOk()->assertJsonFragment(['name' => 'Group']);
         $this->withToken($read)->postJson('/api/v1/groups', ['name' => 'Forbidden'])->assertForbidden();
@@ -37,6 +39,31 @@ class ExtendedApiTest extends TestCase
         $this->withToken($other)->getJson('/api/v1/pages/other/groups')->assertOk();
         $owner->update(['role' => UserRole::User]);
         $this->getJson('/api/v1/pages/other/groups')->assertForbidden();
+    }
+
+    /** Groups read like components: no token needed, and only what the public page shows. */
+    public function test_visitors_read_the_visible_groups_without_a_token_and_never_write(): void
+    {
+        $shown = ComponentGroup::create(['name' => 'Website', 'visible' => true]);
+        $hidden = ComponentGroup::create(['name' => 'Back office', 'visible' => false]);
+
+        $this->getJson('/api/v1/groups')->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'Website')->assertDontSee('Back office');
+        $this->getJson('/api/v1/groups/'.$shown->id)->assertOk()->assertJsonPath('data.name', 'Website');
+        $this->getJson('/api/v1/groups/'.$hidden->id)->assertNotFound()->assertExactJson(['message' => 'Not found.']);
+        $this->putJson('/api/v1/groups/'.$shown->id, ['name' => 'Renamed'])->assertUnauthorized();
+        $this->deleteJson('/api/v1/groups/'.$shown->id)->assertUnauthorized();
+
+        $other = StatusPage::create(['name' => 'Other', 'slug' => 'other', 'is_published' => true]);
+        app(PageContext::class)->run($other->id, fn () => ComponentGroup::create(['name' => 'Other group']));
+        $this->getJson('/api/v1/pages/other/groups')->assertOk()->assertJsonPath('data.0.name', 'Other group')->assertDontSee('Website');
+        $other->update(['is_published' => false]);
+        $this->getJson('/api/v1/pages/other/groups')->assertNotFound();
+
+        // A token still reads every group of its page, the hidden one included.
+        [, $read] = ApiToken::issue('read', User::factory()->create(['role' => UserRole::Admin]), null, 'read');
+        $this->withToken($read)->getJson('/api/v1/groups')->assertOk()->assertJsonCount(2, 'data');
+        $this->getJson('/api/v1/groups/'.$hidden->id)->assertOk();
     }
 
     public function test_subscriber_privacy_and_maintenance_crud_validation(): void
