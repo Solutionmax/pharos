@@ -73,7 +73,7 @@ class UploadHeadersAndServerConfigTest extends TestCase
 
         $this->assertStringContainsString('ServerTokens Prod', $apache);
         $this->assertStringContainsString('ServerSignature Off', $apache);
-        $this->assertStringContainsString('<FilesMatch "^\.">', $apache);
+        $this->assertStringContainsString('<FilesMatch "^\.(?!well-known$)">', $apache);
         $this->assertStringContainsString('<DirectoryMatch "/\.(?!well-known(/|$))">', $apache);
     }
 }
