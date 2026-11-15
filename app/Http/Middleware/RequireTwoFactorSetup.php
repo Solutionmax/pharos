@@ -6,8 +6,9 @@ use Closure;
 use Illuminate\Http\Request;
 
 /**
- * An account invited with "turn on two factor first" can reach its profile
- * (to set it up) and sign out, and nothing else, until two factor is on.
+ * An account invited with "turn on two factor first", or an administrator while
+ * the installation requires two factor for administrators, can reach its
+ * profile (to set it up) and sign out, and nothing else, until two factor is on.
  */
 class RequireTwoFactorSetup
 {
@@ -26,7 +27,8 @@ class RequireTwoFactorSetup
             return response()->json(['message' => 'Turn on two factor authentication first.'], 403);
         }
 
-        return redirect()->route('admin.profile')
-            ->with('status', 'Your administrator asks you to turn on two factor authentication before you continue.');
+        return redirect()->route('admin.profile')->with('status', $user->require_two_factor
+            ? 'Your administrator asks you to turn on two factor authentication before you continue.'
+            : 'This installation requires two factor authentication for administrators. Turn it on before you continue.');
     }
 }

@@ -19,6 +19,8 @@ class InstallSettings
 
     public const UPDATE_CHECK = 'update.check_enabled';
 
+    public const ADMIN_TWO_FACTOR = 'auth.admin_two_factor';
+
     /** How long the audit trail keeps a line. */
     public static function auditDays(): int
     {
@@ -40,9 +42,19 @@ class InstallSettings
     }
 
     /**
+     * Whether every administrator has to use two factor. Off until an admin
+     * switches it on, so an update never locks anybody out; with it on, an
+     * admin without it is kept on the profile until it is set up.
+     */
+    public static function adminTwoFactorRequired(): bool
+    {
+        return Setting::get(self::ADMIN_TWO_FACTOR) === '1';
+    }
+
+    /**
      * Current values in form shape, for the screen and for the audit diff.
      *
-     * @return array{audit_days:int,keep_backups:int,update_check:bool}
+     * @return array{audit_days:int,keep_backups:int,update_check:bool,admin_two_factor:bool}
      */
     public static function all(): array
     {
@@ -50,14 +62,16 @@ class InstallSettings
             'audit_days' => self::auditDays(),
             'keep_backups' => self::keepBackups(),
             'update_check' => self::updateCheckEnabled(),
+            'admin_two_factor' => self::adminTwoFactorRequired(),
         ];
     }
 
-    /** @param  array{audit_days:int,keep_backups:int,update_check:bool}  $values */
+    /** @param  array{audit_days:int,keep_backups:int,update_check:bool,admin_two_factor:bool}  $values */
     public static function save(array $values): void
     {
         Setting::put(self::AUDIT_DAYS, (string) $values['audit_days']);
         Setting::put(self::KEEP_BACKUPS, (string) $values['keep_backups']);
         Setting::put(self::UPDATE_CHECK, $values['update_check'] ? '1' : '0');
+        Setting::put(self::ADMIN_TWO_FACTOR, $values['admin_two_factor'] ? '1' : '0');
     }
 }

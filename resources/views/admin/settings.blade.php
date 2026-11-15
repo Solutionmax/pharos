@@ -66,6 +66,13 @@
         <label class="check"><input type="checkbox" name="update_check" value="1" @checked(old('update_check', $general['update_check']))> {{ __('On') }}</label>
       </div>
 
+      <h4 class="grouphd">{{ __('Sign in') }}</h4>
+      <div class="switchrow">
+        <span class="t"><strong>{{ __('Require two factor for administrators') }}</strong>
+          <span class="s">{{ __('An administrator without two factor can only open their profile until it is set up. That includes you.') }}</span></span>
+        <label class="check"><input type="checkbox" name="admin_two_factor" value="1" @checked(old('admin_two_factor', $general['admin_two_factor']))> {{ __('On') }}</label>
+      </div>
+
       <div class="actions">
         <button class="btn" type="submit">{{ __('Save settings') }}</button>
         <button class="btn ghost" type="reset">{{ __('Undo my changes') }}</button>

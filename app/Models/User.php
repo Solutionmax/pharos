@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\LocalTimestamps;
 use App\Notifications\ResetAccountPassword;
+use App\Services\InstallSettings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -126,10 +127,19 @@ class User extends Authenticatable
         $this->forceFill(['dismissed_notes' => null])->save();
     }
 
-    /** Invited with "turn on two factor first", and not done yet. */
+    /**
+     * Two factor is asked of this account and not on yet: invited with "turn on
+     * two factor first", or an administrator while the installation requires it
+     * for administrators (Settings, General).
+     */
     public function mustSetUpTwoFactor(): bool
     {
-        return $this->require_two_factor && ! $this->hasTwoFactor();
+        return $this->twoFactorRequired() && ! $this->hasTwoFactor();
+    }
+
+    public function twoFactorRequired(): bool
+    {
+        return $this->require_two_factor || ($this->isAdmin() && InstallSettings::adminTwoFactorRequired());
     }
 
     /** A secret that was never confirmed with a real code does not count. */

@@ -79,7 +79,7 @@
           <span class="pp-tag {{ $user->isAdmin() ? 'admin' : 'user' }}">{{ __($user->role->label() ?? '') }}</span>
           @if ($user->hasTwoFactor())
             <span class="pp-tag f2a">{{ __('2FA on') }}</span>
-          @elseif ($user->require_two_factor)
+          @elseif ($user->twoFactorRequired())
             <span class="pp-tag no2a">{{ __('2FA asked') }}</span>
           @else
             <span class="pp-tag no2a">{{ __('No 2FA') }}</span>
