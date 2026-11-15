@@ -50,6 +50,11 @@ return [
     // 40 runs 40 days. The newest result of every component is always kept.
     'check_result_days' => (int) env('PHAROS_CHECK_RESULT_DAYS', 40),
 
+    // "Forgot password" and "subscribe" answer in at least this many milliseconds,
+    // whether or not the address is known and a mail went out (App\Support\EqualTime).
+    // Long enough to cover sending one mail over SMTP; raise it for a slow mail server.
+    'equal_time_ms' => (int) env('PHAROS_EQUAL_TIME_MS', 2000),
+
     // Never hardcode these in views: moving to a real domain must stay a .env edit.
     // Vendor side only: where the Ed25519 secret lives for pharos:license:sign / release:sign.
     'license_secret_file' => env('PHAROS_LICENSE_SECRET_FILE'),

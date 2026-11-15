@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Audit;
+use App\Support\EqualTime;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -27,12 +28,16 @@ class PasswordResetController extends Controller
     {
         $data = $request->validate(['email' => ['required', 'email', 'max:255']]);
 
-        try {
-            Password::sendResetLink($data);
-        } catch (Throwable $exception) {
-            // Report a delivery failure for the operator, without revealing accounts.
-            report($exception);
-        }
+        // A known address means a token and a mail over SMTP, an unknown one a
+        // single lookup: the time box keeps the two answers equally long.
+        EqualTime::run(function () use ($data) {
+            try {
+                Password::sendResetLink($data);
+            } catch (Throwable $exception) {
+                // Report a delivery failure for the operator, without revealing accounts.
+                report($exception);
+            }
+        });
 
         return redirect()->route('admin.password.request')->with('status', self::SENT_MESSAGE);
     }
