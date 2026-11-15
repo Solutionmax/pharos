@@ -56,6 +56,10 @@ class RemoteBackup
 
     public function run(BackupDestination $destination): bool
     {
+        // The callers say "skipped"; this only makes sure nothing slips through.
+        if (FallbackCopy::holds($destination)) {
+            return false;
+        }
         $lock = Cache::lock('pharos:remote-backup', 600);
         if (! $lock->get()) {
             return false;

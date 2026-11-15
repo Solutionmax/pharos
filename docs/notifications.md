@@ -195,6 +195,14 @@ Every incident change fires every enabled endpoint: opened, updated, and
 resolved. Resolved messages carry a green check instead of the red light, so a
 channel reads as a timeline rather than a pile of alarms.
 
+A destination can also tick **Certificate expiring**. When an HTTP check sees
+that its certificate expires within 14 days, the destination hears about it
+once, and once more within 3 days. Each step goes out once per expiry date,
+so a renewed certificate starts over. The message names the component, the
+host (never the full check address), the expiry date and the days left; the
+Generic JSON shape carries `"event": "certificate.expiring"` and is signed
+like every other delivery.
+
 Incident changes are queued in the database and delivered by the scheduler,
 which must run every minute. Temporary failures retry up to six total attempts
 with increasing delays. Rate limits respect the receiver's retry delay.

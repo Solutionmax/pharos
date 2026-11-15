@@ -87,14 +87,17 @@ class BoundedSftpAdapter extends SftpAdapter
 
     public function writeStream(string $path, $contents, Config $config): void
     {
+        // Private unless the caller asks otherwise: backups stay private, a
+        // fallback copy must be readable by the web server that serves it.
+        $visibility = $config->get('visibility') === 'public' ? 'public' : 'private';
         $connection = $this->connection();
-        $this->createDirectory(dirname($path), new Config(['visibility' => 'private']));
+        $this->createDirectory(dirname($path), new Config(['visibility' => $visibility]));
         $this->guard();
         $ok = $connection->put($this->boundedPrefix->prefixPath($path), $contents, SFTP::SOURCE_STRING, -1, -1, fn ($bytes) => $this->guard((int) $bytes));
         $this->guard();
         if ($ok === false) {
             throw new \RuntimeException('Could not deliver remote data.');
         }$this->connection();
-        $this->setVisibility($path, 'private');
+        $this->setVisibility($path, $visibility);
     }
 }

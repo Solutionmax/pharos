@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Services\BoundedSftpAdapter;
+use League\Flysystem\Config;
 use League\Flysystem\PhpseclibV3\ConnectionProvider;
 use phpseclib3\Net\SFTP;
 use PHPUnit\Framework\TestCase;
@@ -89,5 +90,63 @@ class BoundedSftpAdapterTest extends TestCase
         $stream = $adapter->readStream('object');
         $this->assertSame('fixture', stream_get_contents($stream));
         fclose($stream);
+    }
+
+    public function test_writes_stay_private_unless_public_is_asked_for(): void
+    {
+        $connection = new class extends SFTP
+        {
+            /** @var list<string> */
+            public array $calls = [];
+
+            public function __construct()
+            {
+                parent::__construct('203.0.113.10');
+            }
+
+            public function is_dir($path)
+            {
+                return false;
+            }
+
+            public function mkdir($dir, $mode = -1, $recursive = false)
+            {
+                $this->calls[] = sprintf('mkdir %s %o', $dir, $mode);
+
+                return true;
+            }
+
+            public function put($remote_file, $data, $mode = self::SOURCE_STRING, $start = -1, $local_start = -1, $progressCallback = null)
+            {
+                $this->calls[] = 'put '.$remote_file;
+
+                return true;
+            }
+
+            public function chmod($mode, $filename, $recursive = false)
+            {
+                $this->calls[] = sprintf('chmod %s %o', $filename, $mode);
+
+                return true;
+            }
+        };
+        $provider = new class($connection) implements ConnectionProvider
+        {
+            public function __construct(private SFTP $connection) {}
+
+            public function provideConnection(): SFTP
+            {
+                return $this->connection;
+            }
+        };
+        $adapter = new BoundedSftpAdapter($provider, '/srv', 1024, microtime(true) + 10);
+
+        $adapter->write('backup.zip', 'x', new Config);
+        $adapter->write('status/web/index.html', 'x', new Config(['visibility' => 'public']));
+
+        $this->assertSame([
+            'mkdir /srv/. 700', 'put /srv/backup.zip', 'chmod /srv/backup.zip 600',
+            'mkdir /srv/status/web 755', 'put /srv/status/web/index.html', 'chmod /srv/status/web/index.html 644',
+        ], $connection->calls);
     }
 }

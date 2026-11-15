@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enums\ComponentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Component;
+use App\Services\ReportedStatus;
 use Illuminate\Http\Request;
 
 /**
@@ -30,13 +31,8 @@ class KumaController extends Controller
         abort_if($component->check?->enabled, 422, 'Use a manually managed component for Kuma notifications.');
 
         $status = self::MAP[(int) $data['heartbeat']['status']];
-        $changed = $status !== null && $component->status !== $status;
-        if ($status !== null) {
-            $component->update([
-                'status' => $status,
-                ...$component->reportedAttributes($request->attributes->get('api_token'), 'kuma'),
-            ]);
-        }
+        $changed = $status !== null
+            && ReportedStatus::apply($component, $status, $request->attributes->get('api_token'), 'kuma');
 
         return response()->json(['ok' => true, 'changed' => $changed, 'status' => $component->status->value]);
     }

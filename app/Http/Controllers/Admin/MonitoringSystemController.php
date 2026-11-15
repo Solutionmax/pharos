@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BackupDestination;
 use App\Models\Setting;
 use App\Services\BackupPassphrase;
+use App\Services\FallbackCopy;
 use App\Services\RemoteBackup;
 use App\Services\SafeHttp;
 use App\Services\SftpFingerprint;
@@ -15,7 +16,7 @@ class MonitoringSystemController extends Controller
 {
     public function index()
     {
-        return view('admin.monitoring-system', ['destinations' => BackupDestination::orderBy('name')->get(), 'webEnabled' => Setting::get('cron.web_enabled') === '1', 'cronConfigured' => strlen((string) config('monitoring.web_cron_token')) >= 32, 'passphraseSet' => BackupPassphrase::isSet()]);
+        return view('admin.monitoring-system', ['destinations' => BackupDestination::orderBy('name')->get(), 'webEnabled' => Setting::get('cron.web_enabled') === '1', 'cronConfigured' => strlen((string) config('monitoring.web_cron_token')) >= 32, 'passphraseSet' => BackupPassphrase::isSet(), 'fallbackId' => FallbackCopy::destination()?->getKey()]);
     }
 
     /**
@@ -92,6 +93,9 @@ class MonitoringSystemController extends Controller
 
     public function run(BackupDestination $destination, RemoteBackup $backup)
     {
+        if (FallbackCopy::holds($destination)) {
+            return back()->withErrors(['destination' => __('Used for the fallback copy. Backups do not go here.')]);
+        }
         $ok = $backup->run($destination);
 
         return back()->with('status', $ok ? __('Backup delivered and verified.') : __('Backup failed. Review the destination status.'));

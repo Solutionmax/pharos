@@ -22,6 +22,8 @@ class RequestBodyLimits
         $owned = $matched && (preg_match('~^(?:groups|subscribers|maintenance)(?:/[^/]+)?$|^metrics$~D', $path)
             || ($request->isMethod('POST') && $path === 'components')
             || (($request->isMethod('DELETE') || $jsonOverride) && preg_match('~^(?:components|incidents)/[^/]+$~D', $path)));
+        // The alert receivers take whole alert groups: bounded like the other new writes.
+        $owned = $owned || ($matched && $request->isMethod('POST') && in_array($path, ['alertmanager', 'grafana'], true));
 
         return $owned ? 262144 : null;
     }

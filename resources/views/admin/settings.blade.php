@@ -91,6 +91,41 @@
         </div>
       </div>
 
+      <h4 class="grouphd">{{ __('Fallback copy') }}</h4>
+      <div class="switchrow">
+        <span class="t"><strong>{{ __('Keep a copy of the public page elsewhere') }}</strong>
+          <span class="s">{{ __('This page goes down with this server. When something changed, each published status page is saved every minute as one static HTML file at a backup destination: index.html for the default page, status/slug/index.html for the others. Serve that place as a website, such as a bucket website or a folder another web server shares, and visitors can still read the last state. The copy has no scripts and no cookies, and says that it is a copy.') }}</span></span>
+        <label class="check"><input type="checkbox" name="fallback_copy" value="1" @checked(old('fallback_copy', $fallbackOn))> {{ __('On') }}</label>
+      </div>
+      <div class="fields">
+        <div class="field wide">
+          <label for="fallback_destination">{{ __('Where') }}</label>
+          @if ($destinations->isEmpty())
+            <span class="help">{{ __('Add an S3 or SFTP destination under') }} <a href="{{ route('admin.system-monitoring') }}">{{ __('Scheduler and backups') }}</a> {{ __('first.') }}</span>
+          @else
+            <select id="fallback_destination" name="fallback_destination">
+              <option value="">{{ __('Choose a destination') }}</option>
+              @foreach ($destinations as $destination)
+                <option value="{{ $destination->id }}" @selected((string) old('fallback_destination', $fallback['destination']?->id) === (string) $destination->id)>{{ $destination->name }} ({{ strtoupper($destination->driver) }})</option>
+              @endforeach
+            </select>
+            <span class="help"><b>{{ __('Backups stop going to the destination chosen here, as people may be able to read it.') }}</b> {{ __('Choose none to let backups go there again.') }}</span>
+            @if ($destinations->count() === 1)
+              <span class="help" style="color:var(--red-ink)">{{ __('This is your only backup destination: with the copy there, no backups go anywhere else.') }}</span>
+            @endif
+          @endif
+          @if ($fallback['destination'] && $fallback['last_at'])
+            <span class="help">{{ __(':where · last copy :time · :size', [
+              'where' => $fallback['destination']->name,
+              'time' => $fallback['last_at']->isToday() ? $fallback['last_at']->format('H:i:s') : $fallback['last_at']->translatedFormat('j M H:i:s'),
+              'size' => \App\Support\Bytes::human((int) $fallback['bytes']),
+            ]) }} · <a href="#fallback_destination">{{ __('Change') }}</a></span>
+          @endif
+          @if ($fallbackOn && $fallback['error'])<span class="help" style="color:var(--red-ink)">{{ __($fallback['error']) }}</span>@endif
+          @error('fallback_destination')<span class="help" style="color:var(--red-ink)">{{ $message }}</span>@enderror
+        </div>
+      </div>
+
       <div class="actions">
         <button class="btn" type="submit">{{ __('Save settings') }}</button>
         <button class="btn ghost" type="reset">{{ __('Undo my changes') }}</button>

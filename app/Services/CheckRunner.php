@@ -86,6 +86,9 @@ class CheckRunner
             $check->last_run_at = $now;
         }
         $check->save();
+        if ($check->type === CheckType::Http) {
+            $this->webhook->certificateExpiring($check);
+        }
 
         $this->recordUptime($check, $result, $now, $previousRun);
         $this->applyStatus($check, $result, $now);

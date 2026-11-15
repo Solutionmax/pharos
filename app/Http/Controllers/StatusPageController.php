@@ -92,6 +92,21 @@ class StatusPageController extends Controller
         ]);
     }
 
+    /**
+     * The saved page for the fallback copy (FallbackCopy): the real template
+     * without the parts that need this server, the subscribe form, the admin bar
+     * and the pager. StaticPage then removes the scripts and inlines the rest.
+     */
+    public function snapshot(): string
+    {
+        return (string) $this->render(
+            modules: array_merge($this->branding->modules(), ['page.show_subscribe' => false]),
+            theme: $this->branding->theme(),
+            days: (int) Setting::get('page.incident_days', 5),
+            chrome: false,
+        );
+    }
+
     protected function render(array $modules, string $theme, int $days, bool $chrome, ?array $hiddenGroups = null, int $page = 1)
     {
         $groups = $modules['page.show_services']

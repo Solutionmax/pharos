@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AlertController;
 use App\Http\Controllers\Api\ComponentController;
 use App\Http\Controllers\Api\HeartbeatController;
 use App\Http\Controllers\Api\IncidentController;
@@ -22,6 +23,9 @@ Route::prefix('v1')->group(function () {
         Route::post('integrations/kuma/{component}', KumaController::class);
         // The first address the guide gave out; Kuma notifications saved with it keep working.
         Route::post('kuma/components/{component}', KumaController::class);
+        // Prometheus Alertmanager and Grafana alerting; the label pharos_component picks the component.
+        Route::post('alertmanager', AlertController::class);
+        Route::post('grafana', AlertController::class);
         Route::put('components/{component}', [ComponentController::class, 'update']);
         Route::post('components/{component}', [ComponentController::class, 'update']); // Cachet 2.x used POST
         Route::post('incidents', [IncidentController::class, 'store']);

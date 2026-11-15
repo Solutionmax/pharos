@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\TestMail;
+use App\Models\BackupDestination;
 use App\Models\Setting;
 use App\Services\Audit;
 use App\Services\Branding;
 use App\Services\Clock;
+use App\Services\FallbackCopy;
 use App\Services\InstallSettings;
 use App\Services\MailConfig;
 use App\Services\Sso;
@@ -50,6 +52,9 @@ class SettingsController extends Controller
             'mailHasPassword' => $mailConfig->hasPassword(),
             'brandName' => app(Branding::class)->name(),
             'subscriptionsOn' => Subscriptions::enabled(),
+            'fallbackOn' => FallbackCopy::enabled(),
+            'fallback' => FallbackCopy::status(),
+            'destinations' => BackupDestination::orderBy('name')->get(),
         ]);
     }
 
@@ -148,12 +153,15 @@ class SettingsController extends Controller
                     $fail(__('The security contact must be an email address or a link that starts with https://.'));
                 }
             }],
+            'fallback_copy' => ['sometimes', 'boolean'],
+            'fallback_destination' => [Rule::requiredIf($request->boolean('fallback_copy')), 'nullable', 'integer', Rule::exists('backup_destinations', 'id')],
         ], [
             'audit_days.*' => 'The audit log can be kept between 7 and 3650 days.',
             'keep_backups.*' => 'Backups kept must be a number from 0 (keep all) to 50.',
+            'fallback_destination.*' => __('Choose a backup destination for the fallback copy.'),
         ]);
 
-        $before = ['app.timezone' => Clock::installationTimezone()] + $this->keyed(InstallSettings::all());
+        $before = ['app.timezone' => Clock::installationTimezone()] + $this->keyed(InstallSettings::all()) + $this->fallbackKeyed();
 
         Setting::put('app.timezone', $data['timezone']);
         InstallSettings::save([
@@ -164,8 +172,9 @@ class SettingsController extends Controller
             'private_targets' => $request->boolean('private_targets'),
             'security_contact' => trim((string) ($data['security_contact'] ?? '')),
         ]);
+        $this->saveFallback($request->boolean('fallback_copy'), isset($data['fallback_destination']) ? (int) $data['fallback_destination'] : null);
 
-        $after = ['app.timezone' => Clock::installationTimezone()] + $this->keyed(InstallSettings::all());
+        $after = ['app.timezone' => Clock::installationTimezone()] + $this->keyed(InstallSettings::all()) + $this->fallbackKeyed();
 
         // Only what changed, by setting key: nothing on this tab is a secret.
         $changes = collect($after)
@@ -177,7 +186,12 @@ class SettingsController extends Controller
             Audit::record('settings.saved', null, $changes);
         }
 
-        return redirect()->route('admin.settings')->with('status', 'Settings saved.');
+        // The copy's destination gets no backups; when it is the only one, say so now.
+        $onlyDestination = FallbackCopy::destination() !== null && BackupDestination::count() === 1;
+
+        return redirect()->route('admin.settings')->with('status', $onlyDestination
+            ? 'Settings saved. No backups go anywhere else: the fallback copy uses your only backup destination. Add another one under Scheduler and backups.'
+            : 'Settings saved.');
     }
 
     /**
@@ -195,5 +209,25 @@ class SettingsController extends Controller
             InstallSettings::EDITOR_PRIVATE_TARGETS => $general['private_targets'],
             InstallSettings::SECURITY_CONTACT => $general['security_contact'],
         ];
+    }
+
+    /** @return array<string, bool|int|null> */
+    protected function fallbackKeyed(): array
+    {
+        return [
+            FallbackCopy::ENABLED => FallbackCopy::enabled(),
+            FallbackCopy::DESTINATION => FallbackCopy::destination()?->getKey(),
+        ];
+    }
+
+    /** Written only when it changes, so a save of the other groups leaves no trace here. */
+    protected function saveFallback(bool $enabled, ?int $destination): void
+    {
+        if ($enabled !== FallbackCopy::enabled()) {
+            Setting::put(FallbackCopy::ENABLED, $enabled ? '1' : '0');
+        }
+        if ($destination !== FallbackCopy::destination()?->getKey()) {
+            Setting::put(FallbackCopy::DESTINATION, $destination === null ? null : (string) $destination);
+        }
     }
 }

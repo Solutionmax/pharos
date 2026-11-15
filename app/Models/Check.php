@@ -15,7 +15,7 @@ class Check extends Model
     use Auditable, LocalTimestamps;
 
     /** Columns the check runner and delivery code touch on their own. */
-    protected $auditIgnore = ['last_run_at', 'consecutive_failures', 'consecutive_successes', 'last_status', 'last_error', 'next_run_at'];
+    protected $auditIgnore = ['last_run_at', 'consecutive_failures', 'consecutive_successes', 'last_status', 'last_error', 'next_run_at', 'tls_notice'];
 
     protected $guarded = [];
 
