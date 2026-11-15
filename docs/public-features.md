@@ -79,7 +79,8 @@ lowering the role immediately removes the corresponding token access.
 * DELETE `/incidents/{incident}`. Existing create and timeline-update routes remain.
 * `/subscribers`: GET (paginated, default 50, maximum 100), POST creates a pending
   unconfirmed subscriber; `/{subscriber}` GET, PUT service preferences and DELETE.
-  Subscriber routes additionally require the token owner to administer this page.
+  Subscriber routes need a `write` token for every method, reads included, because
+  they return email addresses, and the token owner must administer this page.
   Tokens and signup IPs are never returned. Subscriber creation sends no email;
   resend confirmation from the subscriber administration screen.
 * `/maintenance`: GET list, POST create; `/{maintenance}` GET, PUT and DELETE.
