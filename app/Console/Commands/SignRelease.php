@@ -42,7 +42,9 @@ class SignRelease extends Command
             'url' => $this->argument('url'),
             'sha256' => hash_file('sha256', $archive),
             'notes' => $this->option('notes') ?: '',
-            'released_at' => now()->toDateString(),
+            // To the second, in UTC: installs refuse a manifest older than the
+            // newest they accepted, so two releases on one day must still differ.
+            'released_at' => now('UTC')->format('Y-m-d\\TH:i:s\\Z'),
         ], JSON_UNESCAPED_SLASHES);
 
         $signature = sodium_crypto_sign_detached($payload, sodium_hex2bin(trim(file_get_contents($path))));

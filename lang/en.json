@@ -1783,5 +1783,6 @@
     "Save passphrase": "Save passphrase",
     "Remove the backup passphrase?": "Remove the backup passphrase?",
     "Remote archives are then no longer encrypted and leave .env out. Archives made before keep needing the passphrase.": "Remote archives are then no longer encrypted and leave .env out. Archives made before keep needing the passphrase.",
-    "Remove passphrase": "Remove passphrase"
+    "Remove passphrase": "Remove passphrase",
+    "Manifest refused: older than a release this installation already saw": "Manifest refused: older than a release this installation already saw"
 }

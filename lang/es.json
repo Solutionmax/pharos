@@ -1783,5 +1783,6 @@
     "Save passphrase": "Guardar frase de contraseña",
     "Remove the backup passphrase?": "¿Eliminar la frase de contraseña de las copias?",
     "Remote archives are then no longer encrypted and leave .env out. Archives made before keep needing the passphrase.": "Los archivos remotos dejarán de cifrarse y omitirán .env. Los archivos creados antes siguen necesitando la frase de contraseña.",
-    "Remove passphrase": "Eliminar frase de contraseña"
+    "Remove passphrase": "Eliminar frase de contraseña",
+    "Manifest refused: older than a release this installation already saw": "Manifiesto rechazado: es más antiguo que una versión que esta instalación ya vio"
 }

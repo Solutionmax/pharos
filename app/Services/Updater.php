@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -22,6 +23,15 @@ class Updater
     public const CACHE_KEY = 'pharos.update.check';
 
     public const CHECK_INTERVAL_MINUTES = 60;
+
+    /**
+     * The newest released_at (Unix seconds) of any manifest this install has
+     * accepted. A signed manifest stays valid for ever, so without this an old
+     * one, replayed by whoever sits between us and the release server, would
+     * be accepted again: an older release offered as new, or the newest one
+     * hidden behind it.
+     */
+    public const RELEASED_AT_KEY = 'update.highest_released_at';
 
     public function __construct(protected License $license) {}
 
@@ -62,7 +72,7 @@ class Updater
      * is down or answers 404 used to be asked again on every admin page — and
      * an install behind a firewall waited the full timeout for each of them.
      *
-     * @return array{state:'ok'|'no_release'|'unreachable'|'invalid'|'disabled',manifest:array|null,checked_at:string|null,error:string|null}
+     * @return array{state:'ok'|'no_release'|'unreachable'|'invalid'|'stale'|'disabled',manifest:array|null,checked_at:string|null,error:string|null}
      */
     public function lastCheck(bool $fresh = false): array
     {
@@ -115,7 +125,85 @@ class Updater
 
         $manifest = $this->verify($response->body());
 
-        return $manifest === null ? $outcome('invalid') : $outcome('ok', $manifest);
+        if ($manifest === null) {
+            return $outcome('invalid');
+        }
+
+        if (($problem = $this->replayProblem($manifest)) !== null) {
+            Log::warning('Update manifest refused as a replay', ['version' => $manifest['version'], 'released_at' => $manifest['released_at'] ?? null]);
+
+            return $outcome('stale', error: $problem);
+        }
+
+        $this->remember($manifest);
+
+        return $outcome('ok', $manifest);
+    }
+
+    /**
+     * When a manifest says it was released, as Unix seconds, or null when it
+     * does not say or says it in a form we do not read. A date alone (the 1.1
+     * manifests) counts as midnight UTC.
+     */
+    public static function releasedAt(array $manifest): ?int
+    {
+        $value = $manifest['released_at'] ?? null;
+
+        if (! is_string($value) || ! preg_match('/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?(Z|[+-]\d{2}:?\d{2}))?$/', $value)) {
+            return null;
+        }
+
+        try {
+            return (new \DateTimeImmutable($value, new \DateTimeZone('UTC')))->getTimestamp();
+        } catch (\Exception) {
+            return null;
+        }
+    }
+
+    /** The newest released_at accepted so far, or null before the first dated manifest. */
+    public function highestReleasedAt(): ?int
+    {
+        $seen = Setting::get(self::RELEASED_AT_KEY);
+
+        return is_numeric($seen) ? (int) $seen : null;
+    }
+
+    /**
+     * Why this manifest must not be accepted, or null when it may. Older than
+     * one already accepted is a replay. Undated is only fine until a dated one
+     * has been seen: that keeps the 1.1 manifests working and stops an undated
+     * one from being slipped in afterwards.
+     */
+    public function replayProblem(array $manifest): ?string
+    {
+        $seen = $this->highestReleasedAt();
+        $at = self::releasedAt($manifest);
+
+        if ($seen === null) {
+            return null;
+        }
+
+        if ($at === null) {
+            return 'The release manifest carries no release date, and a dated one was accepted before. It was refused.';
+        }
+
+        if ($at < $seen) {
+            return 'The release manifest is older than one this installation accepted before (released '
+                .gmdate('Y-m-d H:i', $at).' UTC, seen '.gmdate('Y-m-d H:i', $seen).' UTC). It was refused.';
+        }
+
+        return null;
+    }
+
+    /** Raise the mark to this manifest's date; it never goes down. */
+    protected function remember(array $manifest): void
+    {
+        $at = self::releasedAt($manifest);
+        $seen = $this->highestReleasedAt();
+
+        if ($at !== null && ($seen === null || $at > $seen)) {
+            Setting::put(self::RELEASED_AT_KEY, (string) $at);
+        }
     }
 
     /**
@@ -162,6 +250,12 @@ class Updater
             if (empty($data[$required])) {
                 return null;
             }
+        }
+
+        // Signed along with the rest. A date in a form we cannot read could not
+        // be compared, so it is refused rather than treated as missing.
+        if (isset($data['released_at']) && self::releasedAt($data) === null) {
+            return null;
         }
 
         return $data;

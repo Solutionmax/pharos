@@ -67,6 +67,14 @@ commercial licence is quoted individually and its key is signed by hand.
 The same pair signs **release manifests** for the updater. A `purpose` field keeps the two
 apart, so a licence key can never be replayed as a fake update and the other way round.
 
+`pharos:release:sign` (run by `scripts/build-release.sh`) puts `released_at` in the signed
+payload, in UTC to the second. Since 1.2.0 an installation refuses a manifest older than the
+newest it has accepted, and an undated one once it has seen a dated one; 1.1.0 manifests (a date
+without a time) still count, as midnight UTC. So `latest.json` must always be signed after the
+manifest it replaces: the build script checks that against the live `latest.json` before it
+uploads. Re-signing an older release later gives it a newer `released_at`; that is harmless,
+because an install never installs a version lower than or equal to its own.
+
 If the secret ever leaks: generate a new pair, ship a release with the new public key, and
 re-issue keys to existing customers. Old keys stop verifying on the new version only;
 nobody's site breaks.

@@ -381,6 +381,11 @@ screen. On Docker the host pulls the new image: `docker compose pull && docker c
 Manifests are signed with **Ed25519** and verified locally. If the release server cannot be
 reached, that reads as *no update available*, never as an error.
 
+Each manifest carries a signed `released_at` (UTC, to the second). An installation remembers the
+newest one it has accepted and refuses an older manifest after that, so a signed but outdated
+manifest cannot be played back to it. Only one update or rollback runs at a time; a second one is
+refused while the first holds the lock.
+
 Every release (what changed, the signed zip, its SHA-256 and a copy of the web installer
 pinned to that version) is listed at **[pharos.solutionmax.net/releases](https://pharos.solutionmax.net/releases/)**.
 The GitHub Releases here carry the same files as a mirror.

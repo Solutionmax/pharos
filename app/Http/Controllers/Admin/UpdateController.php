@@ -53,6 +53,7 @@ class UpdateController extends Controller
             'no_release' => 'nothing new.',
             'unreachable' => 'the release server could not be reached.',
             'invalid' => 'the release server answered, but the manifest is not signed by our key.',
+            'stale' => 'the release server offered a manifest older than one this installation already accepted, so it was refused.',
             default => 'checking is switched off.',
         };
     }

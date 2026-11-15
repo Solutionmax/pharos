@@ -9,3 +9,4 @@ routes.scanned.php
 schedule-*
 services.json
 pharos-scheduler-last-run
+pharos-update.lock

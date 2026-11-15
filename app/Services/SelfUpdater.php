@@ -27,6 +27,57 @@ class SelfUpdater
 
     public function __construct(protected Updater $updater) {}
 
+    /** @var resource|null held while apply() or rollback() runs in this instance */
+    protected $lockHandle = null;
+
+    /**
+     * One update or rollback at a time. A file lock, not a cache lock: an
+     * update clears the cache halfway, and a process that dies lets go of a
+     * file lock by itself, so a crash never leaves the next attempt locked out.
+     */
+    public function lockPath(): string
+    {
+        return (string) (config('pharos.update.lock_file') ?: storage_path('framework/pharos-update.lock'));
+    }
+
+    /**
+     * Runs $work under the lock, or refuses when another process holds it. A
+     * rollback that apply() starts to undo a failed install is already inside.
+     *
+     * @param  callable(): array{ok:bool,message:string}  $work
+     * @return array{ok:bool,message:string}
+     */
+    protected function exclusively(callable $work): array
+    {
+        if ($this->lockHandle !== null) {
+            return $work();
+        }
+
+        $path = $this->lockPath();
+        File::ensureDirectoryExists(dirname($path));
+        $handle = @fopen($path, 'c');
+
+        if ($handle === false) {
+            return ['ok' => false, 'message' => "Could not open the update lock at {$path}. Make that folder writable for the web user."];
+        }
+
+        if (! flock($handle, LOCK_EX | LOCK_NB)) {
+            fclose($handle);
+
+            return ['ok' => false, 'message' => 'Another update or rollback is running. Wait for it to finish, then try again.'];
+        }
+
+        $this->lockHandle = $handle;
+
+        try {
+            return $work();
+        } finally {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+            $this->lockHandle = null;
+        }
+    }
+
     public function canWrite(): bool
     {
         return is_writable(base_path()) && is_writable(base_path('app'));
@@ -294,6 +345,12 @@ class SelfUpdater
      */
     public function rollback(string $name, ?string $target = null, ?string $database = null): array
     {
+        return $this->exclusively(fn () => $this->rollbackLocked($name, $target, $database));
+    }
+
+    /** @return array{ok:bool,message:string,safety?:string} */
+    protected function rollbackLocked(string $name, ?string $target, ?string $database): array
+    {
         $backup = $this->backupPath($name);
 
         if ($backup === null || ! is_file($backup.'/artisan')) {
@@ -404,6 +461,12 @@ class SelfUpdater
      */
     public function apply(?array $manifest = null): array
     {
+        return $this->exclusively(fn () => $this->applyLocked($manifest));
+    }
+
+    /** @return array{ok:bool,message:string,version?:string,backup?:string} */
+    protected function applyLocked(?array $manifest): array
+    {
         if ($this->updater->managed()) {
             return ['ok' => false, 'message' => 'This installation is managed externally. Update the Docker image on the host.'];
         }
@@ -412,6 +475,12 @@ class SelfUpdater
 
         if ($manifest === null) {
             return ['ok' => false, 'message' => 'No verified release available.'];
+        }
+
+        // The check refuses these already; a manifest handed in from elsewhere
+        // (the command, a cached outcome) gets the same test.
+        if (($problem = $this->updater->replayProblem($manifest)) !== null) {
+            return ['ok' => false, 'message' => $problem];
         }
 
         if (version_compare($manifest['version'], $this->updater->current(), '<=')) {
