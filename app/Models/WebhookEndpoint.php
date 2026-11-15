@@ -61,6 +61,7 @@ class WebhookEndpoint extends Model
         'incident.updated' => 'Update posted',
         'incident.resolved' => 'Resolved',
         'maintenance' => 'Maintenance',
+        'certificate.expiring' => 'Certificate expiring',
     ];
 
     /** What a new destination starts with. */

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\IncidentStatus;
+use App\Models\Check;
 use App\Models\Incident;
 use App\Models\Maintenance;
 use App\Models\Setting;
@@ -15,6 +16,9 @@ use Illuminate\Support\Str;
 /** Incident changes enqueue immutable payloads; the minute scheduler delivers them. */
 class OutgoingWebhook
 {
+    /** Days before a certificate expires at which destinations hear about it. */
+    public const CERTIFICATE_DAYS = [14, 3];
+
     private ?int $retryAfter = null;
 
     public function __construct(protected SafeHttp $safe = new SafeHttp) {}
@@ -61,6 +65,48 @@ class OutgoingWebhook
                     'status_page_id' => $endpoint->status_page_id,
                     'event' => 'maintenance',
                     'payload' => Clock::withInstallationZone(fn () => $this->maintenancePayload($endpoint->format, $maintenance, $event)),
+                    'next_attempt_at' => now(),
+                ],
+            );
+        }
+    }
+
+    /**
+     * An HTTP check's certificate came within 14 days of expiring, then within
+     * 3. Each step goes out once per expiry date: the check remembers the last
+     * one in tls_notice, so a renewed certificate starts over and a run every
+     * minute does not repeat it.
+     */
+    public function certificateExpiring(Check $check): void
+    {
+        $expires = $check->tls_expires_at;
+        if ($expires === null) {
+            return;
+        }
+        $daysLeft = (int) floor(($expires->getTimestamp() - now()->getTimestamp()) / 86400);
+        $reached = array_filter(self::CERTIFICATE_DAYS, fn (int $days) => $daysLeft <= $days);
+        if ($reached === []) {
+            return;
+        }
+        $step = min($reached);
+        $date = $expires->utc()->format('Y-m-d');
+        [$sentDate, $sentStep] = array_pad(explode(':', (string) $check->tls_notice, 2), 2, '');
+        if ($sentDate === $date && $sentStep !== '' && (int) $sentStep <= $step) {
+            return;
+        }
+        $page = app(PageContext::class)->page();
+        if (! $page->is_published || $page->archived_at !== null) {
+            return;
+        }
+        $check->forceFill(['tls_notice' => $date.':'.$step])->save();
+
+        foreach (WebhookEndpoint::where('enabled', true)->get()->filter(fn (WebhookEndpoint $e) => $e->wants('certificate.expiring')) as $endpoint) {
+            WebhookDelivery::firstOrCreate(
+                ['webhook_endpoint_id' => $endpoint->id, 'event_key' => hash('sha256', 'certificate:'.$check->id.':'.$date.':'.$step)],
+                [
+                    'status_page_id' => $endpoint->status_page_id,
+                    'event' => 'certificate.expiring',
+                    'payload' => Clock::withInstallationZone(fn () => $this->certificatePayload($endpoint->format, $check, $daysLeft, $step)),
                     'next_attempt_at' => now(),
                 ],
             );
@@ -205,6 +251,69 @@ class OutgoingWebhook
                     'starts_at' => $maintenance->starts_at->toIso8601String(),
                     'ends_at' => $maintenance->ends_at->toIso8601String(),
                     'components' => $maintenance->components->pluck('name')->all(),
+                ],
+            ],
+        };
+    }
+
+    /**
+     * The host, not the whole address: a check URL can carry a path or a
+     * login that has no business in a chat channel.
+     *
+     * @return array<string, mixed>
+     */
+    protected function certificatePayload(string $format, Check $check, int $daysLeft, int $step): array
+    {
+        $component = (string) $check->component?->name;
+        $host = (string) (parse_url((string) $check->target, PHP_URL_HOST) ?: '');
+        $expires = $check->tls_expires_at;
+        $when = $expires?->format('j M Y H:i T') ?? '';
+        $left = match (true) {
+            $daysLeft <= 0 => __('expires within a day'),
+            $daysLeft === 1 => __('1 day left'),
+            default => __(':count days left', ['count' => $daysLeft]),
+        };
+        $line = Str::limit(__('Certificate expiring: :component', ['component' => $component]), 1800);
+        $detail = implode('  ·  ', array_filter([$host, __('Expires :date', ['date' => $when]), $left]));
+        $brand = Setting::get('brand.name', 'Pharos');
+
+        return match ($format) {
+            'slack' => [
+                'text' => $line,
+                'blocks' => [
+                    ['type' => 'section', 'text' => ['type' => 'mrkdwn', 'text' => ':lock: *'.__('Certificate expiring').'*: '.$component]],
+                    ['type' => 'context', 'elements' => [['type' => 'mrkdwn', 'text' => $detail.'  ·  '.$brand]]],
+                ],
+            ],
+            'teams' => ['type' => 'message', 'attachments' => [[
+                'contentType' => 'application/vnd.microsoft.card.adaptive',
+                'content' => [
+                    '$schema' => 'http://adaptivecards.io/schemas/adaptive-card.json',
+                    'type' => 'AdaptiveCard',
+                    'version' => '1.4',
+                    'body' => [
+                        ['type' => 'TextBlock', 'size' => 'Medium', 'weight' => 'Bolder', 'wrap' => true, 'color' => 'Warning', 'text' => $line],
+                        ['type' => 'FactSet', 'facts' => array_values(array_filter([
+                            $host !== '' ? ['title' => __('Address'), 'value' => $host] : null,
+                            ['title' => __('Expires'), 'value' => $when],
+                            ['title' => __('Time left'), 'value' => $left],
+                            ['title' => __('Status page'), 'value' => $brand],
+                        ]))],
+                    ],
+                ],
+            ]]],
+            'discord' => ['content' => $line."\n".$detail, 'allowed_mentions' => ['parse' => []]],
+            'telegram' => ['text' => $line."\n".$detail],
+            'signal' => ['message' => $line."\n".$detail],
+            default => [
+                'event' => 'certificate.expiring',
+                'certificate' => [
+                    'component_id' => $check->component_id,
+                    'component' => $component,
+                    'host' => $host,
+                    'expires_at' => $expires?->toIso8601String(),
+                    'days_left' => $daysLeft,
+                    'threshold_days' => $step,
                 ],
             ],
         };
