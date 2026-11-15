@@ -213,8 +213,10 @@ class MailTemplates
     }
 
     /**
-     * What the frame needs. url() rather than the stored path: a mail is read
-     * away from the site, so a relative logo path shows a broken image.
+     * What the frame needs. An absolute logo URL, because a mail is read away
+     * from the site, and built on the page's configured address rather than
+     * url(): that follows the Host header, which a stranger posting the sign
+     * up form picks, and would turn the logo into their tracking pixel.
      *
      * @return array{brand: string, accent: string, logo: ?string, link: string, unsubscribe: ?string, preferences: ?string}
      */
@@ -223,13 +225,13 @@ class MailTemplates
         $branding = app(Branding::class);
         $logo = $branding->logoUrl();
         if ($logo === null && $branding->name() === 'Pharos' && ! $branding->creditHidden()) {
-            $logo = app(Branding::class)->builtInAssetUrl('pharos-email-logo.png');
+            $logo = $branding->builtInAssetPath('pharos-email-logo.png');
         }
 
         return [
             'brand' => $branding->name(),
             'accent' => $branding->accent(),
-            'logo' => $logo ? url($logo) : null,
+            'logo' => $logo ? PageUrls::onPage($logo) : null,
             'link' => PageUrls::route('status'),
             'unsubscribe' => $unsubscribe ?: null,
             'preferences' => $preferences ?: null,
@@ -256,7 +258,7 @@ class MailTemplates
         if ($key === 'subscribe_confirm') {
             return [
                 'brand' => self::frame()['brand'],
-                'link' => url('/subscribe/confirm/preview'),
+                'link' => PageUrls::onPage('subscribe/confirm/preview'),
                 'hours' => Subscriber::CONFIRM_HOURS,
                 'name' => $name,
             ];
@@ -273,7 +275,7 @@ class MailTemplates
                 'starts' => $start->translatedFormat('j F Y, H:i'),
                 'ends' => $start->copy()->addHours(2)->translatedFormat('j F Y, H:i'),
                 'link' => PageUrls::route('status'),
-                'unsubscribe' => url('/unsubscribe/preview'),
+                'unsubscribe' => PageUrls::onPage('unsubscribe/preview'),
                 'name' => $name,
                 'tone' => 'w',
             ];
@@ -292,7 +294,7 @@ class MailTemplates
             'message' => "We are seeing **delays of up to 20 minutes** on outbound mail while the queue drains.\n\n- Incoming mail is not affected\n- No messages are lost",
             'components' => 'Mail, Outbound queue',
             'link' => PageUrls::route('status'),
-            'unsubscribe' => url('/unsubscribe/preview'),
+            'unsubscribe' => PageUrls::onPage('unsubscribe/preview'),
             'when' => Clock::now()->translatedFormat('j F Y, H:i'), // the customer's zone, like a real notice
             'name' => $name,
             'tone' => $key === 'incident_resolved' ? 'ok' : 'p',

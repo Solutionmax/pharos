@@ -50,6 +50,24 @@ class PageUrls
         return rtrim(config('app.url'), '/').$relative;
     }
 
+    /**
+     * A path on the current page's own address: its custom domain, else the
+     * installation URL. Never the Host header of the request, which whoever
+     * sends it chooses; this is what links and images in a mail are built on.
+     * A URL that is already absolute is left alone.
+     */
+    public static function onPage(string $path): string
+    {
+        if (preg_match('#^https?://#i', $path)) {
+            return $path;
+        }
+
+        $page = app(PageContext::class)->page();
+        $base = $page->domain ? $page->publicUrl() : rtrim((string) config('app.url'), '/');
+
+        return $base.'/'.ltrim($path, '/');
+    }
+
     public static function api(string $path = ''): string
     {
         $page = app(PageContext::class)->page();
