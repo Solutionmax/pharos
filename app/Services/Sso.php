@@ -64,7 +64,7 @@ class Sso
     {
         $issuer = rtrim($issuer ?: (string) $this->issuer(), '/');
 
-        return Cache::remember('sso.discovery.'.md5($issuer), 3600, function () use ($issuer) {
+        $doc = Cache::remember('sso.discovery.'.md5($issuer), 3600, function () use ($issuer) {
             $response = $this->safe->to($issuer.'/.well-known/openid-configuration')
                 ->get($issuer.'/.well-known/openid-configuration');
 
@@ -82,6 +82,40 @@ class Sso
 
             return $doc;
         });
+
+        // Checked on every read, not only when cached: taking a host off the
+        // internal list takes effect at once.
+        $this->requireHttps($doc);
+
+        return $doc;
+    }
+
+    /**
+     * The endpoints carry the code, the client secret and the tokens, and the
+     * issuer being https says nothing about where its document points. Plain
+     * http only for a host the administrator listed under internal provider hosts.
+     *
+     * @param  array<string, mixed>  $doc
+     *
+     * @throws \RuntimeException
+     */
+    protected function requireHttps(array $doc): void
+    {
+        foreach (['authorization_endpoint', 'token_endpoint', 'jwks_uri'] as $key) {
+            if (! isset($doc[$key]) && $key === 'jwks_uri') {
+                continue;
+            }
+
+            $url = is_string($doc[$key] ?? null) ? $doc[$key] : '';
+            $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+            $host = trim((string) parse_url($url, PHP_URL_HOST), '[]');
+
+            if ($host !== '' && ($scheme === 'https' || ($scheme === 'http' && $this->safe->isAllowed($host)))) {
+                continue;
+            }
+
+            throw new \RuntimeException(__('The provider\'s :endpoint is not on https. Use https, or add its host to the internal provider hosts.', ['endpoint' => $key]));
+        }
     }
 
     /**

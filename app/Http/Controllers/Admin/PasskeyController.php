@@ -44,6 +44,10 @@ class PasskeyController extends Controller
         try {
             $user = $keys->authenticate($r, $data);
         } catch (\Throwable $e) {
+            // Recorded like a wrong password: whose passkey it claimed to be, when the id is one of ours.
+            $key = Passkey::with('user')->where('credential_id', $data['id'])->first();
+            Audit::recordAs($key?->user->email ?? 'Unknown passkey', 'auth.passkey_failed', $key);
+
             throw ValidationException::withMessages(['passkey' => __('Passkey sign in failed. Start again and verify your device.')]);
         }
         $r->session()->regenerate();

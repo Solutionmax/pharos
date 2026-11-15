@@ -1758,5 +1758,6 @@
     "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.": "Para todos los que inician sesión en esta instalación. Con estado muestra la página de estado predeterminada junto al formulario, solo mientras esté publicada.",
     "Require two factor for administrators": "Exigir la autenticación de dos factores a los administradores",
     "An administrator without two factor can only open their profile until it is set up. That includes you.": "Un administrador sin autenticación de dos factores solo puede abrir su perfil hasta que la configure. Eso también te incluye a ti.",
-    "This installation requires two factor authentication for administrators. Turn it on before you continue.": "Esta instalación exige la autenticación de dos factores a los administradores. Actívala antes de continuar."
+    "This installation requires two factor authentication for administrators. Turn it on before you continue.": "Esta instalación exige la autenticación de dos factores a los administradores. Actívala antes de continuar.",
+    "The provider's :endpoint is not on https. Use https, or add its host to the internal provider hosts.": "El :endpoint del proveedor no usa https. Usa https o añade su host a los hosts internos de proveedores."
 }

@@ -1758,5 +1758,6 @@
     "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.": "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.",
     "Require two factor for administrators": "Require two factor for administrators",
     "An administrator without two factor can only open their profile until it is set up. That includes you.": "An administrator without two factor can only open their profile until it is set up. That includes you.",
-    "This installation requires two factor authentication for administrators. Turn it on before you continue.": "This installation requires two factor authentication for administrators. Turn it on before you continue."
+    "This installation requires two factor authentication for administrators. Turn it on before you continue.": "This installation requires two factor authentication for administrators. Turn it on before you continue.",
+    "The provider's :endpoint is not on https. Use https, or add its host to the internal provider hosts.": "The provider's :endpoint is not on https. Use https, or add its host to the internal provider hosts."
 }

@@ -81,17 +81,29 @@ class User extends Authenticatable
 
     public function canAccessPage(int $pageId): bool
     {
-        return $this->isAdmin() || $this->statusPages()->whereKey($pageId)->exists();
+        return $this->isAdmin() || $this->activePage($pageId)->exists();
     }
 
     public function canEditPage(int $pageId): bool
     {
-        return $this->isAdmin() || $this->statusPages()->whereKey($pageId)->wherePivotIn('role', ['editor', 'admin'])->exists();
+        return $this->isAdmin() || $this->activePage($pageId)->wherePivotIn('role', ['editor', 'admin'])->exists();
     }
 
     public function canAdministerPage(int $pageId): bool
     {
-        return $this->isAdmin() || $this->statusPages()->whereKey($pageId)->wherePivot('role', 'admin')->exists();
+        return $this->isAdmin() || $this->activePage($pageId)->wherePivot('role', 'admin')->exists();
+    }
+
+    /**
+     * This account's membership of a page that is not archived. Archiving
+     * closes a page for its members (and their API tokens) too; only an
+     * installation admin still reaches it, to bring it back or delete it.
+     *
+     * @return BelongsToMany<StatusPage, $this>
+     */
+    protected function activePage(int $pageId): BelongsToMany
+    {
+        return $this->statusPages()->whereKey($pageId)->whereNull('status_pages.archived_at');
     }
 
     /** @return HasMany<RecoveryCode, $this> */

@@ -56,13 +56,11 @@ class TwoFactorController extends Controller
 
         $step = $this->totp->verify($user->totp_secret, $code, $user->totp_last_step);
 
-        if ($step !== null) {
-            $user->forceFill(['totp_last_step' => $step])->save();
-
+        if ($step !== null && $this->claimStep($user, $step)) {
             return $this->signIn($request, $user);
         }
 
-        if (RecoveryCode::consume($user, $code)) {
+        if ($step === null && RecoveryCode::consume($user, $code)) {
             Audit::recordAs($user->email, '2fa.recovery_used', $user);
 
             return $this->signIn($request, $user);
@@ -77,6 +75,26 @@ class TwoFactorController extends Controller
         throw ValidationException::withMessages([
             'code' => $spent ? 'That code has already been used. Wait for the next one.' : 'That code did not match.',
         ]);
+    }
+
+    /**
+     * Marks the step as used, in one conditional UPDATE: of two requests that
+     * carry the same code at the same moment, only one finds the row still
+     * below the step, so a code read over a shoulder cannot be raced in twice.
+     */
+    protected function claimStep(User $user, int $step): bool
+    {
+        $claimed = User::query()->whereKey($user->getKey())
+            ->where(fn ($query) => $query->whereNull('totp_last_step')->orWhere('totp_last_step', '<', $step))
+            ->update(['totp_last_step' => $step]);
+
+        if ($claimed !== 1) {
+            return false;
+        }
+
+        $user->forceFill(['totp_last_step' => $step])->syncOriginalAttribute('totp_last_step');
+
+        return true;
     }
 
     protected function signIn(Request $request, User $user)
