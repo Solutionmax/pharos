@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Mail\TestMail;
 use App\Models\StatusPage;
+use App\Models\StatusPageSetting;
 use App\Models\User;
 use App\Services\MailConfig;
 use App\Services\PageContext;
@@ -316,5 +317,35 @@ class PageMailHostTest extends TestCase
         app(MailConfig::class)->pinTransport($mailer, 'smtp.public.test', '2001:db8::25');
         $this->assertSame('[2001:db8::25]', $mailer->getSymfonyTransport()->getStream()->getHost());
         Mail::purge('pin_test');
+    }
+
+    // ---------- page SMTP saved by 0.7.0, before the trust marker ----------
+
+    protected function legacyPageMail(int $pageId, string $host, ?string $marker = null): void
+    {
+        foreach (array_filter(['mail.mode' => 'custom', 'mail.host' => $host, 'mail.port' => '587', 'mail.from_address' => 'status@beta.example.test', MailConfig::PAGE_HOST_TRUSTED_KEY => $marker], fn ($v) => $v !== null) as $key => $value) {
+            StatusPageSetting::create(['status_page_id' => $pageId, 'key' => $key, 'value' => $value]);
+        }
+    }
+
+    public function test_the_update_keeps_an_internal_relay_from_before_the_marker_working(): void
+    {
+        Mail::fake();
+        $public = StatusPage::create(['name' => 'Gamma', 'slug' => 'gamma']);
+        $refused = StatusPage::create(['name' => 'Delta', 'slug' => 'delta']);
+        $this->legacyPageMail($this->page->id, 'smtp.internal.test');
+        $this->legacyPageMail($public->id, 'smtp.public.test');
+        $this->legacyPageMail($refused->id, 'smtp.internal.test', '0');
+
+        (require database_path('migrations/2026_11_15_150000_keep_older_page_smtp_relays_working.php'))->up();
+
+        $trusted = fn (StatusPage $page) => app(PageContext::class)->run($page->id, fn () => app(MailConfig::class)->pageHostTrusted());
+        $this->assertTrue($trusted($this->page));
+        $this->assertFalse($trusted($public));
+        $this->assertFalse($trusted($refused), 'a page admin saved this after 0.7.1; it stays untrusted');
+        $this->assertDatabaseMissing('status_page_settings', ['status_page_id' => $public->id, 'key' => MailConfig::PAGE_HOST_TRUSTED_KEY]);
+
+        $this->sendNotice();
+        Mail::assertSentCount(1);
     }
 }
