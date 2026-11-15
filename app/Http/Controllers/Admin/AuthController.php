@@ -13,6 +13,18 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    /** Failed attempts per address and IP: an admin login is worth brute forcing. */
+    public const MAX_PER_ACCOUNT = 5;
+
+    /**
+     * Failed attempts per IP, whatever the address: one source trying a single
+     * password against many addresses never reaches the limit above.
+     */
+    public const MAX_PER_IP = 20;
+
+    /** Both limits count failures over the same five minutes. */
+    public const DECAY_SECONDS = 300;
+
     public function form()
     {
         // A fresh install has nobody to sign in as. Send them to set one up
@@ -27,26 +39,29 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $data = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'email', 'max:255'],
             'password' => ['required', 'string'],
         ]);
 
-        // Throttled per email and IP: an admin login is worth brute forcing.
         $key = 'login:'.strtolower($data['email']).'|'.$request->ip();
+        $ipKey = 'login-ip:'.$request->ip();
 
-        if (RateLimiter::tooManyAttempts($key, 5)) {
-            throw ValidationException::withMessages([
-                // Minutes read easier than "293 seconds".
-                'email' => 'Too many attempts. Try again in '.(function ($s) {
-                    return $s >= 60 ? ceil($s / 60).' minute'.(ceil($s / 60) == 1 ? '' : 's') : $s.' seconds';
-                })(RateLimiter::availableIn($key)).'.',
-            ]);
+        foreach ([$key => self::MAX_PER_ACCOUNT, $ipKey => self::MAX_PER_IP] as $limited => $max) {
+            if (RateLimiter::tooManyAttempts($limited, $max)) {
+                throw ValidationException::withMessages([
+                    // Minutes read easier than "293 seconds".
+                    'email' => 'Too many attempts. Try again in '.(function ($s) {
+                        return $s >= 60 ? ceil($s / 60).' minute'.(ceil($s / 60) == 1 ? '' : 's') : $s.' seconds';
+                    })(RateLimiter::availableIn($limited)).'.',
+                ]);
+            }
         }
 
         // Checked without signing in, so a second factor can stand between the
         // password and the session instead of after it.
         if (! Auth::validate($data)) {
-            RateLimiter::hit($key, 300);
+            RateLimiter::hit($key, self::DECAY_SECONDS);
+            RateLimiter::hit($ipKey, self::DECAY_SECONDS);
             // Worth recording even though nobody is signed in: a run of these
             // from one address is the first sign of someone trying the door.
             Audit::recordAs($data['email'], 'auth.failed');
@@ -54,6 +69,8 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['email' => 'Those details do not match an account.']);
         }
 
+        // Only the per account count: signing in to an account of your own
+        // must not wipe the failures this address piled up against others.
         RateLimiter::clear($key);
 
         $user = User::where('email', $data['email'])->firstOrFail();
