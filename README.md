@@ -59,8 +59,8 @@ and token header; incident creation needs changes. See the compatibility guide b
 |---|---|
 | **Checks** | HTTP (with optional expected text and a warning before the certificate expires), TCP, DNS (A, AAAA, CNAME, MX, TXT) and heartbeat. Two failures turn a component red, three healthy checks in a row close the incident. Optional remote probe locations vote on the result, and each service keeps a 24 hour latency chart. |
 | **Incidents** | Opened and closed by the checks themselves, or by hand. One incident can span several components, each with its own status. Templates with `{{variables}}` for the API. |
-| **Uptime** | Daily roll-ups into a 90 day chart and a percentage. Each day is coloured by what happened: a brief blip, slow, a disruption or an outage, and grows taller with the time lost. Pharos measures the services it checks itself and counts the status that the API, Uptime Kuma, Alertmanager or Grafana reports for the others (marked as reported); services set by hand are not measured. Days without data are grey and left out of the average, never counted as green. |
-| **Public page** | Every section is a switch (banner, uptime bar, services, per-component bars, incident history, empty days, API link), per-service visibility, light and dark theme, and a live preview in the admin that renders the real page from values you have not saved yet. |
+| **Uptime** | Daily roll-ups into a 90 day chart and a percentage. Each day is coloured by what happened, not by a percentage: a brief blip (under 5 minutes lost, no incident) stays light green, Slow is a degraded performance incident, Disruption a partial outage or 5 to 59 minutes lost, Outage a major outage or an hour or more. A day grows taller with the time lost. Pharos measures the services it checks itself and counts the status that the API, Uptime Kuma, Alertmanager or Grafana reports for the others (marked as reported); services set by hand are not measured. Days without data are grey and left out of the average, never counted as green. |
+| **Public page** | Every section is a switch (banner, uptime bar, services, per-component bars, incident history, empty days, API link), per-service visibility, light and dark theme, and a live preview in the admin that renders the real page from values you have not saved yet. Visitors without a session get no cookie, so a proxy or CDN may cache the page for 30 seconds. A security contact under Settings → General publishes `/.well-known/security.txt`. |
 | **Sharing** | SVG status badges per service or group, an RSS feed, a page per incident and a status widget you embed with one script tag. |
 | **Subscribers** | A *Get notified* button, double opt-in, one e-mail per incident update, one-click unsubscribe. Visitors follow every service or pick the ones they care about. The five mails are editable Markdown templates. |
 | **Reports** | Monthly uptime per service as a page, CSV or PDF, public or for the team. |
@@ -200,7 +200,7 @@ underneath; a half-finished install resumes where it stopped.
 curl -fsSL https://pharos.solutionmax.net/get | sh -s -- --php --url https://status.example.com
 ```
 
-Same release, same checks. It installs into a private `pharos-app-<domain-id>` folder (`--dir` to change that), writes
+Same release, same checks. It installs into `~/pharos-app` (`--dir` to change that), writes
 `.env`, migrates, links `storage` and adds the cron line to your crontab, or prints it where
 the crontab is not writable, as in DirectAdmin's jailed shell:
 
@@ -341,7 +341,9 @@ subscribers under `/api/v1`, the same `{"data": …}` envelope and status intege
 `X-Cachet-Token` accepted alongside `Authorization: Bearer`. Reading components, services
 and public incidents needs no token. Not there: `version`, and Cachet's `schedules` path (maintenance windows live
 under `/maintenance`). Fields and limits are in
-[docs/public-features.md](docs/public-features.md#scoped-api-and-prometheus).
+[docs/public-features.md](docs/public-features.md#scoped-api-and-prometheus); every path, field,
+answer and error is in the OpenAPI 3.1 description [docs/openapi.json](docs/openapi.json), also at
+<https://pharos.solutionmax.net/openapi.json>.
 
 ```bash
 curl -X POST https://status.example.com/api/v1/incidents \

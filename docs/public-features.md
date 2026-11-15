@@ -17,6 +17,23 @@ foreign IDs, disabled components and components in hidden groups are unavailable
   `/widget.json` without cookies, refreshes each minute and shows an unavailable
   state if the request fails. JSON and script allow public CORS; DOM text is
   rendered with `textContent`, never `innerHTML`.
+* `/.well-known/security.txt` (RFC 9116): once an installation administrator fills
+  in **Settings → General → Security contact** (an email address or an `https://`
+  link), this file names it, with an expiry a year ahead, the page languages and
+  its canonical address. Without a contact the address is a plain 404. One file for
+  the whole installation, on every domain it answers to. Cache lifetime: one hour.
+
+## Caching and cookies
+
+Badges, the feed, `/widget.json`, `/embed.js`, report downloads, `/metrics` and
+uploaded files never start a session or set a cookie. Since 1.2.2 the readable
+public pages (the status page, `/incidents/{id}` and `/reports`) do the same for a
+visitor who has no session: no session row, no cookie, and a `200` answer with
+`Cache-Control: public, max-age=30, stale-while-revalidate=300` and `Vary: Cookie`,
+so a proxy or CDN in front of Pharos may keep it for half a minute. The subscribe
+form fetches its CSRF token from `/subscribe/token` when it is opened. Someone who
+already has a session (a signed in administrator, a visitor who just subscribed)
+keeps it, and gets an answer that is not shared.
 
 ## Service subscriptions
 

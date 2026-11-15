@@ -35,10 +35,11 @@ Internal and authenticated incidents never reach subscribers.
 
 ## What the install needs
 
-**The cron line.** The same single entry that runs the checks also sends the mail:
+**The cron line.** The same single entry that runs the checks also sends the mail
+(use the folder Pharos is installed in; see [the one cron line](../README.md#the-one-cron-line)):
 
 ```
-* * * * * cd ~/pharos && php artisan schedule:run
+* * * * * cd ~/pharos-app && php artisan schedule:run >/dev/null 2>&1
 ```
 
 Without it, sign-ups still work and the outbox fills, but nothing goes out.
