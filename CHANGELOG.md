@@ -6,6 +6,9 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+### Fixed
+- In the Docker image, `/.well-known/security.txt` was refused by the web server before Pharos could answer it, so the security contact from 1.2.2 did not show on Docker installs.
+
 ## [1.2.2] — 2026-11-15
 
 ### Added
