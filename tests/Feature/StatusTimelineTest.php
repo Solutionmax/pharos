@@ -109,6 +109,16 @@ class StatusTimelineTest extends TestCase
         $this->get('/')->assertOk()->assertSee('Long running')->assertDontSee('Older incidents');
     }
 
+    public function test_an_incident_from_an_earlier_day_names_its_date(): void
+    {
+        $this->seedAdmin();
+        Carbon::setTestNow(Carbon::parse('2026-11-14 12:00:00'));
+        $incident = Incident::create(['name' => 'Long running', 'status' => IncidentStatus::Investigating, 'occurred_at' => Carbon::parse('2026-11-01 22:03:00')]);
+        IncidentUpdate::create(['incident_id' => $incident->id, 'status' => IncidentStatus::Investigating, 'message' => 'Check failed.', 'created_at' => Carbon::parse('2026-11-01 22:03:00')]);
+
+        $this->get('/')->assertOk()->assertSee('Since 1 Nov 22:03')->assertSee('Latest message, 1 Nov 22:03');
+    }
+
     private function seedAdmin(): void
     {
         User::factory()->create();

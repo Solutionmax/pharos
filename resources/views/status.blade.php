@@ -99,7 +99,7 @@
       </div>
       @if ($hero['latest'])
         <div class="latest">
-          <time>{{ __('Latest message') }}, {{ $hero['latest']->created_at->format('H:i') }}</time>
+          <time>{{ __('Latest message') }}, {{ $hero['latest']->created_at->isSameDay($now) ? $hero['latest']->created_at->format('H:i') : $hero['latest']->created_at->translatedFormat('j M H:i') }}</time>
           <div class="md">{!! $hero['latest']->messageHtml() !!}</div>
         </div>
       @endif

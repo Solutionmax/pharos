@@ -175,7 +175,7 @@ class StatusTimeline
             return [
                 'tone' => self::tone($incident),
                 'headline' => $incident->name,
-                'since' => __('Since :time', ['time' => $incident->occurred_at->format('H:i')]),
+                'since' => __('Since :time', ['time' => self::clock($incident->occurred_at, $now)]),
                 'rest' => __(':duration so far.', ['duration' => self::duration(self::incidentMinutes($incident, $now))])
                     .($outside->isEmpty() && $open->count() === 1 ? ' '.__('Everything else works.') : ''),
                 'latest' => $incident->updates->first(),
