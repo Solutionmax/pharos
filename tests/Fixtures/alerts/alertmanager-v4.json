@@ -1,0 +1,88 @@
+{
+  "version": "4",
+  "groupKey": "{}/{severity=~\"critical|warning|info\"}:{alertname=\"HighErrorRate\"}",
+  "truncatedAlerts": 0,
+  "status": "firing",
+  "receiver": "pharos",
+  "groupLabels": {
+    "alertname": "HighErrorRate"
+  },
+  "commonLabels": {
+    "alertname": "HighErrorRate",
+    "job": "api"
+  },
+  "commonAnnotations": {
+    "runbook_url": "https://runbooks.example.net/high-error-rate"
+  },
+  "externalURL": "http://alertmanager.example.net:9093",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "HighErrorRate",
+        "instance": "api-1:9100",
+        "job": "api",
+        "severity": "critical",
+        "pharos_component": "API"
+      },
+      "annotations": {
+        "summary": "High error rate on api-1",
+        "description": "More than 5% of requests answer 5xx for 5 minutes."
+      },
+      "startsAt": "2026-11-15T16:30:00.000Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "http://prometheus.example.net:9090/graph?g0.expr=job%3Arequest_errors%3Arate5m+%3E+0.05&g0.tab=1",
+      "fingerprint": "5d1c3a0f8e2b7c41"
+    },
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "HighErrorRate",
+        "instance": "web-2:9100",
+        "job": "api",
+        "severity": "warning",
+        "pharos_component": "Website"
+      },
+      "annotations": {
+        "summary": "Raised error rate on web-2"
+      },
+      "startsAt": "2026-11-15T16:31:00.000Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "http://prometheus.example.net:9090/graph?g0.expr=job%3Arequest_errors%3Arate5m+%3E+0.01&g0.tab=1",
+      "fingerprint": "9a7e44c2d0b1f356"
+    },
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "HighErrorRate",
+        "instance": "mail-1:9100",
+        "job": "api",
+        "severity": "critical",
+        "pharos_component": "Billing"
+      },
+      "annotations": {
+        "summary": "High error rate on mail-1"
+      },
+      "startsAt": "2026-11-15T16:32:00.000Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "http://prometheus.example.net:9090/graph?g0.expr=job%3Arequest_errors%3Arate5m+%3E+0.05&g0.tab=1",
+      "fingerprint": "1f0e9d8c7b6a5948"
+    },
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "HighErrorRate",
+        "instance": "db-1:9100",
+        "job": "api",
+        "severity": "critical"
+      },
+      "annotations": {
+        "summary": "High error rate on db-1"
+      },
+      "startsAt": "2026-11-15T16:33:00.000Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "http://prometheus.example.net:9090/graph?g0.expr=job%3Arequest_errors%3Arate5m+%3E+0.05&g0.tab=1",
+      "fingerprint": "0a1b2c3d4e5f6071"
+    }
+  ]
+}

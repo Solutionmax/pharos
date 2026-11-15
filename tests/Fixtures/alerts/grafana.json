@@ -1,0 +1,53 @@
+{
+  "receiver": "Pharos",
+  "status": "firing",
+  "orgId": 1,
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "High memory usage",
+        "grafana_folder": "Infrastructure",
+        "team": "blue",
+        "zone": "us-1",
+        "severity": "info",
+        "pharos_component": "Website"
+      },
+      "annotations": {
+        "description": "The system has high memory usage",
+        "runbook_url": "https://runbooks.example.net/memory",
+        "summary": "This alert was triggered for zone us-1"
+      },
+      "startsAt": "2026-11-15T16:51:03.157076+01:00",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "https://grafana.example.net/alerting/grafana/1afz29v7z/view",
+      "fingerprint": "c6eadffa33fcdf37",
+      "silenceURL": "https://grafana.example.net/alerting/silence/new?alertmanager=grafana&matcher=alertname%3DHigh+memory+usage",
+      "dashboardURL": "https://grafana.example.net/d/mem01",
+      "panelURL": "https://grafana.example.net/d/mem01?viewPanel=2",
+      "values": {
+        "B": 44.23943737541908,
+        "C": 1
+      },
+      "valueString": "[ var='B' labels={zone=us-1} value=44.23943737541908 ], [ var='C' labels={zone=us-1} value=1 ]"
+    }
+  ],
+  "groupLabels": {
+    "alertname": "High memory usage",
+    "grafana_folder": "Infrastructure"
+  },
+  "commonLabels": {
+    "alertname": "High memory usage",
+    "grafana_folder": "Infrastructure",
+    "team": "blue",
+    "zone": "us-1"
+  },
+  "commonAnnotations": {},
+  "externalURL": "https://grafana.example.net/",
+  "version": "1",
+  "groupKey": "{}/{pharos_component=~\".+\"}:{alertname=\"High memory usage\", grafana_folder=\"Infrastructure\"}",
+  "truncatedAlerts": 0,
+  "title": "[FIRING:1] High memory usage Infrastructure (blue us-1)",
+  "state": "alerting",
+  "message": "**Firing**\n\nValue: B=44.23943737541908, C=1\nLabels:\n - alertname = High memory usage\n - team = blue\n - zone = us-1\n"
+}
