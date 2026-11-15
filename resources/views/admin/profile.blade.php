@@ -100,6 +100,18 @@
               </span>
             </span>
           </div>
+          @if ($loginLayout !== null)
+          <div class="pf-pref">
+            <span><b id="pf-login-label">{{ __('Sign in page') }}</b><span>{{ __('For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.') }}</span></span>
+            <span class="pf-prefctl">
+              <span class="pp-seg" role="radiogroup" aria-labelledby="pf-login-label">
+                @foreach (['simple' => 'Simple', 'status' => 'With status'] as $value => $label)
+                  <label><input type="radio" name="login_layout" value="{{ $value }}" @checked(old('login_layout', $loginLayout) === $value)><span>{{ __($label) }}</span></label>
+                @endforeach
+              </span>
+            </span>
+          </div>
+          @endif
           <div class="pf-pref">
             <span><label for="pf-timezone"><b>{{ __('Time zone') }}</b></label>
               <span id="pf-timezone-help">{{ __('For you only, in the admin screens: times you read and times you type. Status pages, emails and notifications keep the installation zone,') }} {{ $installationZone }}.

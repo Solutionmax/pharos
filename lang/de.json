@@ -1753,7 +1753,7 @@
     "Latest incident": "Letzter Vorfall",
     "Next maintenance": "Nächste Wartung",
     "Sign in page": "Anmeldeseite",
-    "Simple: the form and one status line": "Einfach: das Formular und eine Statuszeile",
-    "With status: the form beside what the status page shows right now": "Mit Status: das Formular neben dem, was die Statusseite gerade zeigt",
-    "For the whole installation, not only this page. The status comes from the default status page, and only while it is published.": "Für die ganze Installation, nicht nur für diese Seite. Der Status kommt von der Standardseite, und nur solange sie veröffentlicht ist."
+    "Simple": "Einfach",
+    "With status": "Mit Status",
+    "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.": "Für alle, die sich bei dieser Installation anmelden. Mit Status zeigt die Standardstatusseite neben dem Formular, nur solange diese Seite veröffentlicht ist."
 }

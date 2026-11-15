@@ -72,7 +72,7 @@ class SignInLayoutTest extends TestCase
 
     protected function save(array $fields): TestResponse
     {
-        return $this->put('/admin/status-page', ['theme' => 'system', 'incident_days' => 5, ...$fields]);
+        return $this->put('/admin/profile/preferences', ['theme' => 'system', ...$fields]);
     }
 
     // ---------- the setting ----------
@@ -81,18 +81,19 @@ class SignInLayoutTest extends TestCase
     {
         $this->assertSame(SignInStatus::SIMPLE, SignInStatus::layout());
 
+        $this->actingAs($this->admin)->get('/admin/profile')->assertOk()
+            ->assertSee('name="login_layout" value="simple" checked', false);
         $this->actingAs($this->admin)->get('/admin/status-page')->assertOk()
-            ->assertSee('name="login_layout"', false)
-            ->assertSee('<option value="simple" selected>', false);
+            ->assertDontSee('name="login_layout"', false);
 
         $this->actingAs($this->admin)->save(['login_layout' => 'status'])
-            ->assertRedirect('/admin/status-page')->assertSessionHasNoErrors();
+            ->assertRedirect('/admin/profile')->assertSessionHasNoErrors();
         $this->assertSame('status', Setting::get(SignInStatus::SETTING));
         $this->assertSame(SignInStatus::STATUS, SignInStatus::layout());
 
         foreach (['fancy', '', 'STATUS'] as $bad) {
-            $this->actingAs($this->admin)->from('/admin/status-page')->save(['login_layout' => $bad])
-                ->assertRedirect('/admin/status-page')->assertSessionHasErrors('login_layout');
+            $this->actingAs($this->admin)->from('/admin/profile')->save(['login_layout' => $bad])
+                ->assertRedirect('/admin/profile')->assertSessionHasErrors('login_layout');
         }
         $this->assertSame('status', Setting::get(SignInStatus::SETTING));
 
@@ -109,9 +110,9 @@ class SignInLayoutTest extends TestCase
         ]);
         $member->statusPages()->attach(StatusPage::default());
 
-        $this->actingAs($member)->get('/admin/status-page')->assertOk()
+        $this->actingAs($member)->get('/admin/profile')->assertOk()
             ->assertDontSee('name="login_layout"', false);
-        $this->actingAs($member)->save(['login_layout' => 'status'])->assertRedirect('/admin/status-page');
+        $this->actingAs($member)->save(['login_layout' => 'status'])->assertRedirect('/admin/profile');
 
         $this->assertNull(Setting::get(SignInStatus::SETTING));
         $this->assertSame(SignInStatus::SIMPLE, SignInStatus::layout());

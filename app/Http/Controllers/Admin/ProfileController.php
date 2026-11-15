@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\RecoveryCode;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\Audit;
 use App\Services\Localization;
 use App\Services\Notes;
+use App\Services\SignInStatus;
 use App\Services\Totp;
 use App\Services\UserSessions;
 use Illuminate\Http\Request;
@@ -31,6 +33,7 @@ class ProfileController extends Controller
 
         return view('admin.profile', [
             'user' => $user,
+            'loginLayout' => $user->isAdmin() ? SignInStatus::layout() : null,
             'sessions' => $sessions->forUser($user, $current),
             'sessionsKnown' => UserSessions::available(),
             'thisDevice' => UserSessions::describe((string) $request->userAgent()),
@@ -95,6 +98,11 @@ class ProfileController extends Controller
             // stored value can never break a page.
             'timezone' => ['sometimes', 'nullable', 'string', Rule::in(\DateTimeZone::listIdentifiers())],
             'nav_layout' => ['sometimes', 'string', Rule::in(User::NAV_LAYOUTS)],
+            // The sign in page comes before anyone is known, so it is one choice for the
+            // whole installation. Only an admin gets the rule; for anyone else the field never reaches $data.
+            ...($request->user()->isAdmin()
+                ? ['login_layout' => ['sometimes', 'required', Rule::in(SignInStatus::LAYOUTS)]]
+                : []),
         ], ['timezone.in' => 'Choose a time zone from the list.']);
 
         $changes = ['theme' => $data['theme']];
@@ -108,6 +116,9 @@ class ProfileController extends Controller
             $changes['timezone'] = $data['timezone'] ?? null;
         }
         $request->user()->forceFill($changes)->save();
+        if (isset($data['login_layout'])) {
+            Setting::put(SignInStatus::SETTING, $data['login_layout']);
+        }
 
         return redirect()->route('admin.profile')
             ->with('status', 'Your preferences have been saved.')

@@ -110,17 +110,6 @@
               </select>
               <span class="help">{{ __('A visitor can still switch; their choice is remembered in their browser.') }}</span>
             </div>
-            @if ($loginLayout !== null)
-              <div class="field">
-                <label for="login_layout">{{ __('Sign in page') }}</label>
-                <select id="login_layout" name="login_layout">
-                  <option value="simple" @selected(old('login_layout', $loginLayout) === 'simple')>{{ __('Simple: the form and one status line') }}</option>
-                  <option value="status" @selected(old('login_layout', $loginLayout) === 'status')>{{ __('With status: the form beside what the status page shows right now') }}</option>
-                </select>
-                <span class="help">{{ __('For the whole installation, not only this page. The status comes from the default status page, and only while it is published.') }}</span>
-                @error('login_layout')<span class="err">{{ $message }}</span>@enderror
-              </div>
-            @endif
             <div class="field">
               <label for="incident_days">{{ __('Days of incident history') }}</label>
               <input id="incident_days" name="incident_days" type="number" min="1" max="30" value="{{ $incidentDays }}">

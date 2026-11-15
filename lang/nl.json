@@ -1753,7 +1753,7 @@
     "Latest incident": "Laatste incident",
     "Next maintenance": "Volgend onderhoud",
     "Sign in page": "Aanmeldpagina",
-    "Simple: the form and one status line": "Eenvoudig: het formulier en één statusregel",
-    "With status: the form beside what the status page shows right now": "Met status: het formulier naast wat de statuspagina nu toont",
-    "For the whole installation, not only this page. The status comes from the default status page, and only while it is published.": "Voor de hele installatie, niet alleen voor deze pagina. De status komt van de standaardpagina, en alleen zolang die gepubliceerd is."
+    "Simple": "Eenvoudig",
+    "With status": "Met status",
+    "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.": "Voor iedereen die inlogt op deze installatie. Met status toont de standaard statuspagina naast het formulier, alleen zolang die pagina gepubliceerd is."
 }

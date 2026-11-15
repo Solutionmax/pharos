@@ -1753,7 +1753,7 @@
     "Latest incident": "Latest incident",
     "Next maintenance": "Next maintenance",
     "Sign in page": "Sign in page",
-    "Simple: the form and one status line": "Simple: the form and one status line",
-    "With status: the form beside what the status page shows right now": "With status: the form beside what the status page shows right now",
-    "For the whole installation, not only this page. The status comes from the default status page, and only while it is published.": "For the whole installation, not only this page. The status comes from the default status page, and only while it is published."
+    "Simple": "Simple",
+    "With status": "With status",
+    "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.": "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published."
 }
