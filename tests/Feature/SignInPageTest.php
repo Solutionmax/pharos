@@ -49,8 +49,10 @@ class SignInPageTest extends TestCase
 
     public function test_the_sign_in_page_carries_the_brand_name_and_logo(): void
     {
+        // The installation's name sits on the line above the heading, the product logo on top.
         $this->get('/admin/login')->assertOk()
-            ->assertSee('Sign in to Pharos')
+            ->assertSee('<h1 class="pa-h1">Sign in</h1>', false)
+            ->assertSee('<b>Pharos</b>', false)
             ->assertSee('brand/pharos-logo.svg', false)
             ->assertSee('Powered by Pharos');
 
@@ -58,15 +60,15 @@ class SignInPageTest extends TestCase
         Setting::put('brand.accent', '#aa3366');
 
         $this->get('/admin/login')->assertOk()
-            ->assertSee('Sign in to Acme Hosting')
-            ->assertSee('brand/pharos-mark.svg', false)
+            ->assertSee('<b>Acme Hosting</b>', false)
+            ->assertSee('brand/pharos-logo.svg', false)
             ->assertSee('--brand:#aa3366', false);
     }
 
     public function test_the_auth_assets_are_loaded_with_a_cache_buster(): void
     {
         $this->get('/admin/login')->assertOk()
-            ->assertSee('assets/pharos-auth.css?v='.filemtime(public_path('assets/pharos-auth.css')), false)
+            ->assertSee('assets/pharos-signin.css?v='.filemtime(public_path('assets/pharos-signin.css')), false)
             ->assertSee('assets/pharos-auth.js?v='.filemtime(public_path('assets/pharos-auth.js')), false);
     }
 

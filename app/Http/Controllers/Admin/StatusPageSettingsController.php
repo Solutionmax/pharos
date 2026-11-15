@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Services\Branding;
 use App\Services\Localization;
 use App\Services\PageUrls;
+use App\Services\SignInStatus;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -19,7 +20,7 @@ class StatusPageSettingsController extends Controller
 {
     public function __construct(protected Branding $branding) {}
 
-    public function edit()
+    public function edit(Request $request)
     {
         return view('admin.status-page', [
             'modules' => Branding::MODULES,
@@ -28,6 +29,8 @@ class StatusPageSettingsController extends Controller
             'incidentDays' => (int) Setting::get('page.incident_days', 5),
             'locale' => Localization::page(),
             'groups' => ComponentGroup::withCount('components')->orderBy('position')->get(),
+            // The sign in page belongs to the installation, not to this page: only an admin sees the choice.
+            'loginLayout' => $request->user()->isAdmin() ? SignInStatus::layout() : null,
         ]);
     }
 
@@ -39,12 +42,20 @@ class StatusPageSettingsController extends Controller
             'locale' => ['sometimes', 'string', Rule::in(array_keys(Localization::LANGUAGES))],
             'modules' => ['sometimes', 'array'],
             'groups' => ['sometimes', 'array'],
+            ...($request->user()->isAdmin()
+                ? ['login_layout' => ['sometimes', 'required', Rule::in(SignInStatus::LAYOUTS)]]
+                : []),
         ]);
 
         Setting::put('brand.theme', $data['theme']);
         Setting::put('page.incident_days', (string) $data['incident_days']);
         if (isset($data['locale'])) {
             Setting::put('page.locale', $data['locale']);
+        }
+        // For the whole installation. Someone without the admin role cannot send it:
+        // the rule above is not there for them, so the field never reaches $data.
+        if (isset($data['login_layout'])) {
+            Setting::put(SignInStatus::SETTING, $data['login_layout']);
         }
 
         // Unchecked boxes are absent from the request, so iterate over the known

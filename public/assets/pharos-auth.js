@@ -1,13 +1,14 @@
 /*
- * Pharos sign in ("Pulse"). Progressive enhancement only: without this file
- * every form posts the normal way and nothing is lost.
+ * Pharos sign in. Progressive enhancement only: without this file every form
+ * posts the normal way and nothing is lost.
  *
- * The sign in and two factor forms are sent with fetch and the wall plays the
- * REAL outcome, read from where the server's redirect ended:
+ * The sign in and two factor forms are sent with fetch and the button (and a
+ * wall, on a page that has one) plays the REAL outcome, read from where the
+ * server's redirect ended:
  *   final URL is the form's own page again  -> refused (errors parsed from that page)
  *   final URL is the two factor page        -> go there (sign in form only)
  *   final URL is the sign in page           -> the pending step expired (two factor form only)
- *   anything else after a redirect          -> signed in: green wave, then go there
+ *   anything else after a redirect          -> signed in: green beat, then go there
  * Nothing typed is logged or stored.
  */
 (function () {
@@ -32,7 +33,7 @@
 
   var wall = createWall(root.querySelector('[data-pa-wall]'));
 
-  /* ---------- the wall: uptime cells and a heartbeat ---------- */
+  /* ---------- the wall: uptime cells and a heartbeat (optional; the sign in screens have none now) ---------- */
   function createWall(el) {
     var none = { wave: function () { return Promise.resolve(); }, clear: function () {}, pace: function () {}, flat: function () {} };
     if (!el) return none;
@@ -131,13 +132,33 @@
   root.querySelectorAll('[data-pa-eye]').forEach(function (eye) {
     var input = document.getElementById(eye.getAttribute('aria-controls'));
     if (!input) return;
+    // An icon button keeps its icon; a text button says what it does next.
+    var iconOnly = !!eye.querySelector('svg');
     eye.hidden = false;
     eye.addEventListener('click', function () {
       var show = input.type === 'password';
       input.type = show ? 'text' : 'password';
-      eye.textContent = show ? t("Hide") : t("Show");
+      if (!iconOnly) eye.textContent = show ? t("Hide") : t("Show");
+      eye.setAttribute('aria-pressed', show ? 'true' : 'false');
       eye.setAttribute('aria-label', show ? t("Hide password") : t("Show password"));
     });
+  });
+
+  /* ---------- caps lock, while typing a password ---------- */
+  root.querySelectorAll('[data-pa-caps]').forEach(function (hint) {
+    var box = hint.closest('[data-pa-pwbox]');
+    var input = box ? box.querySelector('input[type="password"], input[name="password"]') : null;
+    if (!input) return;
+    function show(on) {
+      var text = on ? hint.getAttribute('data-pa-caps-text') : '';
+      if (hint.textContent !== text) hint.textContent = text;
+    }
+    function check(event) {
+      if (event.getModifierState) show(event.getModifierState('CapsLock'));
+    }
+    input.addEventListener('keydown', check);
+    input.addEventListener('keyup', check);
+    input.addEventListener('blur', function () { show(false); });
   });
 
   /* ---------- plain forms: the heartbeat while the page posts ---------- */

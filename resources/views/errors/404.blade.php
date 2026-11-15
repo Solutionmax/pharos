@@ -1,4 +1,4 @@
-@extends('layouts.auth')
+@extends('layouts.pulse')
 {{--
   Not found, in the shell of the sign in screen. One answer for every missing
   address: a page that was deleted, archived, never published or never existed

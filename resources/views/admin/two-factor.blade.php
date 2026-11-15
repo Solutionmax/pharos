@@ -1,7 +1,6 @@
 @extends('layouts.auth')
 @section('title', __('Two factor code'))
 @section('card')
-  <p class="pa-kicker"><i aria-hidden="true"></i>{{ __('Password accepted') }}</p>
   <h1 class="pa-h1">{{ __('One more step') }}</h1>
   <p class="pa-lede">{{ __('Enter the six digit code from your authenticator app.') }}</p>
 
@@ -24,10 +23,10 @@
         @endfor
       </div>
     </div>
-    <div class="pa-fl" data-pa-code-field>
-      <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder=" " required autofocus
-             aria-describedby="code-help" spellcheck="false">
+    <div class="pa-f" data-pa-code-field>
       <label for="code" data-pa-code-label>{{ __('Code') }}</label>
+      <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" required autofocus
+             aria-describedby="code-help" spellcheck="false">
       <span class="pa-help" id="code-help">{{ __('Lost your phone? A recovery code works here too, once each.') }}</span>
     </div>
     @include('partials.auth.submit', ['label' => __('Verify and continue')])
