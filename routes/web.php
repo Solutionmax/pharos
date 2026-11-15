@@ -36,6 +36,7 @@ use App\Http\Middleware\UsePersonalTimezone;
 use App\Models\Incident;
 use App\Services\PageUrls;
 use App\Services\SelfUpdater;
+use App\Support\StatelessRoutes;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Support\Facades\Route;
 
@@ -232,7 +233,7 @@ Route::get('/storage/{path}', function (string $path) {
     abort_unless($root && $file && str_starts_with($file, $root.DIRECTORY_SEPARATOR) && is_file($file), 404);
 
     return response()->file($file, ['X-Content-Type-Options' => 'nosniff', 'Content-Security-Policy' => "sandbox; default-src 'none'"]);
-})->where('path', '.*')->name('public.upload');
+})->where('path', '.*')->withoutMiddleware(StatelessRoutes::MIDDLEWARE)->name('public.upload');
 
 require __DIR__.'/public-features.php';
 require __DIR__.'/monitoring.php';

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\WebCronController;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\NoStore;
 use App\Http\Middleware\ResolveStatusPage;
+use App\Support\StatelessRoutes;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Support\Facades\Route;
 
@@ -35,4 +36,4 @@ Route::prefix('admin/profile/passkeys')->name('admin.profile.passkeys.')->middle
     Route::post('/', [PasskeyController::class, 'register'])->name('store');
     Route::delete('{passkey}', [PasskeyController::class, 'destroy'])->name('destroy');
 });
-Route::get('cron/run', WebCronController::class)->middleware([NoStore::class, 'throttle:2,1,pharos-web-cron:'])->name('cron.run');
+Route::get('cron/run', WebCronController::class)->middleware([NoStore::class, 'throttle:2,1,pharos-web-cron:'])->withoutMiddleware(StatelessRoutes::MIDDLEWARE)->name('cron.run');

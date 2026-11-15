@@ -33,7 +33,11 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Off: the framework's own /storage/{path} route for this disk was
+            // registered last and shadowed the public upload route in
+            // routes/web.php, so uploads never got their nosniff and sandbox
+            // headers when no web server served public/storage itself.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
