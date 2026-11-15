@@ -14,7 +14,7 @@ use Psr\Http\Message\RequestInterface;
 
 class RemoteBackup
 {
-    public function __construct(private BackupArchive $archive, private SafeHttp $safe) {}
+    public function __construct(private BackupArchive $archive, private SafeHttp $safe, private BackupCrypto $crypto = new BackupCrypto) {}
 
     public function filesystem(BackupDestination $destination, int $maxReadBytes = 16777216, ?float $deadline = null): Filesystem
     {
@@ -61,12 +61,28 @@ class RemoteBackup
             return false;
         }
         $path = null;
+        $plain = null;
         $source = null;
         $returned = null;
         try {
             $destination->update(['last_attempt_at' => now(), 'last_error' => null]);
+            try {
+                $passphrase = BackupPassphrase::get();
+            } catch (\RuntimeException) {
+                $destination->update(['last_error' => __('Backup failed: the backup passphrase cannot be read. Set it again.')]);
+
+                return false;
+            }
             $deadline = microtime(true) + 300;
-            $path = $this->archive->create();
+            // With a passphrase the archive is encrypted and may carry .env; without
+            // one it leaves .env (APP_KEY) out, so the bucket alone opens nothing.
+            $plain = $this->archive->create(includeEnv: $passphrase !== null);
+            $path = $plain;
+            if ($passphrase !== null) {
+                $path = $plain.BackupCrypto::EXTENSION;
+                $this->crypto->encryptFile($plain, $path, $passphrase);
+                @unlink($plain);
+            }
             $expectedBytes = filesize($path);
             if ($expectedBytes === false) {
                 throw new \RuntimeException('Archive size unavailable');
@@ -95,8 +111,8 @@ class RemoteBackup
             if (is_resource($returned)) {
                 fclose($returned);
             }
-            if ($path) {
-                @unlink($path);
+            foreach (array_filter([$plain, $path]) as $file) {
+                @unlink($file);
             }
             $lock->release();
         }

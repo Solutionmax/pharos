@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\BackupDestination;
 use App\Models\Setting;
+use App\Services\BackupPassphrase;
 use App\Services\RemoteBackup;
 use App\Services\SafeHttp;
 use App\Services\SftpFingerprint;
@@ -14,7 +15,34 @@ class MonitoringSystemController extends Controller
 {
     public function index()
     {
-        return view('admin.monitoring-system', ['destinations' => BackupDestination::orderBy('name')->get(), 'webEnabled' => Setting::get('cron.web_enabled') === '1', 'cronConfigured' => strlen((string) config('monitoring.web_cron_token')) >= 32]);
+        return view('admin.monitoring-system', ['destinations' => BackupDestination::orderBy('name')->get(), 'webEnabled' => Setting::get('cron.web_enabled') === '1', 'cronConfigured' => strlen((string) config('monitoring.web_cron_token')) >= 32, 'passphraseSet' => BackupPassphrase::isSet()]);
+    }
+
+    /**
+     * The passphrase remote archives are encrypted with. Validated by hand, as
+     * the destinations are, so a refused value is never flashed into the session.
+     */
+    public function passphrase(Request $r)
+    {
+        $validator = validator($r->only(['passphrase', 'passphrase_confirmation']), [
+            'passphrase' => ['required', 'string', 'min:'.BackupPassphrase::MIN_LENGTH, 'max:1024', 'confirmed'],
+        ], [
+            'passphrase.min' => __('Use a backup passphrase of at least :min characters.', ['min' => BackupPassphrase::MIN_LENGTH]),
+            'passphrase.confirmed' => __('The two backup passphrases do not match.'),
+        ]);
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
+        }
+        BackupPassphrase::set((string) $validator->validated()['passphrase']);
+
+        return back()->with('status', __('Backup passphrase saved. Remote archives are encrypted from the next backup on and include .env. Keep the passphrase somewhere else too.'));
+    }
+
+    public function removePassphrase()
+    {
+        BackupPassphrase::set(null);
+
+        return back()->with('status', __('Backup passphrase removed. Remote archives are no longer encrypted and leave .env out.'));
     }
 
     public function cron(Request $r)
