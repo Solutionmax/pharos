@@ -151,7 +151,7 @@ class PersonalTimezoneTest extends TestCase
         $this->actingAs($this->tokyo)->get('/')->assertOk()
             ->assertSee('<time>10:24</time>', false)
             ->assertDontSee('<time>17:24</time>', false)
-            ->assertSee('checked 14:00');
+            ->assertSee('Since 10:24');
 
         $json = $this->actingAs($this->tokyo)->getJson('/api/v1/incidents')->assertOk()->json('data.0');
         $this->assertSame('2026-08-28T10:24:00+02:00', $json['occurred_at']);

@@ -320,7 +320,7 @@ class StatusPageTest extends TestCase
     public function test_the_footer_credit_can_be_hidden(): void
     {
         $this->makeComponent();
-        $this->get('/')->assertSee('Powered by Pharos');
+        $this->get('/')->assertSee('This page runs on Pharos.');
 
         // Hiding the credit is part of the Brand pack, checked when the page renders:
         // a real signed key from a throwaway keypair, no mocks.
@@ -332,7 +332,7 @@ class StatusPageTest extends TestCase
         $this->assertTrue(app(License::class)->store($key));
         Setting::put('brand.credit_hidden', '1');
 
-        $this->get('/')->assertDontSee('Powered by Pharos');
+        $this->get('/')->assertDontSee('This page runs on Pharos.')->assertDontSee('href="https://pharos.solutionmax.net"', false);
     }
 
     /**
@@ -346,7 +346,7 @@ class StatusPageTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('href="https://pharos.solutionmax.net"', escape: false)
-            ->assertSee('Powered by Pharos');
+            ->assertSee('This page runs on Pharos.');
     }
 
     public function test_incident_messages_render_markdown_but_never_raw_html(): void
@@ -378,22 +378,24 @@ class StatusPageTest extends TestCase
 
     public function test_status_dots_pulse_unless_motion_is_reduced(): void
     {
-        $this->get('/')->assertOk()
-            ->assertSee('animation:pulse', false)
-            ->assertSee('prefers-reduced-motion:reduce', false);
+        $this->get('/')->assertOk()->assertSee('assets/pharos-status.css', false);
+
+        $css = file_get_contents(public_path('assets/pharos-status.css'));
+        $this->assertStringContainsString('animation:pulse', $css);
+        $this->assertStringContainsString('prefers-reduced-motion:reduce', $css);
     }
 
     /** Ninety slivers are unreadable without a hover that names the day. */
-    public function test_every_uptime_sliver_names_its_day(): void
+    public function test_every_day_of_the_chart_can_be_read(): void
     {
         Component::create(['name' => 'Website']);
 
+        // One readout for the whole chart: the day under the pointer (or the arrow
+        // keys) is spoken there, from notes the page carries for every day.
         $this->get('/')->assertOk()
-            ->assertSee('data-tip="'.now()->format('j M'), false)
-            ->assertDontSee('title="'.now()->format('j M'), false)
-            ->assertSee(' · ', false)
-            // One styled tip for all of them, drawn by the page rather than the browser.
-            ->assertSee('class="daytip" role="tooltip"', false);
+            ->assertSee('class="readout" aria-live="polite"', false)
+            ->assertSee('"label":"'.now()->translatedFormat('D j M').'"', false)
+            ->assertDontSee('title="'.now()->format('j M'), false);
     }
 
     /** Ninety tab stops would be absurd: the bar is the stop, and it speaks the summary. */
@@ -402,12 +404,13 @@ class StatusPageTest extends TestCase
         Component::create(['name' => 'Website']);
 
         $body = $this->get('/')->assertOk()
-            ->assertSee('class="bar" role="img" tabindex="0"', false)
-            ->assertSee('No data uptime, awaiting measurements', false)
-            ->assertSee('class="bar mini" role="img" tabindex="0" aria-label="Website:', false)
+            ->assertSee('tabindex="0" role="group"', false)
+            ->assertSee('Use the left and right arrow keys to read a day.', false)
+            ->assertSee('class="track" aria-hidden="true"', false)
+            ->assertSee('No measurements this day.', false)
             ->getContent();
 
-        $this->assertStringNotContainsString('<span class="" tabindex', $body);
-        $this->assertStringNotContainsString('data-tip="'.now()->format('j M').' · all operational" tabindex', $body);
+        // The chart is the single tab stop; no day is one of its own.
+        $this->assertSame(1, substr_count($body, 'tabindex="0"'));
     }
 }

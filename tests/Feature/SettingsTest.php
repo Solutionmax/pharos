@@ -59,8 +59,8 @@ class SettingsTest extends TestCase
     public function test_everything_is_shown_on_a_fresh_install(): void
     {
         $this->get('/')->assertOk()
-            ->assertSee('All systems operational')
-            ->assertSee('Services')
+            ->assertSee('class="now is-', false)
+            ->assertSee('Past 90 days')
             ->assertSee('web-01')
             ->assertSee('Mail queue backed up');
     }
@@ -68,17 +68,17 @@ class SettingsTest extends TestCase
     public function test_each_section_can_be_switched_off_on_its_own(): void
     {
         $cases = [
-            'page.show_overall' => 'All systems operational',
+            'page.show_overall' => 'class="now is-',
             'page.show_services' => 'web-01',
             'page.show_incidents' => 'Mail queue backed up',
         ];
 
         foreach ($cases as $key => $text) {
             Setting::put($key, '1');
-            $this->get('/')->assertSee($text);
+            $this->get('/')->assertSee($text, false);
 
             Setting::put($key, '0');
-            $this->get('/')->assertDontSee($text);
+            $this->get('/')->assertDontSee($text, false);
 
             Setting::put($key, '1');
         }
@@ -122,8 +122,8 @@ class SettingsTest extends TestCase
         Setting::put('page.show_uptime', '0');
 
         $this->get('/')->assertOk()
-            ->assertSee('All systems operational')
-            ->assertDontSee('last 90 days');
+            ->assertSee('class="now is-', false)
+            ->assertDontSee('class="row all"', false);
     }
 
     public function test_empty_days_can_be_collapsed(): void
@@ -178,11 +178,13 @@ class SettingsTest extends TestCase
 
     public function test_the_incident_window_is_configurable(): void
     {
+        $day = 'data-day="'.now()->subDays(4)->format('Y-m-d').'"';
+
         Setting::put('page.incident_days', '2');
-        $this->get('/')->assertOk()->assertDontSee(now()->subDays(4)->format('j F'));
+        $this->get('/')->assertOk()->assertDontSee($day, false);
 
         Setting::put('page.incident_days', '10');
-        $this->get('/')->assertOk()->assertSee(now()->subDays(4)->format('j F'));
+        $this->get('/')->assertOk()->assertSee($day, false);
     }
 
     public function test_a_signed_in_visitor_gets_a_way_back_to_the_admin(): void

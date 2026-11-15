@@ -82,7 +82,7 @@ class SettingsPreviewTest extends TestCase
             'page.show_services' => true,
             'page.show_incidents' => true,
         ])->assertOk()
-            ->assertSee('All systems operational')
+            ->assertSee('class="now is-', false)
             ->assertSee('web-01')
             ->assertSee('Mail queue backed up');
     }
@@ -91,7 +91,7 @@ class SettingsPreviewTest extends TestCase
     {
         $this->preview(['page.show_incidents' => true])
             ->assertOk()
-            ->assertDontSee('All systems operational')
+            ->assertDontSee('class="now is-', false)
             ->assertDontSee('web-01')
             ->assertSee('Mail queue backed up');
     }
@@ -158,7 +158,7 @@ class SettingsPreviewTest extends TestCase
         $this->preview([]);   // everything off
 
         $this->assertTrue(app(Branding::class)->module('page.show_overall'));
-        $this->get('/')->assertSee('All systems operational');
+        $this->get('/')->assertSee('class="now is-', false);
     }
 
     public function test_the_status_page_screen_carries_the_preview_frame(): void

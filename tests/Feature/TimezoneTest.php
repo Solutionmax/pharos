@@ -70,17 +70,12 @@ class TimezoneTest extends TestCase
     {
         Setting::put('app.timezone', 'Europe/Amsterdam');
         // 22:30 UTC on the 27th is 00:30 on the 28th in Amsterdam.
-        $this->incidentAt('2026-08-27 22:30:00', 'Late night outage');
+        $incident = $this->incidentAt('2026-08-27 22:30:00', 'Late night outage');
+        $incident->update(['status' => IncidentStatus::Resolved, 'resolved_at' => Carbon::parse('2026-08-27 23:00:00', 'UTC')]);
 
         $html = $this->get('/')->assertOk()->getContent();
 
-        $today = strpos($html, 'Today · 28 August');
-        $incident = strpos($html, 'Late night outage');
-        $yesterday = strpos($html, '27 August');
-
-        $this->assertNotFalse($today);
-        $this->assertNotFalse($yesterday);
-        $this->assertTrue($today < $incident && $incident < $yesterday, 'the incident sits under 28 August, not 27');
+        $this->assertMatchesRegularExpression('/id="incident-'.$incident->id.'"[^>]*data-day="2026-08-28"/', $html, 'the incident sits under 28 August, not 27');
         $this->assertStringContainsString('<time>00:30</time>', $html);
     }
 
@@ -88,7 +83,7 @@ class TimezoneTest extends TestCase
     {
         Setting::put('app.timezone', 'Europe/Amsterdam');
 
-        $this->get('/')->assertOk()->assertSee('checked 14:00');
+        $this->get('/')->assertOk()->assertSee('Checked at <span class="when">14:00</span>', false);
     }
 
     public function test_a_local_time_typed_in_the_admin_form_is_stored_as_utc(): void

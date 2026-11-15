@@ -19,7 +19,10 @@
     const copy=region.cloneNode(true);
     copy.querySelectorAll('.when').forEach(el=>el.remove());
     copy.querySelectorAll('details').forEach(el=>el.removeAttribute('open'));
-    copy.querySelectorAll('.live-changed').forEach(el=>el.classList.remove('live-changed'));
+    copy.querySelectorAll('.live-changed,.flash').forEach(el=>el.classList.remove('live-changed','flash'));
+    // A day pointed at in the chart is the visitor's doing, not news from the server.
+    copy.querySelectorAll('.chart').forEach(el=>{el.removeAttribute('style');el.removeAttribute('data-day');});
+    copy.querySelectorAll('.readout').forEach(el=>{el.textContent='';});
     return copy.innerHTML;
   }
   async function refresh(){
@@ -42,8 +45,10 @@
         document.querySelector('.daytip')?.classList.remove('on');
         window.pharosToast(message);
       }
-      const stamp=live.querySelector('.when'),freshStamp=next.querySelector('.when');
-      if(stamp && freshStamp)stamp.textContent=freshStamp.textContent;
+      // Parts that only move with the clock ("checked 14:05", "33 min so far", today on a strip) are
+      // left out of the comparison above and brought up to date here, without a toast.
+      const stamps=live.querySelectorAll('.when'),fresh=next.querySelectorAll('.when');
+      if(stamps.length===fresh.length)stamps.forEach((el,i)=>{if(el.innerHTML!==fresh[i].innerHTML)el.innerHTML=fresh[i].innerHTML;});
       indicator.textContent=t('Checked :time · refreshes every 30 seconds', {time:new Date().toLocaleTimeString(document.documentElement.lang,{hour:'2-digit',minute:'2-digit'})});
       indicator.dataset.offline='false';failed=false;
     }catch(error){

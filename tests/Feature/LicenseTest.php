@@ -203,7 +203,7 @@ class LicenseTest extends TestCase
         ])->assertRedirect();
 
         $this->assertSame('0', Setting::get('brand.credit_hidden', '0'));
-        $this->get('/')->assertSee('Powered by Pharos');
+        $this->get('/')->assertSee('This page runs on Pharos.');
     }
 
     public function test_with_a_licence_the_footer_credit_can_be_hidden(): void
@@ -219,7 +219,7 @@ class LicenseTest extends TestCase
         ])->assertRedirect();
 
         $this->assertSame('1', Setting::get('brand.credit_hidden'));
-        $this->get('/')->assertDontSee('Powered by Pharos');
+        $this->get('/')->assertDontSee('This page runs on Pharos.');
     }
 
     public function test_paid_branding_falls_back_the_moment_the_key_is_gone(): void
@@ -233,18 +233,18 @@ class LicenseTest extends TestCase
         Setting::put('brand.logo_path', 'brand/logo.png');
         Setting::put('mail.template.incident_opened.subject', 'Custom subject');
 
-        $this->get('/')->assertDontSee('Powered by Pharos')->assertSee('brand/logo.png');
+        $this->get('/')->assertDontSee('This page runs on Pharos.')->assertSee('brand/logo.png');
         $this->assertSame('Custom subject', app(MailTemplates::class)->subject('incident_opened'));
 
         // Key removed: the paid parts stop showing, the uploads are kept for when it comes back.
         $license->forget();
 
-        $this->get('/')->assertSee('Powered by Pharos')->assertDontSee('brand/logo.png');
+        $this->get('/')->assertSee('This page runs on Pharos.')->assertDontSee('brand/logo.png');
         $this->assertNotSame('Custom subject', app(MailTemplates::class)->subject('incident_opened'));
         $this->assertSame('brand/logo.png', Setting::get('brand.logo_path'));
 
         $license->store($this->validKey());
-        $this->get('/')->assertDontSee('Powered by Pharos')->assertSee('brand/logo.png');
+        $this->get('/')->assertDontSee('This page runs on Pharos.')->assertSee('brand/logo.png');
     }
 
     public function test_a_key_bound_to_another_domain_is_refused_here(): void

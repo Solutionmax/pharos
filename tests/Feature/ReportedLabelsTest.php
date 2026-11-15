@@ -111,7 +111,9 @@ class ReportedLabelsTest extends TestCase
 
         $html = $this->get('/')->assertOk()->getContent();
 
-        $this->assertStringContainsString(Carbon::today()->format('j M').' · 100.00%', $html);
+        // The day counts as measured: the readout has something to say about it.
+        $this->assertStringContainsString('"label":"'.Carbon::today()->translatedFormat('D j M').'","text":"No problems."', $html);
+        $this->assertStringContainsString('<div class="pc">100.00%</div>', $html);
     }
 
     public function test_the_cards_say_so_when_nothing_is_left_to_a_person(): void

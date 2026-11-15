@@ -13,337 +13,226 @@
 <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}">
 @include('partials.tokens')
 @include('partials.messages')
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
-h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
-p{margin:0}a{color:inherit}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-:focus-visible{outline:2px solid var(--brand);outline-offset:3px;border-radius:6px}
-.adminbar{background:var(--navy);color:#cfe0f0;font-size:12.5px}
-.adminbar .in{max-width:900px;margin:0 auto;padding:8px 22px;display:flex;align-items:center;gap:14px}
-.adminbar a{color:#fff;text-decoration:none;font-weight:600}
-.adminbar a:hover{text-decoration:underline}
-.wrap{max-width:900px;margin:0 auto;padding:0 22px 90px}
-.top{display:flex;align-items:center;gap:14px;padding:30px 0}
-.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:-.025em}
-.top .right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.sub{font-size:13.5px;font-weight:600;color:var(--brand);background:var(--brand-soft);padding:7px 15px;border-radius:999px;text-decoration:none}
-/* The subscribe button: a <details> so the form opens without a line of JavaScript. */
-.subscribe{position:relative}
-.subscribe>summary.sub{display:inline-block;cursor:pointer}
-.subscribe>summary::-webkit-details-marker{display:none}
-.subscribe-box{position:absolute;right:0;top:calc(100% + 10px);z-index:20;width:min(340px,calc(100vw - 44px));background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-md);padding:18px 20px;display:flex;flex-direction:column;gap:10px;text-align:left}
-.subscribe-box p{font-size:13.5px;color:var(--ink-2)}
-.subscribe-box label{font-size:12.5px;font-weight:600;color:var(--ink-2)}
-.subscribe-box input[type=email]{font:inherit;font-size:14px;padding:10px 13px;border-radius:10px;border:1px solid var(--line);background:var(--bg-tint);color:var(--ink);width:100%}
-.subscribe-box .go{background:var(--brand);color:var(--brand-ink);font-weight:600;font-size:13.5px;padding:9px 16px;border-radius:10px;align-self:flex-start}
-.subscribe-box .err{font-size:12.5px;color:var(--red-ink)}
-.subscribe-box .fine{font-size:12px;color:var(--ink-3)}
-/* The honeypot: off-screen, not display:none, so a bot that skips hidden fields still fills it. */
-.subscribe-box .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
-.theme-toggle{display:grid;place-items:center;width:34px;height:34px;border-radius:999px;border:1px solid var(--line);color:var(--ink-3);transition:.15s var(--ease)}
-.theme-toggle:hover{color:var(--ink);border-color:var(--ink-3)}
-.hero{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);overflow:hidden}
-.hero-top{display:flex;align-items:center;gap:14px;padding:26px 28px;flex-wrap:wrap}
-.hero-top .dot{width:12px;height:12px;border-radius:50%;flex:none;background:currentColor;position:relative}
-/* The dot is alive: a ring in its own colour breathes out and fades. Off for reduced motion. */
-.hero-top .dot::after{content:'';position:absolute;inset:0;border-radius:50%;background:currentColor;opacity:.55;animation:pulse 2.2s ease-out infinite}
-@keyframes pulse{0%{transform:scale(1);opacity:.55}70%,100%{transform:scale(2.6);opacity:0}}
-@media (prefers-reduced-motion:reduce){.hero-top .dot::after,.inc .tl-i::after{animation:none;opacity:0}}
-.hero-top h1{font-size:24px}
-.hero-top .when{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
-.uptime{padding:4px 28px 26px;display:flex;flex-direction:column;gap:12px}
-.uptime.solo{padding-top:26px}
-.uptime .row{display:flex;align-items:baseline;gap:12px}
-.uptime .big{font-size:30px;font-weight:800;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
-.uptime .cap{font-size:13px;color:var(--ink-3)}
-.uptime .rng{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-3)}
-.bar{display:flex;gap:2px;height:34px;align-items:stretch}
-.bar span{flex:1;border-radius:2px;background:var(--green);opacity:.9}
-.bar span:hover{opacity:1}
-.bar span.w{background:var(--amber)}.bar span.p{background:var(--orange)}
-.bar span.b{background:var(--red)}.bar span.m{background:var(--blue)}
-.bar span.unknown{background:var(--unknown)}
-.bar.mini{height:18px;gap:1.5px;width:150px;flex:none}
-.bar.mini span{border-radius:1px}
-@media(max-width:640px){.bar.mini{display:none}}
-.scale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
-.sec{margin-top:34px}
-.sec>h2{font-size:13px;font-weight:700;color:var(--ink-2);margin-bottom:12px}
-.svc{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
-.svc+.svc{margin-top:10px}
-details>summary{list-style:none;cursor:pointer}
-details>summary::-webkit-details-marker{display:none}
-.svc-hd{display:flex;align-items:center;gap:14px;padding:16px 20px}
-.svc-hd:hover{background:var(--bg-tint)}
-.svc-hd .car{color:var(--ink-3);font-size:11px;transition:transform .2s var(--ease);flex:none}
-details[open] .svc-hd .car{transform:rotate(90deg)}
-.svc-hd .nm{font-weight:600;font-size:15px}
-.svc-hd .cnt{font-size:12.5px;color:var(--ink-3)}
-.svc-hd .pct{font-family:var(--mono);font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;margin-left:auto}
-.svc-bd{border-top:1px solid var(--line);background:var(--bg-tint)}
-.item{display:flex;align-items:center;gap:14px;padding:11px 20px 11px 45px}
-.item+.item{border-top:1px solid var(--line)}
-.item .nm{font-size:13.5px}
-.item .desc{font-size:11.5px;color:var(--ink-3)}
-.item .pct{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);margin-left:auto;font-variant-numeric:tabular-nums}
-.item .bar.mini{width:110px;height:14px}
-.pill{font-size:11.5px;font-weight:700;padding:4px 11px;border-radius:999px;white-space:nowrap}
-.pill.sm{font-size:10.5px;padding:3px 9px}
-.pill.ok{color:var(--green-ink);background:var(--green-soft)}
-.pill.w{color:var(--amber-ink);background:var(--amber-soft)}
-.pill.p{color:var(--orange-ink);background:var(--orange-soft)}
-.pill.b{color:var(--red-ink);background:var(--red-soft)}
-.pill.m{color:var(--blue-ink);background:var(--blue-soft)}
-.plan{display:flex;align-items:center;gap:13px;padding:14px 20px;margin-top:12px;border-radius:var(--radius);background:var(--blue-soft);border:1px solid var(--line)}
-.plan .tx{font-size:13.5px;color:var(--ink-2)}
-.plan .tx b{color:var(--ink);font-weight:600}
-.plan time{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
-.plan{align-items:flex-start;flex-wrap:wrap}
-.plan .tx{flex:1;min-width:0;display:grid;gap:4px}
-.plan .tx .aff{font-size:12.5px;color:var(--ink-3)}
-.plan .tx .md{font-size:13px}
-.plan.live{background:var(--card);border-left:3px solid var(--blue)}
-.plan:not(.live) .pill{background:var(--card)}
-@media(max-width:640px){.plan time{margin-left:0;flex-basis:100%;white-space:normal}}
-.day+.day{margin-top:8px}
-.day-hd{display:flex;align-items:center;gap:12px;padding:14px 2px 10px}
-.day-hd h3{font-size:13px;font-weight:700;color:var(--ink-2)}
-.day-hd .ln{flex:1;height:1px;background:var(--line)}
-.day-hd .none{font-size:12.5px;color:var(--ink-3)}
-.pager{display:flex;justify-content:space-between;gap:12px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
-.pager a{font-size:13px;font-weight:600;color:var(--ink-2);text-decoration:none;padding:6px 10px;border-radius:8px}
-.pager a:hover,.pager a:focus-visible{color:var(--brand);background:var(--brand-soft);outline:none}
-.pager .older{margin-left:auto}
-.inc{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ink-3);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow-sm)}
-.inc+.inc{margin-top:10px}
-.inc.ok{border-left-color:var(--green)}.inc.w{border-left-color:var(--amber)}
-.inc.p{border-left-color:var(--orange)}.inc.b{border-left-color:var(--red)}.inc.m{border-left-color:var(--blue)}
-.inc-hd{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:6px}
-.inc-hd h4{font-size:16px;min-width:0;overflow-wrap:anywhere}
-.inc-update{display:inline-flex;align-items:center;justify-content:center;gap:7px;margin-left:auto;flex-shrink:0;min-height:36px;padding:7px 12px;border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);border-radius:10px;background:color-mix(in srgb,var(--ink) 4%,transparent);color:var(--ink-2);font-size:12px;font-weight:600;line-height:1.4;text-decoration:none;transition:opacity .16s ease,background .16s ease,border-color .16s ease,color .16s ease}
-.inc-update:hover,.inc-update:focus-visible{color:var(--brand);background:color-mix(in srgb,var(--brand) 10%,transparent);border-color:color-mix(in srgb,var(--brand) 22%,transparent)}
-@media(hover:hover) and (pointer:fine){.inc-update{opacity:0;pointer-events:none}.inc:hover .inc-update,.inc:focus-within .inc-update{opacity:1;pointer-events:auto}}
-@media(hover:none),(pointer:coarse){.inc-update{min-height:44px}}
-@media(prefers-reduced-motion:reduce){.inc-update{transition:none}}
-.inc .aff{font-size:12.5px;color:var(--ink-3);margin-bottom:16px}
-.inc .aff b{color:var(--ink-2);font-weight:500}
-.tl{display:flex;flex-direction:column;gap:15px;padding-left:18px;border-left:2px solid var(--line);margin-left:3px}
-.tl-i{position:relative}
-.tl-i::before{content:"";position:absolute;left:-24px;top:6px;width:9px;height:9px;border-radius:50%;background:var(--card);border:2px solid var(--line)}
-.tl-i:first-child::before{background:var(--brand);border-color:var(--brand)}
-/* The newest update of an open incident is the live one: same breathing ring as the hero dot. Resolved stays still. */
-.inc:not(.ok) .tl-i:first-child::after{content:"";position:absolute;left:-24px;top:6px;width:9px;height:9px;border-radius:50%;background:var(--brand);opacity:.55;animation:pulse 2.2s ease-out infinite}
-.tl-i .hd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.tl-i strong{font-size:13px}
-.tl-i time{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
-.tl-i p{font-size:13.5px;color:var(--ink-2);line-height:1.65;margin-top:2px}
-.auto{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
-.foot{display:flex;gap:18px;flex-wrap:wrap;margin-top:44px;padding-top:20px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-3)}
-.foot a{text-decoration:none}
-.foot .cr{margin-left:auto;text-decoration:none;color:inherit}
-.foot .cr:hover{color:var(--accent);text-decoration:underline}
-
-    .md > :first-child{margin-top:0}
-    .md > :last-child{margin-bottom:0}
-    .md p{margin:0 0 8px}
-    .md ul,.md ol{margin:0 0 8px;padding-left:20px}
-    .md li{margin:2px 0}
-    .md a{color:var(--brand)}
-    .md code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;
-      background:rgba(127,127,127,.12);padding:1px 5px;border-radius:4px}
-</style>
 @stack('head-assets')
-<link rel="stylesheet" href="{{ asset('assets/pharos-v06.css') }}?v=0.6.0">
+<link rel="stylesheet" href="{{ asset('assets/pharos-v06.css') }}?v={{ @filemtime(public_path('assets/pharos-v06.css')) }}">
+<link rel="stylesheet" href="{{ asset('assets/pharos-status.css') }}?v={{ @filemtime(public_path('assets/pharos-status.css')) }}">
 </head>
 <body>
 @if (($chrome ?? true) && auth()->check())
 <div class="adminbar">
   <div class="in">
     <span>{{ __('Signed in as') }} {{ auth()->user()->name }}</span>
-    <a href="{{ \App\Services\PageUrls::route('admin.components') }}" style="margin-left:auto">{{ __('← Back to admin') }}</a>
+    <a href="{{ \App\Services\PageUrls::route('admin.components') }}">{{ __('← Back to admin') }}</a>
   </div>
 </div>
 @endif
 
-<div class="wrap">
+@php
+  $daysShown = count($overallBar);
+  $hasTracks = $daysShown > 0 && ($modules['page.show_uptime'] || $modules['page.show_component_uptime']);
+  $hasRows = $modules['page.show_services'] && ($groups->isNotEmpty() || $loose->isNotEmpty());
+  $nextWork = $planned->first();
+@endphp
+<div class="page"><div class="wrap">
   <header class="top">
-    <span class="logo">@include('partials.logo', ['size' => 30])</span>
-    <span class="right">
+    <span class="who">@include('partials.logo', ['size' => 28])<small>{{ __('Status') }}</small></span>
+    <div class="top-acts">
       {{-- Three things, all needed: the page module, the master switch on the Subscribers screen,
            and a mail transport that can actually send: a form that ends in a 500 helps nobody. --}}
       @if ($modules['page.show_subscribe'] && \App\Services\Subscriptions::enabled() && app(\App\Services\MailConfig::class)->configured())
-        <details class="subscribe" @if (session('subscribed') || $errors->has('email')) open @endif>
-          <summary class="sub">{{ __('Get notified') }}</summary>
-          <div class="subscribe-box">
+        <details class="updates" @if (session('subscribed') || $errors->has('email')) open @endif>
+          <summary class="btn">{{ __('Get notified') }}</summary>
+          <div class="pop">
             @if (session('subscribed'))
               <p>{{ session('subscribed') }}</p>
             @else
-              <form method="POST" action="{{ \App\Services\PageUrls::route('subscribe') }}">
+              <form method="POST" action="{{ \App\Services\PageUrls::route('subscribe') }}" style="display:grid;gap:10px">
                 @csrf
                 <p>{{ __('Get an email when an incident is reported, and when it is resolved.') }}</p>
-                <label for="sub-email" style="display:block;margin-top:8px">{{ __('Email address') }}</label>
-                <input id="sub-email" name="email" type="email" value="{{ old('email') }}" required autocomplete="email" style="margin-top:6px">
+                <label for="sub-email">{{ __('Email address') }}</label>
+                <span class="field">
+                  <input id="sub-email" name="email" type="email" value="{{ old('email') }}" required autocomplete="email">
+                  <button class="go" type="submit">{{ __('Subscribe') }}</button>
+                </span>
                 <input class="hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
-                @error('email')<span class="err" style="display:block;margin-top:6px">{{ $message }}</span>@enderror
-                <button class="go" type="submit" style="margin-top:10px">{{ __('Subscribe') }}</button>
+                @error('email')<span class="err">{{ $message }}</span>@enderror
                 <input type="hidden" name="all_services" value="0">
                 <label><input type="checkbox" name="all_services" value="1" checked> {{ __('All services') }}</label>
-                @if($modules['page.show_services'])
+                @if ($modules['page.show_services'])
                 <details><summary>{{ __('Choose services') }}</summary>
-                @foreach(\App\Services\PublicComponents::query()->orderBy('position')->get() as $subscriptionComponent)
+                @foreach (\App\Services\PublicComponents::query()->orderBy('position')->get() as $subscriptionComponent)
                   <label><input type="checkbox" name="component_ids[]" value="{{ $subscriptionComponent->id }}"> {{ $subscriptionComponent->name }}</label>
                 @endforeach
                 </details>
                 @endif
-                <span class="fine" style="display:block;margin-top:8px">{{ __('A confirmation link comes first. Every mail carries an unsubscribe link.') }}</span>
+                <span class="fine">{{ __('A confirmation link comes first. Every mail carries an unsubscribe link.') }}</span>
               </form>
             @endif
           </div>
         </details>
       @endif
       @include('partials.theme-toggle')
-    </span>
+    </div>
   </header>
   @include('partials.theme-script', ['rememberTheme' => $chrome ?? true])
 
-  @if ($chrome)<p id="live-refresh" class="live-refresh">{{ __('Refreshes every 30 seconds') }}</p>@endif
-  <div @if ($chrome) id="pharos-live" @endif>
-  @if ($modules['page.show_overall'] || $modules['page.show_uptime'])
-    <section class="hero tone-{{ $worst->tone() }}" data-live-key="overall" data-live-value="{{ $worst->value }}:{{ $overall }}">
-      @if ($modules['page.show_overall'])
-        <div class="hero-top">
-          <span class="dot" style="color:var(--{{ ['ok' => 'green', 'w' => 'amber', 'p' => 'orange', 'b' => 'red', 'm' => 'blue'][$worst->tone()] }})"></span>
-          <h1>{{ __($worst === \App\Enums\ComponentStatus::Operational ? 'All systems operational' : $worst->label()) }}</h1>
-          <span class="when">{{ __('checked') }} {{ \App\Services\Clock::now()->format('H:i') }}</span>
+  <main @if ($chrome) id="pharos-live" @endif>
+  @if ($modules['page.show_overall'])
+    <section class="now is-{{ $hero['tone'] }}" data-live-key="overall" data-live-value="{{ $worst->value }}:{{ $overall }}">
+      <svg class="ring" viewBox="0 0 54 54" role="img" aria-label="{{ __('Refreshes every 30 seconds') }}"><circle class="rail" cx="27" cy="27" r="23"/><circle class="sweep" cx="27" cy="27" r="23"/><circle class="core" cx="27" cy="27" r="7"/></svg>
+      <div>
+        <h1>{{ $hero['headline'] }}</h1>
+        <p class="facts">
+          @if ($hero['since'])
+            <b>{{ $hero['since'] }}</b>@if ($hero['rest'] === '.').@else, <span class="when">{{ $hero['rest'] }}</span>@endif
+          @else
+            {{ __('Checked at') }} <span class="when">{{ $now->format('H:i') }}</span>.
+            @if ($hero['ago'] !== null)
+              <span class="when">{{ match (true) {
+                $hero['ago'] === 0 => __('The last problem ended today and lasted :duration.', ['duration' => $hero['lasted']]),
+                $hero['ago'] === 1 => __('The last problem was yesterday and lasted :duration.', ['duration' => $hero['lasted']]),
+                default => __('The last problem was :n days ago and lasted :duration.', ['n' => $hero['ago'], 'duration' => $hero['lasted']]),
+              } }}</span>
+            @endif
+          @endif
+        </p>
+      </div>
+      @if ($hero['latest'])
+        <div class="latest">
+          <time>{{ __('Latest message') }}, {{ $hero['latest']->created_at->format('H:i') }}</time>
+          <div class="md">{!! $hero['latest']->messageHtml() !!}</div>
         </div>
       @endif
-
-      @if ($modules['page.show_uptime'])
-        <div class="uptime @unless($modules['page.show_overall']) solo @endunless">
-          <div class="row">
-            <span class="big">{{ \App\Services\Uptime::format($overall) }}</span>
-            <span class="cap">{{ __('uptime') }}</span>
-            <span class="rng">{{ __('last') }} {{ \App\Services\Uptime::WINDOW_DAYS }} {{ __('days') }}</span>
-          </div>
-          @php
-            $overallBar = []; $overallDays = [];
-            for ($i = 0; $i < \App\Services\Uptime::WINDOW_DAYS; $i++) {
-                $tones = collect($bars)->map(fn ($b) => $b[$i]['tone'])->all();
-                $overallDays[] = collect($bars)->first()[$i]['day'] ?? null;
-                $overallBar[] = in_array('b', $tones, true) ? 'b'
-                    : (in_array('p', $tones, true) ? 'p'
-                    : (in_array('w', $tones, true) ? 'w'
-                    : (count(array_filter($tones, fn ($t) => $t !== 'unknown')) ? '' : 'unknown')));
-            }
-            $badDays = count(array_filter($overallBar, fn ($t) => in_array($t, ['b', 'p', 'w'], true)));
-          @endphp
-          {{-- One tab stop for the whole bar with the summary spoken, not ninety for the slivers. --}}
-          <div class="bar" role="img" tabindex="0"
-               aria-label="Daily availability over the last {{ \App\Services\Uptime::WINDOW_DAYS }} days: {{ \App\Services\Uptime::format($overall) }} uptime, {{ $overall === null ? __('awaiting measurements') : ($badDays ? $badDays.' '.\App\Services\Localization::plural('day', $badDays).__(' with a disruption') : __('no recorded disruptions')) }}">
-            @foreach ($overallBar as $i => $tone)<span class="{{ $tone }}" data-tip="{{ $overallDays[$i] ? \Carbon\Carbon::parse($overallDays[$i])->translatedFormat('j M') : '' }}{{ ['b' => __(' · major outage'), 'p' => __(' · partial outage'), 'w' => __(' · degraded'), 'unknown' => __(' · no data')][$tone] ?? __(' · all operational') }}"></span>@endforeach
-          </div>
-          <div class="scale"><span>{{ \App\Services\Uptime::WINDOW_DAYS }} {{ __('days ago') }}</span><span>{{ __('today') }}</span></div>
-        </div>
+      @if ($nextWork)
+        @php $toGo = \App\Services\StatusTimeline::daysUntil($nextWork->starts_at, $now); @endphp
+        <a class="next" href="#maintenance-{{ $nextWork->id }}">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17v5M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6Z"/></svg>
+          <span class="when">{{ match ($toGo) { 0 => __('Coming up today:'), 1 => __('Coming up tomorrow:'), default => __('Coming up in :n days:', ['n' => $toGo]) } }}</span>
+          <b>{{ $nextWork->title }}</b>
+        </a>
       @endif
     </section>
   @endif
 
-  @if ($maintenances->isNotEmpty())
-    <section class="sec" aria-labelledby="maintenance-heading">
-      <h2 id="maintenance-heading">{{ __('Maintenance') }}</h2>
-      @foreach ($maintenances as $maintenance)
-        @php $live = $maintenance->starts_at->lte(now()); @endphp
-        <article id="maintenance-{{ $maintenance->id }}" class="plan @if ($live) live @endif" data-live-key="maintenance-{{ $maintenance->id }}" data-live-value="{{ $live ? 'on' : 'planned' }}:{{ $maintenance->updated_at?->timestamp }}">
-          <span class="pill m">{{ $live ? __('Maintenance in progress') : __('Scheduled maintenance') }}</span>
-          <div class="tx">
-            <b>{{ $maintenance->title }}</b>
-            @if ($maintenance->components->isNotEmpty())<span class="aff">{{ __('Affects') }} {{ $maintenance->components->pluck('name')->join(', ', __(' and ')) }}</span>@endif
-            @if ($maintenance->message)<div class="md">{!! \Illuminate\Support\Str::markdown($maintenance->message, \App\Services\MailTemplates::MARKDOWN) !!}</div>@endif
-          </div>
-          <time datetime="{{ $maintenance->starts_at->toIso8601String() }}">{{ $maintenance->starts_at->translatedFormat('j M H:i') }} {{ __('to') }} {{ $maintenance->ends_at->isSameDay($maintenance->starts_at) ? $maintenance->ends_at->format('H:i') : $maintenance->ends_at->translatedFormat('j M H:i') }}</time>
-        </article>
-      @endforeach
-    </section>
-  @endif
-
-  @if ($modules['page.show_services'] && ($groups->isNotEmpty() || $loose->isNotEmpty()))
-    <section class="sec">
-      <h2>{{ __('Services') }}</h2>
-
-      {{-- Components that belong to no service still belong on the page. Leaving
-           them out made "Ungrouped" a silent way to publish nothing, and made
-           deleting a service quietly empty the page it was on. --}}
-      @if ($loose->isNotEmpty())
-        <div class="svc">
-          <div class="svc-bd">
-            @foreach ($loose as $component)
-              @include('partials.status-item', ['component' => $component])
-            @endforeach
-          </div>
-        </div>
-      @endif
-
-      @foreach ($groups as $group)
-        @continue($group->components->isEmpty())
-        @php $gs = $group->status(); @endphp
-        <details id="service-{{ $group->id }}" class="svc" @if(!$group->collapsed || $gs->isDown()) open @endif>
-          <summary>
-            <div class="svc-hd">
-              <span class="car" aria-hidden="true">&#9654;</span>
-              <span class="nm">{{ $group->name }}</span>
-              <span class="cnt">{{ $group->components->count() }} {{ \App\Services\Localization::plural('component', $group->components->count()) }}</span>
-              <span class="service-metrics">
-              @if ($modules['page.show_component_uptime'])
-                @include('partials.service-history', ['historyName' => $group->name, 'serviceBar' => app(\App\Services\Uptime::class)->aggregate($group->components->mapWithKeys(fn ($c) => [$c->id => $bars[$c->id]])->all())])
-              @endif
-              <span class="pill {{ $gs->tone() }}">{{ __($gs->label() ?? '') }}</span>
-              </span>
-            </div>
-          </summary>
-          <div class="svc-bd">
-            @foreach ($group->components as $component)
-              @include('partials.status-item', ['component' => $component])
-            @endforeach
-          </div>
-        </details>
-      @endforeach
-    </section>
-  @endif
-
-  @if ($modules['page.show_incidents'])
-    <section class="sec">
-      <h2>{{ __('Incidents') }}</h2>
-      @if ($ongoing->isNotEmpty())
-        <div class="day">
-          <div class="day-hd">
-            <h3>{{ __('Ongoing') }}</h3>
-            <span class="ln"></span>
-            <span class="none">{{ __('since') }} {{ $ongoing->last()->occurred_at->timezone(\App\Services\Clock::timezone())->translatedFormat('j F') }}</span>
-          </div>
-          @foreach ($ongoing as $incident)
-            @include('partials.incident', ['incident' => $incident])
-          @endforeach
-        </div>
-      @endif
-      @forelse ($days as $date => $incidents)
-        @php $carbon = \Illuminate\Support\Carbon::parse($date, \App\Services\Clock::timezone()); @endphp
-        <div class="day">
-          <div class="day-hd">
-            <h3>{{ $carbon->isToday() ? 'Today · '.$carbon->translatedFormat('j F') : $carbon->translatedFormat('j F') }}</h3>
-            <span class="ln"></span>
-            @if ($incidents->isEmpty())<span class="none">{{ __('No incidents') }}</span>@endif
-          </div>
-          @foreach ($incidents as $incident)
-            @include('partials.incident', ['incident' => $incident])
-          @endforeach
-        </div>
-      @empty
-        @if ($ongoing->isEmpty())
-          <div class="day"><div class="day-hd"><h3>{{ __('No incidents reported') }}</h3><span class="ln"></span></div></div>
+  @if ($hasTracks || $hasRows)
+    <section aria-labelledby="h-days">
+      <div class="chart-head">
+        <h2 id="h-days">{{ $hasTracks ? __('Past :n days', ['n' => $daysShown]) : __('Services') }}</h2>
+        @if ($hasTracks)
+          <div class="key" aria-hidden="true"><span><i class="k-w"></i>{{ __('Slow') }}</span><span><i class="k-p"></i>{{ __('Partly down') }}</span><span><i class="k-b"></i>{{ __('Down') }}</span><span>{{ __('Taller means longer') }}</span></div>
         @endif
-      @endforelse
+      </div>
+      <div class="chart" @if ($hasTracks) tabindex="0" role="group" data-hint="{{ __('Point at a day, or use the arrow keys, to read what happened.') }}"
+           aria-label="{{ __('Uptime per day for every service. Use the left and right arrow keys to read a day.') }}" @endif>
+        @if ($hasTracks)
+          <div class="readout" aria-live="polite">{{ __('Point at a day, or use the arrow keys, to read what happened.') }}</div>
+          <script type="application/json" data-notes class="when">@json($dayNotes)</script>
+        @endif
+
+        @if ($modules['page.show_uptime'] && $daysShown > 0)
+          <div class="row all">
+            <div class="nm">{{ __('All services') }}</div>
+            @include('partials.status-track', ['bar' => $overallBar])
+            <div class="pc">{{ \App\Services\Uptime::format($overall) }}</div>
+          </div>
+        @endif
+
+        @if ($hasRows)
+          {{-- Components that belong to no service still belong on the page. Leaving
+               them out made "Ungrouped" a silent way to publish nothing. --}}
+          @foreach ($loose as $component)
+            @include('partials.status-row', ['component' => $component])
+          @endforeach
+
+          @foreach ($groups as $group)
+            @continue($group->components->isEmpty())
+            @php $gs = $group->status(); @endphp
+            <details id="service-{{ $group->id }}" class="grp is-{{ $gs->tone() }}" @if (! $group->collapsed || $gs->isDown()) open @endif>
+              <summary class="row">
+                <span class="nm">
+                  <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                  <span class="label">{{ $group->name }}</span>
+                  @if ($gs !== \App\Enums\ComponentStatus::Operational)<em>{{ __($gs->label() ?? '') }}</em>@endif
+                </span>
+                @if ($modules['page.show_component_uptime'] && $daysShown > 0)
+                  @php $serviceBar = app(\App\Services\Uptime::class)->aggregate($group->components->mapWithKeys(fn ($c) => [$c->id => $bars[$c->id]])->all()); @endphp
+                  @include('partials.status-track', ['bar' => $serviceBar])
+                  <span class="pc">{{ \App\Services\Uptime::format(app(\App\Services\Uptime::class)->percentageOf($serviceBar)) }}</span>
+                @else
+                  <span class="track"></span><span class="pc"></span>
+                @endif
+              </summary>
+              @foreach ($group->components as $component)
+                @include('partials.status-row', ['component' => $component])
+              @endforeach
+            </details>
+          @endforeach
+        @endif
+
+        @if ($hasTracks)
+          <div class="axis"><div class="ticks">
+            <span style="left:0">{{ \Illuminate\Support\Carbon::parse($overallBar[0]['day'])->translatedFormat('j M') }}</span>
+            @foreach ($overallBar as $i => $d)
+              @if ($i >= 10 && $i < $daysShown - 8 && str_ends_with($d['day'], '-01'))
+                <span style="left:{{ round($i / $daysShown * 100, 3) }}%">{{ \Illuminate\Support\Carbon::parse($d['day'])->translatedFormat('M') }}</span>
+              @endif
+            @endforeach
+            <span class="end">{{ __('Today') }}</span>
+          </div></div>
+          <div class="cross"></div>
+        @endif
+      </div>
+    </section>
+  @endif
+
+  @if ($modules['page.show_incidents'] || $live->isNotEmpty() || $planned->isNotEmpty())
+    <section aria-labelledby="h-log">
+      <div class="log-head">
+        <h2 id="h-log">{{ __('Incident log') }}</h2>
+        @if ($ongoing->isEmpty() && $live->isEmpty() && ($hero['ago'] ?? 0) >= 2)
+          <p class="when">{{ __('Nothing in the past :n days', ['n' => $hero['ago']]) }}</p>
+        @endif
+      </div>
+      <div class="log">
+        @if ($ongoing->isNotEmpty() || $live->isNotEmpty())
+          <h3 class="label sect">{{ __('Ongoing') }}</h3>
+          @foreach ($ongoing as $incident)
+            @include('partials.timeline-incident', ['incident' => $incident])
+          @endforeach
+          @foreach ($live as $maintenance)
+            @include('partials.timeline-maintenance', ['maintenance' => $maintenance])
+          @endforeach
+        @endif
+
+        @if ($planned->isNotEmpty())
+          <h3 class="label sect">{{ __('Scheduled') }}</h3>
+          @foreach ($planned as $maintenance)
+            @include('partials.timeline-maintenance', ['maintenance' => $maintenance])
+          @endforeach
+        @endif
+
+        @php $month = null; $anyDay = false; $openDays = $ongoing->map(fn ($i) => $i->occurred_at->format('Y-m-d'))->all(); @endphp
+        @foreach ($days as $date => $incidents)
+          @continue($incidents->isEmpty() && in_array($date, $openDays, true))
+          @php $carbon = \Illuminate\Support\Carbon::parse($date, \App\Services\Clock::timezone()); $anyDay = true; @endphp
+          @if ($carbon->format('Y-m') !== $month)
+            @php $month = $carbon->format('Y-m'); @endphp
+            <h3 class="label sect">{{ $carbon->isCurrentYear() ? $carbon->translatedFormat('F') : $carbon->translatedFormat('F Y') }}</h3>
+          @endif
+          @forelse ($incidents as $incident)
+            @include('partials.timeline-incident', ['incident' => $incident])
+          @empty
+            <div class="entry quiet" data-day="{{ $date }}">
+              <i class="node"></i>
+              <div class="date"><b>{{ $carbon->format('d') }}</b><span class="label">{{ $carbon->isToday() ? __('Today') : $carbon->translatedFormat('M') }}<br>{{ $carbon->translatedFormat('D') }}</span></div>
+              <p>{{ __('No incidents') }}</p>
+            </div>
+          @endforelse
+        @endforeach
+        @if (! $anyDay && $ongoing->isEmpty() && $modules['page.show_incidents'])
+          <p class="label sect">{{ __('No incidents reported') }}</p>
+        @endif
+      </div>
       @if ($chrome && ($page > 1 || $hasOlder))
         <nav class="pager" aria-label="{{ __('Incident history') }}">
           @if ($page > 1)<a href="{{ \App\Services\PageUrls::route('status', $page === 2 ? [] : ['page' => $page - 1]) }}">{{ __('← Newer incidents') }}</a>@endif
@@ -352,16 +241,25 @@ details[open] .svc-hd .car{transform:rotate(90deg)}
       @endif
     </section>
   @endif
+  </main>
 
-  </div>
-  <footer class="foot">
+  @unless ($branding->creditHidden())
+    <div class="sign">
+      @include('partials.mark')
+      <p>{{ __('This page runs on Pharos.') }} <span>{{ __('Status pages you host yourself.') }}</span></p>
+      <a href="https://pharos.solutionmax.net" rel="noopener">pharos.solutionmax.net <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+    </div>
+  @endunless
+  <footer>
     <a href="{{ \App\Services\PageUrls::route('public.feed') }}">{{ __('RSS feed') }}</a>
     <a href="{{ \App\Services\PageUrls::route('public.reports') }}">{{ __('Monthly reports') }}</a>
     @if ($modules['page.show_api_link'])<a href="{{ \App\Services\PageUrls::api('components') }}">{{ __('API') }}</a>@endif
-    @unless ($branding->creditHidden())<a class="cr" href="https://pharos.solutionmax.net" rel="noopener">{{ __('Powered by Pharos') }}</a>@endunless
+    <span>{{ __('Times in :zone', ['zone' => \App\Services\Clock::offsetLabel()]) }}</span>
+    @if ($chrome)<span id="live-refresh" class="live-refresh">{{ __('Refreshes every 30 seconds') }}</span>@endif
   </footer>
-</div>
+</div></div>
 @include('partials.daytip')
 <script defer src="{{ asset('assets/pharos-v06.js') }}?v={{ @filemtime(public_path('assets/pharos-v06.js')) }}"></script>
+<script defer src="{{ asset('assets/pharos-status.js') }}?v={{ @filemtime(public_path('assets/pharos-status.js')) }}"></script>
 </body>
 </html>

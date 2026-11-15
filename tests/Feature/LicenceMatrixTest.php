@@ -65,7 +65,7 @@ class LicenceMatrixTest extends TestCase
         Setting::put('brand.logo_path', 'brand/left.png');
         Setting::put('brand.credit_hidden', '1');
 
-        $this->get('/')->assertOk()->assertDontSee('brand/left.png')->assertSee('Powered by Pharos');
+        $this->get('/')->assertOk()->assertDontSee('brand/left.png')->assertSee('This page runs on Pharos.');
     }
 
     // ---------- Brand pack only ----------
@@ -236,7 +236,7 @@ class LicenceMatrixTest extends TestCase
         $this->assertSame('Northwind', Setting::get('brand.name'), 'the free half still saves');
         $this->assertNull(Setting::get('brand.logo_path'));
         $this->assertSame('0', Setting::get('brand.credit_hidden', '0'));
-        $this->get('/')->assertOk()->assertSee('Powered by Pharos');
+        $this->get('/')->assertOk()->assertSee('This page runs on Pharos.');
 
         $this->actingAs($this->admin)
             ->put('/admin/mail-templates', ['template' => 'incident_opened', 'subject' => 'Custom', 'body' => 'Body'])
@@ -255,7 +255,7 @@ class LicenceMatrixTest extends TestCase
 
         $logo = Setting::get('brand.logo_path');
         $this->assertNotNull($logo);
-        $this->get('/')->assertOk()->assertSee($logo)->assertDontSee('Powered by Pharos');
+        $this->get('/')->assertOk()->assertSee($logo)->assertDontSee('This page runs on Pharos.');
 
         $this->actingAs($this->admin)
             ->put('/admin/mail-templates', ['template' => 'incident_opened', 'subject' => 'Custom {incident}', 'body' => 'Body'])

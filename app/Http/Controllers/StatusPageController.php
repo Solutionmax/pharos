@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\Branding;
 use App\Services\Clock;
 use App\Services\PublicComponents;
+use App\Services\StatusTimeline;
 use App\Services\Uptime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -137,32 +138,56 @@ class StatusPageController extends Controller
         // the headline followed whichever component happened to come first.
         $worst = ComponentStatus::from((int) ($all->max(fn (Component $c) => $c->status->value) ?? 1));
 
+        $now = Clock::now();
+        $publicComponents = fn ($q) => $q->whereIn('components.id', PublicComponents::query()->select('id'));
+
+        // Every open incident leads the log under Ongoing, however old: a component
+        // can stay red for longer than the window, and the page must never show a
+        // red service without the incident that explains it. The days below hold
+        // only what is over, so nothing appears twice.
+        $open = $modules['page.show_incidents']
+            ? Incident::public()->whereNull('resolved_at')
+                ->with(['updates', 'components' => $publicComponents])->orderByDesc('occurred_at')->get()
+            : collect();
+
+        // Planned work of this page that is still to come or under way.
+        $maintenances = Maintenance::visible()->with(['components' => $publicComponents])->orderBy('starts_at')->get();
+        $live = $maintenances->filter(fn (Maintenance $m) => $m->starts_at->lte(now()))->values();
+        $last = $modules['page.show_incidents']
+            ? Incident::public()->whereNotNull('resolved_at')->latest('resolved_at')->first()
+            : null;
+
+        $overallBar = StatusTimeline::overall($bars);
+        $windowIncidents = $modules['page.show_incidents']
+            ? Incident::public()->with(['components' => $publicComponents])
+                ->where('occurred_at', '>=', Carbon::today(Clock::timezone())->subDays(Uptime::WINDOW_DAYS - 1))->get()
+            : collect();
+
         return view('status', [
             'groups' => $groups,
             'loose' => $loose,
             'bars' => $bars,
             'percentages' => $percentages,
             'overall' => $overall,
+            'overallBar' => $overallBar,
+            'dayNotes' => StatusTimeline::dayNotes($overallBar, $windowIncidents, $now),
             'worst' => $worst,
-            // Planned work of this page that is still to come or under way.
-            'maintenances' => Maintenance::visible()->with(['components' => fn ($q) => $q->whereIn('components.id', PublicComponents::query()->select('id'))])->orderBy('starts_at')->get(),
-            // An incident that is still open when it falls out of the history window
-            // is pinned above the days: a component can stay red for longer than the
-            // window, and the page must never show a red service without the
-            // incident that explains it. Recent ones simply sit under their day.
-            // Only on the first page: on an older page the same incident may sit
-            // under its own day, and it must not appear twice.
-            'ongoing' => $modules['page.show_incidents'] && $page === 1
-                ? Incident::public()->whereNull('resolved_at')
-                    ->where('occurred_at', '<', $this->windowStart($days, 1))
-                    ->with(['updates', 'components' => fn ($q) => $q->whereIn('components.id', PublicComponents::query()->select('id'))])->orderByDesc('occurred_at')->get()
-                : collect(),
+            'now' => $now,
+            'hero' => StatusTimeline::hero(
+                $worst, $open, $live, $last,
+                $all->reject(fn (Component $c) => $c->status === ComponentStatus::Operational)->pluck('id'),
+                $now,
+            ),
+            'last' => $last,
+            'live' => $live,
+            'planned' => $maintenances->diff($live)->values(),
+            'ongoing' => $page === 1 ? $open : collect(),
             'days' => $modules['page.show_incidents'] ? $this->incidentDays($days, $modules, $page) : [],
             'page' => $page,
             // The "Older" link is offered only when a public incident exists before
             // the oldest day on this page; otherwise it would lead to empty pages.
             'hasOlder' => $chrome && $modules['page.show_incidents']
-                && Incident::public()->where('occurred_at', '<', $this->windowStart($days, $page))->exists(),
+                && Incident::public()->whereNotNull('resolved_at')->where('occurred_at', '<', $this->windowStart($days, $page))->exists(),
             'modules' => $modules,
             'theme' => $theme,
             'chrome' => $chrome,
@@ -186,6 +211,7 @@ class StatusPageController extends Controller
 
         $incidents = Incident::public()
             ->with(['updates', 'components' => fn ($q) => $q->whereIn('components.id', PublicComponents::query()->select('id'))])
+            ->whereNotNull('resolved_at')
             ->where('occurred_at', '>=', $start)
             ->where('occurred_at', '<', $start->copy()->addDays($span))
             ->orderByDesc('occurred_at')
