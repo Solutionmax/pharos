@@ -7,16 +7,19 @@ use App\Models\Subscriber;
 use App\Services\MailConfig;
 use App\Services\PageUrls;
 use App\Services\PublicComponents;
+use App\Services\SubscribeLimits;
 use App\Services\SubscriberPreferences;
 use App\Services\Subscriptions;
+use App\Support\EqualTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 /**
  * The public side of subscriptions. Every answer to the sign-up form is the
- * same sentence, whatever the address already is, so the form cannot be used
- * to find out who subscribed.
+ * same sentence, after the same time, whatever the address already is and
+ * whether its mail limit was reached, so the form cannot be used to find out
+ * who subscribed.
  */
 class SubscribeController extends Controller
 {
@@ -40,11 +43,26 @@ class SubscribeController extends Controller
         $preferences = SubscriberPreferences::validate($request);
 
         $email = mb_strtolower(trim($data['email']));
+
+        // New, pending, confirmed or over its limit: each takes its own path
+        // below, and none of them may show in how long the answer takes.
+        return EqualTime::run(fn () => $this->signUp($request, $email, $preferences));
+    }
+
+    /** @param  array<string, mixed>  $preferences */
+    protected function signUp(Request $request, string $email, array $preferences)
+    {
         $subscriber = Subscriber::where('email', $email)->first();
 
         // Already confirmed and still in: nothing to send, and saying so would
         // confirm the address exists.
         if ($subscriber?->isActive()) {
+            return $this->reply();
+        }
+
+        // Over the limit for this address or this page: the same answer and no
+        // mail. No new token either, so the link in the mail already sent works.
+        if (! SubscribeLimits::reserve($email)) {
             return $this->reply();
         }
 
@@ -59,6 +77,9 @@ class SubscribeController extends Controller
         try {
             app(MailConfig::class)->sendTo($subscriber->email, new SubscribeConfirmMail($subscriber));
         } catch (\Throwable $e) {
+            // Nothing went out, so nothing counts against the address.
+            SubscribeLimits::release($email);
+
             // A host that cannot send (no SMTP host yet, wrong password, port closed) is the
             // operator's problem, not the visitor's: say so plainly and leave the details in the log.
             Log::error('Subscribe confirmation mail failed', ['email' => $subscriber->email, 'error' => $e->getMessage()]);
