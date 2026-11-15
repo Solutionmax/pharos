@@ -25,6 +25,16 @@ return new class extends Migration
     /** Names that only make sense inside a network, decided without DNS. */
     private const LOCAL_SUFFIXES = ['.local', '.lan', '.internal', '.intranet', '.home', '.home.arpa', '.localdomain', '.corp'];
 
+    /**
+     * Seconds of DNS this migration may spend. The 1.1 updater migrates inside
+     * a web request, so dead DNS on an install with many checks must not run it
+     * into max_execution_time. Past the budget a name decides nothing, the same
+     * as a lookup that fails.
+     */
+    private const DNS_BUDGET = 20;
+
+    private float $dnsUntil = 0.0;
+
     public function up(): void
     {
         Schema::table('checks', function (Blueprint $t) {
@@ -58,6 +68,7 @@ return new class extends Migration
     private function privateTargetInUse(): bool
     {
         $hosts = [];
+        $this->dnsUntil = microtime(true) + self::DNS_BUDGET;
 
         foreach (DB::table('checks')->whereIn('type', ['http', 'tcp'])->get(['type', 'target']) as $check) {
             $hosts[] = $this->host((string) $check->type, (string) $check->target);
@@ -117,6 +128,10 @@ return new class extends Migration
             if (str_ends_with($name, $suffix)) {
                 return true;
             }
+        }
+
+        if (microtime(true) > $this->dnsUntil) {
+            return false;
         }
 
         try {
