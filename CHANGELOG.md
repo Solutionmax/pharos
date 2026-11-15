@@ -6,6 +6,30 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+## [1.2.2] — 2026-11-15
+
+### Added
+- Fallback copy (Settings, General): every minute, when something changed, each published status page is saved as one static HTML file, without scripts or cookies, to an S3 or SFTP destination of your choice (`index.html`, `status/{slug}/index.html`). Serve that place as a website and visitors can still read the last state when this server is down. Backups no longer go to the destination used for the copy. `php artisan pharos:fallback-copy` runs it on demand.
+- Prometheus Alertmanager and Grafana alerts can set component status: `POST /api/v1/alertmanager` and `POST /api/v1/grafana`, with the same token as the Uptime Kuma endpoint and the label `pharos_component`.
+- Team destinations can receive "Certificate expiring", 14 and 3 days before a checked certificate runs out.
+- A security contact (Settings, General) publishes `/.well-known/security.txt`.
+- Page health names service names that look technical, and says why visitors cannot subscribe.
+- The public page and incident pages carry a description, Open Graph tags and a canonical link, and the page title starts with the current state, so a shared link shows what is going on.
+
+### Changed
+- Days on the public chart and in the admin Overview are coloured by what happened, not by an uptime threshold: a brief blip (under 5 minutes, no incident) stays a calm light green, Slow is a degraded performance incident, Disruption a partial outage or 5 to 59 minutes lost, Outage a major outage or an hour or more. Before, one missed one minute check turned a day orange and was called "Slow".
+- When nothing happened, the incident log says so in one line and shows the last incident, instead of a row per day.
+- The incident page and the public monthly report use the style of the status page: duration, course strip and every message on the incident page; Service, Uptime, Downtime and Incidents on the report. The technical columns stay in the CSV.
+- Automatic incident messages are written for visitors, in the language of the page: "Website did not answer within 10 seconds. We are looking into it."
+- Public pages no longer set cookies for visitors without a session, and can be cached for 30 seconds. The subscribe form fetches its token when it opens.
+- Service groups can be read through the API without a token, like components; only groups the public page shows.
+- Links use a darker or lighter shade of the brand colour when that is needed for readable contrast.
+- Error pages (404, 405, 419, 429, 500, 503) have the look of the status page; the 404 page is about 6 KB instead of 51 KB.
+
+### Fixed
+- Inside an older container image, the Updates screen showed the image's version instead of the installed one and offered the same update again. It now reads the version from the code and says which image to pull.
+- After an expired form, administrators are sent back to sign in again instead of seeing an error page.
+
 ## [1.2.1] — 2026-11-15
 
 ### Fixed
