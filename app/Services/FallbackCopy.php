@@ -91,7 +91,8 @@ class FallbackCopy
             if ($destination === null) {
                 return $this->failed(__('Choose a backup destination for the fallback copy.'), $uploaded);
             }
-            $known = $force ? [] : (json_decode((string) Setting::get(self::HASHES, '{}'), true) ?: []);
+            $stored = json_decode((string) Setting::get(self::HASHES, '{}'), true);
+            $known = ! $force && is_array($stored) ? $stored : [];
             $filesystem = null;
             $savedAt = now();
             $pages = StatusPage::where('is_published', true)->whereNull('archived_at')->orderBy('id')->get();

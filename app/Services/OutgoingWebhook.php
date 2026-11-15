@@ -269,7 +269,8 @@ class OutgoingWebhook
         $expires = $check->tls_expires_at;
         $when = $expires?->format('j M Y H:i T') ?? '';
         $left = match (true) {
-            $daysLeft <= 0 => __('expires within a day'),
+            $daysLeft < 0 => __('already expired'),
+            $daysLeft === 0 => __('expires within a day'),
             $daysLeft === 1 => __('1 day left'),
             default => __(':count days left', ['count' => $daysLeft]),
         };

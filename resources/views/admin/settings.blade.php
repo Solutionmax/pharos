@@ -98,6 +98,7 @@
                 <option value="{{ $destination->id }}" @selected((string) old('fallback_destination', $fallback['destination']?->id) === (string) $destination->id)>{{ $destination->name }} ({{ strtoupper($destination->driver) }})</option>
               @endforeach
             </select>
+            <span class="help">{{ __('Nightly backups to the same destination land next to the copy. On S3, let the bucket policy publish only index.html and status/*; over SFTP, backup files stay readable for their owner only.') }}</span>
           @endif
           @if ($fallback['destination'] && $fallback['last_at'])
             <span class="help">{{ __(':where · last copy :time · :size', [
