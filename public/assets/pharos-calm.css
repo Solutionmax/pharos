@@ -59,6 +59,10 @@ html[data-layout="topbar"] [data-icon="to-sidebar"]{display:block}
 .panel-hd{padding:14px 0 10px}
 .panel-bd{padding:18px 0}
 .panel+.panel{margin-top:26px}
+/* A dialog floats over the page, so its panel keeps the card: without it the popup is see-through. */
+dialog.modal .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-md)}
+dialog.modal .panel-hd{padding:15px 20px}
+dialog.modal .panel-bd{padding:20px}
 .scroll{border-radius:0}
 .filters{padding:12px 0;background:none}
 .filters input[type=text]{background:var(--card)}

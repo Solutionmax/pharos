@@ -6,6 +6,9 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+### Fixed
+- Popups in the admin, such as "Install update?", the update progress and the service window on a component, were see-through since 1.1.0: the calmer style took the background off every panel, the one inside a popup too. They have their card again, in light and dark.
+
 ## [1.2.0] — 2026-11-15
 
 ### Added
