@@ -228,6 +228,8 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
 
 // Shared hosting can disable symlink(). Laravel serves only the public disk.
 Route::get('/storage/{path}', function (string $path) {
+    // Dotfiles (.gitignore) are never an upload.
+    abort_if(preg_match('#(^|/)\.#', $path) === 1, 404);
     $root = realpath(storage_path('app/public'));
     $file = realpath(storage_path('app/public/'.$path));
     abort_unless($root && $file && str_starts_with($file, $root.DIRECTORY_SEPARATOR) && is_file($file), 404);
