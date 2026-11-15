@@ -1,0 +1,4840 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Pharos API",
+    "version": "1.2.2",
+    "summary": "Status page API: components, services, incidents, maintenance, subscribers and alert receivers.",
+    "description": "The HTTP API of Pharos, the self hosted status page. It follows the shape of Cachet 2.x where Cachet had the same thing: the `{\"data\": …}` envelope, the status integers, `X-Cachet-Token` and POST for a component update, so existing scripts keep working.\n\n## Which page\n\nEvery path under `/api/v1` serves the first status page of the installation. Every other page has the same endpoints under `/api/v1/pages/{slug}`, with a token of that page: pick the second server. The probe endpoints only exist at the first address. The API answers on the main address of the installation only, never on the custom domain of a page.\n\n## Tokens\n\nCreate a token under Integrations & API, API tokens, or with `php artisan pharos:token`. It is 40 characters, shown once, and belongs to one status page and one owner. Send it as `Authorization: Bearer <token>` or as `X-Cachet-Token: <token>`.\n\nA token has one of two kinds of access. **read** sees components, services, maintenance and incidents, including the ones that are not public, and the metrics. **write** may also change things, but only while its owner may edit the page: lower or remove the owner's role and the token loses its rights at once. The role names in each operation's security requirement are the minimum: a write token can do everything a read token can. Subscriber endpoints need a write token whose owner administers the page, for reads too.\n\nReading components, services, public incidents and `/ping` needs no token. On a page that is not published the public reads answer 404; the endpoints that take a token (except `/components`, `/incidents` and `/ping`) still work there with one. An archived page answers 404 everywhere.\n\n## Errors\n\nToken problems answer 401 or 403 with `{\"error\": \"…\"}`. Anything the API does not know or the caller may not see answers one plain 404, `{\"message\": \"Not found.\"}`, so an id of another page reads the same as one that never existed. Validation failures answer 422 with `message` and `errors` per field. A rate limit answers 429 with `Retry-After`. Errors raised without a text of their own (413, 409, some 401 and 403) carry an empty `message`.\n\n## Limits\n\nLimits are per calling address and per minute: 60 for the Cachet compatible writes, 60 for the other endpoints that take a token, 120 for heartbeats and 120 for probes. Public reads of `/components`, `/components/{id}`, `/incidents` and `/ping` are not rate limited. Request bodies of the groups, maintenance, subscribers, metrics, alert receivers, component create and the delete endpoints are capped at 256 KiB, probe bodies at 16 KiB, before the body is decoded.",
+    "contact": {
+      "name": "Pharos",
+      "url": "https://pharos.solutionmax.net"
+    },
+    "license": {
+      "name": "AGPL-3.0-only",
+      "identifier": "AGPL-3.0-only"
+    }
+  },
+  "externalDocs": {
+    "description": "API and tokens",
+    "url": "https://pharos.solutionmax.net/docs.html#api"
+  },
+  "servers": [
+    {
+      "url": "https://{host}/api/v1",
+      "description": "The first status page of the installation.",
+      "variables": {
+        "host": {
+          "default": "status.example.com",
+          "description": "The main address of your Pharos installation, with its base folder if it has one. The API answers there only, not on the custom domain of a status page."
+        }
+      }
+    },
+    {
+      "url": "https://{host}/api/v1/pages/{slug}",
+      "description": "Any status page by its slug: the same endpoints, with a token of that page.",
+      "variables": {
+        "host": {
+          "default": "status.example.com",
+          "description": "The main address of your Pharos installation, with its base folder if it has one. The API answers there only, not on the custom domain of a status page."
+        },
+        "slug": {
+          "default": "default",
+          "description": "Slug of the status page. The first page is called default unless it was renamed."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerToken": [
+        "read"
+      ]
+    },
+    {
+      "cachetToken": [
+        "read"
+      ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "Components",
+      "description": "The things the status page reports on."
+    },
+    {
+      "name": "Services",
+      "description": "Groups of components, called services in the admin. The API calls them groups."
+    },
+    {
+      "name": "Incidents",
+      "description": "Incidents with a timeline of updates, across one or more components."
+    },
+    {
+      "name": "Maintenance",
+      "description": "Scheduled maintenance windows."
+    },
+    {
+      "name": "Subscribers",
+      "description": "Email subscribers of a page. Personal data: write token, owner administers the page."
+    },
+    {
+      "name": "Receivers",
+      "description": "Uptime Kuma, Prometheus Alertmanager and Grafana set component status directly.",
+      "externalDocs": {
+        "url": "https://pharos.solutionmax.net/docs.html#alertmanager"
+      }
+    },
+    {
+      "name": "Heartbeats",
+      "description": "Jobs that check in; silence is the alarm."
+    },
+    {
+      "name": "Metrics",
+      "description": "Prometheus text format."
+    },
+    {
+      "name": "Public feeds",
+      "description": "Widget data, badges and the RSS feed. Outside /api, at the address of the status page."
+    },
+    {
+      "name": "Probe locations",
+      "description": "Used by other Pharos installations that run this installation's checks."
+    },
+    {
+      "name": "Scheduler",
+      "description": "Web cron fallback for hosting without cron. Outside /api/v1."
+    },
+    {
+      "name": "Utility",
+      "description": "Cachet compatible extras."
+    }
+  ],
+  "paths": {
+    "/components": {
+      "get": {
+        "operationId": "listComponents",
+        "tags": [
+          "Components"
+        ],
+        "summary": "List the components the public page shows",
+        "description": "Cachet 2.x envelope. Disabled components and components of a hidden service are left out, with or without a token. Not rate limited.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The components, in page order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComponentList"
+                },
+                "example": {
+                  "meta": {
+                    "pagination": {
+                      "total": 1,
+                      "count": 1,
+                      "per_page": 1,
+                      "current_page": 1,
+                      "total_pages": 1
+                    }
+                  },
+                  "data": [
+                    {
+                      "id": 7,
+                      "name": "API",
+                      "description": "Public REST API",
+                      "link": "https://api.example.com",
+                      "status": 1,
+                      "status_name": "Operational",
+                      "enabled": true,
+                      "group_id": 2,
+                      "tags": [
+                        "eu",
+                        "api"
+                      ],
+                      "source": "manual",
+                      "created_at": "2026-11-15T18:12:59+00:00",
+                      "updated_at": "2026-11-15T18:12:59+00:00"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createComponent",
+        "tags": [
+          "Components"
+        ],
+        "summary": "Create a component",
+        "description": "The new component is marked as set from outside (source webhook), so its uptime is counted from the status you report. Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints. Body at most 256 KiB.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "description": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 255
+                  },
+                  "status": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/ComponentStatus"
+                      }
+                    ],
+                    "default": 1
+                  },
+                  "group_id": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "A service of this page."
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "show_uptime": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "position": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000,
+                    "default": 0
+                  }
+                }
+              },
+              "example": {
+                "name": "SMTP",
+                "group_id": 2
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CreatedComponent"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "id": 9,
+                    "name": "SMTP",
+                    "status": 1,
+                    "group_id": 2
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/components/{component}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/component"
+        }
+      ],
+      "get": {
+        "operationId": "getComponent",
+        "tags": [
+          "Components"
+        ],
+        "summary": "Get one component",
+        "description": "One component in the shape of the list. A disabled component or one in a hidden service answers 404. Not rate limited.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The component.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Component"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "id": 7,
+                    "name": "API",
+                    "description": "Public REST API",
+                    "link": "https://api.example.com",
+                    "status": 1,
+                    "status_name": "Operational",
+                    "enabled": true,
+                    "group_id": 2,
+                    "tags": [
+                      "eu",
+                      "api"
+                    ],
+                    "source": "manual",
+                    "created_at": "2026-11-15T18:12:59+00:00",
+                    "updated_at": "2026-11-15T18:12:59+00:00"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateComponentStatus",
+        "tags": [
+          "Components"
+        ],
+        "summary": "Set the status of a component",
+        "description": "Sets the status only; it opens no incident. A component with its own enabled check is set as asked, but the next check run overwrites it. Rate limit: 60 requests a minute per calling address, shared by the Cachet compatible writing endpoints.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "$ref": "#/components/schemas/ComponentStatus"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "description": "Replaces the description when sent."
+                  }
+                }
+              },
+              "example": {
+                "status": 4
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The component after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Component"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "updateComponentStatusCachet",
+        "tags": [
+          "Components"
+        ],
+        "summary": "Set the status of a component (Cachet 2.x verb)",
+        "description": "The same as PUT; Cachet 2.x used POST. A JSON body here is limited to 256 KiB, because a body _method field can select the DELETE route. Rate limit: 60 requests a minute per calling address, shared by the Cachet compatible writing endpoints.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "$ref": "#/components/schemas/ComponentStatus"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "description": "Replaces the description when sent."
+                  }
+                }
+              },
+              "example": {
+                "status": 4
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The component after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Component"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteComponent",
+        "tags": [
+          "Components"
+        ],
+        "summary": "Delete a component",
+        "description": "An incident its check opened and could still close itself is resolved first, with an automatic update that says why. Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints. Body at most 256 KiB.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/NoContent"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/groups": {
+      "get": {
+        "operationId": "listGroups",
+        "tags": [
+          "Services"
+        ],
+        "summary": "List services",
+        "description": "Without a token: on a published page only, and only the services the public page shows. With a token of the page (read is enough): every service, hidden ones included. A token that is sent is always checked. At most 500, in page order. Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints.",
+        "security": [
+          {},
+          {
+            "bearerToken": [
+              "read"
+            ]
+          },
+          {
+            "cachetToken": [
+              "read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The services.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Group"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": 2,
+                      "name": "Website",
+                      "visible": true,
+                      "collapsed": true,
+                      "position": 0
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createGroup",
+        "tags": [
+          "Services"
+        ],
+        "summary": "Create a service",
+        "description": "Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints. Body at most 256 KiB.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/GroupInput"
+                  },
+                  {
+                    "required": [
+                      "name"
+                    ]
+                  }
+                ]
+              },
+              "example": {
+                "name": "Mail",
+                "visible": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Group"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "id": 3,
+                    "name": "Mail",
+                    "visible": false,
+                    "collapsed": true,
+                    "position": 0
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/groups/{group}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/group"
+        }
+      ],
+      "get": {
+        "operationId": "getGroup",
+        "tags": [
+          "Services"
+        ],
+        "summary": "Get one service",
+        "description": "Without a token a hidden service answers 404, as on the list.",
+        "security": [
+          {},
+          {
+            "bearerToken": [
+              "read"
+            ]
+          },
+          {
+            "cachetToken": [
+              "read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The service.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Group"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "id": 2,
+                    "name": "Website",
+                    "visible": true,
+                    "collapsed": true,
+                    "position": 0
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateGroup",
+        "tags": [
+          "Services"
+        ],
+        "summary": "Change a service",
+        "description": "Only the fields sent change. Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints. Body at most 256 KiB.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupInput"
+              },
+              "example": {
+                "collapsed": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The service after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Group"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteGroup",
+        "tags": [
+          "Services"
+        ],
+        "summary": "Delete a service",
+        "description": "Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints. Body at most 256 KiB.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/NoContent"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/incidents": {
+      "get": {
+        "operationId": "listIncidents",
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "List the 50 most recent incidents",
+        "description": "Newest first by occurred_at, with updates and components. Without a token: public incidents only, and only components the public page shows. A valid token of the page (read is enough) adds authenticated and internal incidents and hidden components. An invalid token is not refused here: the answer is the public one. Not rate limited.",
+        "security": [
+          {},
+          {
+            "bearerToken": [
+              "read"
+            ]
+          },
+          {
+            "cachetToken": [
+              "read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The incidents.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentList"
+                },
+                "example": {
+                  "meta": {
+                    "pagination": {
+                      "total": 1,
+                      "count": 1,
+                      "per_page": 1,
+                      "current_page": 1,
+                      "total_pages": 1
+                    }
+                  },
+                  "data": [
+                    {
+                      "id": 12,
+                      "name": "Slow API",
+                      "status": 4,
+                      "status_name": "Resolved",
+                      "impact": "major",
+                      "visibility": "public",
+                      "source": "api",
+                      "occurred_at": "2026-11-15T16:50:03+00:00",
+                      "resolved_at": "2026-11-15T17:22:41+00:00",
+                      "components": [
+                        {
+                          "id": 7,
+                          "name": "API",
+                          "status": 3
+                        }
+                      ],
+                      "updates": [
+                        {
+                          "status": 1,
+                          "status_name": "Investigating",
+                          "message": "Looking into it.",
+                          "automatic": false,
+                          "created_at": "2026-11-15T16:50:03+00:00"
+                        },
+                        {
+                          "status": 4,
+                          "status_name": "Resolved",
+                          "message": "Back up at 17:22.",
+                          "automatic": false,
+                          "created_at": "2026-11-15T17:22:41+00:00"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createIncident",
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Open an incident",
+        "description": "Give name and message, or a template (with vars) to fill them in. components maps component ids, or component names, to the status the incident gives them; the components are set at once. Without visibility the incident is public, unless every component it names is off the public page: then it is internal. Rate limit: 60 requests a minute per calling address, shared by the Cachet compatible writing endpoints.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "description": "Required without template."
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 20000,
+                    "description": "Required without template."
+                  },
+                  "template": {
+                    "type": "string",
+                    "description": "Slug of an incident template of this page."
+                  },
+                  "vars": {
+                    "type": "object",
+                    "maxProperties": 50,
+                    "additionalProperties": {
+                      "type": "string",
+                      "maxLength": 255
+                    },
+                    "description": "Values for the {{variables}} of the template."
+                  },
+                  "status": {
+                    "$ref": "#/components/schemas/IncidentStatusInput"
+                  },
+                  "impact": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/Impact"
+                      }
+                    ],
+                    "default": "minor"
+                  },
+                  "visibility": {
+                    "$ref": "#/components/schemas/Visibility"
+                  },
+                  "components": {
+                    "type": "object",
+                    "maxProperties": 500,
+                    "description": "Component id (or name) to component status.",
+                    "additionalProperties": {
+                      "$ref": "#/components/schemas/ComponentStatusInput"
+                    }
+                  },
+                  "component_id": {
+                    "type": "integer",
+                    "description": "Cachet 2.x: one component. Folded into components."
+                  },
+                  "component_status": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/ComponentStatus"
+                      }
+                    ],
+                    "default": 4,
+                    "description": "Cachet 2.x: the status for component_id."
+                  },
+                  "auto_resolve": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "notify": {
+                    "type": "boolean",
+                    "description": "Accepted for Cachet 2.x scripts and ignored."
+                  },
+                  "occurred_at": {
+                    "type": "string",
+                    "description": "Any date PHP can read. Defaults to now."
+                  }
+                }
+              },
+              "example": {
+                "template": "server-unreachable",
+                "vars": {
+                  "server": "web-06.example.net"
+                },
+                "status": "investigating",
+                "impact": "major",
+                "components": {
+                  "7": "major_outage",
+                  "8": "degraded"
+                },
+                "auto_resolve": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Incident"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "id": 12,
+                    "name": "Slow API",
+                    "status": 1,
+                    "status_name": "Investigating",
+                    "impact": "major",
+                    "visibility": "public",
+                    "source": "api",
+                    "occurred_at": "2026-11-15T16:50:03+00:00",
+                    "resolved_at": null,
+                    "components": [
+                      {
+                        "id": 7,
+                        "name": "API",
+                        "status": 3
+                      }
+                    ],
+                    "updates": [
+                      {
+                        "status": 1,
+                        "status_name": "Investigating",
+                        "message": "Looking into it.",
+                        "automatic": false,
+                        "created_at": "2026-11-15T16:50:03+00:00"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "A field is wrong, a component is not of this page, or the incident status is unknown. Nothing was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TokenError"
+                    }
+                  ]
+                },
+                "examples": {
+                  "field": {
+                    "value": {
+                      "message": "Choose components from this page.",
+                      "errors": {
+                        "components": [
+                          "Choose components from this page."
+                        ]
+                      }
+                    }
+                  },
+                  "status": {
+                    "value": {
+                      "error": "Unknown status. Use investigating, identified, watching or resolved, or 1-4."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/incidents/{incident}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/incident"
+        }
+      ],
+      "delete": {
+        "operationId": "deleteIncident",
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Delete an incident",
+        "description": "Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints. Body at most 256 KiB.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/NoContent"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/incidents/{incident}/updates": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/incident"
+        }
+      ],
+      "post": {
+        "operationId": "addIncidentUpdate",
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Add an update to an incident",
+        "description": "Adds a message to the timeline and moves the incident to the status given. Resolving puts every component of the incident back to Operational, except the ones this request sets in components. Rate limit: 60 requests a minute per calling address, shared by the Cachet compatible writing endpoints.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status",
+                  "message"
+                ],
+                "properties": {
+                  "status": {
+                    "$ref": "#/components/schemas/IncidentStatusInput"
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "components": {
+                    "type": "object",
+                    "maxProperties": 500,
+                    "additionalProperties": {
+                      "$ref": "#/components/schemas/ComponentStatusInput"
+                    }
+                  }
+                }
+              },
+              "example": {
+                "status": "resolved",
+                "message": "Back up at 17:22."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The incident after the update.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Incident"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "id": 12,
+                    "name": "Slow API",
+                    "status": 4,
+                    "status_name": "Resolved",
+                    "impact": "major",
+                    "visibility": "public",
+                    "source": "api",
+                    "occurred_at": "2026-11-15T16:50:03+00:00",
+                    "resolved_at": "2026-11-15T17:22:41+00:00",
+                    "components": [
+                      {
+                        "id": 7,
+                        "name": "API",
+                        "status": 3
+                      }
+                    ],
+                    "updates": [
+                      {
+                        "status": 1,
+                        "status_name": "Investigating",
+                        "message": "Looking into it.",
+                        "automatic": false,
+                        "created_at": "2026-11-15T16:50:03+00:00"
+                      },
+                      {
+                        "status": 4,
+                        "status_name": "Resolved",
+                        "message": "Back up at 17:22.",
+                        "automatic": false,
+                        "created_at": "2026-11-15T17:22:41+00:00"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "A field is wrong or the status is unknown. Nothing was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TokenError"
+                    }
+                  ]
+                },
+                "examples": {
+                  "status": {
+                    "value": {
+                      "error": "Unknown status."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/maintenance": {
+      "get": {
+        "operationId": "listMaintenance",
+        "tags": [
+          "Maintenance"
+        ],
+        "summary": "List the 100 most recent maintenance windows",
+        "description": "Newest start first. Works on an unpublished page too. Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints.",
+        "security": [
+          {
+            "bearerToken": [
+              "read"
+            ]
+          },
+          {
+            "cachetToken": [
+              "read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The windows.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Maintenance"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": 3,
+                      "title": "Storage upgrade on web-01",
+                      "message": null,
+                      "state": "scheduled",
+                      "starts_at": "2026-12-01T19:00:00+00:00",
+                      "ends_at": "2026-12-01T21:00:00+00:00",
+                      "announce_minutes": 1440,
+                      "component_ids": [
+                        7,
+                        8
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createMaintenance",
+        "tags": [
+          "Maintenance"
+        ],
+        "summary": "Schedule a maintenance window",
+        "description": "Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints. Body at most 256 KiB.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/MaintenanceInput"
+                  },
+                  {
+                    "required": [
+                      "title",
+                      "starts_at",
+                      "ends_at"
+                    ]
+                  }
+                ]
+              },
+              "example": {
+                "title": "Storage upgrade on web-01",
+                "starts_at": "2026-12-01T20:00:00+01:00",
+                "ends_at": "2026-12-01T22:00:00+01:00",
+                "announce_minutes": 1440,
+                "components": [
+                  7,
+                  8
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Maintenance"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "id": 3,
+                    "title": "Storage upgrade on web-01",
+                    "message": null,
+                    "state": "scheduled",
+                    "starts_at": "2026-12-01T19:00:00+00:00",
+                    "ends_at": "2026-12-01T21:00:00+00:00",
+                    "announce_minutes": 1440,
+                    "component_ids": [
+                      7,
+                      8
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/maintenance/{maintenance}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/maintenance"
+        }
+      ],
+      "get": {
+        "operationId": "getMaintenance",
+        "tags": [
+          "Maintenance"
+        ],
+        "summary": "Get one maintenance window",
+        "description": "Works on an unpublished page too.",
+        "security": [
+          {
+            "bearerToken": [
+              "read"
+            ]
+          },
+          {
+            "cachetToken": [
+              "read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Maintenance"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "id": 3,
+                    "title": "Storage upgrade on web-01",
+                    "message": null,
+                    "state": "scheduled",
+                    "starts_at": "2026-12-01T19:00:00+00:00",
+                    "ends_at": "2026-12-01T21:00:00+00:00",
+                    "announce_minutes": 1440,
+                    "component_ids": [
+                      7,
+                      8
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateMaintenance",
+        "tags": [
+          "Maintenance"
+        ],
+        "summary": "Change a maintenance window",
+        "description": "Only a window the scheduler has not started yet. Only the fields sent change; components, when sent, replaces the list. The end must stay after the start and in the future. It is announced again. Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints. Body at most 256 KiB.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaintenanceInput"
+              },
+              "example": {
+                "ends_at": "2026-12-01T23:00:00+01:00"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The window after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Maintenance"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The window has already started, ended or was cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                },
+                "example": {
+                  "message": ""
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteMaintenance",
+        "tags": [
+          "Maintenance"
+        ],
+        "summary": "Remove a maintenance window",
+        "description": "A scheduled or running window is cancelled first, and one the scheduler started but did not close yet is completed, so the components it held get their status back. Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints. Body at most 256 KiB.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/NoContent"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/subscribers": {
+      "get": {
+        "operationId": "listSubscribers",
+        "tags": [
+          "Subscribers"
+        ],
+        "summary": "List subscribers",
+        "description": "Every subscriber call needs a write token, reads included, because the answer holds email addresses, and the owner of the token must administer the page. Signup addresses and private link tokens are never returned. Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of subscribers, oldest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Subscriber"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "required": [
+                        "pagination"
+                      ],
+                      "properties": {
+                        "pagination": {
+                          "type": "object",
+                          "required": [
+                            "total",
+                            "per_page",
+                            "current_page"
+                          ],
+                          "properties": {
+                            "total": {
+                              "type": "integer"
+                            },
+                            "per_page": {
+                              "type": "integer"
+                            },
+                            "current_page": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": 5,
+                      "email": "ops@example.com",
+                      "verified": true,
+                      "active": true,
+                      "all_services": false,
+                      "component_ids": [
+                        7
+                      ]
+                    }
+                  ],
+                  "meta": {
+                    "pagination": {
+                      "total": 1,
+                      "per_page": 50,
+                      "current_page": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/SubscriberForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "parameters": [
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000,
+              "default": 1
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createSubscriber",
+        "tags": [
+          "Subscribers"
+        ],
+        "summary": "Add a subscriber",
+        "description": "Every subscriber call needs a write token, reads included, because the answer holds email addresses, and the owner of the token must administer the page. Signup addresses and private link tokens are never returned. The address is stored lower case and pending; the call sends no mail. Resend the confirmation from the admin. An address already on the page is refused with 422. Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints. Body at most 256 KiB.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SubscriberPreferences"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "email"
+                    ],
+                    "properties": {
+                      "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 254
+                      }
+                    }
+                  }
+                ]
+              },
+              "example": {
+                "email": "new@example.com",
+                "all_services": false,
+                "component_ids": [
+                  7
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created, not verified yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Subscriber"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "id": 6,
+                    "email": "new@example.com",
+                    "verified": false,
+                    "active": false,
+                    "all_services": false,
+                    "component_ids": [
+                      7
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/SubscriberForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/subscribers/{subscriber}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/subscriber"
+        }
+      ],
+      "get": {
+        "operationId": "getSubscriber",
+        "tags": [
+          "Subscribers"
+        ],
+        "summary": "Get one subscriber",
+        "description": "Every subscriber call needs a write token, reads included, because the answer holds email addresses, and the owner of the token must administer the page. Signup addresses and private link tokens are never returned. ",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The subscriber.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Subscriber"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "id": 5,
+                    "email": "ops@example.com",
+                    "verified": true,
+                    "active": true,
+                    "all_services": false,
+                    "component_ids": [
+                      7
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/SubscriberForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateSubscriber",
+        "tags": [
+          "Subscribers"
+        ],
+        "summary": "Change the services a subscriber follows",
+        "description": "Every subscriber call needs a write token, reads included, because the answer holds email addresses, and the owner of the token must administer the page. Signup addresses and private link tokens are never returned. Without all_services the subscriber follows all services. Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints. Body at most 256 KiB.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriberPreferences"
+              },
+              "example": {
+                "all_services": false,
+                "component_ids": [
+                  7,
+                  8
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The subscriber after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Subscriber"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/SubscriberForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSubscriber",
+        "tags": [
+          "Subscribers"
+        ],
+        "summary": "Delete a subscriber",
+        "description": "Every subscriber call needs a write token, reads included, because the answer holds email addresses, and the owner of the token must administer the page. Signup addresses and private link tokens are never returned. Rate limit: 60 requests a minute per calling address, shared by the groups, maintenance, subscribers, metrics, component create and delete, and incident delete endpoints. Body at most 256 KiB.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/NoContent"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/SubscriberForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/integrations/kuma/{component}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/component"
+        }
+      ],
+      "post": {
+        "operationId": "kumaNotification",
+        "tags": [
+          "Receivers"
+        ],
+        "summary": "Uptime Kuma notification",
+        "description": "Sets the component from an Uptime Kuma Webhook notification. It opens no incident and notifies nobody. The component is marked as set by Kuma through this token, so its uptime is counted from what Kuma reports. Use a component without a check of its own. Rate limit: 60 requests a minute per calling address, shared by the Cachet compatible writing endpoints.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "heartbeat"
+                ],
+                "description": "Uptime Kuma's Webhook notification as it sends it (application/json). Only heartbeat.status is read.",
+                "properties": {
+                  "heartbeat": {
+                    "type": "object",
+                    "required": [
+                      "status"
+                    ],
+                    "properties": {
+                      "status": {
+                        "type": "integer",
+                        "enum": [
+                          0,
+                          1,
+                          2,
+                          3
+                        ],
+                        "description": "0 down: Major outage. 1 up: Operational. 2 pending: nothing changes. 3 maintenance: Under maintenance."
+                      }
+                    },
+                    "additionalProperties": true
+                  },
+                  "monitor": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "msg": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": true
+              },
+              "example": {
+                "heartbeat": {
+                  "monitorID": 4,
+                  "status": 0,
+                  "time": "2026-11-15 16:50:03.123",
+                  "msg": "connect ECONNREFUSED 192.0.2.10:443",
+                  "important": true,
+                  "duration": 0
+                },
+                "monitor": {
+                  "id": 4,
+                  "name": "API",
+                  "url": "https://api.example.com",
+                  "type": "http"
+                },
+                "msg": "[API] [🔴 Down] connect ECONNREFUSED 192.0.2.10:443"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Received.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KumaResult"
+                },
+                "example": {
+                  "ok": true,
+                  "changed": true,
+                  "status": 4
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "No heartbeat status (Kuma's test button sends none), or the component has its own enabled check.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Message"
+                    }
+                  ]
+                },
+                "examples": {
+                  "test button": {
+                    "value": {
+                      "message": "The heartbeat field is required. (and 1 more error)",
+                      "errors": {
+                        "heartbeat": [
+                          "The heartbeat field is required."
+                        ],
+                        "heartbeat.status": [
+                          "The heartbeat.status field is required."
+                        ]
+                      }
+                    }
+                  },
+                  "checked component": {
+                    "value": {
+                      "message": "Use a manually managed component for Kuma notifications."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/kuma/components/{component}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/component"
+        }
+      ],
+      "post": {
+        "operationId": "kumaNotificationLegacy",
+        "tags": [
+          "Receivers"
+        ],
+        "summary": "Uptime Kuma notification (first address)",
+        "description": "The first address the guide gave out. Notifications saved with it keep working; new ones use /integrations/kuma/{component}. Sets the component from an Uptime Kuma Webhook notification. It opens no incident and notifies nobody. The component is marked as set by Kuma through this token, so its uptime is counted from what Kuma reports. Use a component without a check of its own. Rate limit: 60 requests a minute per calling address, shared by the Cachet compatible writing endpoints.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "heartbeat"
+                ],
+                "description": "Uptime Kuma's Webhook notification as it sends it (application/json). Only heartbeat.status is read.",
+                "properties": {
+                  "heartbeat": {
+                    "type": "object",
+                    "required": [
+                      "status"
+                    ],
+                    "properties": {
+                      "status": {
+                        "type": "integer",
+                        "enum": [
+                          0,
+                          1,
+                          2,
+                          3
+                        ],
+                        "description": "0 down: Major outage. 1 up: Operational. 2 pending: nothing changes. 3 maintenance: Under maintenance."
+                      }
+                    },
+                    "additionalProperties": true
+                  },
+                  "monitor": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "msg": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": true
+              },
+              "example": {
+                "heartbeat": {
+                  "monitorID": 4,
+                  "status": 0,
+                  "time": "2026-11-15 16:50:03.123",
+                  "msg": "connect ECONNREFUSED 192.0.2.10:443",
+                  "important": true,
+                  "duration": 0
+                },
+                "monitor": {
+                  "id": 4,
+                  "name": "API",
+                  "url": "https://api.example.com",
+                  "type": "http"
+                },
+                "msg": "[API] [🔴 Down] connect ECONNREFUSED 192.0.2.10:443"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Received.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KumaResult"
+                },
+                "example": {
+                  "ok": true,
+                  "changed": true,
+                  "status": 4
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "No heartbeat status (Kuma's test button sends none), or the component has its own enabled check.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Message"
+                    }
+                  ]
+                },
+                "examples": {
+                  "test button": {
+                    "value": {
+                      "message": "The heartbeat field is required. (and 1 more error)",
+                      "errors": {
+                        "heartbeat": [
+                          "The heartbeat field is required."
+                        ],
+                        "heartbeat.status": [
+                          "The heartbeat.status field is required."
+                        ]
+                      }
+                    }
+                  },
+                  "checked component": {
+                    "value": {
+                      "message": "Use a manually managed component for Kuma notifications."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/alertmanager": {
+      "post": {
+        "operationId": "alertmanagerNotification",
+        "tags": [
+          "Receivers"
+        ],
+        "summary": "Prometheus Alertmanager webhook",
+        "description": "Point an Alertmanager webhook receiver here (webhook version 4), with send_resolved and the write token as a Bearer credential. Each alert names its component with the label pharos_component: the id, or the exact name, on the page of the token. Firing follows the severity label; resolved is Operational. Alerts without the label, for an unknown component, or for a component with its own enabled check change nothing and are listed under ignored. It opens and closes no incidents and notifies nobody. The components are marked as set from outside by this token. Body at most 256 KiB; rate limit: 60 requests a minute per calling address, shared by the Cachet compatible writing endpoints.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertNotification"
+              },
+              "example": {
+                "version": "4",
+                "groupKey": "{}/{severity=~\"critical|warning|info\"}:{alertname=\"HighErrorRate\"}",
+                "truncatedAlerts": 0,
+                "status": "firing",
+                "receiver": "pharos",
+                "groupLabels": {
+                  "alertname": "HighErrorRate"
+                },
+                "commonLabels": {
+                  "alertname": "HighErrorRate",
+                  "job": "api"
+                },
+                "commonAnnotations": {
+                  "runbook_url": "https://runbooks.example.net/high-error-rate"
+                },
+                "externalURL": "http://alertmanager.example.net:9093",
+                "alerts": [
+                  {
+                    "status": "firing",
+                    "labels": {
+                      "alertname": "HighErrorRate",
+                      "instance": "api-1:9100",
+                      "job": "api",
+                      "severity": "critical",
+                      "pharos_component": "API"
+                    },
+                    "annotations": {
+                      "summary": "High error rate on api-1",
+                      "description": "More than 5% of requests answer 5xx for 5 minutes."
+                    },
+                    "startsAt": "2026-11-15T16:30:00.000Z",
+                    "endsAt": "0001-01-01T00:00:00Z",
+                    "generatorURL": "http://prometheus.example.net:9090/graph?g0.expr=job%3Arequest_errors%3Arate5m+%3E+0.05&g0.tab=1",
+                    "fingerprint": "5d1c3a0f8e2b7c41"
+                  },
+                  {
+                    "status": "firing",
+                    "labels": {
+                      "alertname": "HighErrorRate",
+                      "instance": "web-2:9100",
+                      "job": "api",
+                      "severity": "warning",
+                      "pharos_component": "Website"
+                    },
+                    "annotations": {
+                      "summary": "Raised error rate on web-2"
+                    },
+                    "startsAt": "2026-11-15T16:31:00.000Z",
+                    "endsAt": "0001-01-01T00:00:00Z",
+                    "generatorURL": "http://prometheus.example.net:9090/graph?g0.expr=job%3Arequest_errors%3Arate5m+%3E+0.01&g0.tab=1",
+                    "fingerprint": "9a7e44c2d0b1f356"
+                  },
+                  {
+                    "status": "firing",
+                    "labels": {
+                      "alertname": "HighErrorRate",
+                      "instance": "mail-1:9100",
+                      "job": "api",
+                      "severity": "critical",
+                      "pharos_component": "Billing"
+                    },
+                    "annotations": {
+                      "summary": "High error rate on mail-1"
+                    },
+                    "startsAt": "2026-11-15T16:32:00.000Z",
+                    "endsAt": "0001-01-01T00:00:00Z",
+                    "generatorURL": "http://prometheus.example.net:9090/graph?g0.expr=job%3Arequest_errors%3Arate5m+%3E+0.05&g0.tab=1",
+                    "fingerprint": "1f0e9d8c7b6a5948"
+                  },
+                  {
+                    "status": "firing",
+                    "labels": {
+                      "alertname": "HighErrorRate",
+                      "instance": "db-1:9100",
+                      "job": "api",
+                      "severity": "critical"
+                    },
+                    "annotations": {
+                      "summary": "High error rate on db-1"
+                    },
+                    "startsAt": "2026-11-15T16:33:00.000Z",
+                    "endsAt": "0001-01-01T00:00:00Z",
+                    "generatorURL": "http://prometheus.example.net:9090/graph?g0.expr=job%3Arequest_errors%3Arate5m+%3E+0.05&g0.tab=1",
+                    "fingerprint": "0a1b2c3d4e5f6071"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Received.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertResult"
+                },
+                "example": {
+                  "ok": true,
+                  "applied": [
+                    {
+                      "component": 7,
+                      "name": "API",
+                      "status": 4,
+                      "changed": true
+                    },
+                    {
+                      "component": 8,
+                      "name": "Website",
+                      "status": 3,
+                      "changed": true
+                    }
+                  ],
+                  "ignored": [
+                    {
+                      "alert": "HighErrorRate",
+                      "component": "Billing",
+                      "reason": "checked_component"
+                    },
+                    {
+                      "alert": "HighErrorRate",
+                      "component": null,
+                      "reason": "no_component_label"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/grafana": {
+      "post": {
+        "operationId": "grafanaNotification",
+        "tags": [
+          "Receivers"
+        ],
+        "summary": "Grafana alerting webhook",
+        "description": "A Grafana contact point of type Webhook, method POST, with the write token as the Bearer credential. Grafana's test button sends an alert without pharos_component: it is answered and ignored. Each alert names its component with the label pharos_component: the id, or the exact name, on the page of the token. Firing follows the severity label; resolved is Operational. Alerts without the label, for an unknown component, or for a component with its own enabled check change nothing and are listed under ignored. It opens and closes no incidents and notifies nobody. The components are marked as set from outside by this token. Body at most 256 KiB; rate limit: 60 requests a minute per calling address, shared by the Cachet compatible writing endpoints.",
+        "security": [
+          {
+            "bearerToken": [
+              "write"
+            ]
+          },
+          {
+            "cachetToken": [
+              "write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertNotification"
+              },
+              "example": {
+                "receiver": "Pharos",
+                "status": "firing",
+                "orgId": 1,
+                "alerts": [
+                  {
+                    "status": "firing",
+                    "labels": {
+                      "alertname": "High memory usage",
+                      "grafana_folder": "Infrastructure",
+                      "team": "blue",
+                      "zone": "us-1",
+                      "severity": "info",
+                      "pharos_component": "Website"
+                    },
+                    "annotations": {
+                      "description": "The system has high memory usage",
+                      "runbook_url": "https://runbooks.example.net/memory",
+                      "summary": "This alert was triggered for zone us-1"
+                    },
+                    "startsAt": "2026-11-15T16:51:03.157076+01:00",
+                    "endsAt": "0001-01-01T00:00:00Z",
+                    "generatorURL": "https://grafana.example.net/alerting/grafana/1afz29v7z/view",
+                    "fingerprint": "c6eadffa33fcdf37",
+                    "silenceURL": "https://grafana.example.net/alerting/silence/new?alertmanager=grafana&matcher=alertname%3DHigh+memory+usage",
+                    "dashboardURL": "https://grafana.example.net/d/mem01",
+                    "panelURL": "https://grafana.example.net/d/mem01?viewPanel=2",
+                    "values": {
+                      "B": 44.23943737541908,
+                      "C": 1
+                    },
+                    "valueString": "[ var='B' labels={zone=us-1} value=44.23943737541908 ], [ var='C' labels={zone=us-1} value=1 ]"
+                  }
+                ],
+                "groupLabels": {
+                  "alertname": "High memory usage",
+                  "grafana_folder": "Infrastructure"
+                },
+                "commonLabels": {
+                  "alertname": "High memory usage",
+                  "grafana_folder": "Infrastructure",
+                  "team": "blue",
+                  "zone": "us-1"
+                },
+                "commonAnnotations": {},
+                "externalURL": "https://grafana.example.net/",
+                "version": "1",
+                "groupKey": "{}/{pharos_component=~\".+\"}:{alertname=\"High memory usage\", grafana_folder=\"Infrastructure\"}",
+                "truncatedAlerts": 0,
+                "title": "[FIRING:1] High memory usage Infrastructure (blue us-1)",
+                "state": "alerting",
+                "message": "**Firing**\n\nValue: B=44.23943737541908, C=1\nLabels:\n - alertname = High memory usage\n - team = blue\n - zone = us-1\n"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Received.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertResult"
+                },
+                "example": {
+                  "ok": true,
+                  "applied": [
+                    {
+                      "component": 8,
+                      "name": "Website",
+                      "status": 2,
+                      "changed": true
+                    }
+                  ],
+                  "ignored": []
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/heartbeat/{token}": {
+      "parameters": [
+        {
+          "name": "token",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "The heartbeat address of the component, shown in the admin."
+        }
+      ],
+      "post": {
+        "operationId": "heartbeat",
+        "tags": [
+          "Heartbeats"
+        ],
+        "summary": "Check in from a job",
+        "description": "No token header: the unguessable address is the credential. Call it only when the job succeeded; silence past the interval is the alarm. Works on an unpublished page too. Rate limit: 120 requests a minute per calling address.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Received.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ok"
+                  ],
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  }
+                },
+                "example": {
+                  "ok": true
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No heartbeat check has this address.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TokenError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Message"
+                    }
+                  ]
+                },
+                "examples": {
+                  "unknown": {
+                    "value": {
+                      "error": "Unknown heartbeat"
+                    }
+                  },
+                  "page": {
+                    "summary": "Unknown or archived page",
+                    "value": {
+                      "message": "Not found."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/ping": {
+      "get": {
+        "operationId": "ping",
+        "tags": [
+          "Utility"
+        ],
+        "summary": "Ping",
+        "description": "Answers as Cachet did. Only on a published page. Not rate limited.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Pong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "string",
+                      "const": "Pong!"
+                    }
+                  }
+                },
+                "example": {
+                  "data": "Pong!"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "servers": [
+        {
+          "url": "https://{host}/api/v1",
+          "description": "The first status page of the installation.",
+          "variables": {
+            "host": {
+              "default": "status.example.com",
+              "description": "The main address of your Pharos installation, with its base folder if it has one. The API answers there only, not on the custom domain of a status page."
+            }
+          }
+        },
+        {
+          "url": "https://{host}/api/v1/pages/{slug}",
+          "description": "Any status page by its slug: the same endpoints, with a token of that page.",
+          "variables": {
+            "host": {
+              "default": "status.example.com",
+              "description": "The main address of your Pharos installation, with its base folder if it has one. The API answers there only, not on the custom domain of a status page."
+            },
+            "slug": {
+              "default": "default",
+              "description": "Slug of the status page. The first page is called default unless it was renamed."
+            }
+          }
+        },
+        {
+          "url": "https://{host}",
+          "description": "Outside /api, on the main address: the first status page.",
+          "variables": {
+            "host": {
+              "default": "status.example.com",
+              "description": "The main address of your Pharos installation, with its base folder if it has one. The API answers there only, not on the custom domain of a status page."
+            }
+          }
+        },
+        {
+          "url": "https://{host}/status/{slug}",
+          "description": "Any status page by its slug.",
+          "variables": {
+            "host": {
+              "default": "status.example.com",
+              "description": "The main address of your Pharos installation, with its base folder if it has one. The API answers there only, not on the custom domain of a status page."
+            },
+            "slug": {
+              "default": "default",
+              "description": "Slug of the status page. The first page is called default unless it was renamed."
+            }
+          }
+        }
+      ],
+      "get": {
+        "operationId": "metrics",
+        "tags": [
+          "Metrics"
+        ],
+        "summary": "Prometheus metrics",
+        "description": "Prometheus text format with two gauges per enabled component (at most 5000): pharos_component_status (1 to 5) and pharos_component_uptime_ratio (up share of measured seconds over 30 UTC days, NaN when nothing was measured). Labels are the component id and escaped name only. Four addresses answer: /api/v1/metrics, /api/v1/pages/{slug}/metrics, /metrics and /status/{slug}/metrics, all on the main address only. Works on an unpublished page too. Rate limit: 60 requests a minute per calling address.",
+        "security": [
+          {
+            "bearerToken": [
+              "read"
+            ]
+          },
+          {
+            "cachetToken": [
+              "read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The metrics. Cache-Control: no-store.",
+            "content": {
+              "text/plain; version=0.0.4; charset=utf-8": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "# HELP pharos_component_status Current component status (1 operational, 2 degraded, 3 partial outage, 4 major outage, 5 maintenance).\n# TYPE pharos_component_status gauge\npharos_component_status{component_id=\"7\",name=\"API\"} 1\n# HELP pharos_component_uptime_ratio Fraction of observed seconds up over 30 UTC days; NaN means no observations.\n# TYPE pharos_component_uptime_ratio gauge\npharos_component_uptime_ratio{component_id=\"7\",name=\"API\"} 0.999412\n"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/probe/jobs": {
+      "servers": [
+        {
+          "url": "https://{host}/api/v1",
+          "description": "The first status page of the installation.",
+          "variables": {
+            "host": {
+              "default": "status.example.com",
+              "description": "The main address of your Pharos installation, with its base folder if it has one. The API answers there only, not on the custom domain of a status page."
+            }
+          }
+        }
+      ],
+      "get": {
+        "operationId": "probeJobs",
+        "tags": [
+          "Probe locations"
+        ],
+        "summary": "Fetch the next check to run",
+        "description": "For another Pharos installation acting as a probe location of this one. Returns at most one job, or none when no check is due. Only at the first page address; the location's token decides the page. Rate limit: 120 requests a minute per calling address.",
+        "security": [
+          {
+            "probeToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zero or one job.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "jobs"
+                  ],
+                  "properties": {
+                    "jobs": {
+                      "type": "array",
+                      "maxItems": 1,
+                      "items": {
+                        "$ref": "#/components/schemas/ProbeJob"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "jobs": [
+                    {
+                      "id": "0d7f6f0e-5a6c-4a8e-9d43-2f1f7c1d9b20",
+                      "type": "http",
+                      "target": "https://api.example.com/health",
+                      "timeout_seconds": 10,
+                      "expected_keyword": "ok",
+                      "dns_type": null,
+                      "dns_expected": null,
+                      "allow_private": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No or unknown location token, or the location is switched off.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                },
+                "example": {
+                  "message": ""
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The location may not probe: its page is archived or its owner no longer administers the page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                },
+                "example": {
+                  "message": ""
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/probe/results": {
+      "servers": [
+        {
+          "url": "https://{host}/api/v1",
+          "description": "The first status page of the installation.",
+          "variables": {
+            "host": {
+              "default": "status.example.com",
+              "description": "The main address of your Pharos installation, with its base folder if it has one. The API answers there only, not on the custom domain of a status page."
+            }
+          }
+        }
+      ],
+      "post": {
+        "operationId": "probeResults",
+        "tags": [
+          "Probe locations"
+        ],
+        "summary": "Report the result of a job",
+        "description": "Each job is answered once, within two minutes. Body at most 16 KiB. Rate limit: 120 requests a minute per calling address, shared with fetching jobs.",
+        "security": [
+          {
+            "probeToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "job",
+                  "ok"
+                ],
+                "properties": {
+                  "job": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "ok": {
+                    "type": "boolean"
+                  },
+                  "latency_ms": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 300000
+                  }
+                }
+              },
+              "example": {
+                "job": "0d7f6f0e-5a6c-4a8e-9d43-2f1f7c1d9b20",
+                "ok": true,
+                "latency_ms": 182
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ok"
+                  ],
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  }
+                },
+                "example": {
+                  "ok": true
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No or unknown location token, or the location is switched off.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                },
+                "example": {
+                  "message": ""
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The location may not probe.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                },
+                "example": {
+                  "message": ""
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The job was answered already or has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                },
+                "example": {
+                  "message": ""
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/cron": {
+      "servers": [
+        {
+          "url": "https://{host}/api",
+          "description": "The installation itself, not a status page.",
+          "variables": {
+            "host": {
+              "default": "status.example.com",
+              "description": "The main address of your Pharos installation, with its base folder if it has one. The API answers there only, not on the custom domain of a status page."
+            }
+          }
+        }
+      ],
+      "post": {
+        "operationId": "webCron",
+        "tags": [
+          "Scheduler"
+        ],
+        "summary": "Run the scheduler once (web cron fallback)",
+        "description": "For hosting without a cron job: an outside scheduler calls this every minute. Needs PHAROS_WEB_CRON_TOKEN (32 characters or more) in .env and Enable web scheduler under Installation, Scheduler and backups. The token is read from the Authorization header only. GET /cron/run on the main address does the same. Rate limit: 2 requests a minute per calling address.",
+        "security": [
+          {
+            "webCronToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The scheduler ran.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ok"
+                  ],
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "example": {
+                  "ok": true
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Wrong or missing token, or no token configured.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                },
+                "example": {
+                  "message": ""
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The web scheduler is switched off.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                },
+                "example": {
+                  "message": "Not found."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A run is still going.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                },
+                "example": {
+                  "message": ""
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "503": {
+            "description": "The scheduler ran and failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ok"
+                  ],
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "example": {
+                  "ok": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/widget.json": {
+      "servers": [
+        {
+          "url": "https://{host}",
+          "description": "The first status page, or any page on its own custom domain.",
+          "variables": {
+            "host": {
+              "default": "status.example.com",
+              "description": "The main address of the installation, or the custom domain of a page."
+            }
+          }
+        },
+        {
+          "url": "https://{host}/status/{slug}",
+          "description": "Any status page by its slug.",
+          "variables": {
+            "host": {
+              "default": "status.example.com",
+              "description": "The main address of your Pharos installation, with its base folder if it has one. The API answers there only, not on the custom domain of a status page."
+            },
+            "slug": {
+              "default": "default",
+              "description": "Slug of the status page. The first page is called default unless it was renamed."
+            }
+          }
+        }
+      ],
+      "get": {
+        "operationId": "widget",
+        "tags": [
+          "Public feeds"
+        ],
+        "summary": "Overall status for a widget",
+        "description": "The worst status of the components the public page shows. embed.js reads this every minute; any website may fetch it (Access-Control-Allow-Origin: *). Cached for 30 seconds. Public, no token, no cookie. Only for a published page; otherwise the answer is the HTML not found page. Also answers on the custom domain of a page.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The overall status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "label",
+                    "name",
+                    "url"
+                  ],
+                  "properties": {
+                    "status": {
+                      "$ref": "#/components/schemas/ComponentStatus"
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "The status label in the language of the page."
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Name of the status page."
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri",
+                      "description": "Address of the status page."
+                    }
+                  }
+                },
+                "example": {
+                  "status": 1,
+                  "label": "Operational",
+                  "name": "Example status",
+                  "url": "https://status.example.com"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown, unpublished or archived page."
+          }
+        }
+      }
+    },
+    "/badges/{kind}/{id}.svg": {
+      "servers": [
+        {
+          "url": "https://{host}",
+          "description": "The first status page, or any page on its own custom domain.",
+          "variables": {
+            "host": {
+              "default": "status.example.com",
+              "description": "The main address of the installation, or the custom domain of a page."
+            }
+          }
+        },
+        {
+          "url": "https://{host}/status/{slug}",
+          "description": "Any status page by its slug.",
+          "variables": {
+            "host": {
+              "default": "status.example.com",
+              "description": "The main address of your Pharos installation, with its base folder if it has one. The API answers there only, not on the custom domain of a status page."
+            },
+            "slug": {
+              "default": "default",
+              "description": "Slug of the status page. The first page is called default unless it was renamed."
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "kind",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "components",
+              "groups"
+            ]
+          }
+        },
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          },
+          "description": "Component or service id."
+        }
+      ],
+      "get": {
+        "operationId": "badge",
+        "tags": [
+          "Public feeds"
+        ],
+        "summary": "Status badge",
+        "description": "An SVG badge: the name on the left, the status on the right in its colour, linking to the status page. A service shows its overall status. Disabled components and hidden services answer 404. Cached for 30 seconds. Public, no token, no cookie. Only for a published page; otherwise the answer is the HTML not found page. Also answers on the custom domain of a page.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The badge.",
+            "content": {
+              "image/svg+xml": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not a public component or service, or not a published page."
+          }
+        }
+      }
+    },
+    "/feed.xml": {
+      "servers": [
+        {
+          "url": "https://{host}",
+          "description": "The first status page, or any page on its own custom domain.",
+          "variables": {
+            "host": {
+              "default": "status.example.com",
+              "description": "The main address of the installation, or the custom domain of a page."
+            }
+          }
+        },
+        {
+          "url": "https://{host}/status/{slug}",
+          "description": "Any status page by its slug.",
+          "variables": {
+            "host": {
+              "default": "status.example.com",
+              "description": "The main address of your Pharos installation, with its base folder if it has one. The API answers there only, not on the custom domain of a status page."
+            },
+            "slug": {
+              "default": "default",
+              "description": "Slug of the status page. The first page is called default unless it was renamed."
+            }
+          }
+        }
+      ],
+      "get": {
+        "operationId": "feed",
+        "tags": [
+          "Public feeds"
+        ],
+        "summary": "RSS feed",
+        "description": "RSS 2.0 with the 50 most recent public incidents (title, the latest update, a link to the incident page) and the 50 most recent maintenance windows that were not cancelled. Cached for 60 seconds. Public, no token, no cookie. Only for a published page; otherwise the answer is the HTML not found page. Also answers on the custom domain of a page.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The feed.",
+            "content": {
+              "application/rss+xml": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown, unpublished or archived page."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API token of the page. Role read or write, as listed per operation."
+      },
+      "cachetToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Cachet-Token",
+        "description": "The same API token in the header Cachet 2.x used."
+      },
+      "probeToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Credential of a probe location, made when the location is added in the admin. Not an API token."
+      },
+      "webCronToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "PHAROS_WEB_CRON_TOKEN from .env."
+      }
+    },
+    "schemas": {
+      "ComponentStatus": {
+        "type": "integer",
+        "enum": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "description": "1 Operational, 2 Degraded performance, 3 Partial outage, 4 Major outage, 5 Under maintenance. Values 1 to 4 match Cachet 2.x.",
+        "x-enum-varnames": [
+          "Operational",
+          "PerformanceIssues",
+          "PartialOutage",
+          "MajorOutage",
+          "UnderMaintenance"
+        ]
+      },
+      "ComponentStatusName": {
+        "type": "string",
+        "enum": [
+          "Operational",
+          "Degraded performance",
+          "Partial outage",
+          "Major outage",
+          "Under maintenance"
+        ],
+        "description": "The English label of the component status."
+      },
+      "ComponentStatusInput": {
+        "description": "A component status as a number, a numeric string or a name. Names ignore case.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ComponentStatus"
+          },
+          {
+            "type": "string",
+            "pattern": "^[1-5]$"
+          },
+          {
+            "type": "string",
+            "enum": [
+              "operational",
+              "degraded",
+              "performance",
+              "performance_issues",
+              "partial",
+              "partial_outage",
+              "major",
+              "major_outage",
+              "maintenance",
+              "under_maintenance"
+            ]
+          }
+        ]
+      },
+      "IncidentStatus": {
+        "type": "integer",
+        "enum": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "description": "1 Investigating, 2 Identified, 3 Monitoring (watching in Cachet), 4 Resolved. Values match Cachet 2.x.",
+        "x-enum-varnames": [
+          "Investigating",
+          "Identified",
+          "Watching",
+          "Resolved"
+        ]
+      },
+      "IncidentStatusName": {
+        "type": "string",
+        "enum": [
+          "Investigating",
+          "Identified",
+          "Monitoring",
+          "Resolved"
+        ]
+      },
+      "IncidentStatusInput": {
+        "description": "An incident status as a number, a numeric string or a name. Names ignore case; monitoring and watching are the same status. Anything else is refused with 422 and an error field.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/IncidentStatus"
+          },
+          {
+            "type": "string",
+            "pattern": "^[1-4]$"
+          },
+          {
+            "type": "string",
+            "enum": [
+              "investigating",
+              "identified",
+              "watching",
+              "monitoring",
+              "resolved"
+            ]
+          }
+        ]
+      },
+      "Impact": {
+        "type": "string",
+        "enum": [
+          "minor",
+          "major",
+          "critical"
+        ]
+      },
+      "Visibility": {
+        "type": "string",
+        "enum": [
+          "public",
+          "authenticated",
+          "internal"
+        ],
+        "description": "public is on the status page. authenticated is shown to people signed in to Pharos only. internal is for the team only."
+      },
+      "ComponentSource": {
+        "type": "string",
+        "enum": [
+          "manual",
+          "check",
+          "heartbeat",
+          "kuma",
+          "webhook",
+          "upstream"
+        ],
+        "description": "Who sets the status. kuma, webhook and upstream are set from outside Pharos; webhook covers the API, Alertmanager and Grafana."
+      },
+      "Component": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "link",
+          "status",
+          "status_name",
+          "enabled",
+          "group_id",
+          "tags",
+          "source",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "link": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ComponentStatus"
+          },
+          "status_name": {
+            "$ref": "#/components/schemas/ComponentStatusName"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "group_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The service (group) it belongs to."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "source": {
+            "$ref": "#/components/schemas/ComponentSource"
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "example": {
+          "id": 7,
+          "name": "API",
+          "description": "Public REST API",
+          "link": "https://api.example.com",
+          "status": 1,
+          "status_name": "Operational",
+          "enabled": true,
+          "group_id": 2,
+          "tags": [
+            "eu",
+            "api"
+          ],
+          "source": "manual",
+          "created_at": "2026-11-15T18:12:59+00:00",
+          "updated_at": "2026-11-15T18:12:59+00:00"
+        }
+      },
+      "ComponentList": {
+        "type": "object",
+        "required": [
+          "meta",
+          "data"
+        ],
+        "properties": {
+          "meta": {
+            "type": "object",
+            "required": [
+              "pagination"
+            ],
+            "properties": {
+              "pagination": {
+                "type": "object",
+                "description": "Cachet 2.x shape. Everything comes in one page: total, count and per_page are all the number of items.",
+                "required": [
+                  "total",
+                  "count",
+                  "per_page",
+                  "current_page",
+                  "total_pages"
+                ],
+                "properties": {
+                  "total": {
+                    "type": "integer"
+                  },
+                  "count": {
+                    "type": "integer"
+                  },
+                  "per_page": {
+                    "type": "integer"
+                  },
+                  "current_page": {
+                    "type": "integer",
+                    "const": 1
+                  },
+                  "total_pages": {
+                    "type": "integer",
+                    "const": 1
+                  }
+                }
+              }
+            }
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Component"
+            }
+          }
+        }
+      },
+      "CreatedComponent": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "group_id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ComponentStatus"
+          },
+          "group_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "IncidentComponent": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ComponentStatus"
+              }
+            ],
+            "description": "The status this incident gave the component."
+          }
+        }
+      },
+      "IncidentUpdate": {
+        "type": "object",
+        "required": [
+          "status",
+          "status_name",
+          "message",
+          "automatic",
+          "created_at"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/IncidentStatus"
+          },
+          "status_name": {
+            "$ref": "#/components/schemas/IncidentStatusName"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "automatic": {
+            "type": "boolean",
+            "description": "Written by Pharos itself, such as a check closing the incident."
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "Incident": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "status_name",
+          "impact",
+          "visibility",
+          "source",
+          "occurred_at",
+          "resolved_at",
+          "components",
+          "updates"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IncidentStatus"
+          },
+          "status_name": {
+            "$ref": "#/components/schemas/IncidentStatusName"
+          },
+          "impact": {
+            "$ref": "#/components/schemas/Impact"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/Visibility"
+          },
+          "source": {
+            "type": "string",
+            "description": "Who opened it, for example api, manual, check or cachet (imported)."
+          },
+          "occurred_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "resolved_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentComponent"
+            }
+          },
+          "updates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentUpdate"
+            },
+            "description": "The timeline, oldest first."
+          }
+        },
+        "example": {
+          "id": 12,
+          "name": "Slow API",
+          "status": 4,
+          "status_name": "Resolved",
+          "impact": "major",
+          "visibility": "public",
+          "source": "api",
+          "occurred_at": "2026-11-15T16:50:03+00:00",
+          "resolved_at": "2026-11-15T17:22:41+00:00",
+          "components": [
+            {
+              "id": 7,
+              "name": "API",
+              "status": 3
+            }
+          ],
+          "updates": [
+            {
+              "status": 1,
+              "status_name": "Investigating",
+              "message": "Looking into it.",
+              "automatic": false,
+              "created_at": "2026-11-15T16:50:03+00:00"
+            },
+            {
+              "status": 4,
+              "status_name": "Resolved",
+              "message": "Back up at 17:22.",
+              "automatic": false,
+              "created_at": "2026-11-15T17:22:41+00:00"
+            }
+          ]
+        }
+      },
+      "IncidentList": {
+        "type": "object",
+        "required": [
+          "meta",
+          "data"
+        ],
+        "properties": {
+          "meta": {
+            "type": "object",
+            "required": [
+              "pagination"
+            ],
+            "properties": {
+              "pagination": {
+                "type": "object",
+                "description": "Cachet 2.x shape. Everything comes in one page: total, count and per_page are all the number of items.",
+                "required": [
+                  "total",
+                  "count",
+                  "per_page",
+                  "current_page",
+                  "total_pages"
+                ],
+                "properties": {
+                  "total": {
+                    "type": "integer"
+                  },
+                  "count": {
+                    "type": "integer"
+                  },
+                  "per_page": {
+                    "type": "integer"
+                  },
+                  "current_page": {
+                    "type": "integer",
+                    "const": 1
+                  },
+                  "total_pages": {
+                    "type": "integer",
+                    "const": 1
+                  }
+                }
+              }
+            }
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Incident"
+            }
+          }
+        }
+      },
+      "Group": {
+        "type": "object",
+        "description": "A service: a group of components on the status page.",
+        "required": [
+          "id",
+          "name",
+          "visible",
+          "collapsed",
+          "position"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "visible": {
+            "type": "boolean",
+            "description": "Shown on the public page."
+          },
+          "collapsed": {
+            "type": "boolean"
+          },
+          "position": {
+            "type": "integer"
+          }
+        },
+        "example": {
+          "id": 2,
+          "name": "Website",
+          "visible": true,
+          "collapsed": true,
+          "position": 0
+        }
+      },
+      "GroupInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Required to create."
+          },
+          "visible": {
+            "type": "boolean",
+            "default": true
+          },
+          "collapsed": {
+            "type": "boolean",
+            "default": true
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000,
+            "default": 0
+          }
+        }
+      },
+      "MaintenanceState": {
+        "type": "string",
+        "enum": [
+          "scheduled",
+          "in_progress",
+          "completed",
+          "cancelled"
+        ]
+      },
+      "AnnounceMinutes": {
+        "type": "integer",
+        "enum": [
+          0,
+          60,
+          360,
+          1440,
+          2880,
+          4320,
+          10080
+        ],
+        "description": "When subscribers hear about it: 0 is not at all, otherwise the minutes before the start (1 hour, 6 hours, 24 hours, 2 days, 3 days, 1 week)."
+      },
+      "Maintenance": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "message",
+          "state",
+          "starts_at",
+          "ends_at",
+          "announce_minutes",
+          "component_ids"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/MaintenanceState"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "announce_minutes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnounceMinutes"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null only in the answer to a create that left announce_minutes out; the window is stored with 1440, as every later read shows."
+          },
+          "component_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "example": {
+          "id": 3,
+          "title": "Storage upgrade on web-01",
+          "message": null,
+          "state": "scheduled",
+          "starts_at": "2026-12-01T19:00:00+00:00",
+          "ends_at": "2026-12-01T21:00:00+00:00",
+          "announce_minutes": 1440,
+          "component_ids": [
+            7,
+            8
+          ]
+        }
+      },
+      "MaintenanceInput": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 160,
+            "description": "Required to create."
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 5000
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}[+-]\\d{2}:\\d{2}$",
+            "description": "Required to create. Seconds and an offset are required, as in 2026-12-01T20:00:00+01:00."
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}[+-]\\d{2}:\\d{2}$",
+            "description": "Required to create. After the start and in the future."
+          },
+          "announce_minutes": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnnounceMinutes"
+              }
+            ],
+            "default": 1440
+          },
+          "components": {
+            "type": "array",
+            "maxItems": 500,
+            "uniqueItems": true,
+            "items": {
+              "type": "integer"
+            },
+            "description": "Ids of components of this page."
+          }
+        }
+      },
+      "Subscriber": {
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "verified",
+          "active",
+          "all_services",
+          "component_ids"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "The address confirmed the link."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Verified and not unsubscribed."
+          },
+          "all_services": {
+            "type": "boolean"
+          },
+          "component_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "The chosen components when all_services is false."
+          }
+        },
+        "example": {
+          "id": 5,
+          "email": "ops@example.com",
+          "verified": true,
+          "active": true,
+          "all_services": false,
+          "component_ids": [
+            7
+          ]
+        }
+      },
+      "SubscriberPreferences": {
+        "type": "object",
+        "properties": {
+          "all_services": {
+            "type": "boolean",
+            "default": true
+          },
+          "component_ids": {
+            "type": "array",
+            "maxItems": 500,
+            "uniqueItems": true,
+            "items": {
+              "type": "integer"
+            },
+            "description": "Required, with at least one id, when all_services is false. Only components the public page shows."
+          }
+        }
+      },
+      "KumaResult": {
+        "type": "object",
+        "required": [
+          "ok",
+          "changed",
+          "status"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "changed": {
+            "type": "boolean",
+            "description": "False when the component already had this status, or for pending."
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ComponentStatus"
+              }
+            ],
+            "description": "The component status after the call."
+          }
+        }
+      },
+      "AlertResult": {
+        "type": "object",
+        "required": [
+          "ok",
+          "applied",
+          "ignored"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "applied": {
+            "type": "array",
+            "description": "One entry per component that was set. Several alerts for one component: the worst one wins.",
+            "items": {
+              "type": "object",
+              "required": [
+                "component",
+                "name",
+                "status",
+                "changed"
+              ],
+              "properties": {
+                "component": {
+                  "type": "integer",
+                  "description": "Component id."
+                },
+                "name": {
+                  "type": "string"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/ComponentStatus"
+                },
+                "changed": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "ignored": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "alert",
+                "component",
+                "reason"
+              ],
+              "properties": {
+                "alert": {
+                  "type": "string",
+                  "description": "The alertname label, else the fingerprint, else #<index>."
+                },
+                "component": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The pharos_component label as sent."
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "no_component_label",
+                    "unknown_component",
+                    "checked_component"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "Alert": {
+        "type": "object",
+        "required": [
+          "status",
+          "labels"
+        ],
+        "description": "One alert as Alertmanager (webhook version 4) and Grafana send it. Other fields are accepted and ignored.",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "firing",
+              "resolved"
+            ]
+          },
+          "labels": {
+            "type": "object",
+            "properties": {
+              "pharos_component": {
+                "type": "string",
+                "maxLength": 255,
+                "description": "The component id, or its exact name, on the page of the token. Without it the alert is ignored."
+              },
+              "severity": {
+                "type": "string",
+                "maxLength": 64,
+                "description": "Firing with critical, no severity or another value: Major outage (4). warning: Partial outage (3). info: Degraded performance (2). Resolved is always Operational (1)."
+              },
+              "alertname": {
+                "type": "string",
+                "maxLength": 255
+              }
+            },
+            "additionalProperties": true
+          },
+          "fingerprint": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        "additionalProperties": true
+      },
+      "AlertNotification": {
+        "type": "object",
+        "required": [
+          "alerts"
+        ],
+        "properties": {
+          "alerts": {
+            "type": "array",
+            "maxItems": 500,
+            "items": {
+              "$ref": "#/components/schemas/Alert"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "TokenError": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "required": [
+          "message",
+          "errors"
+        ],
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The first error, with a count of the others."
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ProbeJob": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "target",
+          "timeout_seconds",
+          "expected_keyword",
+          "dns_type",
+          "dns_expected",
+          "allow_private"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Valid for two minutes."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "http",
+              "tcp",
+              "dns"
+            ]
+          },
+          "target": {
+            "type": "string"
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "maximum": 30
+          },
+          "expected_keyword": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dns_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dns_expected": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "allow_private": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "No token was sent, or it does not exist (any more).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/TokenError"
+            },
+            "examples": {
+              "missing": {
+                "value": {
+                  "error": "Missing API token"
+                }
+              },
+              "invalid": {
+                "value": {
+                  "error": "Invalid API token"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The token belongs to another page, it is a read token on a call that writes, or its owner lost the rights it needs.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/TokenError"
+            },
+            "example": {
+              "error": "Token has no access to this page"
+            }
+          }
+        }
+      },
+      "SubscriberForbidden": {
+        "description": "Not a token of this page, not a write token, or its owner does not administer the page.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/TokenError"
+                },
+                {
+                  "$ref": "#/components/schemas/Message"
+                }
+              ]
+            },
+            "examples": {
+              "page": {
+                "value": {
+                  "error": "Token has no access to this page"
+                }
+              },
+              "read token": {
+                "value": {
+                  "error": "Subscribers need a token with write access"
+                }
+              },
+              "owner": {
+                "summary": "The owner may edit but not administer the page",
+                "value": {
+                  "message": ""
+                }
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "One answer for an address the API does not know, a record that never existed, one of another page and one the caller may not see. Also an unpublished or archived page, and the API asked on a custom domain.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "example": {
+              "message": "Not found."
+            }
+          }
+        }
+      },
+      "ValidationFailed": {
+        "description": "A field is wrong. Nothing was saved.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "example": {
+              "message": "The status field must not be greater than 5.",
+              "errors": {
+                "status": [
+                  "The status field must not be greater than 5."
+                ]
+              }
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "The rate limit of this group of endpoints was reached for the calling address.",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds to wait.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          "X-RateLimit-Limit": {
+            "schema": {
+              "type": "integer"
+            }
+          },
+          "X-RateLimit-Remaining": {
+            "schema": {
+              "type": "integer"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "example": {
+              "message": "Too Many Attempts."
+            }
+          }
+        }
+      },
+      "PayloadTooLarge": {
+        "description": "The request body is over the limit of this endpoint (256 KiB, or 16 KiB for probes). Checked before the body is decoded, with or without Content-Length.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "example": {
+              "message": ""
+            }
+          }
+        }
+      },
+      "NoContent": {
+        "description": "Deleted."
+      }
+    },
+    "parameters": {
+      "component": {
+        "name": "component",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        },
+        "description": "Component id."
+      },
+      "group": {
+        "name": "group",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        },
+        "description": "Service (group) id."
+      },
+      "incident": {
+        "name": "incident",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        },
+        "description": "Incident id."
+      },
+      "maintenance": {
+        "name": "maintenance",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        },
+        "description": "Maintenance window id."
+      },
+      "subscriber": {
+        "name": "subscriber",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        },
+        "description": "Subscriber id."
+      }
+    }
+  }
+}
