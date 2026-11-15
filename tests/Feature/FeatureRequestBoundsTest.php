@@ -62,7 +62,7 @@ class FeatureRequestBoundsTest extends TestCase
             $this->assertTrue($request->parsed, 'Accepted body must remain readable by global transformers');
             $this->assertSame(262130, strlen($request->json('padding')));
         }
-        $request = $this->request('/api/v1/groups', 'GET', $body);
+        $request = $this->request('/api/v1/groups', 'POST', $body);
         $this->assertSame(401, app(Kernel::class)->handle($request)->getStatusCode());
     }
 

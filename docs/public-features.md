@@ -72,7 +72,9 @@ lowering the role immediately removes the corresponding token access.
 
 * `GET /ping`: Cachet-style `{"data":"Pong!"}` on published pages.
 * `/groups`: GET list, POST create; `/{group}` GET, PUT and DELETE. Fields:
-  `name`, `visible`, `collapsed`, `position`.
+  `name`, `visible`, `collapsed`, `position`. Like `/components`, the GETs work
+  without a token on a published page and then return only the groups the public
+  page shows; with a token they return every group of the page.
 * `POST /components`: create using `name`, optional `description`, `status` (1–5),
   `group_id`, `enabled`, `show_uptime`, `position`. DELETE `/{component}` removes
   a component. Existing PUT/POST status updates continue to work.

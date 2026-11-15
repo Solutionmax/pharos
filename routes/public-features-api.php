@@ -3,16 +3,20 @@
 use App\Http\Controllers\Api\ExtendedController;
 use App\Http\Controllers\Api\MetricsController;
 use App\Http\Middleware\ApiTokenAuth;
+use App\Http\Middleware\ApiTokenOrVisitor;
 use App\Http\Middleware\SubscriberApiTokenAuth;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::get('ping', [ExtendedController::class, 'ping']);
     Route::name('api.features.')->middleware('throttle:60,1,api-features')->group(function () {
-        Route::middleware(ApiTokenAuth::class)->group(function () {
-            Route::get('metrics', MetricsController::class)->name('metrics');
+        // Readable without a token, like /components: a visitor gets the groups the page shows.
+        Route::middleware(ApiTokenOrVisitor::class)->group(function () {
             Route::get('groups', [ExtendedController::class, 'groups'])->name('groups');
             Route::get('groups/{group}', [ExtendedController::class, 'group'])->name('group');
+        });
+        Route::middleware(ApiTokenAuth::class)->group(function () {
+            Route::get('metrics', MetricsController::class)->name('metrics');
             Route::post('groups', [ExtendedController::class, 'storeGroup']);
             Route::put('groups/{group}', [ExtendedController::class, 'updateGroup']);
             Route::delete('groups/{group}', [ExtendedController::class, 'deleteGroup']);
