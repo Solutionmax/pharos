@@ -14,6 +14,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class SecurityHeaders
 {
+    public const HSTS = 'max-age=31536000';
+
     private const HEADERS = [
         'X-Content-Type-Options' => 'nosniff',
         'X-Frame-Options' => 'DENY',
@@ -28,7 +30,7 @@ class SecurityHeaders
 
         // HSTS only means something over TLS; behind a proxy this relies on TRUSTED_PROXIES.
         $headers = $request->isSecure()
-            ? self::HEADERS + ['Strict-Transport-Security' => 'max-age=31536000']
+            ? self::HEADERS + ['Strict-Transport-Security' => self::HSTS]
             : self::HEADERS;
 
         foreach ($headers as $name => $value) {
