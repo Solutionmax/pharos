@@ -325,10 +325,10 @@ class OutgoingWebhook
         $headers = ['Content-Type' => 'application/json'];
 
         // Only the generic shape is signed. Slack and Teams drop unknown headers,
-        // and their URL is the credential in the first place.
+        // and their URL is the credential in the first place. Signed when sent,
+        // not when queued: the timestamp is that of this attempt.
         if ($endpoint->format === 'generic') {
-            $secret = Setting::get('integrations.webhook_secret', '');
-            $headers['X-Pharos-Signature'] = hash_hmac('sha256', $body, $secret);
+            $headers += WebhookSecret::headers($body, app(WebhookSecret::class)->ensure(), now()->getTimestamp());
         }
 
         if ($endpoint->format === 'signal') {

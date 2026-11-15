@@ -17,6 +17,7 @@ use App\Services\License;
 use App\Services\OutgoingWebhook;
 use App\Services\Probe;
 use App\Services\ProbeResult;
+use App\Services\WebhookSecret;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
@@ -177,7 +178,10 @@ class TeamAndIntegrationsTest extends TestCase
         $endpoint = WebhookEndpoint::sole();
         $this->assertSame('https://203.0.113.10/webhook/pharos', $endpoint->url);
         $this->assertTrue($endpoint->enabled);
-        $this->assertSame(32, strlen(Setting::get('integrations.webhook_secret')));
+        // Stored encrypted since 1.2.0; the secret itself is still 32 characters.
+        $secret = app(WebhookSecret::class)->get();
+        $this->assertSame(32, strlen($secret));
+        $this->assertStringNotContainsString($secret, (string) Setting::get('integrations.webhook_secret'));
     }
 
     public function test_a_notification_url_must_be_http_or_https(): void

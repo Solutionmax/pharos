@@ -13,7 +13,7 @@ class EnsurePageCapability
         $name = preg_replace('/^page\./', '', (string) $request->route()->getName());
         $pageId = app(PageContext::class)->id();
         $admin = preg_match('/^admin\.(branding|mail|mail-templates)(\.|$)/', $name)
-            || in_array($name, ['admin.integrations.tokens.store', 'admin.integrations.tokens.destroy', 'admin.integrations.webhook.rotate'], true);
+            || in_array($name, ['admin.integrations.tokens.store', 'admin.integrations.tokens.destroy', 'admin.integrations.webhook.rotate', 'admin.integrations.webhook.reveal'], true);
         $read = in_array($name, [
             'admin.reports', 'admin.reports.csv', 'admin.reports.pdf', 'admin.overview', 'admin.components', 'admin.groups', 'admin.incidents', 'admin.subscribers', 'admin.status-page.preview', 'admin.maintenance',
             'admin.integrations', 'admin.integrations.out', 'admin.integrations.in', 'admin.integrations.tokens', 'admin.integrations.log',
