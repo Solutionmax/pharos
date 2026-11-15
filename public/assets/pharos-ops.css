@@ -163,7 +163,7 @@ a.op-kpi:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(16,24,40,.
 .op-mini{display:grid;grid-template-columns:repeat(30,minmax(0,1fr));gap:2px;height:22px}
 .op-mini i{display:block;border-radius:2px;background:var(--green);opacity:.9;transition:transform .12s,opacity .12s}
 .op-mini i:hover{transform:scaleY(1.15);opacity:1}
-.op-mini i.w{background:var(--amber)}.op-mini i.p{background:var(--orange)}.op-mini i.b{background:var(--red)}.op-mini i.m{background:var(--blue)}
+.op-mini i.t{background:var(--lime)}.op-mini i.w{background:var(--amber)}.op-mini i.p{background:var(--orange)}.op-mini i.b{background:var(--red)}.op-mini i.m{background:var(--blue)}
 .op-mini i.unknown{background:var(--unknown)}
 .op-pct{font-family:var(--mono);font-size:12px;text-align:right;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .op-status{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}

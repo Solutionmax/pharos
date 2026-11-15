@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use App\Support\Contrast;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -12,6 +13,11 @@ use Illuminate\Support\Facades\Storage;
  */
 class Branding
 {
+    /** The surfaces text sits on, per theme: --bg, --bg-tint and --card in partials/tokens. */
+    public const LIGHT_SURFACES = ['#fbfcfe', '#f2f6fb', '#ffffff'];
+
+    public const DARK_SURFACES = ['#080e18', '#0b1523', '#0e1a2b'];
+
     /** Page modules, with their defaults. Everything on: a new install shows a full page. */
     public const MODULES = [
         'page.show_overall' => ['label' => 'Overall status banner', 'help' => 'The "All systems operational" headline.', 'default' => true],
@@ -46,6 +52,22 @@ class Branding
     public function accent(): string
     {
         return Setting::get('brand.accent', '#0079d2');
+    }
+
+    /**
+     * Text in the accent colour (links), readable at 4.5:1 on the page in each
+     * theme: darkened for light, lightened for dark. Fills keep the accent itself.
+     *
+     * @return array{light: string, dark: string}
+     */
+    public function linkColours(?string $accent = null): array
+    {
+        $accent ??= $this->accent();
+
+        return [
+            'light' => Contrast::readable($accent, self::LIGHT_SURFACES, darken: true),
+            'dark' => Contrast::readable($accent, self::DARK_SURFACES, darken: false),
+        ];
     }
 
     /** system | light | dark — what the page starts on before a visitor chooses. */

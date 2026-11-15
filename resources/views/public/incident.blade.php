@@ -2,7 +2,15 @@
 @section('title', $incident->name)
 @section('document-class', 'narrow')
 @push('head')
-<link rel="canonical" href="{{ \App\Services\PageUrls::route('public.incident', $incident) }}">
+@php
+  $incidentState = __($incident->status->label());
+  $affected = $incident->components->pluck('name')->join(', ', __(' and '));
+@endphp
+@include('partials.share-meta', [
+  'shareTitle' => $incident->name.' · '.$incidentState,
+  'shareDescription' => \Illuminate\Support\Str::limit($incidentState.' · '.$incident->occurred_at->format('Y-m-d H:i T').($affected !== '' ? '. '.__('Affected services').': '.$affected : '').'.', 155, '…'),
+  'shareUrl' => \App\Services\PageUrls::route('public.incident', $incident),
+])
 @endpush
 @section('subtitle')
 <p>{{ __($incident->status->label()) }} · {{ $incident->occurred_at->format('Y-m-d H:i T') }}</p>

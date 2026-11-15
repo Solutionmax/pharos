@@ -18,6 +18,7 @@ use App\Services\Uptime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class StatusPageController extends Controller
 {
@@ -155,13 +156,20 @@ class StatusPageController extends Controller
         $maintenances = Maintenance::visible()->with(['components' => $publicComponents])->orderBy('starts_at')->get();
         $live = $maintenances->filter(fn (Maintenance $m) => $m->starts_at->lte(now()))->values();
         $last = $modules['page.show_incidents']
-            ? Incident::public()->whereNotNull('resolved_at')->latest('resolved_at')->first()
+            ? Incident::public()->whereNotNull('resolved_at')->with(['components' => $publicComponents])->latest('resolved_at')->first()
             : null;
+        $incidentDays = $modules['page.show_incidents'] ? $this->incidentDays($days, $modules, $page) : [];
+        // A quiet span says so once, and shows the last incident instead of a row per empty day.
+        $quiet = $page === 1 && $modules['page.show_incidents'] && $open->isEmpty()
+            && collect($incidentDays)->every(fn (Collection $day) => $day->isEmpty());
 
         $overallBar = StatusTimeline::overall($bars);
+        // Every public incident that ran on a day of the chart, also one that began before it.
         $windowIncidents = $modules['page.show_incidents']
             ? Incident::public()->with(['components' => $publicComponents])
-                ->where('occurred_at', '>=', Carbon::today(Clock::timezone())->subDays(Uptime::WINDOW_DAYS - 1))->get()
+                ->where(fn ($q) => $q->whereNull('resolved_at')
+                    ->orWhere('resolved_at', '>=', Carbon::today()->subDays(Uptime::WINDOW_DAYS - 1)))
+                ->get()
             : collect();
 
         return view('status', [
@@ -171,7 +179,7 @@ class StatusPageController extends Controller
             'percentages' => $percentages,
             'overall' => $overall,
             'overallBar' => $overallBar,
-            'dayNotes' => StatusTimeline::dayNotes($overallBar, $windowIncidents, $now),
+            'dayNotes' => StatusTimeline::dayNotes($overallBar, $windowIncidents, $now, $bars, $all->pluck('name', 'id')->all()),
             'worst' => $worst,
             'now' => $now,
             'hero' => StatusTimeline::hero(
@@ -183,7 +191,12 @@ class StatusPageController extends Controller
             'live' => $live,
             'planned' => $maintenances->diff($live)->values(),
             'ongoing' => $page === 1 ? $open : collect(),
-            'days' => $modules['page.show_incidents'] ? $this->incidentDays($days, $modules, $page) : [],
+            'days' => $incidentDays,
+            'quiet' => $quiet,
+            'quietDays' => max($days, $last?->resolved_at ? (int) $last->resolved_at->startOfDay()->diffInDays(Carbon::today(Clock::timezone())) : 0),
+            // The page of the log that holds the last incident, for "All incidents".
+            'lastPage' => $quiet && $last ? min(self::MAX_PAGE, intdiv((int) $last->occurred_at->startOfDay()->diffInDays(Carbon::today(Clock::timezone())), $days) + 1) : null,
+            'description' => $this->description($groups->filter(fn (ComponentGroup $g) => $g->components->isNotEmpty())->pluck('name')->merge($loose->pluck('name'))),
             'page' => $page,
             // The "Older" link is offered only when a public incident exists before
             // the oldest day on this page; otherwise it would lead to empty pages.
@@ -193,6 +206,15 @@ class StatusPageController extends Controller
             'theme' => $theme,
             'chrome' => $chrome,
         ]);
+    }
+
+    /** What a search result or a link preview says under the title: the services this page watches. */
+    protected function description(Collection $names): string
+    {
+        $names = $names->filter()->unique()->values();
+        $text = __('Live status of :services.', ['services' => $names->isEmpty() ? $this->branding->name() : $names->join(', ', __(' and '))]);
+
+        return Str::limit($text, 155, '…');
     }
 
     /**

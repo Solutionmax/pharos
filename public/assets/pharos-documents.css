@@ -5,7 +5,7 @@ a{color:inherit}button,input,select,textarea{font:inherit}button{cursor:pointer}
 .document{max-width:1120px;margin:0 auto;padding:28px 24px 64px;min-width:0}
 .document.narrow{max-width:800px}
 .document-nav{display:flex;align-items:center;gap:16px;font-size:12.5px;color:var(--ink-3);margin-bottom:30px}
-.document-nav>a{text-decoration:none;font-weight:600;color:var(--brand)}
+.document-nav>a{text-decoration:none;font-weight:600;color:var(--link)}
 .document-nav>span{margin-left:auto;overflow-wrap:anywhere;text-align:right}
 .document-head{margin-bottom:24px}
 .document h1{font-size:28px;line-height:1.25;font-weight:750;letter-spacing:-.035em;overflow-wrap:anywhere;margin:0 0 12px}

@@ -35,8 +35,11 @@ class MonthlyReportTest extends TestCase
         $this->assertSame('1140', $rows[1][1]);
         $this->assertSame('60', $rows[1][2]);
         $this->assertSame('95.00', $rows[1][3]);
-        $this->get('/reports?month=2026-13')->assertSessionHasErrors('month');
-        $this->get('/reports?month=2099-01')->assertSessionHasErrors('month');
+        // A visitor without a session is turned away (the page is cacheable and has no session to carry the message);
+        // someone with a session gets the message too.
+        $this->get('/reports?month=2026-13')->assertRedirect();
+        $this->withUnencryptedCookie(config('session.cookie'), 'returning')->get('/reports?month=2026-13')->assertSessionHasErrors('month');
+        $this->withUnencryptedCookie(config('session.cookie'), 'returning')->get('/reports?month=2099-01')->assertSessionHasErrors('month');
     }
 
     public function test_overlapping_maintenance_is_excluded_once_and_foreign_rows_never_count(): void

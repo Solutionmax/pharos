@@ -11,6 +11,7 @@ use App\Models\IncidentUpdate;
 use App\Models\Setting;
 use App\Models\UptimeDay;
 use App\Models\User;
+use App\Services\Branding;
 use App\Services\Clock;
 use App\Services\License;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -412,5 +413,134 @@ class StatusPageTest extends TestCase
 
         // The chart is the single tab stop; no day is one of its own.
         $this->assertSame(1, substr_count($body, 'tabindex="0"'));
+    }
+
+    /** Review U8: a shared link says what the page is and how it is doing. */
+    public function test_the_title_leads_with_the_headline_and_link_previews_have_their_tags(): void
+    {
+        $this->makeComponent();
+        Component::create(['name' => 'Docs']);
+
+        $this->get('/')->assertOk()
+            ->assertSee('<title>All systems operational · Pharos Status</title>', false)
+            ->assertSee('<meta name="description" content="Live status of Shared hosting and Docs.">', false)
+            ->assertSee('<link rel="canonical" href="'.url('/').'">', false)
+            ->assertSee('<meta property="og:type" content="website">', false)
+            ->assertSee('<meta property="og:site_name" content="Pharos Status">', false)
+            ->assertSee('<meta property="og:title" content="All systems operational · Pharos Status">', false)
+            ->assertSee('<meta property="og:url" content="'.url('/').'">', false)
+            // Pharos sends no picture of its own; only an operator's logo is one.
+            ->assertDontSee('og:image', false);
+
+        Component::where('name', 'Docs')->update(['status' => ComponentStatus::PartialOutage]);
+        $this->get('/')->assertOk()->assertSee('<title>Partial outage · Pharos Status</title>', false);
+
+        // A page that hides its headline does not put it in the title either.
+        Setting::put('page.show_overall', '0');
+        $this->get('/')->assertOk()->assertSee('<title>Pharos Status</title>', false);
+    }
+
+    public function test_a_long_list_of_services_is_cut_for_the_description(): void
+    {
+        foreach (range(1, 30) as $n) {
+            Component::create(['name' => 'Service number '.$n]);
+        }
+
+        preg_match('/<meta name="description" content="([^"]*)">/', $this->get('/')->assertOk()->getContent(), $match);
+        $this->assertLessThanOrEqual(156, mb_strlen(html_entity_decode($match[1])));
+        $this->assertStringStartsWith('Live status of Service number 1, Service number 2', $match[1]);
+    }
+
+    public function test_an_incident_page_carries_its_name_and_state_for_link_previews(): void
+    {
+        $component = $this->makeComponent();
+        $incident = Incident::create(['name' => 'Mail queue backed up', 'status' => IncidentStatus::Resolved, 'occurred_at' => now()->subHour(), 'resolved_at' => now()]);
+        $incident->components()->attach($component->id, ['status' => ComponentStatus::PartialOutage->value]);
+
+        $this->get('/incidents/'.$incident->id)->assertOk()
+            ->assertSee('<meta property="og:title" content="Mail queue backed up · Resolved">', false)
+            ->assertSee('<meta property="og:url" content="'.url('/incidents/'.$incident->id).'">', false)
+            ->assertSee('Affected services: web-01', false)
+            ->assertSee('<link rel="canonical" href="'.url('/incidents/'.$incident->id).'">', false);
+    }
+
+    /** Review U5: a quiet span says so once, and shows the last incident instead of a row per day. */
+    public function test_a_quiet_span_says_so_once_and_shows_the_last_incident(): void
+    {
+        Setting::put('page.incident_days', 5);
+        Setting::put('page.show_empty_days', '1');
+        $component = $this->makeComponent();
+        $incident = Incident::create(['name' => 'Router swap', 'status' => IncidentStatus::Resolved,
+            'occurred_at' => now()->subDays(20)->setTime(10, 0), 'resolved_at' => now()->subDays(20)->setTime(10, 4)]);
+        $incident->components()->attach($component->id, ['status' => ComponentStatus::MajorOutage->value]);
+
+        $this->get('/')->assertOk()
+            ->assertSee('No incidents in the past 20 days.')
+            ->assertDontSee('class="entry quiet"', false)
+            ->assertDontSee('Nothing in the past')
+            ->assertSee('Last incident')
+            ->assertSee('Router swap')
+            ->assertSee('Resolved after 4 min')
+            ->assertSee('Affected web-01')
+            ->assertSee('href="'.url('/incidents/'.$incident->id).'"', false)
+            // "All incidents" opens the span of the log that holds it.
+            ->assertSee('href="'.url('/').'?page=5">All incidents →', false);
+
+        $this->get('/?page=5')->assertOk()->assertSee('Router swap');
+    }
+
+    public function test_a_page_that_never_had_an_incident_says_so_without_a_card(): void
+    {
+        Setting::put('page.incident_days', 7);
+        $this->makeComponent();
+
+        $this->get('/')->assertOk()
+            ->assertSee('No incidents in the past 7 days.')
+            ->assertDontSee('Last incident')
+            ->assertDontSee('All incidents →');
+    }
+
+    /** Review U9: the credit and the links are one landmark, and the credit is a line, not a banner. */
+    public function test_the_footer_holds_the_links_and_one_quiet_credit(): void
+    {
+        $this->makeComponent();
+
+        $body = $this->get('/')->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('#<footer>.*RSS feed.*This page runs on Pharos\. Status pages you host yourself\. <a href="https://pharos\.solutionmax\.net" rel="noopener">pharos\.solutionmax\.net</a>.*</footer>#s', $body);
+        $this->assertStringNotContainsString('<div class="sign">', $body);
+    }
+
+    public function test_the_chart_hint_speaks_to_a_finger_too(): void
+    {
+        Component::create(['name' => 'Website']);
+
+        $this->get('/')->assertOk()
+            ->assertSee('data-hint-touch="Tap a day to read what happened."', false)
+            ->assertSee('<span class="hint-tap">Tap a day to read what happened.</span>', false);
+        $this->assertStringContainsString('@media (hover:none)', (string) file_get_contents(public_path('assets/pharos-status.css')));
+    }
+
+    /** Review U1: the legend names what the colours mean now. */
+    public function test_the_legend_names_blips_slow_disruptions_and_outages(): void
+    {
+        Component::create(['name' => 'Website']);
+
+        $this->get('/')->assertOk()
+            ->assertSeeInOrder(['Brief blip (under 5 min)', 'Slow', 'Disruption', 'Outage', 'Taller means longer'])
+            ->assertDontSee('Partly down');
+    }
+
+    /** Review U9: link text in the accent is darkened until it reads at 4.5:1; fills keep the accent. */
+    public function test_links_get_a_readable_shade_of_the_accent(): void
+    {
+        $this->makeComponent();
+        $links = app(Branding::class)->linkColours('#0079d2');
+
+        $this->get('/')->assertOk()
+            ->assertSee('--brand:#0079d2;', false)
+            ->assertSee('--link:'.$links['light'].';', false)
+            ->assertSee('--link:'.$links['dark'].';', false);
+        $this->assertNotSame('#0079d2', $links['light']);
     }
 }

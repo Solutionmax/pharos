@@ -9,14 +9,21 @@ use App\Http\Middleware\MonitoringRequestLimits;
 use App\Http\Middleware\RequireTwoFactorSetup;
 use App\Http\Middleware\ResolveStatusPage;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\ShareErrorsIfSession;
+use App\Http\Middleware\StartSessionUnlessVisitor;
 use App\Http\Middleware\UseLocale;
+use App\Http\Middleware\ValidateCsrfTokenIfSession;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Session\TokenMismatchException;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 $app = Application::configure(basePath: dirname(__DIR__))
@@ -41,6 +48,13 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // First in the group, so that what the session, CSRF and binding steps
         // answer themselves (a 419, a 404 for a missing record) gets it too.
         $middleware->web(prepend: SecurityHeaders::class);
+        // The status page, incidents and reports start no session for a visitor
+        // who has none, so a CDN may cache them (StatelessRoutes::VISITOR_PAGES).
+        $middleware->web(replace: [
+            StartSession::class => StartSessionUnlessVisitor::class,
+            ShareErrorsFromSession::class => ShareErrorsIfSession::class,
+            ValidateCsrfToken::class => ValidateCsrfTokenIfSession::class,
+        ]);
         $middleware->appendToGroup('web', UseLocale::class);
         $middleware->appendToGroup('web', CentralAdministration::class);
         // Invited with "two factor first": only the profile until it is on.
@@ -64,8 +78,12 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $exceptions->dontFlash(['setup_key', 'signal_token', 'telegram_token', 'url']);
         // A form posted after the session expired used to end on a bare "419 Page
         // Expired". Say what happened and put the person back at the door.
-        $exceptions->render(function (TokenMismatchException $e, Request $request) {
-            if ($request->expectsJson()) {
+        // A visitor whose sign-up form went stale gets the 419 page instead
+        // (errors/419): the admin sign in is no place to send them. The handler
+        // has turned the mismatch into a 419 by the time this runs, so it is
+        // recognised by what it wraps.
+        $exceptions->render(function (HttpException $e, Request $request) {
+            if (! $e->getPrevious() instanceof TokenMismatchException || $request->expectsJson() || ! $request->is('admin', 'admin/*')) {
                 return null;
             }
 
