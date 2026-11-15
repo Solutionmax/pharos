@@ -9,6 +9,7 @@ use App\Models\Check;
 use App\Models\CheckResult;
 use App\Models\Component;
 use App\Models\Incident;
+use App\Models\Setting;
 use App\Models\UptimeDay;
 use App\Services\CheckRunner;
 use App\Services\OutgoingWebhook;
@@ -77,7 +78,7 @@ class CheckRunnerTest extends TestCase
         $this->assertSame('check', $incident->source);
         $this->assertTrue($incident->auto_resolve);
         $this->assertTrue($incident->updates->first()->automatic);
-        $this->assertStringContainsString('No response', $incident->updates->first()->message);
+        $this->assertSame('web-06 did not respond. We are looking into it.', $incident->updates->first()->message);
     }
 
     public function test_it_does_not_open_a_second_incident_while_one_is_open(): void
@@ -108,6 +109,37 @@ class CheckRunnerTest extends TestCase
         $this->assertNotNull($incident->resolved_at);
         $this->assertSame(ComponentStatus::Operational, $check->component->fresh()->status);
         $this->assertTrue($incident->updates->first()->automatic);
+        $this->assertSame('web-06 is working again and has stayed up for 3 checks in a row.', $incident->updates->firstWhere('status', IncidentStatus::Resolved)->message);
+    }
+
+    /** Visitors read these on the status page: the service by name, the reason in plain words. */
+    public function test_an_opened_incident_says_what_went_wrong_in_plain_words(): void
+    {
+        foreach ([
+            'Timed out' => 'web-06 did not answer within 7 seconds. We are looking into it.',
+            'HTTP 503' => 'web-06 answered with an error (HTTP 503). We are looking into it.',
+            'Name does not resolve' => 'web-06 could not be reached (its address could not be found). We are looking into it.',
+            'TLS certificate problem' => 'web-06 could not be reached (a problem with its security certificate). We are looking into it.',
+            'Connection refused' => 'web-06 could not be reached (the connection was refused). We are looking into it.',
+            'Expected text is missing' => 'web-06 answered, but without the content we expect. We are looking into it.',
+            'No heartbeat since 3 hours ago' => 'web-06 did not check in on time. We are looking into it.',
+            'Location quorum failed' => 'web-06 could not be reached from most of our check locations. We are looking into it.',
+            'No route to host' => 'web-06 could not be reached. We are looking into it.',
+        ] as $reason => $message) {
+            $check = $this->makeCheck(['retries' => 1, 'timeout_seconds' => 7]);
+            (new CheckRunner(new FakeProbe(false, $reason), app(OutgoingWebhook::class)))->runOne($check);
+
+            $this->assertSame($message, Incident::where('grouping_key', 'check:'.$check->component_id)->first()->updates->first()->message, $reason);
+        }
+    }
+
+    public function test_automatic_messages_are_written_in_the_language_of_the_page(): void
+    {
+        Setting::put('page.locale', 'nl');
+        $check = $this->makeCheck(['retries' => 1, 'timeout_seconds' => 10]);
+        (new CheckRunner(new FakeProbe(false, 'Timed out'), app(OutgoingWebhook::class)))->runOne($check);
+
+        $this->assertSame('web-06 gaf binnen 10 seconden geen antwoord. We zoeken het uit.', Incident::first()->updates->first()->message);
     }
 
     /**

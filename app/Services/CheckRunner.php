@@ -204,9 +204,7 @@ class CheckRunner
             IncidentUpdate::create([
                 'incident_id' => $incident->id,
                 'status' => IncidentStatus::Investigating,
-                'message' => $result->message
-                    ? __('Automatic check failed: :reason.', ['reason' => __($result->message, [], Localization::page())], Localization::page())
-                    : __('Automatic check failed.', [], Localization::page()),
+                'message' => CheckMessages::opened($check, $result),
                 'automatic' => true,
             ]);
 
@@ -236,7 +234,7 @@ class CheckRunner
             IncidentUpdate::create([
                 'incident_id' => $incident->id,
                 'status' => IncidentStatus::Resolved,
-                'message' => __('The component responded normally again for :count consecutive checks.', ['count' => $this->recoveryStreak($check)], Localization::page()),
+                'message' => CheckMessages::resolved($check, $this->recoveryStreak($check)),
                 'automatic' => true,
             ]);
         });

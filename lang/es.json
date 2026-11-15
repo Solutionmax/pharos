@@ -1798,5 +1798,22 @@
     "Planned maintenance does not count as downtime.": "El mantenimiento programado no cuenta como tiempo de inactividad.",
     "Downtime": "Inactividad",
     "none": "ninguna",
-    "< 1 min": "< 1 min"
+    "< 1 min": "< 1 min",
+    ":service answered with an error (HTTP :code). We are looking into it.": ":service respondió con un error (HTTP :code). Lo estamos investigando.",
+    ":service could not be reached (:reason). We are looking into it.": "No se pudo acceder a :service (:reason). Lo estamos investigando.",
+    "its address could not be found": "no se encontró su dirección",
+    "a problem with its security certificate": "un problema con su certificado de seguridad",
+    "the connection was refused": "se rechazó la conexión",
+    ":service did not answer within :seconds seconds. We are looking into it.": ":service no respondió en :seconds segundos. Lo estamos investigando.",
+    ":service did not respond. We are looking into it.": ":service no respondió. Lo estamos investigando.",
+    ":service answered, but without the content we expect. We are looking into it.": ":service respondió, pero sin el contenido esperado. Lo estamos investigando.",
+    ":service answered with far more data than expected. We are looking into it.": ":service respondió con muchos más datos de lo esperado. Lo estamos investigando.",
+    "The DNS record of :service is not what it should be. We are looking into it.": "El registro DNS de :service no es el que debería. Lo estamos investigando.",
+    ":service did not check in on time. We are looking into it.": ":service no se reportó a tiempo. Lo estamos investigando.",
+    ":service could not be reached from most of our check locations. We are looking into it.": "No se pudo acceder a :service desde la mayoría de nuestros puntos de comprobación. Lo estamos investigando.",
+    ":service answered with an error. We are looking into it.": ":service respondió con un error. Lo estamos investigando.",
+    ":service could not be checked. We are looking into it.": "No se pudo comprobar :service. Lo estamos investigando.",
+    ":service could not be reached. We are looking into it.": "No se pudo acceder a :service. Lo estamos investigando.",
+    ":service is working again and has stayed up for :n checks in a row.": ":service vuelve a funcionar y ha superado :n comprobaciones seguidas.",
+    ":service is working again.": ":service vuelve a funcionar."
 }

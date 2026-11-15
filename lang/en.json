@@ -1798,5 +1798,22 @@
     "Planned maintenance does not count as downtime.": "Planned maintenance does not count as downtime.",
     "Downtime": "Downtime",
     "none": "none",
-    "< 1 min": "< 1 min"
+    "< 1 min": "< 1 min",
+    ":service answered with an error (HTTP :code). We are looking into it.": ":service answered with an error (HTTP :code). We are looking into it.",
+    ":service could not be reached (:reason). We are looking into it.": ":service could not be reached (:reason). We are looking into it.",
+    "its address could not be found": "its address could not be found",
+    "a problem with its security certificate": "a problem with its security certificate",
+    "the connection was refused": "the connection was refused",
+    ":service did not answer within :seconds seconds. We are looking into it.": ":service did not answer within :seconds seconds. We are looking into it.",
+    ":service did not respond. We are looking into it.": ":service did not respond. We are looking into it.",
+    ":service answered, but without the content we expect. We are looking into it.": ":service answered, but without the content we expect. We are looking into it.",
+    ":service answered with far more data than expected. We are looking into it.": ":service answered with far more data than expected. We are looking into it.",
+    "The DNS record of :service is not what it should be. We are looking into it.": "The DNS record of :service is not what it should be. We are looking into it.",
+    ":service did not check in on time. We are looking into it.": ":service did not check in on time. We are looking into it.",
+    ":service could not be reached from most of our check locations. We are looking into it.": ":service could not be reached from most of our check locations. We are looking into it.",
+    ":service answered with an error. We are looking into it.": ":service answered with an error. We are looking into it.",
+    ":service could not be checked. We are looking into it.": ":service could not be checked. We are looking into it.",
+    ":service could not be reached. We are looking into it.": ":service could not be reached. We are looking into it.",
+    ":service is working again and has stayed up for :n checks in a row.": ":service is working again and has stayed up for :n checks in a row.",
+    ":service is working again.": ":service is working again."
 }

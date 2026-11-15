@@ -1798,5 +1798,22 @@
     "Planned maintenance does not count as downtime.": "Geplante Wartung zählt nicht als Ausfallzeit.",
     "Downtime": "Ausfallzeit",
     "none": "keine",
-    "< 1 min": "< 1 Min."
+    "< 1 min": "< 1 Min.",
+    ":service answered with an error (HTTP :code). We are looking into it.": ":service hat mit einem Fehler geantwortet (HTTP :code). Wir sehen uns das an.",
+    ":service could not be reached (:reason). We are looking into it.": ":service war nicht erreichbar (:reason). Wir sehen uns das an.",
+    "its address could not be found": "die Adresse wurde nicht gefunden",
+    "a problem with its security certificate": "ein Problem mit dem Sicherheitszertifikat",
+    "the connection was refused": "die Verbindung wurde abgelehnt",
+    ":service did not answer within :seconds seconds. We are looking into it.": ":service hat nicht innerhalb von :seconds Sekunden geantwortet. Wir sehen uns das an.",
+    ":service did not respond. We are looking into it.": ":service hat nicht geantwortet. Wir sehen uns das an.",
+    ":service answered, but without the content we expect. We are looking into it.": ":service hat geantwortet, aber ohne den erwarteten Inhalt. Wir sehen uns das an.",
+    ":service answered with far more data than expected. We are looking into it.": ":service hat mit viel mehr Daten als erwartet geantwortet. Wir sehen uns das an.",
+    "The DNS record of :service is not what it should be. We are looking into it.": "Der DNS-Eintrag von :service stimmt nicht. Wir sehen uns das an.",
+    ":service did not check in on time. We are looking into it.": ":service hat sich nicht rechtzeitig gemeldet. Wir sehen uns das an.",
+    ":service could not be reached from most of our check locations. We are looking into it.": ":service war von den meisten unserer Prüfstandorte aus nicht erreichbar. Wir sehen uns das an.",
+    ":service answered with an error. We are looking into it.": ":service hat mit einem Fehler geantwortet. Wir sehen uns das an.",
+    ":service could not be checked. We are looking into it.": ":service konnte nicht geprüft werden. Wir sehen uns das an.",
+    ":service could not be reached. We are looking into it.": ":service war nicht erreichbar. Wir sehen uns das an.",
+    ":service is working again and has stayed up for :n checks in a row.": ":service funktioniert wieder und war :n Prüfungen in Folge erreichbar.",
+    ":service is working again.": ":service funktioniert wieder."
 }

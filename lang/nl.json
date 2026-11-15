@@ -1798,5 +1798,22 @@
     "Planned maintenance does not count as downtime.": "Gepland onderhoud telt niet als uitval.",
     "Downtime": "Uitval",
     "none": "geen",
-    "< 1 min": "< 1 min"
+    "< 1 min": "< 1 min",
+    ":service answered with an error (HTTP :code). We are looking into it.": ":service gaf een foutmelding (HTTP :code). We zoeken het uit.",
+    ":service could not be reached (:reason). We are looking into it.": ":service was niet bereikbaar (:reason). We zoeken het uit.",
+    "its address could not be found": "het adres kon niet worden gevonden",
+    "a problem with its security certificate": "een probleem met het beveiligingscertificaat",
+    "the connection was refused": "de verbinding werd geweigerd",
+    ":service did not answer within :seconds seconds. We are looking into it.": ":service gaf binnen :seconds seconden geen antwoord. We zoeken het uit.",
+    ":service did not respond. We are looking into it.": ":service reageerde niet. We zoeken het uit.",
+    ":service answered, but without the content we expect. We are looking into it.": ":service antwoordde, maar zonder de inhoud die we verwachten. We zoeken het uit.",
+    ":service answered with far more data than expected. We are looking into it.": ":service antwoordde met veel meer gegevens dan verwacht. We zoeken het uit.",
+    "The DNS record of :service is not what it should be. We are looking into it.": "Het DNS-record van :service klopt niet. We zoeken het uit.",
+    ":service did not check in on time. We are looking into it.": ":service heeft zich niet op tijd gemeld. We zoeken het uit.",
+    ":service could not be reached from most of our check locations. We are looking into it.": ":service was vanaf de meeste van onze meetlocaties niet bereikbaar. We zoeken het uit.",
+    ":service answered with an error. We are looking into it.": ":service gaf een foutmelding. We zoeken het uit.",
+    ":service could not be checked. We are looking into it.": ":service kon niet worden gecontroleerd. We zoeken het uit.",
+    ":service could not be reached. We are looking into it.": ":service was niet bereikbaar. We zoeken het uit.",
+    ":service is working again and has stayed up for :n checks in a row.": ":service werkt weer en bleef :n controles op rij bereikbaar.",
+    ":service is working again.": ":service werkt weer."
 }
