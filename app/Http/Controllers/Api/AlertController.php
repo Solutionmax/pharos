@@ -41,15 +41,14 @@ class AlertController extends Controller
             $labels = $alert['labels'];
             $name = $labels['alertname'] ?? $alert['fingerprint'] ?? '#'.$i;
             $key = trim((string) ($labels[self::COMPONENT_LABEL] ?? ''));
-            $component = $key === '' ? null : $this->component($key);
-            $reason = match (true) {
-                $key === '' => 'no_component_label',
-                $component === null => 'unknown_component',
-                $component->isChecked() => 'checked_component',
-                default => null,
-            };
-            if ($reason !== null || $component === null) {
-                $ignored[] = ['alert' => $name, 'component' => $key === '' ? null : $key, 'reason' => $reason];
+            if ($key === '') {
+                $ignored[] = ['alert' => $name, 'component' => null, 'reason' => 'no_component_label'];
+
+                continue;
+            }
+            $component = $this->component($key);
+            if ($component === null || $component->isChecked()) {
+                $ignored[] = ['alert' => $name, 'component' => $key, 'reason' => $component === null ? 'unknown_component' : 'checked_component'];
 
                 continue;
             }
