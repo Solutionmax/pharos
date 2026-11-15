@@ -343,7 +343,7 @@ and public incidents needs no token. Not there: `version`, and Cachet's `schedul
 under `/maintenance`). Fields and limits are in
 [docs/public-features.md](docs/public-features.md#scoped-api-and-prometheus); every path, field,
 answer and error is in the OpenAPI 3.1 description [docs/openapi.json](docs/openapi.json), also at
-<https://pharos.solutionmax.net/openapi.json>.
+<https://pharos.solutionmax.net/assets/openapi.json>.
 
 ```bash
 curl -X POST https://status.example.com/api/v1/incidents \

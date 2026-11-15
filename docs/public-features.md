@@ -95,7 +95,7 @@ lowering the role immediately removes the corresponding token access.
 
 The full description, every path with its fields, answers and errors, is an
 OpenAPI 3.1 document: [docs/openapi.json](openapi.json) in this repository, also
-published at <https://pharos.solutionmax.net/openapi.json>. Load it in Swagger UI,
+published at <https://pharos.solutionmax.net/assets/openapi.json>. Load it in Swagger UI,
 Redoc, Postman or a client generator; pick the second server for a page other
 than the first. `tests/Feature/OpenApiSpecTest.php` fails when a route under
 `/api/v1` is added or removed without the description following.
