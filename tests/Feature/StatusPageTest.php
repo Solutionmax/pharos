@@ -460,7 +460,8 @@ class StatusPageTest extends TestCase
         $this->get('/incidents/'.$incident->id)->assertOk()
             ->assertSee('<meta property="og:title" content="Mail queue backed up · Resolved">', false)
             ->assertSee('<meta property="og:url" content="'.url('/incidents/'.$incident->id).'">', false)
-            ->assertSee('Affected services: web-01', false)
+            ->assertSee('<meta name="description" content="Resolved · ', false)
+            ->assertSee('Affected web-01.">', false)
             ->assertSee('<link rel="canonical" href="'.url('/incidents/'.$incident->id).'">', false);
     }
 
