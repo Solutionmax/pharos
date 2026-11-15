@@ -5,6 +5,7 @@ use App\Models\PasskeyChallenge;
 use App\Models\ProbeJob;
 use App\Models\ProbeSample;
 use App\Services\Audit;
+use App\Services\FallbackCopy;
 use App\Services\OutgoingWebhook;
 use App\Services\ReportedUptime;
 use Illuminate\Support\Facades\Schedule;
@@ -40,3 +41,7 @@ Schedule::call(function () {
 Schedule::command('pharos:backup-remote')->dailyAt('02:45')->withoutOverlapping(20);
 
 Schedule::call(fn () => PasskeyChallenge::where('expires_at', '<', now()->subDay())->delete())->daily()->name('prune-passkey-challenges');
+
+// The static copy of the public pages, last in the minute so it carries what the
+// checks and the outbox just changed. Only uploads what changed; never throws.
+Schedule::command('pharos:fallback-copy')->everyMinute()->when(fn () => FallbackCopy::enabled())->withoutOverlapping();
