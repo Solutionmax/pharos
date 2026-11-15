@@ -30,10 +30,11 @@ for heartbeats from jobs it cannot see from outside, and sets component status w
 pressing a button. A failing check opens an incident and posts the first update; a recovered
 check closes it and posts the closing update.
 
-**1.0** adds DNS, keyword and certificate checks, remote probe locations that vote on a result,
+It also has DNS, keyword and certificate checks, remote probe locations that vote on a result,
 latency charts, badges, RSS, a page per incident and an embeddable widget, subscriptions per
 service, monthly CSV and PDF reports, Prometheus metrics, a Cachet 2.x importer, four interface
-languages, remote backups and passkeys. The [changelog](CHANGELOG.md) has the details.
+languages, remote backups, a static fallback copy of the public page, and passkeys. The
+[changelog](CHANGELOG.md) has the details per release.
 
 It is a PHP 8.3 application with SQLite or MySQL. Run it on compatible cPanel,
 DirectAdmin or Plesk hosting, another PHP host that meets the requirements, or in Docker.
@@ -44,7 +45,7 @@ No daemon, no worker queue, no VPS.
 ## Why it exists
 
 Pharos brings automated incident publishing to compatible PHP shared hosting. It runs HTTP,
-TCP and heartbeat checks, groups affected components into one incident, and notifies customers.
+TCP, DNS and heartbeat checks, groups affected components into one incident, and notifies customers.
 Host it separately from the services it watches so the status page survives their outage.
 
 The API follows parts of Cachet 2.x's shape. Component updates accept the same status integers
@@ -58,16 +59,16 @@ and token header; incident creation needs changes. See the compatibility guide b
 |---|---|
 | **Checks** | HTTP (with optional expected text and a warning before the certificate expires), TCP, DNS (A, AAAA, CNAME, MX, TXT) and heartbeat. Two failures turn a component red, three healthy checks in a row close the incident. Optional remote probe locations vote on the result, and each service keeps a 24 hour latency chart. |
 | **Incidents** | Opened and closed by the checks themselves, or by hand. One incident can span several components, each with its own status. Templates with `{{variables}}` for the API. |
-| **Uptime** | Daily roll-ups into a 90-day bar and a percentage. Pharos measures the services it checks itself and counts the status that the API or Uptime Kuma reports for the others (marked as reported); services set by hand are not measured. Days without data are grey and left out of the average, never counted as green. |
+| **Uptime** | Daily roll-ups into a 90 day chart and a percentage. Each day is coloured by what happened: a brief blip, slow, a disruption or an outage, and grows taller with the time lost. Pharos measures the services it checks itself and counts the status that the API, Uptime Kuma, Alertmanager or Grafana reports for the others (marked as reported); services set by hand are not measured. Days without data are grey and left out of the average, never counted as green. |
 | **Public page** | Every section is a switch (banner, uptime bar, services, per-component bars, incident history, empty days, API link), per-service visibility, light and dark theme, and a live preview in the admin that renders the real page from values you have not saved yet. |
 | **Sharing** | SVG status badges per service or group, an RSS feed, a page per incident and a status widget you embed with one script tag. |
-| **Subscribers** | A *Get notified* button, double opt-in, one e-mail per incident update, one-click unsubscribe. Visitors follow every service or pick the ones they care about. The four mails are editable Markdown templates. |
+| **Subscribers** | A *Get notified* button, double opt-in, one e-mail per incident update, one-click unsubscribe. Visitors follow every service or pick the ones they care about. The five mails are editable Markdown templates. |
 | **Reports** | Monthly uptime per service as a page, CSV or PDF, public or for the team. |
-| **Integrations** | Cachet-shaped REST API for components and incidents, Uptime Kuma through a separately configured API workflow or heartbeat adapter, n8n in both directions with an HMAC-signed outgoing webhook, Zabbix and Grafana through the API, Slack and Discord webhooks, Telegram bot notifications, Signal through your own secured bridge, Prometheus metrics, and an importer for Cachet 2.x history. |
+| **Integrations** | Cachet-shaped REST API for components, services, incidents, maintenance and subscribers. Uptime Kuma's Webhook notification, Prometheus Alertmanager and Grafana alerts set component status directly. n8n in both directions with an HMAC-signed outgoing webhook, Zabbix through the API, notifications to your team in Slack, Microsoft Teams, Discord, Telegram or Signal (through your own secured bridge), Prometheus metrics, and an importer for Cachet 2.x history. |
 | **Updates** | Signed release manifests (Ed25519), one-click install from the admin with an automatic backup, rollback, download and retention. Docker hosts pull the image instead. |
-| **Users** | Per-user TOTP two-factor with recovery codes, passkeys, OpenID Connect single sign-on, roles. |
+| **Users** | TOTP two factor per user with recovery codes (can be required for administrators), passkeys, OpenID Connect single sign on, a role per status page. |
 | **Languages** | English, Dutch, German and Spanish, chosen per account and per public page, including mail and dates. |
-| **Backups** | A backup before every update, and optional daily copies to your own S3 or SFTP storage with encrypted credentials. |
+| **Backups** | A backup before every update, optional daily copies to your own S3 or SFTP storage (encrypted with a passphrase if you set one), and a static fallback copy of the public pages that a bucket website or another web server can serve while this server is down. |
 | **Audit log** | Who changed what and when, filterable, exportable as CSV, with a configurable retention. |
 | **Time zone** | Everything stored in UTC, shown in the zone you pick; change it any time. |
 
@@ -75,9 +76,9 @@ and token header; incident creation needs changes. See the compatibility guide b
 
 ## What it looks like
 
-<img src="docs/img/v1-status-page.webp" alt="The public status page: overall headline, a 90 day uptime bar, an upcoming maintenance window, services grouped into rows, and incidents listed per day." width="100%">
+<img src="docs/img/v1-status-page.webp" alt="The public status page: the current state, one chart with the past 90 days of every service coloured by what happened each day, an upcoming maintenance window, and the incident log." width="100%">
 
-<em>The public page. Every section on it is a switch on the Status page screen.</em>
+<em>The public page. Every section on it is a switch under Appearance → Layout.</em>
 
 <img src="docs/img/v1-admin-overview.webp" alt="The Overview of one status page: a partial outage banner with 11 of 12 components operational, tiles for 90 day uptime, open incidents, the last 30 days and subscribers, the 90 day availability bar, services and the open incident with its timeline." width="100%">
 
@@ -91,7 +92,7 @@ many components still rely on someone noticing.</em>
 
 <img src="docs/img/v1-admin-status-page.webp" alt="The Layout screen with one switch per section on the left and a live preview of the public page on the right, with a desktop and phone toggle." width="100%">
 
-<em>Status page. Tick a section off and it disappears from the preview beside it: the real page,
+<em>Layout. Tick a section off and it disappears from the preview beside it: the real page,
 rendered from values you have not saved yet.</em>
 
 <img src="docs/img/v1-admin-incidents.webp" alt="The Incidents screen: open now, the last 30 days, typical time to resolve, the open incident with its timeline, and the history of resolved incidents." width="100%">
@@ -289,6 +290,10 @@ after changing these values so generated links and redirects use HTTPS. Leave
 `TRUSTED_PROXIES` empty when connecting directly; do not trust arbitrary forwarded
 headers on a publicly reachable backend.
 
+Caddy and nginx examples, and what a custom domain for a status page needs, are under
+[Custom domain and HTTPS](https://pharos.solutionmax.net/docs/https/). Pharos does not set
+up DNS or certificates itself.
+
 Pin a release with `PHAROS_VERSION=1.2.1` in `.env`. To build the image from your own checkout
 instead of pulling it, `docker compose up -d --build`; the `build:` block in `compose.yaml` stamps
 the same version into the image.
@@ -333,8 +338,8 @@ outage. See [docs/monitoring.md](docs/monitoring.md).
 
 The API is **Cachet-shaped**: components, groups, incidents, maintenance windows and
 subscribers under `/api/v1`, the same `{"data": …}` envelope and status integers, and
-`X-Cachet-Token` accepted alongside `Authorization: Bearer`. Reading components and incidents
-needs no token. Not there: `version`, and Cachet's `schedules` path (maintenance windows live
+`X-Cachet-Token` accepted alongside `Authorization: Bearer`. Reading components, services
+and public incidents needs no token. Not there: `version`, and Cachet's `schedules` path (maintenance windows live
 under `/maintenance`). Fields and limits are in
 [docs/public-features.md](docs/public-features.md#scoped-api-and-prometheus).
 
@@ -350,11 +355,11 @@ curl -X POST https://status.example.com/api/v1/incidents \
       }'
 ```
 
-- **Uptime Kuma**: connect a separately configured API workflow or periodic heartbeat adapter
-- **n8n**: both directions, with an HMAC-SHA256 signed outgoing webhook on every incident
-- **Zabbix and Grafana**: through the same API, no plugin needed
-- **Telegram**: bot notifications to a chat, group or channel; see [Telegram setup](docs/notifications.md#telegram-notifications)
-- **Slack**: an incoming webhook per incident update; see [docs/notifications.md](docs/notifications.md)
+- **Uptime Kuma**: its own Webhook notification sets a component directly, at `/api/v1/integrations/kuma/{component}`; no adapter needed
+- **Prometheus Alertmanager and Grafana**: alerts set component status at `/api/v1/alertmanager` and `/api/v1/grafana`, with the label `pharos_component`; see [docs/monitoring.md](docs/monitoring.md#alertmanager-and-grafana)
+- **n8n**: both directions, with an HMAC-SHA256 signed outgoing webhook on the moments you choose
+- **Zabbix**: through the same API, no plugin needed
+- **Your team**: Slack, Microsoft Teams, Discord, Telegram or Signal, per moment (incident opened, update, resolved, maintenance, certificate expiring); see [docs/notifications.md](docs/notifications.md) and [Telegram setup](docs/notifications.md#telegram-notifications)
 - **Prometheus**: authenticated `/metrics` with status and uptime per service
 - **Cachet 2.x**: import groups, components, incidents and subscribers from a JSON export, with a preview first
 - **Anything else**: a token and a POST is the whole contract
@@ -363,8 +368,8 @@ curl -X POST https://status.example.com/api/v1/incidents \
 
 Checks, probe locations, web cron, remote backups and passkeys are covered in
 [docs/monitoring.md](docs/monitoring.md); badges, the feed, the widget, reports, the API and the
-Cachet importer in [docs/public-features.md](docs/public-features.md). Single sign-on and
-two-factor are covered in [docs/sso.md](docs/sso.md); how licence keys are issued and verified in
+Cachet importer in [docs/public-features.md](docs/public-features.md). Single sign on and
+two factor are covered in [docs/sso.md](docs/sso.md); how licence keys are issued and verified in
 [docs/licensing.md](docs/licensing.md).
 
 ---
@@ -470,7 +475,7 @@ docker compose --env-file /private/path/signal.env -f docker/signal-compose.yaml
 
 Link your Signal device using the bridge's loopback API over an SSH tunnel, following
 [the bridge's instructions](https://github.com/bbernhard/signal-cli-rest-api#linking-an-existing-device).
-In Pharos Integrations choose Signal, enter `https://your-bridge-host/v2/send`,
+In Pharos, under **Integrations & API → Send out**, pick Signal and enter `https://your-bridge-host/v2/send`,
 the linked sender number, recipient number or group ID, and the same Bearer token.
 Back up `signal-state` privately. This is an optional self-hosted bridge, not an
 integration provided or operated by Signal. Linking a real number and sending a

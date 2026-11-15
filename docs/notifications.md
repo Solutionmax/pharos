@@ -1,9 +1,15 @@
 # Notifications
 
-Pharos publishes an outage on the status page. Telling people about it is a
-separate step, and this is that step. It covers Slack first, because that is
-where most teams already look. For Telegram, go directly to
-[Telegram notifications](#telegram-notifications).
+Pharos publishes an outage on the status page. Telling your team about it is a
+separate step, and this is that step. Destinations live per status page under
+**Integrations & API → Send out**: Slack, Microsoft Teams, Discord, Telegram,
+Signal (through your own bridge) and Generic JSON (n8n, Zapier, your own
+receiver). Subscribers get email instead; see [subscribers](subscribers.md).
+
+This page covers Slack first, because that is where most teams already look.
+For Telegram, go directly to [Telegram notifications](#telegram-notifications).
+The [website documentation](https://pharos.solutionmax.net/docs/notifications/)
+has every destination side by side.
 
 The chain has three links, and each one is worth proving on its own before the
 next is added:
@@ -86,7 +92,7 @@ alerts stop after an app change, that is the first thing to check.
 
 | Credential | Belongs in |
 |------------|-----------|
-| Incoming Webhook URL | Pharos admin → **Integrations → Notifications**. Stored in the database, shown masked afterwards. |
+| Incoming Webhook URL | Pharos admin → **Integrations & API → Send out**. Stored encrypted in the database, shown masked afterwards. |
 | Bot token | The Zabbix media type, and a copy in your password store. |
 
 Neither belongs in a repository, and neither belongs in `.env` for Pharos: the
@@ -100,19 +106,20 @@ which is why it is a database row and not an environment variable.
 ### Set the brand name first
 
 The Slack message carries the brand name in its context line, next to the impact
-and the affected components. Whatever is in **Admin → Branding → Name** is what
-your colleagues will read. Correct it before sending a test, or the first
+and the affected components. Whatever is in **Name on the page** under
+**Appearance → Branding** is what your colleagues will read. Correct it before sending a test, or the first
 message anyone ever sees from the status page has the wrong name on it.
 
-### Add the endpoint
+### Add the destination
 
-**Admin → Integrations → Notifications**, and fill in three fields:
+Open **Integrations & API → Send out**. Under **Add a destination**:
 
-| Field | Value |
-|-------|-------|
-| **Name** | Only for you, so the list stays readable once there is more than one. `#status in Slack`. |
-| **Shape** | **Slack**. |
-| **Address** | The Incoming Webhook URL from step 1. |
+| Step | Value |
+|------|-------|
+| **Where should updates go?** | Pick **Slack**. |
+| **Name in Pharos** | Only for you, so the list stays readable once there is more than one. `#status in Slack`. |
+| **Slack incoming webhook URL** | The Incoming Webhook URL from step 1. |
+| **Which moments?** | Incident opened, Update posted and Resolved are ticked for a new destination. Add Maintenance and Certificate expiring if the channel should hear about those too. |
 
 Plain `http://` is fine. An installation administrator may also use the rest of
 the LAN; an n8n next door is the common case. A page editor's destination has to
@@ -123,17 +130,22 @@ link-local ranges (`169.254.0.0/16`, `fe80::/10`) are refused for everyone, both
 endpoint is saved and again on every delivery, including IPv4 hidden inside
 IPv6 (`::ffff:…`, NAT64, 6to4). Redirects are not followed.
 
-The **Shape** field is the one that matters. Slack and Teams each demand their
-own JSON, and a raw payload sent to a Slack webhook is answered with `400
-invalid_payload` and shows nothing at all. Generic JSON is for anything else
-(n8n, Zapier, your own receiver), and only Generic deliveries are signed with
-`X-Pharos-Signature`. Slack and Teams ignore unknown headers, so for those the
-URL is the credential and there is nothing to verify.
+The tile you pick under **Where should updates go?** is the one that matters.
+Slack and Teams each demand their own JSON, and a raw payload sent to a Slack
+webhook is answered with `400 invalid_payload` and shows nothing at all. Generic
+JSON is for anything else (n8n, Zapier, your own receiver), and only Generic
+deliveries are signed with `X-Pharos-Signature`. Slack, Teams and the chat apps
+ignore unknown headers, so for those the URL is the credential and there is
+nothing to verify.
+
+Press **Save and send test**, or **Save destination** to test later. An address
+or token cannot be edited afterwards: remove the destination and add it again.
+The moments can be changed at any time with **Change moments**.
 
 ### Verify a Generic JSON delivery
 
 Every Generic JSON request carries three headers, all made with the page's
-**signing secret** (Integrations → Send out, right column):
+**signing secret** (**Integrations & API → Send out**, the **Signing secret** card):
 
 | Header | Value |
 |--------|-------|
@@ -167,56 +179,67 @@ const ok = /^\d+$/.test(ts) && Math.abs(Date.now() / 1000 - Number(ts)) <= 300
 
 The secret is stored encrypted with the installation's `APP_KEY` and shown
 masked; **Reveal secret** shows it once, and every reveal is in the audit log.
-Only page administrators see the card. **Rotate secret** makes a new one at once:
+Only page admins and installation administrators see the card. **Rotate secret** makes a new one at once:
 paste it into the receiver straight after, because deliveries are signed with the
 new secret from the next event on.
 
 ### Prove it
 
-Click **Send test** on the row. Pharos builds a fake incident called *Test
-notification from Pharos* and delivers it once. Within a second or two:
+Press **Send test** on the destination. Pharos builds a fake incident called
+*Test notification from Pharos* and delivers it once. Within a second or two:
 
 - Slack shows the message in the channel the webhook was bound to.
-- The **Last attempt** column shows `HTTP 200`.
+- The screen says *Test sent to "#status in Slack" and accepted (HTTP 200).*
+  The destination shows **Working** and the time of its last attempt.
 
-If it failed, the same column shows the error instead of hiding it in a log
-file. The two you are likely to meet:
+If it failed, the screen says so with the status code, the destination shows
+**Failing**, and a hint in words sits next to it with a link to the **Delivery
+log**. The two you are likely to meet:
 
 | What you see | What it means |
 |--------------|---------------|
-| `HTTP 404` | The webhook was revoked, or the app was reinstalled. Issue a new one. |
-| `HTTP 400` | **Shape** is set to Generic JSON while the URL is a Slack one. |
+| `HTTP 404` | The webhook was revoked, or the app was reinstalled. Issue a new one and replace the destination. |
+| `HTTP 400` | Generic JSON was picked while the URL is a Slack one. |
 
 Only the status is kept; the receiver's response body is never stored.
 
 ### What is sent, and when
 
-Every incident change fires every enabled endpoint: opened, updated, and
-resolved. Resolved messages carry a green check instead of the red light, so a
-channel reads as a timeline rather than a pile of alarms.
+Each destination receives the moments ticked for it: **Incident opened**,
+**Update posted**, **Resolved**, **Maintenance** (announced, started, completed
+or cancelled) and **Certificate expiring**. A destination saved before moments
+could be chosen receives all of them. Internal incidents are sent too: this goes
+to your team, not to the public. A page that is not published sends nothing.
+Resolved messages carry a green check instead of the red light, so a channel
+reads as a timeline rather than a pile of alarms.
 
 A destination can also tick **Certificate expiring**. When an HTTP check sees
 that its certificate expires within 14 days, the destination hears about it
 once, and once more within 3 days. Each step goes out once per expiry date,
 so a renewed certificate starts over. The message names the component, the
 host (never the full check address), the expiry date and the days left; the
-Generic JSON shape carries `"event": "certificate.expiring"` and is signed
-like every other delivery.
+Generic JSON destination gets `"event": "certificate.expiring"` and signs it
+like every other Generic JSON delivery.
 
-Incident changes are queued in the database and delivered by the scheduler,
-which must run every minute. Temporary failures retry up to six total attempts
-with increasing delays. Rate limits respect the receiver's retry delay.
-Most other HTTP 4xx responses stop retries; HTTP 408 and 429 can retry.
-Each request has a five-second timeout. **Send test** makes one immediate
-attempt and does not use the retry queue. Check delivery history under
-**Integrations** for queued, delivered and stopped messages.
+Messages are queued in the database and delivered by the scheduler, which must
+run every minute; it sends up to ten per minute for the whole installation.
+Each request has a five second timeout. A failed delivery is tried again after
+2, 4, 8, 16 and 32 minutes, six attempts in all. When the receiver asks for a
+pause (`Retry-After`, or Telegram's retry delay), Pharos waits that long
+instead, at least a minute and at most a day. Other HTTP 4xx responses stop
+the retries at once; HTTP 408 and 429 can retry. **Send test** makes one
+immediate attempt and does not use the retry queue. **Integrations & API →
+Delivery log** shows every message with its attempts and result, with counters
+for delivered, retrying and failed; delivered and failed records are removed
+after 30 days.
 
 ---
 
 ## Related: the audit log
 
-Notifications tell people about outages. The **audit log** (Admin → Audit log)
-answers a different question: who changed the configuration. Adding a
+Notifications tell people about outages. The **audit log** (under
+**Installation**, for installation administrators only) answers a different
+question: who changed the configuration. Adding a
 notification endpoint, rotating the signing secret and issuing an API token all
 land there, along with who did it and from which address.
 
@@ -241,36 +264,36 @@ is not a substitute for the numeric chat ID.
 
 ### Configure Pharos
 
-Open **Admin → Integrations → Notifications** and enter:
+Open **Integrations & API → Send out** and, under **Add a destination**:
 
-| Field | Value |
-|-------|-------|
-| **Name** | A label such as Telegram operations. |
-| **Shape** | **Telegram**. |
+| Step | Value |
+|------|-------|
+| **Where should updates go?** | Pick **Telegram**. |
+| **Name in Pharos** | A label such as Telegram operations. |
 | **Telegram bot token** | The token supplied by BotFather. |
-| **Chat ID or channel @username** | For example, `-1001234567890` or `@your_status_channel`. Replace these examples with your destination. |
+| **Chat ID or public channel @username** | For example, `-1001234567890` or `@your_status_channel`. Replace these examples with your destination. |
+| **Which moments?** | Tick what this chat should receive. |
 
-The Address field is hidden for Telegram; Pharos builds the API address itself.
-Click **Add notification**, then **Send test** and confirm receipt in Telegram.
+There is no address field for Telegram; Pharos builds the API address itself.
+Press **Save and send test** and confirm receipt in Telegram.
 A successful test proves immediate delivery; keep the scheduler running every
 minute for actual incident notifications.
 
 Messages contain the incident status, title and status-page link as plain text.
-Opened, updated and resolved incidents use the same delivery queue and retry
-rules described above. Pharos stores the token encrypted, masks it in the
-notification list and excludes it from validation input retained in the session.
-To replace a token or destination, remove the notification and add it again.
+Every moment uses the same delivery queue and retry rules described above.
+Pharos stores the token encrypted, masks it in the list of destinations and
+excludes it from validation input retained in the session. To replace a token
+or chat, remove the destination and add it again.
 
 ### If nothing arrives
 
 | What you see | What to check |
 |-------------|---------------|
-| Telegram is missing from **Shape** | Update to Pharos 0.5.9 or later; Telegram was added in that release. |
 | `HTTP 400` | Check the chat ID, including its minus sign, and the bot's membership of the destination. |
-| `HTTP 401` or `HTTP 404` | Check the bot token and replace the notification if the token was revoked. |
+| `HTTP 401` or `HTTP 404` | Check the bot token and replace the destination if the token was revoked. |
 | `HTTP 403` | Start the personal chat, unblock the bot, or check its permission to post in the group or channel. |
 | `HTTP 429` | Telegram rate-limited delivery. Queued messages wait for its retry delay; an immediate test is not queued. |
-| Test succeeds, incident messages do not arrive | Check the minute scheduler and delivery history in **Integrations**. |
+| Test succeeds, incident messages do not arrive | Check the minute scheduler, the moments ticked for the destination and the **Delivery log**. |
 | Connection failure | Check outbound HTTPS, DNS and TLS access to api.telegram.org. |
 
 Pharos uses Telegram's [sendMessage API](https://core.telegram.org/bots/api#sendmessage).

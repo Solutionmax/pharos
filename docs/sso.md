@@ -1,4 +1,4 @@
-# Single sign-on (OIDC)
+# Single sign on (OIDC)
 
 Written so that in six months you can answer "what does SSO actually do here"
 without reading the code.
@@ -7,7 +7,7 @@ without reading the code.
 
 Pharos speaks OpenID Connect as a **confidential client using the authorization
 code flow with PKCE**. It signs in people who **already have a Pharos account**;
-it never creates one. Local sign-in always keeps working, so a broken identity
+it never creates one. Local sign in always keeps working, so a broken identity
 provider can never be the reason nobody can reach the status page.
 
 ## Why there is no JWT library
@@ -33,7 +33,7 @@ What is still checked, every time:
 
 The email claim decides which local account you become. If the provider did not
 verify the address, anyone who can register at that provider could claim a
-colleague's address and take over their Pharos account, password and two-factor
+colleague's address and take over their Pharos account, password and two factor
 included.
 
 An unverified address is refused, with `sso.rejected` in the audit log.
@@ -51,7 +51,7 @@ link-local addresses, **pins the resolved address** so a second DNS answer canno
 differ from the one that was checked (rebinding), and **follows no redirects**.
 
 Since 1.2.0 "private" is the same strict reading everywhere (page SMTP, single
-sign-on, remote backups, probe hubs): carrier grade NAT and Tailscale
+sign on, remote backups, probe hubs): carrier grade NAT and Tailscale
 (`100.64.0.0/10`), benchmarking (`198.18.0.0/15`), the IETF block
 (`192.0.0.0/24`) and multicast count as internal too. An IPv4 address carried in
 IPv6 (`::ffff:`, NAT64 `64:ff9b::/96`, 6to4 `2002::/16`) is judged as the IPv4
@@ -62,7 +62,7 @@ such an address got that host added to the list below during the update.
 
 Plenty of self-hosted installs run Pharos and their identity provider on the same
 internal network, where a private issuer is simply the normal case. **Internal
-provider hosts** under **Settings → Single sign-on** vouches for named hosts:
+provider hosts** under **Settings → Single sign on** vouches for named hosts:
 
 ```
 id.intern.example.net, 192.168.1.20
@@ -72,17 +72,17 @@ A list rather than a switch, so it opens one door instead of all of them, and
 **link-local stays blocked whatever is in that box**, because `169.254.169.254` is
 the address the guard exists for.
 
-## Two-factor still applies
+## Two factor still applies
 
-Somebody who switched two-factor on gets the code screen after the SSO step as
+Somebody who switched two factor on gets the code screen after the SSO step as
 well. A second door that skips the gate makes the gate decorative, and if the
 identity provider does not enforce MFA itself, signing in through it would
 quietly undo what the user chose. Trust the provider instead? Then switch your
-own two-factor off; that is the user's decision, not the login flow's.
+own two factor off; that is the user's decision, not the login flow's.
 
 ## What an administrator configures
 
-Under **Admin → Settings → Single sign-on** (`/admin/settings?tab=sso`; the old
+Under **Settings → Single sign on**, for installation administrators (`/admin/settings?tab=sso`; the old
 `/admin/sso` address redirects there): `sso.enabled`, `sso.provider_name` (the button text), `sso.issuer`,
 `sso.client_id`, `sso.client_secret`. The secret is stored encrypted and never
 rendered back into the form.
@@ -95,4 +95,4 @@ Redirect URI to register at the provider: `<your site>/admin/sso/callback`.
   account first.
 - **No SAML.** XML signatures need a library, and OIDC covers Authentik, Keycloak,
   Entra, Google and Okta.
-- **No SSO-only mode.** Local sign-in stays, always.
+- **No SSO only mode.** Local sign in stays, always.

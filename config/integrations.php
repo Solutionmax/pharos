@@ -26,7 +26,7 @@ return [
             'help' => 'Use a Teams Workflow webhook that accepts requests without Microsoft sign-in. Keep the full URL, including its query parameters.',
             'summary' => 'Post incident cards to your Teams workflow destination.',
             'steps' => ['Create a Workflow with the trigger When a Teams webhook request is received.', 'Configure its destination and an authentication setting compatible with external webhook requests, then copy the generated URL.', 'Add this destination and use Send test. Pharos sends an Adaptive Card envelope.'],
-            'result' => 'Teams receives a card with the incident and a link to the status page. Tenant restrictions may limit which workflows you can create.',
+            'result' => 'Teams receives a card with the incident, its impact, the affected services and the name of the status page. Tenant restrictions may limit which workflows you can create.',
             'docs' => 'https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook',
         ],
         'discord' => [

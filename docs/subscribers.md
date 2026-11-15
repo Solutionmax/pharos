@@ -16,8 +16,10 @@ incident update →  one outbox row per active subscriber  →  pharos:notify  �
 1. A visitor enters an address on the status page. The reply is always the same
    sentence (*If that address is new, a confirmation is on its way*) whether the
    address is new, pending or already confirmed, so the form cannot be used to
-   find out who subscribed. Five sign-ups per ten minutes per IP; a hidden field
-   catches bots.
+   find out who subscribed. Five sign ups per ten minutes per IP; a hidden field
+   catches bots. Since 1.2.0 an address gets at most one confirmation mail in ten
+   minutes and three a day, and a page sends at most 100 an hour, so the form
+   cannot be used to flood someone's inbox.
 2. The confirmation mail carries a **signed link, good for 24 hours**. Asking again
    sends a fresh link and voids the old one. An address that never clicks is
    **forgotten after 7 days**.
@@ -41,7 +43,8 @@ Internal and authenticated incidents never reach subscribers.
 
 Without it, sign-ups still work and the outbox fills, but nothing goes out.
 
-**Mail settings**, on **Settings → Mail** in the admin: mailer (SMTP, sendmail,
+**Mail settings**, on **Settings → Central mail** in the admin (or per page under
+**Email → Delivery**): mailer (SMTP, sendmail,
 or "write to the log" while testing), host, port, encryption, username, password,
 and the From address and name. The password is stored encrypted and never shown
 again; leaving the box empty keeps it. Anything left empty falls back to the
@@ -58,10 +61,10 @@ MAIL_FROM_NAME=
 ```
 
 587 + TLS (STARTTLS) works for most providers; a few want 465 + SSL. A blank From
-name signs mail with the brand name from **Branding**. Set it only if the sender
-should read differently. The "Effective" line under the form shows what a mail
-would go out with right now, database and `.env` combined. Prove it with
-**Send test e-mail**: it mails the signed-in administrator and shows the
+name signs mail with the brand name from **Appearance → Branding**. Set it only if
+the sender should read differently. The "Effective" line under the form shows what
+a mail would go out with right now, database and `.env` combined. Prove it with
+**Send test email**: it mails the signed in administrator and shows the
 transport's own error text when it fails.
 
 **The switch.** The **Subscribers** screen has a master switch. Off means no
@@ -84,22 +87,25 @@ plain-text alternative goes with it.
 
 ## Templates
 
-Admin → Configuration → **Mail templates**. Four templates, one per screen tab:
+**Email → Templates**, per status page. Five templates:
 
 | Template | Sent when | Tags |
 |---|---|---|
 | Subscribe confirmation | someone signs up | `{brand}` `{link}` `{hours}` `{name}` |
-| Incident opened | the first update of an incident | `{brand}` `{incident}` `{status}` `{message}` `{components}` `{link}` `{unsubscribe}` `{when}` `{name}` |
+| Incident opened | the first update of an incident | `{brand}` `{incident}` `{status}` `{message}` `{components}` `{link}` `{unsubscribe}` `{preferences}` `{when}` `{name}` |
 | Incident updated | any later update that is not Resolved | same as above |
 | Incident resolved | an update with status Resolved | same as above |
+| Maintenance scheduled | a maintenance window is announced | `{brand}` `{maintenance}` `{message}` `{components}` `{starts}` `{ends}` `{link}` `{unsubscribe}` `{preferences}` `{name}` |
 
 Tag meanings: `{brand}` the name from Branding · `{link}` the confirmation link on the
 confirmation mail, the status page on the incident mails · `{hours}` how long the
 confirmation link is good for · `{name}` the part of the subscriber's address before
 the `@` · `{incident}` the incident's name · `{status}` Investigating, Identified,
 Monitoring or Resolved · `{message}` the update text · `{components}` the affected
-components, comma-separated · `{unsubscribe}` the subscriber's signed unsubscribe link ·
-`{when}` the update's time in the install's time zone.
+components, comma separated · `{unsubscribe}` the subscriber's signed unsubscribe link ·
+`{preferences}` the link to the subscriber's service preferences · `{when}` the update's
+time in the install's time zone · `{maintenance}`, `{starts}` and `{ends}` the title and
+the window of planned work.
 
 **Subject and body are Markdown** (`**bold**`, `*italic*`, `# heading`, `- list`,
 `> quote`, `[text](url)`). A link on a line of its own becomes a button. Tag values
@@ -117,14 +123,14 @@ are always there. A template therefore cannot lose the unsubscribe link, and
 same Markdown with the links written out raw.
 
 The screen shows a live preview with a sample incident, rendered from the unsaved
-wording on the left. **Send test to me** mails that rendering to the signed-in
+wording on the left. **Send test to me** mails that rendering to the signed in
 admin through the configured mailer. Templates are stored as
 `mail.template.<key>.subject` and `.body` in the settings table; a missing row
 means the default. Saving and resetting are logged as `mail_template.saved` and
 `mail_template.reset`.
 
 **Brand pack.** Every install sees the screen, the defaults and the preview; saving,
-resetting and sending a test need the brand pack licence (checked on the server,
+resetting and sending a test need the Brand pack licence (checked on the server,
 not just in the form). Subjects are limited to 200 characters, bodies to 20 000,
 and neither may contain `<script`.
 
@@ -144,7 +150,7 @@ and a fresh confirmation.
 
 ## GDPR: export and delete
 
-Under **Subscribers** in the admin (open to every account):
+Under **Subscribers** in the admin of the page:
 
 - **Export CSV**: active addresses with their confirmation date. Recorded in the
   audit log as `subscribers.exported`.
@@ -160,14 +166,14 @@ their own after 7 days.
 
 ## Limits
 
-- Mail goes through whatever Settings → Mail (or `MAIL_*`) points at; on a cPanel, DirectAdmin or Plesk account that usually
+- Mail goes through whatever **Settings → Central mail** or the page's own SMTP
+  (or `MAIL_*`) points at; on a cPanel, DirectAdmin or Plesk account that usually
   means the host's SMTP and its hourly cap. The batch size of 50 per minute is
   deliberately below most of them.
-- The mail text is fixed in this release. Editable templates are the next phase.
 
 ## Multiple pages
 
 Each subscription belongs to one status page. The same email can follow several pages
 and unsubscribe independently. Page branding and optional SMTP are configured through
 the selected page. Confirmation/unsubscribe links stay on the central installation
-host so customer-domain changes do not break them. See [page administration](multiple-status-pages.md).
+host so customer domain changes do not break them. See [page administration](multiple-status-pages.md).

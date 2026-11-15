@@ -9,9 +9,10 @@ foreign IDs, disabled components and components in hidden groups are unavailable
   status, with a link to the public page. Cache lifetime: 30 seconds.
 * `/feed.xml`: RSS 2.0 with up to 50 public incidents and 50 maintenance windows,
   canonical incident links and XML escaping. Cache lifetime: 60 seconds.
-* `/incidents/{id}`: public incident timeline, safe Markdown, no internal incident
-  or hidden-component disclosure.
-* `/embed.js`: copy its script tag from **Monthly reports → Share your status**.
+* `/incidents/{id}`: public incident page in the style of the status page: state,
+  start and end, duration, affected services, a course strip with a dot per message
+  and every message, safe Markdown, no internal incident or hidden component disclosure.
+* `/embed.js`: copy its script tag from the **Share your status** card on **Reports**.
   It inserts a linked status label after the script, fetches only public
   `/widget.json` without cookies, refreshes each minute and shows an unavailable
   state if the request fails. JSON and script allow public CORS; DOM text is
@@ -39,8 +40,13 @@ is skipped. General notices without component associations go to all subscribers
 
 `/reports`, `/reports.csv`, `/reports.pdf` provide public reports. The matching
 `/admin/reports*` routes also include this page's hidden or disabled components,
-and require current page access. Read-only page viewers can download reports.
+and require current page access. People with the Read only role can download reports.
 Choose `?month=YYYY-MM`, January 2000 through the current month.
+
+Since 1.2.2 the public `/reports` page uses the style of the status page and shows
+four columns: **Service**, **Uptime**, **Downtime** and **Incidents** (public incidents
+that started in that month). The technical columns (coverage, up, down, excluded
+maintenance and unobserved seconds) stay in the CSV and in the report in the admin.
 
 Reports use **UTC calendar months** because daily rollups cannot establish exact
 local intraday boundaries. Do not interpret them as a local-time SLA. Percentages
@@ -70,11 +76,18 @@ TOKEN` or `X-Cachet-Token`. A read token can read; mutations require a write tok
 and the owner's **current** page editor/admin rights. Revoking page membership or
 lowering the role immediately removes the corresponding token access.
 
-* `GET /ping`: Cachet-style `{"data":"Pong!"}` on published pages.
+Errors are JSON. Token problems answer `401` (`{"error":"Missing API token"}`,
+`{"error":"Invalid API token"}`) or `403` (`{"error":"Token has no access to this page"}`).
+Anything the API does not know or the caller may not see answers one plain
+`404` `{"message":"Not found."}`. Validation failures answer `422` with `message` and
+an `errors` object per field; rate limits answer `429` with `Retry-After`.
+
+* `GET /components/{id}`: one public component, in the shape of the list, no token.
+* `GET /ping`: Cachet style `{"data":"Pong!"}` on published pages.
 * `/groups`: GET list, POST create; `/{group}` GET, PUT and DELETE. Fields:
   `name`, `visible`, `collapsed`, `position`. Like `/components`, the GETs work
-  without a token on a published page and then return only the groups the public
-  page shows; with a token they return every group of the page.
+  without a token on a published page (since 1.2.2) and then return only the groups
+  the public page shows; with a token they return every group of the page.
 * `POST /components`: create using `name`, optional `description`, `status` (1–5),
   `group_id`, `enabled`, `show_uptime`, `position`. DELETE `/{component}` removes
   a component. Existing PUT/POST status updates continue to work.
@@ -98,7 +111,7 @@ Content-Length, encoded route prefixes and trailing slashes. JSON POSTs to legac
 component/incident ID paths use this same limit because a body `_method` can select
 the new DELETE route; ordinary update verbs, fields and authority remain compatible.
 Other legacy API paths retain their existing limits. The shared native guard also
-bounds probe request bodies to16 KiB before capture; globally prepended middleware
+bounds probe request bodies to 16 KiB before capture; globally prepended middleware
 retains these checks for alternate Kernel entry points. Resource arrays and lists
 are bounded and per-minute throttles apply.
 
@@ -112,8 +125,8 @@ custom public-page domains do not accept API credentials. Page variants:
 
 ## Cachet 2.x importer
 
-Open **Import Cachet 2.x** in the selected page's administration (requires page
-admin), upload JSON, review the named resources/counts, then import. The preview
+Open **Integrations & API → Cachet import** (the screen is called **Import Cachet
+2.x**) in the selected page's administration (requires page admin), upload JSON, review the named resources/counts, then import. The preview
 expires after 20 minutes, is encrypted in server cache, belongs to the current
 user and selected page and is consumed once. Revoked page rights block application.
 Application validates again and runs in one database transaction. Identical
@@ -161,7 +174,3 @@ php artisan pharos:cachet-import /absolute/path/export.json --page=2 --apply
 Technical references: [Cachet 2.4 models](https://github.com/CachetHQ/Cachet/tree/2.4/app/Models),
 [Dompdf](https://github.com/dompdf/dompdf),
 [Prometheus text exposition](https://prometheus.io/docs/instrumenting/exposition_formats/).
-
-Development evidence includes PHP feature tests plus native Node execution of the
-widget DOM and `pdftotext` extraction of a real Unicode report. These tools are
-used for verification, not at runtime by Pharos.

@@ -14,7 +14,7 @@ key = base64url(payload) . "." . base64url(signature)
 payload = {"product":"pharos","issued_to":"...","features":["brand_pack"],"issued_at":"..."}
 ```
 
-The customer pastes that string into **Admin → Branding**. Pharos verifies the signature
+The customer pastes that string into the **Licence key** card under **Appearance → Branding** (an installation administrator). Pharos verifies the signature
 against a public key compiled into the app and unlocks the features listed in the payload.
 That is the whole mechanism.
 
@@ -151,7 +151,7 @@ php artisan pharos:license:sign klant@example.net --features=brand_pack --domain
 Leave `--months` off and the claim is absent, which means the key never expires.
 That is what every key signed before this existed does, and they keep working.
 
-Expired keys lose time-limited rights such as creating extra pages. Brand Pack is
+Expired keys lose time-limited rights such as creating extra pages. Brand pack is
 a perpetual feature and remains usable. Existing status pages continue operating.
 The branding screen shows the expiry date and warns for the last thirty days.
 
