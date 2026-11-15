@@ -146,6 +146,19 @@ class UptimeTest extends TestCase
         $this->assertSame('unknown', $bars[$other->id][Uptime::WINDOW_DAYS - 2]['tone']);
     }
 
+    public function test_an_incident_on_a_day_without_measurements_still_shows(): void
+    {
+        $incident = Incident::create(['name' => 'Down before monitoring', 'status' => IncidentStatus::Resolved, 'visibility' => 'public',
+            'occurred_at' => Carbon::today()->subDays(5)->setTime(9, 0), 'resolved_at' => Carbon::today()->subDays(5)->setTime(11, 0)]);
+        $incident->components()->attach($this->component->id, ['status' => ComponentStatus::MajorOutage->value]);
+
+        $day = $this->uptime->bar($this->component)[Uptime::WINDOW_DAYS - 6];
+
+        $this->assertFalse($day['known']);
+        $this->assertSame('b', $day['tone']);
+        $this->assertSame('b', $this->uptime->aggregate([$this->component->id => $this->uptime->bar($this->component)])[Uptime::WINDOW_DAYS - 6]['tone']);
+    }
+
     public function test_a_component_with_no_history_reports_unknown_uptime(): void
     {
         $this->assertNull($this->uptime->percentage($this->component));

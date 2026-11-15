@@ -208,7 +208,7 @@ class SignInStatus
 
         return [
             'strip' => array_map(fn (array $day) => [
-                'tone' => $day['known'] ? $day['tone'] : 'none',
+                'tone' => $day['tone'] === 'unknown' ? 'none' : $day['tone'],
                 'h' => StatusTimeline::height($day),
             ], $overall),
             'uptime' => $percentage === null ? null : Uptime::format($percentage),

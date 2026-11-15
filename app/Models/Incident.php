@@ -43,7 +43,7 @@ class Incident extends Model
 
     public function scopePublic($query)
     {
-        return $query->where('visibility', 'public');
+        return $query->where($query->qualifyColumn('visibility'), 'public');
     }
 
     public function isOpen(): bool

@@ -90,6 +90,19 @@ class FallbackCopy
      */
     public function run(bool $force = false): array
     {
+        // Runs every minute from the scheduler: nothing here may throw, not even a missing cache or database.
+        try {
+            return $this->attempt($force);
+        } catch (\Throwable $e) {
+            Log::warning('Fallback copy could not run', ['type' => get_class($e)]);
+
+            return ['uploaded' => [], 'error' => __('The last copy failed. Check the destination, its credentials and that this server can reach it.')];
+        }
+    }
+
+    /** @return array{uploaded: array<string, int>, error: string|null} */
+    protected function attempt(bool $force): array
+    {
         $lock = Cache::lock('pharos:fallback-copy', 120);
         if (! $lock->get()) {
             return ['uploaded' => [], 'error' => null];

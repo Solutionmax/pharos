@@ -75,7 +75,8 @@ class Uptime
                 'day' => $key,
                 'known' => $known,
                 'pct' => $known ? $row->percentage() : 0.0,
-                'tone' => $known ? StatusTimeline::dayTone($lost, $incidentTones[$key] ?? null) : 'unknown',
+                // A day without measurements still shows an incident that ran on it.
+                'tone' => $known ? StatusTimeline::dayTone($lost, $incidentTones[$key] ?? null) : ($incidentTones[$key] ?? 'unknown'),
                 'lost' => $lost,
             ];
         }
@@ -172,11 +173,12 @@ class Uptime
             $days = array_column($bars, $index);
             $pct = self::average(array_map(fn ($d) => $d['known'] ? $d['pct'] : null, $days));
             $known = array_filter($days, fn ($d) => $d['known']);
+            $tones = array_filter(array_column($days, 'tone'), fn ($tone) => $tone !== 'unknown');
             $result[] = [
                 'day' => $day['day'],
                 'known' => $pct !== null,
                 'pct' => $pct ?? 0.0,
-                'tone' => $pct === null ? 'unknown' : array_reduce(array_column($known, 'tone'), StatusTimeline::worse(...), 'ok'),
+                'tone' => $tones === [] ? 'unknown' : array_reduce($tones, StatusTimeline::worse(...), 'ok'),
                 'lost' => (float) max([0.0, ...array_column($known, 'lost')]),
             ];
         }

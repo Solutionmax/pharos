@@ -182,7 +182,7 @@
         <div class="bd">
           <div class="ov-days" role="img" aria-label="Daily availability over the last 90 days, {{ Uptime::format($data['uptime']) }} overall">
             @foreach ($data['days'] as $day)
-              <i class="s-{{ $day['known'] ? $day['tone'] : 'n' }}" data-tip-title="{{ $cellDay($day) }}" data-tip="{{ $cellTip($day) }}"></i>
+              <i class="s-{{ $day['tone'] === 'unknown' ? 'n' : $day['tone'] }}" data-tip-title="{{ $cellDay($day) }}" data-tip="{{ $cellTip($day) }}"></i>
             @endforeach
           </div>
           <div class="ov-axis" aria-hidden="true"><span>{{ __('90 days ago') }}</span><span>60</span><span>30</span><span>{{ __('Today') }}</span></div>
@@ -214,7 +214,7 @@
                 </span>
                 <span class="ov-mini" aria-hidden="true">
                   @foreach ($row['days'] as $day)
-                    <i class="s-{{ $day['known'] ? $day['tone'] : 'n' }}" data-tip-title="{{ $cellDay($day) }}" data-tip="{{ $cellTip($day, $c->isSetFromOutside()) }}"></i>
+                    <i class="s-{{ $day['tone'] === 'unknown' ? 'n' : $day['tone'] }}" data-tip-title="{{ $cellDay($day) }}" data-tip="{{ $cellTip($day, $c->isSetFromOutside()) }}"></i>
                   @endforeach
                 </span>
                 <span class="ov-pct">{{ $row['uptime'] === null ? 'no data' : Uptime::format($row['uptime']) }}</span>
