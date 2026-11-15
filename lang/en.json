@@ -1824,5 +1824,6 @@
     "Visitors cannot get notified by email: mail is not set up.": "Visitors cannot get notified by email: mail is not set up.",
     "Some service names look technical (:names). Name services the way visitors know them.": "Some service names look technical (:names). Name services the way visitors know them.",
     "Service names": "Service names",
-    "Rename": "Rename"
+    "Rename": "Rename",
+    "This server runs the :old container image. Pull :image to get its server settings (Apache hardening).": "This server runs the :old container image. Pull :image to get its server settings (Apache hardening)."
 }

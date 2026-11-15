@@ -1824,5 +1824,6 @@
     "Visitors cannot get notified by email: mail is not set up.": "Besucher können keine Benachrichtigungen per E-Mail erhalten: E-Mail ist nicht eingerichtet.",
     "Some service names look technical (:names). Name services the way visitors know them.": "Einige Dienstnamen wirken technisch (:names). Benenne Dienste so, wie Besucher sie kennen.",
     "Service names": "Dienstnamen",
-    "Rename": "Umbenennen"
+    "Rename": "Umbenennen",
+    "This server runs the :old container image. Pull :image to get its server settings (Apache hardening).": "Dieser Server läuft mit dem Container-Image :old. Lade :image, um dessen Servereinstellungen zu bekommen (Apache-Härtung)."
 }

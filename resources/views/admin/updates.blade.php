@@ -11,6 +11,12 @@
   </x-note>
 @endif
 
+@if ($olderImage)
+  <x-note id="updates.image" warn>
+    {{ __('This server runs the :old container image. Pull :image to get its server settings (Apache hardening).', ['old' => $olderImage, 'image' => 'ghcr.io/solutionmax/pharos:'.$current]) }}
+  </x-note>
+@endif
+
 @include('partials.pagehead', [
   'title' => __('Updates'),
   'sub' => __('What you are running, and what is available'),
