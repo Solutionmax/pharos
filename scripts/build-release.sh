@@ -85,10 +85,30 @@ SIZE=$(du -h "$DIST/pharos-${VERSION}.zip" | cut -f1)
 echo "== 5/6 sign"
 php artisan pharos:release:sign "$VERSION" "${BASE_URL}/pharos-${VERSION}.zip" "$DIST/pharos-${VERSION}.zip" \
   --notes="$NOTES" --key="$SECRET" | tail -1 > "$DIST/latest.json"
-php artisan tinker --execute="\$m = app(\App\Services\Updater::class)->verify(file_get_contents('${DIST}/latest.json')); if (! \$m || \$m['version'] !== '${VERSION}') { fwrite(STDERR, \"manifest does not verify\n\"); exit(1); } echo 'manifest verifies: '.\$m['version'].' '.\$m['sha256'].PHP_EOL;" -q
+php artisan tinker --execute="\$m = app(\App\Services\Updater::class)->verify(file_get_contents('${DIST}/latest.json')); if (! \$m || \$m['version'] !== '${VERSION}' || \App\Services\Updater::releasedAt(\$m) === null) { fwrite(STDERR, \"manifest does not verify or has no released_at\n\"); exit(1); } echo 'manifest verifies: '.\$m['version'].' '.\$m['sha256'].' released '.\$m['released_at'].PHP_EOL;" -q
 
 if [ "$UPLOAD" = 1 ]; then
   echo "== 6/6 upload → ${BASE_URL}/"
+  # Installs remember the newest released_at they accepted and refuse anything older
+  # (rollback protection, 1.2.0). A latest.json that goes back in time would be refused
+  # everywhere, so it never goes up: sign again instead.
+  LIVE_MANIFEST="$(curl -fsS "${BASE_URL}/latest.json" 2>/dev/null || true)"
+  if [ -n "$LIVE_MANIFEST" ]; then
+    python3 - "$DIST/latest.json" "$LIVE_MANIFEST" <<'PY' || { echo "the new manifest is not newer than the live one; sign it again" >&2; exit 1; }
+import base64, datetime, json, sys
+def released(token):
+    part = token.strip().split('.')[0]
+    value = json.loads(base64.urlsafe_b64decode(part + '=' * (-len(part) % 4))).get('released_at')
+    if not value:
+        return None
+    if len(value) == 10:
+        value += 'T00:00:00+00:00'
+    return datetime.datetime.fromisoformat(value.replace('Z', '+00:00'))
+new, live = released(open(sys.argv[1]).read()), released(sys.argv[2])
+print(f"released_at: new {new}, live {live}")
+sys.exit(0 if new is not None and (live is None or new > live) else 1)
+PY
+  fi
   # the same signed manifest under the version's own name, so an installer can be pinned to it
   cp "$DIST/latest.json" "$DIST/pharos-${VERSION}.json"
   rsync -a "$DIST/pharos-${VERSION}.zip" "$DIST/pharos-${VERSION}.zip.sha256" "$DIST/pharos-${VERSION}.json" "$DIST/latest.json" "$REMOTE/"

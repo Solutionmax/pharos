@@ -5,15 +5,16 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ApiToken;
 use App\Models\Component;
-use App\Models\Setting;
 use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
+use App\Services\Audit;
 use App\Services\OutgoingWebhook;
 use App\Services\PageContext;
 use App\Services\PageUrls;
+use App\Services\PrivateTargets;
 use App\Services\SafeHttp;
+use App\Services\WebhookSecret;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -36,17 +37,42 @@ class IntegrationController extends Controller
     /** Send out: destinations that tell your team. */
     public function out(Request $request)
     {
+        return $this->outView($request);
+    }
+
+    /**
+     * The signing secret is masked on every load. Seeing it takes a request of
+     * its own, which the audit log records. The screen asks for JSON; without
+     * JavaScript the form post renders the screen with the secret in it.
+     */
+    public function revealSecret(Request $request, WebhookSecret $secrets)
+    {
+        $secret = $secrets->get();
+        abort_if($secret === null, 404);
+        Audit::record('webhook_secret.revealed');
+
+        if ($request->wantsJson()) {
+            return response()->json(['secret' => $secret])->header('Cache-Control', 'no-store');
+        }
+
+        return $this->outView($request, $secret);
+    }
+
+    protected function outView(Request $request, ?string $revealed = null)
+    {
         $pageId = app(PageContext::class)->id();
         $profiles = config('integrations.destinations');
         $format = old('format', $request->query('destination', 'slack'));
         $format = is_string($format) && isset($profiles[$format]) ? $format : 'slack';
+        $secret = $request->user()->canAdministerPage($pageId) ? app(WebhookSecret::class)->get() : null;
 
         return view('admin.integrations.out', $this->common($request) + [
             'destinationProfiles' => $profiles,
             'selectedFormat' => $format,
             'endpoints' => WebhookEndpoint::orderBy('id')->paginate(5, ['*'], 'endpoints_page')->withQueryString()->fragment('destinations'),
             'endpointCount' => WebhookEndpoint::count(),
-            'webhookSecret' => $request->user()->canAdministerPage($pageId) ? Setting::get('integrations.webhook_secret') : null,
+            'webhookSecretMask' => $secret !== null ? WebhookSecret::mask($secret) : null,
+            'webhookSecretRevealed' => $secret !== null ? $revealed : null,
         ]);
     }
 
@@ -149,14 +175,19 @@ class IntegrationController extends Controller
 
     public function storeEndpoint(Request $request, SafeHttp $safe)
     {
+        $mayUsePrivate = PrivateTargets::mayChoose($request->user());
         $data = $request->validate([
             'label' => ['required', 'string', 'max:60'],
             // http allowed on purpose: an n8n on the same LAN is the common case.
             // This machine and link-local are not: 169.254.169.254 hands out cloud
             // credentials to whoever asks, and a webhook must never be the one asking.
-            'url' => ['bail', 'exclude_if:format,telegram', 'required', 'url:http,https', 'max:255', function (string $attribute, mixed $value, \Closure $fail) use ($safe) {
+            'url' => ['bail', 'exclude_if:format,telegram', 'required', 'url:http,https', 'max:255', function (string $attribute, mixed $value, \Closure $fail) use ($safe, $mayUsePrivate) {
                 if (($ip = $safe->forbiddenAddress($value)) !== null) {
                     $fail("That address resolves to {$ip}, which Pharos will never send to.");
+                } elseif (! $mayUsePrivate && ($host = PrivateTargets::host('http', $value)) !== null && ($problem = PrivateTargets::problem($host)) !== null) {
+                    // A page editor's destination stays on the public internet
+                    // unless the installation allows private ones.
+                    $fail($problem);
                 }
             }],
             'format' => ['required', Rule::in(array_keys(WebhookEndpoint::FORMATS))],
@@ -196,14 +227,13 @@ class IntegrationController extends Controller
         }
         $endpoint = WebhookEndpoint::create([
             'label' => $data['label'], 'url' => $data['url'], 'format' => $data['format'], 'enabled' => true, 'options' => $options,
+            'allow_private' => (bool) $request->user()?->isAdmin(),
             'events' => isset($data['events']) ? array_values(array_unique($data['events'])) : null,
         ]);
 
         // The signature only means anything to a generic receiver, but the secret
         // has to exist before the first one fires.
-        if (! Setting::get('integrations.webhook_secret')) {
-            Setting::put('integrations.webhook_secret', Str::random(32));
-        }
+        app(WebhookSecret::class)->ensure();
 
         if ($request->boolean('send_test')) {
             return $this->sendTest($endpoint, app(OutgoingWebhook::class), "Destination \"{$endpoint->label}\" saved. ");
@@ -252,9 +282,9 @@ class IntegrationController extends Controller
         );
     }
 
-    public function rotateSecret()
+    public function rotateSecret(WebhookSecret $secrets)
     {
-        Setting::put('integrations.webhook_secret', Str::random(32));
+        $secrets->rotate();
 
         return redirect()->to(PageUrls::route('admin.integrations.out'))
             ->with('status', 'Signing secret rotated. Update the receiving end.');

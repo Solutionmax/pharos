@@ -23,6 +23,27 @@
     setTimeout(() => { button.textContent = label; button.classList.remove('ok'); }, 1400);
   }));
 
+  /* ---------- Send out: the signing secret is fetched only when asked for ---------- */
+  $$('form[data-reveal-secret]').forEach((form) => form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const target = document.getElementById(form.dataset.revealSecret);
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': $('input[name="_token"]', form).value },
+      });
+      if (!response.ok) throw new Error('reveal failed');
+      const data = await response.json();
+      if (!target || typeof data.secret !== 'string') throw new Error('no secret');
+      target.textContent = data.secret;
+      form.hidden = true;
+      const copy = $('[data-copy-target="' + target.id + '"]');
+      if (copy) copy.hidden = false;
+    } catch (error) {
+      form.submit(); // without the script's help the page shows it
+    }
+  }));
+
   /* ---------- Send out: channel tiles swap the fields and the help ---------- */
   const destination = $('#destination-form');
   const profilesNode = $('#integration-profiles');

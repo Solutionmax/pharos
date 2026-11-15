@@ -89,6 +89,14 @@ address and reply-to can be set per page. Custom SMTP credentials are encrypted 
 the installation APP_KEY; keep that key in backups. Empty password input preserves
 an existing password. Custom transport failure does not fall back to another sender.
 
+A page administrator's SMTP host has to be a public mail server; only an installation
+administrator can point a page at an internal relay. The host is checked when the
+settings are saved, on Test email and again on every mail that is sent. Each send
+resolves the name once, refuses it when any answer is internal, and connects to the
+address it checked, while the certificate is still verified against the host name.
+A name that is moved to an internal address after it was saved (DNS rebinding)
+therefore gets no connection and no SMTP password.
+
 Test email goes to the signed-in administrator using the selected page's configuration.
 The mail provider must permit the configured sender domain. The central **Settings**
 mail configuration remains responsible for account password resets and inherited

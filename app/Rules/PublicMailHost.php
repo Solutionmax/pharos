@@ -6,6 +6,7 @@ use App\Services\SafeHttp;
 use App\Support\IpAddress;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
+use RuntimeException;
 
 /**
  * A page SMTP host set by a page administrator has to be on the public
@@ -26,20 +27,38 @@ class PublicMailHost implements ValidationRule
     /** Why the host may not be used, or null when it may. */
     public static function problem(string $host): ?string
     {
+        try {
+            self::vetted($host);
+        } catch (RuntimeException $e) {
+            return $e->getMessage();
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolve once and vet every answer: the address to connect to, so that the
+     * connection goes where the check looked and not where a second lookup
+     * points (DNS rebinding).
+     *
+     * @throws RuntimeException with the reason, when the host may not be used
+     */
+    public static function vetted(string $host): string
+    {
         // parse_url style brackets around an IPv6 literal are not part of the address.
         $host = trim(trim($host), '[]');
         $addresses = app(SafeHttp::class)->addresses($host);
 
         if ($addresses === []) {
-            return "The SMTP host {$host} could not be resolved. Check the name.";
+            throw new RuntimeException("The SMTP host {$host} could not be resolved. Check the name.");
         }
 
         foreach ($addresses as $ip) {
             if (IpAddress::isInternal($ip)) {
-                return "The SMTP host must be a public mail server. {$host} is on a private or local network, and only an installation administrator can use such a server here.";
+                throw new RuntimeException("The SMTP host must be a public mail server. {$host} is on a private or local network, and only an installation administrator can use such a server here.");
             }
         }
 
-        return null;
+        return $addresses[0];
     }
 }

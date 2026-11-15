@@ -138,6 +138,7 @@ class SettingsController extends Controller
             'keep_backups' => ['required', 'integer', 'between:0,50'],
             'update_check' => ['sometimes', 'boolean'],
             'admin_two_factor' => ['sometimes', 'boolean'],
+            'private_targets' => ['sometimes', 'boolean'],
         ], [
             'audit_days.*' => 'The audit log can be kept between 7 and 3650 days.',
             'keep_backups.*' => 'Backups kept must be a number from 0 (keep all) to 50.',
@@ -151,6 +152,7 @@ class SettingsController extends Controller
             'keep_backups' => (int) $data['keep_backups'],
             'update_check' => $request->boolean('update_check'),
             'admin_two_factor' => $request->boolean('admin_two_factor'),
+            'private_targets' => $request->boolean('private_targets'),
         ]);
 
         $after = ['app.timezone' => Clock::installationTimezone()] + $this->keyed(InstallSettings::all());
@@ -180,6 +182,7 @@ class SettingsController extends Controller
             InstallSettings::KEEP_BACKUPS => $general['keep_backups'],
             InstallSettings::UPDATE_CHECK => $general['update_check'],
             InstallSettings::ADMIN_TWO_FACTOR => $general['admin_two_factor'],
+            InstallSettings::EDITOR_PRIVATE_TARGETS => $general['private_targets'],
         ];
     }
 }

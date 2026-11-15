@@ -32,6 +32,8 @@ class Check extends Model
         'type' => CheckType::class,
         'tls_expires_at' => LocalTime::class,
         'enabled' => 'boolean',
+        // Saved by an installation administrator: may reach private networks.
+        'allow_private' => 'boolean',
         'last_run_at' => LocalTime::class,
         'created_at' => LocalTime::class,
         'updated_at' => LocalTime::class,

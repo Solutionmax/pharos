@@ -7,7 +7,12 @@ use Symfony\Component\Process\Process;
 
 class BackupArchive
 {
-    public function create(?string $sqliteSource = null): string
+    /**
+     * @param  bool  $includeEnv  .env holds APP_KEY, which opens every encrypted
+     *                            field in the database next to it. RemoteBackup
+     *                            only asks for it when the archive gets encrypted.
+     */
+    public function create(?string $sqliteSource = null, bool $includeEnv = true): string
     {
         $dir = storage_path('app/private/remote-backups');
         if (! is_dir($dir)) {
@@ -68,7 +73,7 @@ class BackupArchive
                     continue;
                 }
                 $relative = substr($file->getPathname(), strlen($root) + 1);
-                if ($relative === '.env' || ! str_starts_with(basename($relative), '.env')) {
+                if (($relative === '.env' && $includeEnv) || ! str_starts_with(basename($relative), '.env')) {
                     $zip->addFile($file->getPathname(), $relative);
                 }
             }
@@ -82,7 +87,10 @@ class BackupArchive
                 }
             }
             $zip->addFromString('BACKUP-LAYOUT.json', json_encode(['public_prefix' => 'public/', 'public_source' => $publicRoot, 'application_source' => $root], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
-            $zip->addFromString('BACKUP-README.txt', "Pharos backup. Restore application files and .env (preserves APP_KEY), uploaded storage/app/public; restore the public/ archive prefix into the CURRENT configured document root (see BACKUP-LAYOUT.json), then restore database/database.sqlite or import database/database.sql. Install Composer dependencies from composer.lock. Keep this archive private: it contains credentials and account data.\n");
+            $zip->addFromString('BACKUP-README.txt', ($includeEnv
+                ? 'Pharos backup. Restore application files and .env (preserves APP_KEY), '
+                : 'Pharos backup WITHOUT .env: it was not encrypted, so .env and its APP_KEY were left out. Restore .env with the original APP_KEY from your own copy; without it the encrypted fields in the database cannot be read. Restore application files, ')
+                ."uploaded storage/app/public; restore the public/ archive prefix into the CURRENT configured document root (see BACKUP-LAYOUT.json), then restore database/database.sqlite or import database/database.sql. Install Composer dependencies from composer.lock. Keep this archive private: it contains credentials and account data.\n");
             if (! $zip->close()) {
                 throw new \RuntimeException('Archive failed');
             }chmod($path, 0600);

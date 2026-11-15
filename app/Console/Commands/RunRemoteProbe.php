@@ -42,8 +42,11 @@ class RunRemoteProbe extends Command
                 if ($jobs === []) {
                     break;
                 }
-                $data = validator($jobs[0], ['id' => 'required|uuid', 'type' => 'required|in:http,tcp,dns', 'target' => 'required|string|max:255', 'timeout_seconds' => 'required|integer|min:1|max:30', 'expected_keyword' => 'nullable|string|max:1000', 'dns_type' => 'nullable|in:A,AAAA,CNAME,MX,TXT', 'dns_expected' => 'nullable|string|max:1000'])->validate();
+                $data = validator($jobs[0], ['id' => 'required|uuid', 'type' => 'required|in:http,tcp,dns', 'target' => 'required|string|max:255', 'timeout_seconds' => 'required|integer|min:1|max:30', 'expected_keyword' => 'nullable|string|max:1000', 'dns_type' => 'nullable|in:A,AAAA,CNAME,MX,TXT', 'dns_expected' => 'nullable|string|max:1000', 'allow_private' => 'sometimes|boolean'])->validate();
                 $check = new Check(collect($data)->except('id')->all());
+                // The hub says whether the check may reach a private network. A hub
+                // older than 1.2.0 does not say, and private targets were allowed then.
+                $check->allow_private = (bool) ($data['allow_private'] ?? true);
                 $result = $probe->run($check);
                 $url = $hub.'/api/v1/probe/results';
                 $sent = $safe->to($url)->withToken($token)->withOptions(TransferLimits::options(16384, 6, $deadline))

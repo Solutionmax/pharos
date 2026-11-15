@@ -112,6 +112,7 @@
               <summary>{{ __('Generic JSON: payload and signature') }}</summary>
               <div>
                 <p>{{ __('Every Generic JSON request carries') }} <code>X-Pharos-Signature</code>{{ __(', an HMAC SHA256 of the raw body with this page\'s signing secret. Check it before acting on an event. Slack, Teams and the chat apps are not signed: their URL is the credential.') }}</p>
+                <p>{{ __('It also carries') }} <code>X-Pharos-Timestamp</code> {{ __('(Unix seconds) and') }} <code>X-Pharos-Signature-V2</code>{{ __(', an HMAC SHA256 of the timestamp, a dot and the raw body. Check that one and refuse a timestamp more than five minutes old, so a request that is sent again is refused too.') }}</p>
                 <div class="ix-code"><pre id="payload-example">{"event": "incident.updated", "incident": {"id": 42, "name": "Mail delayed", "status": "Watching", "impact": "minor", "resolved_at": null, "components": ["Outbound queue"]}}</pre><button type="button" class="ix-copy" data-copy-target="payload-example">{{ __('Copy') }}</button></div>
                 <p>{{ __('Maintenance arrives as') }} <code>maintenance.scheduled</code>, <code>maintenance.started</code>, <code>maintenance.completed</code> {{ __('or') }} <code>maintenance.cancelled</code> {{ __('with a') }} <code>maintenance</code> {{ __('object.') }}</p>
               </div>
@@ -188,11 +189,18 @@
       </div>
     </section>
 
-    @if ($webhookSecret && $canAdministerIntegrations)
+    @if ($webhookSecretMask && $canAdministerIntegrations)
       <section class="ix-card" aria-labelledby="secret-title">
         <header><h3 id="secret-title">{{ __('Signing secret') }}</h3><span class="hint">{{ __('Generic JSON only') }}</span></header>
         <div class="bd">
-          <div class="ix-code"><code id="signing-secret">{{ $webhookSecret }}</code><button type="button" class="ix-copy" data-copy-target="signing-secret">{{ __('Copy') }}</button></div>
+          <div class="ix-code"><code id="signing-secret" aria-live="polite">{{ $webhookSecretRevealed ?? $webhookSecretMask }}</code><button type="button" class="ix-copy" data-copy-target="signing-secret" @if (! $webhookSecretRevealed) hidden @endif>{{ __('Copy') }}</button></div>
+          @if (! $webhookSecretRevealed)
+            <form method="POST" action="{{ \App\Services\PageUrls::route('admin.integrations.webhook.reveal') }}" data-reveal-secret="signing-secret" style="margin-top:12px">
+              @csrf
+              <button class="btn ghost op-sm" type="submit">{{ __('Reveal secret') }}</button>
+            </form>
+          @endif
+          <p class="op-dim" style="margin-top:8px">{{ __('Stored encrypted and hidden until you reveal it. Every reveal is recorded in the audit log.') }}</p>
           <form method="POST" action="{{ \App\Services\PageUrls::route('admin.integrations.webhook.rotate') }}" style="margin-top:12px"
                 data-confirm-title="{{ __('Rotate the signing secret?') }}"
                 data-confirm="{{ __('Generic deliveries are signed with the new secret from the next event on. <strong>The receiving end rejects them</strong> until you paste the new secret there.') }}"
@@ -212,5 +220,5 @@
   </div>
 </div>
 
-<script @nonce defer src="{{ asset('assets/pharos-ops.js') }}?v=0.7.0"></script>
+<script @nonce defer src="{{ asset('assets/pharos-ops.js') }}?v=1.2.0"></script>
 @endsection

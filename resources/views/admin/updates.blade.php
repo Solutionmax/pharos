@@ -25,6 +25,7 @@
     'no_release' => 'No release published yet',
     'unreachable' => 'Release server not reachable',
     'invalid' => 'Manifest refused: not signed by our key',
+    'stale' => 'Manifest refused: older than a release this installation already saw',
     'disabled' => 'Checking is switched off',
     default => 'No release information',
   };
@@ -41,9 +42,10 @@
     <span class="v">{{ $state === 'ok' ? $latest['version'] : __('Unknown') }}</span>
     <span class="n">
       @if ($state === 'ok')
-        {{ isset($latest['released_at']) ? __('Released ').$latest['released_at'] : __('Release date unknown') }}
+        @php $releasedAt = \App\Services\Updater::releasedAt($latest); @endphp
+        {{ $releasedAt !== null ? __('Released ').\Carbon\CarbonImmutable::createFromTimestampUTC($releasedAt)->toDateString() : __('Release date unknown') }}
       @else
-        {{ $stateText }}@if ($check['error'])<br><span class="mono" style="font-size:11px">{{ $check['error'] }}</span>@endif
+        {{ __($stateText) }}@if ($check['error'])<br><span class="mono" style="font-size:11px">{{ $check['error'] }}</span>@endif
       @endif
     </span>
   </div>

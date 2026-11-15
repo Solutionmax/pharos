@@ -5,10 +5,12 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Mail\TestMail;
 use App\Models\StatusPage;
+use App\Models\StatusPageSetting;
 use App\Models\User;
 use App\Services\MailConfig;
 use App\Services\PageContext;
 use App\Services\SafeHttp;
+use Illuminate\Contracts\Mail\Mailer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -209,5 +211,141 @@ class PageMailHostTest extends TestCase
 
         // Someone else is not held up by it.
         $this->actingAs($this->globalAdmin)->post('/admin/pages/'.$this->page->id.'/mail-test')->assertRedirect();
+    }
+
+    // ---------- every real send, not only save and Send test ----------
+
+    /** Sends the way a subscriber notice does: inside the page, without a user. */
+    protected function sendNotice(): void
+    {
+        app(PageContext::class)->run($this->page->id, fn () => app(MailConfig::class)->sendTo('reader@example.test', new TestMail($this->pageAdmin)));
+    }
+
+    public function test_every_send_checks_a_page_admins_host_again(): void
+    {
+        Mail::fake();
+        $this->save($this->pageAdmin)->assertSessionHasNoErrors();
+        $this->sendNotice();
+        Mail::assertSentCount(1);
+
+        // Rebound to a private address after it was saved and tested.
+        $this->dns['smtp.public.test'] = ['192.168.1.25'];
+
+        try {
+            $this->sendNotice();
+            $this->fail('A send to a rebound host must be refused.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('smtp.public.test is on a private or local network', $e->getMessage());
+        }
+        Mail::assertSentCount(1);
+    }
+
+    public function test_a_send_to_a_name_that_no_longer_resolves_is_refused(): void
+    {
+        Mail::fake();
+        $this->save($this->pageAdmin)->assertSessionHasNoErrors();
+        $this->dns['smtp.public.test'] = [];
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('could not be resolved');
+        $this->sendNotice();
+    }
+
+    public function test_one_private_answer_among_public_ones_is_enough_to_refuse(): void
+    {
+        Mail::fake();
+        $this->save($this->pageAdmin)->assertSessionHasNoErrors();
+        $this->dns['smtp.public.test'] = ['203.0.113.25', '::ffff:10.0.0.9'];
+
+        $this->expectException(\RuntimeException::class);
+        $this->sendNotice();
+    }
+
+    public function test_an_installation_admins_internal_relay_is_not_checked_on_send(): void
+    {
+        Mail::fake();
+        $this->save($this->globalAdmin, ['host' => 'smtp.internal.test'])->assertSessionHasNoErrors();
+
+        $this->sendNotice();
+
+        Mail::assertSentCount(1);
+    }
+
+    public function test_the_connection_goes_to_the_address_that_was_vetted(): void
+    {
+        Mail::fake();
+        $this->save($this->pageAdmin)->assertSessionHasNoErrors();
+        $spy = new class extends MailConfig
+        {
+            /** @var list<array{string, string}> */
+            public array $pins = [];
+
+            public function pinTransport(Mailer $mailer, string $host, string $ip): void
+            {
+                $this->pins[] = [$host, $ip];
+                parent::pinTransport($mailer, $host, $ip);
+            }
+        };
+        $this->app->instance(MailConfig::class, $spy);
+
+        $this->sendNotice();
+        $this->assertSame([['smtp.public.test', '203.0.113.25']], $spy->pins);
+
+        // A trusted relay is neither checked nor pinned.
+        $this->save($this->globalAdmin, ['host' => 'smtp.internal.test'])->assertSessionHasNoErrors();
+        $this->sendNotice();
+        $this->assertCount(1, $spy->pins);
+    }
+
+    public function test_pinning_connects_to_the_address_and_verifies_tls_against_the_name(): void
+    {
+        foreach (['ssl' => [465, 'smtps'], 'tls' => [587, 'smtp']] as [$port, $scheme]) {
+            config(['mail.mailers.pin_test' => ['transport' => 'smtp', 'scheme' => $scheme, 'host' => 'smtp.public.test', 'port' => $port, 'timeout' => 1]]);
+            Mail::purge('pin_test');
+            $mailer = Mail::mailer('pin_test');
+
+            app(MailConfig::class)->pinTransport($mailer, 'smtp.public.test', '203.0.113.25');
+
+            $stream = $mailer->getSymfonyTransport()->getStream();
+            $this->assertSame('203.0.113.25', $stream->getHost());
+            $this->assertSame($port, $stream->getPort());
+            $this->assertSame('smtp.public.test', $stream->getStreamOptions()['ssl']['peer_name']);
+            $this->assertArrayNotHasKey('verify_peer', $stream->getStreamOptions()['ssl']);
+        }
+
+        // An IPv6 address needs brackets in the socket URL.
+        app(MailConfig::class)->pinTransport($mailer, 'smtp.public.test', '2001:db8::25');
+        $this->assertSame('[2001:db8::25]', $mailer->getSymfonyTransport()->getStream()->getHost());
+        Mail::purge('pin_test');
+    }
+
+    // ---------- page SMTP saved by 0.7.0, before the trust marker ----------
+
+    protected function legacyPageMail(int $pageId, string $host, ?string $marker = null): void
+    {
+        foreach (array_filter(['mail.mode' => 'custom', 'mail.host' => $host, 'mail.port' => '587', 'mail.from_address' => 'status@beta.example.test', MailConfig::PAGE_HOST_TRUSTED_KEY => $marker], fn ($v) => $v !== null) as $key => $value) {
+            StatusPageSetting::create(['status_page_id' => $pageId, 'key' => $key, 'value' => $value]);
+        }
+    }
+
+    public function test_the_update_keeps_an_internal_relay_from_before_the_marker_working(): void
+    {
+        Mail::fake();
+        $public = StatusPage::create(['name' => 'Gamma', 'slug' => 'gamma']);
+        $refused = StatusPage::create(['name' => 'Delta', 'slug' => 'delta']);
+        $this->legacyPageMail($this->page->id, 'smtp.internal.test');
+        $this->legacyPageMail($public->id, 'smtp.public.test');
+        $this->legacyPageMail($refused->id, 'smtp.internal.test', '0');
+
+        (require database_path('migrations/2026_11_15_150000_keep_older_page_smtp_relays_working.php'))->up();
+
+        $trusted = fn (StatusPage $page) => app(PageContext::class)->run($page->id, fn () => app(MailConfig::class)->pageHostTrusted());
+        $this->assertTrue($trusted($this->page));
+        $this->assertFalse($trusted($public));
+        $this->assertFalse($trusted($refused), 'a page admin saved this after 0.7.1; it stays untrusted');
+        $this->assertDatabaseMissing('status_page_settings', ['status_page_id' => $public->id, 'key' => MailConfig::PAGE_HOST_TRUSTED_KEY]);
+
+        $this->sendNotice();
+        Mail::assertSentCount(1);
     }
 }

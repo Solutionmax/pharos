@@ -7,6 +7,7 @@ use App\Models\ProbeJob;
 use App\Models\ProbeLocation;
 use App\Models\ProbeSample;
 use App\Services\PageContext;
+use App\Services\PrivateTargets;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -45,7 +46,8 @@ class ProbeController extends Controller
                 }
                 $job = ProbeJob::create(['id' => (string) Str::uuid(), 'check_id' => $check->id, 'probe_location_id' => $location->id, 'expires_at' => now()->addMinutes(2)]);
 
-                return response()->json(['jobs' => [['id' => $job->id, 'type' => $check->type->value, 'target' => $check->target, 'timeout_seconds' => min(30, $check->timeout_seconds), 'expected_keyword' => $check->expected_keyword, 'dns_type' => $check->dns_type, 'dns_expected' => $check->dns_expected]]]);
+                // The location applies the same private network rule as this hub.
+                return response()->json(['jobs' => [['id' => $job->id, 'type' => $check->type->value, 'target' => $check->target, 'timeout_seconds' => min(30, $check->timeout_seconds), 'expected_keyword' => $check->expected_keyword, 'dns_type' => $check->dns_type, 'dns_expected' => $check->dns_expected, 'allow_private' => PrivateTargets::allowed((bool) $check->allow_private)]]]);
             }
 
             return response()->json(['jobs' => []]);

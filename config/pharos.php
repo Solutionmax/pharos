@@ -37,6 +37,9 @@ return [
         // What "Back up now" copies. Null means the application itself; only the
         // test suite points it at a small stand-in tree.
         'backup_source' => null,
+        // The file apply() and rollback() lock so only one runs at a time. Null
+        // means storage/framework/pharos-update.lock; only the test suite moves it.
+        'lock_file' => null,
     ],
 
     // How long the audit trail keeps a line. Long enough to answer "who

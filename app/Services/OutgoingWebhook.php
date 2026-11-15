@@ -325,10 +325,10 @@ class OutgoingWebhook
         $headers = ['Content-Type' => 'application/json'];
 
         // Only the generic shape is signed. Slack and Teams drop unknown headers,
-        // and their URL is the credential in the first place.
+        // and their URL is the credential in the first place. Signed when sent,
+        // not when queued: the timestamp is that of this attempt.
         if ($endpoint->format === 'generic') {
-            $secret = Setting::get('integrations.webhook_secret', '');
-            $headers['X-Pharos-Signature'] = hash_hmac('sha256', $body, $secret);
+            $headers += WebhookSecret::headers($body, app(WebhookSecret::class)->ensure(), now()->getTimestamp());
         }
 
         if ($endpoint->format === 'signal') {
@@ -338,7 +338,10 @@ class OutgoingWebhook
         try {
             // Vetted again here, not only when the endpoint was saved: a name can
             // be re-pointed at the metadata service in between (DNS rebinding).
-            $response = $this->safe->toOwn($endpoint->url)->timeout(5)->connectTimeout(5)->withHeaders($headers)
+            // Private networks only for a destination an installation administrator
+            // saved, or while page editors are allowed them (PrivateTargets).
+            $request = PrivateTargets::allowed((bool) $endpoint->allow_private) ? $this->safe->toOwn($endpoint->url) : $this->safe->toPublic($endpoint->url);
+            $response = $request->timeout(5)->connectTimeout(5)->withHeaders($headers)
                 ->withBody($body, 'application/json')->post($endpoint->url);
 
             $successful = $response->successful() && ($endpoint->format !== 'telegram' || $response->json('ok') === true);
@@ -363,7 +366,11 @@ class OutgoingWebhook
 
             $endpoint->forceFill([
                 'last_status' => null,
-                'last_error' => str_contains($e->getMessage(), 'never allowed') ? 'Destination is never allowed.' : 'Connection failed; check the address, DNS, TLS and receiver.',
+                'last_error' => match (true) {
+                    str_contains($e->getMessage(), 'never allowed') => 'Destination is never allowed.',
+                    str_contains($e->getMessage(), 'private or local network') => 'Destination is on a private network, which page editors may not use.',
+                    default => 'Connection failed; check the address, DNS, TLS and receiver.',
+                },
                 'last_attempt_at' => now(),
             ])->save();
 

@@ -50,6 +50,14 @@ instance credentials to anything that asks.
 link-local addresses, **pins the resolved address** so a second DNS answer cannot
 differ from the one that was checked (rebinding), and **follows no redirects**.
 
+Since 1.2.0 "private" is the same strict reading everywhere (page SMTP, single
+sign-on, remote backups, probe hubs): carrier grade NAT and Tailscale
+(`100.64.0.0/10`), benchmarking (`198.18.0.0/15`), the IETF block
+(`192.0.0.0/24`) and multicast count as internal too. An IPv4 address carried in
+IPv6 (`::ffff:`, NAT64 `64:ff9b::/96`, 6to4 `2002::/16`) is judged as the IPv4
+address it carries. An install that already used a provider or probe hub on
+such an address got that host added to the list below during the update.
+
 ### Providers on your own network
 
 Plenty of self-hosted installs run Pharos and their identity provider on the same

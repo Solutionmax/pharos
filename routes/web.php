@@ -185,6 +185,7 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
             Route::post('integrations/tokens', [IntegrationController::class, 'storeToken'])->name('integrations.tokens.store');
             Route::delete('integrations/tokens/{token}', [IntegrationController::class, 'destroyToken'])->name('integrations.tokens.destroy');
             Route::post('integrations/webhook/rotate', [IntegrationController::class, 'rotateSecret'])->name('integrations.webhook.rotate');
+            Route::post('integrations/webhook/reveal', [IntegrationController::class, 'revealSecret'])->middleware('throttle:20,1')->name('integrations.webhook.reveal');
 
             Route::get('audit', [AuditController::class, 'index'])->name('audit');
             Route::get('audit/export', [AuditController::class, 'export'])->name('audit.export');

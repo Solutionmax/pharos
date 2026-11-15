@@ -24,6 +24,7 @@ use App\Services\OutgoingWebhook;
 use App\Services\PageContext;
 use App\Services\Probe;
 use App\Services\ProbeResult;
+use App\Services\SafeHttp;
 use App\Services\SubscriberNotifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
@@ -48,6 +49,22 @@ class PageDeliveryProbe extends Probe
 class PageDeliveryTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Page SMTP set without an installation administrator is vetted on every
+        // send. The hosts here are about delivery, not about that check, so
+        // they answer with a public documentation address.
+        $this->app->instance(SafeHttp::class, new class extends SafeHttp
+        {
+            public function addresses(string $host): array
+            {
+                return str_ends_with($host, '.example.test') ? ['203.0.113.10'] : parent::addresses($host);
+            }
+        });
+    }
 
     public function test_a_mixed_page_batch_keeps_each_pages_brand_sender_and_links(): void
     {

@@ -26,6 +26,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', AuthenticateSession:
     Route::post('backup-destinations', [MonitoringSystemController::class, 'store'])->name('backup-destinations.store');
     Route::post('backup-destinations/{destination}/run', [MonitoringSystemController::class, 'run'])->middleware('throttle:2,1,pharos-backup-run:')->name('backup-destinations.run');
     Route::delete('backup-destinations/{destination}', [MonitoringSystemController::class, 'destroy'])->name('backup-destinations.destroy');
+    Route::put('backup-passphrase', [MonitoringSystemController::class, 'passphrase'])->name('backup-passphrase.update');
+    Route::delete('backup-passphrase', [MonitoringSystemController::class, 'removePassphrase'])->name('backup-passphrase.destroy');
 });
 Route::prefix('admin/passkeys')->name('admin.passkeys.')->middleware(['guest', NoStore::class, 'throttle:10,1,pharos-passkey-login:'])->group(function () {
     Route::post('login/options', [PasskeyController::class, 'loginOptions'])->name('login.options');

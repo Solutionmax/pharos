@@ -33,7 +33,7 @@ class Setting extends Model
     public function auditFilter(array $changes): array
     {
         $sensitive = str((string) $this->getAttribute('key'))
-            ->contains(['secret', 'token', 'password', 'license.key']);
+            ->contains(['secret', 'token', 'password', 'passphrase', 'license.key']);
 
         if ($sensitive && isset($changes['value'])) {
             $changes['value'] = ['from' => '****', 'to' => '****'];

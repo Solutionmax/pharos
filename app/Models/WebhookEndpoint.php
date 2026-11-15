@@ -31,6 +31,8 @@ class WebhookEndpoint extends Model
     {
         return [
             'enabled' => 'boolean',
+            // Saved by an installation administrator: may reach private networks.
+            'allow_private' => 'boolean',
             'options' => 'encrypted:array',
             'events' => 'array',
             'last_attempt_at' => LocalTime::class,

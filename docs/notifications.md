@@ -114,11 +114,14 @@ message anyone ever sees from the status page has the wrong name on it.
 | **Shape** | **Slack**. |
 | **Address** | The Incoming Webhook URL from step 1. |
 
-Plain `http://` is fine and so is the rest of your LAN; an n8n next door is the
-common case. Addresses on the Pharos machine itself (`127.0.0.1`, `::1`) and
-link-local ranges (`169.254.0.0/16`, `fe80::/10`) are refused, both when the
+Plain `http://` is fine. An installation administrator may also use the rest of
+the LAN; an n8n next door is the common case. A page editor's destination has to
+be on the public internet unless **Settings → General → Let page editors check
+private network addresses** is on (see [Private network targets](monitoring.md#private-network-targets)).
+Addresses on the Pharos machine itself (`127.0.0.1`, `::1`) and
+link-local ranges (`169.254.0.0/16`, `fe80::/10`) are refused for everyone, both when the
 endpoint is saved and again on every delivery, including IPv4 hidden inside
-IPv6 (`::ffff:…`). Redirects are not followed.
+IPv6 (`::ffff:…`, NAT64, 6to4). Redirects are not followed.
 
 The **Shape** field is the one that matters. Slack and Teams each demand their
 own JSON, and a raw payload sent to a Slack webhook is answered with `400
@@ -126,6 +129,47 @@ invalid_payload` and shows nothing at all. Generic JSON is for anything else
 (n8n, Zapier, your own receiver), and only Generic deliveries are signed with
 `X-Pharos-Signature`. Slack and Teams ignore unknown headers, so for those the
 URL is the credential and there is nothing to verify.
+
+### Verify a Generic JSON delivery
+
+Every Generic JSON request carries three headers, all made with the page's
+**signing secret** (Integrations → Send out, right column):
+
+| Header | Value |
+|--------|-------|
+| `X-Pharos-Signature` | HMAC SHA256 of the raw body, hex. Unchanged, so existing receivers keep working. |
+| `X-Pharos-Timestamp` | When this attempt was sent, Unix seconds. A retry gets a new one. |
+| `X-Pharos-Signature-V2` | HMAC SHA256 of the timestamp, a dot and the raw body (`"1763208000.{…}"`), hex. Since 1.2.0. |
+
+Check `X-Pharos-Signature-V2` and refuse a timestamp more than five minutes away
+from your own clock: then a request somebody captured and sends again later is
+refused too, which the body-only signature cannot do. Compare in constant time,
+over the raw body as received (not re-encoded JSON):
+
+```php
+$timestamp = $_SERVER['HTTP_X_PHAROS_TIMESTAMP'] ?? '';
+$expected = hash_hmac('sha256', $timestamp.'.'.file_get_contents('php://input'), $secret);
+$fresh = ctype_digit($timestamp) && abs(time() - (int) $timestamp) <= 300;
+if (! $fresh || ! hash_equals($expected, $_SERVER['HTTP_X_PHAROS_SIGNATURE_V2'] ?? '')) {
+    http_response_code(401);
+    exit;
+}
+```
+
+```js
+// Node, with the raw body as a Buffer
+const ts = req.headers['x-pharos-timestamp'] ?? '';
+const expected = crypto.createHmac('sha256', secret).update(ts + '.').update(rawBody).digest('hex');
+const given = Buffer.from(req.headers['x-pharos-signature-v2'] ?? '');
+const ok = /^\d+$/.test(ts) && Math.abs(Date.now() / 1000 - Number(ts)) <= 300
+  && given.length === expected.length && crypto.timingSafeEqual(given, Buffer.from(expected));
+```
+
+The secret is stored encrypted with the installation's `APP_KEY` and shown
+masked; **Reveal secret** shows it once, and every reveal is in the audit log.
+Only page administrators see the card. **Rotate secret** makes a new one at once:
+paste it into the receiver straight after, because deliveries are signed with the
+new secret from the next event on.
 
 ### Prove it
 

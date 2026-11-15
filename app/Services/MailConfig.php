@@ -4,11 +4,16 @@ namespace App\Services;
 
 use App\Models\Setting;
 use App\Models\StatusPageSetting;
+use App\Rules\PublicMailHost;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Contracts\Mail\Mailer as MailerContract;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailer;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
 use RuntimeException;
+use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport;
+use Symfony\Component\Mailer\Transport\Smtp\Stream\SocketStream;
 
 /**
  * Mail settings from the admin, laid over the MAIL_* lines in .env.
@@ -310,6 +315,11 @@ class MailConfig
 
         $mailer = 'pharos_page_'.app(PageContext::class)->id();
         $stored = $this->storedPage();
+        // Checked on every send, not only when saved or tested: a page
+        // administrator's name can be pointed at an internal address afterwards
+        // (DNS rebinding), and the connection would carry the SMTP password there.
+        // An installation administrator's relay may be internal and is not checked.
+        $connectTo = $this->pageHostTrusted() ? null : PublicMailHost::vetted($stored['host']);
         config(["mail.mailers.$mailer" => [
             'transport' => 'smtp',
             'scheme' => $stored['encryption'] === 'ssl' ? 'smtps' : 'smtp',
@@ -324,10 +334,38 @@ class MailConfig
 
         Mail::purge($mailer);
         try {
-            Mail::mailer($mailer)->to($address)->send($mail);
+            $instance = Mail::mailer($mailer);
+            if ($connectTo !== null) {
+                $this->pinTransport($instance, trim($stored['host'], '[]'), $connectTo);
+            }
+            $instance->to($address)->send($mail);
         } finally {
             Mail::purge($mailer);
         }
+    }
+
+    /**
+     * Connect to the address that was vetted instead of resolving the name a
+     * second time, and keep the name for TLS: the certificate is still checked
+     * against it (peer_name also sets SNI), for implicit TLS and STARTTLS alike.
+     */
+    public function pinTransport(MailerContract $mailer, string $host, string $ip): void
+    {
+        // A faked mailer in a test has no transport to pin.
+        if (! $mailer instanceof Mailer) {
+            return;
+        }
+
+        $transport = $mailer->getSymfonyTransport();
+        $stream = $transport instanceof EsmtpTransport ? $transport->getStream() : null;
+        if (! $stream instanceof SocketStream) {
+            throw new RuntimeException('The page SMTP connection cannot be pinned to its vetted address.');
+        }
+
+        $stream->setHost(str_contains($ip, ':') ? "[{$ip}]" : $ip);
+        $stream->setStreamOptions(array_replace_recursive($stream->getStreamOptions(), [
+            'ssl' => ['peer_name' => $host],
+        ]));
     }
 
     public function pagePassword(): ?string

@@ -7,7 +7,33 @@
     <section class="op-card">
       <header><h3>{{ __('Remote backups') }}</h3><span class="hint">{{ $destinations->count() }}</span></header>
       <div class="bd beta-form">
-        <p class="op-dim">{{ __('Daily backups include a consistent database snapshot, application files, environment and uploaded files. Destinations receive private archives and each upload is downloaded to verify its checksum. Keep remote storage private.') }}</p>
+        <p class="op-dim">{{ __('Daily backups include a consistent database snapshot, application files and uploaded files, and with a backup passphrase also the environment file (.env). Destinations receive private archives and each upload is downloaded to verify its checksum. Keep remote storage private.') }}</p>
+        <section class="backup-passphrase" aria-labelledby="backup-passphrase-title">
+          <div class="op-acts"><h3 id="backup-passphrase-title">{{ __('Backup passphrase') }}</h3><span class="op-pill {{ $passphraseSet ? 'st-ok' : 'st-off' }}">{{ $passphraseSet ? __('Archives encrypted') : __('Not encrypted') }}</span></div>
+          @if ($passphraseSet)
+            <p class="op-dim">{{ __('Remote archives are encrypted with this passphrase (Argon2id, XChaCha20 Poly1305) and include .env with APP_KEY. Only the passphrase opens them: keep a copy somewhere other than this server.') }}</p>
+          @else
+            <p class="errors" role="note">{{ __('Without a passphrase remote archives are not encrypted and leave .env out. Keep APP_KEY somewhere else: without it, the encrypted fields in a restored database (two factor secrets, mail and backup credentials) cannot be read.') }}</p>
+          @endif
+          <form method="post" class="beta-form" action="{{ route('admin.backup-passphrase.update') }}">
+            @csrf @method('PUT')
+            <div class="fields">
+              <div class="field"><label for="backup-passphrase">{{ $passphraseSet ? __('New passphrase') : __('Passphrase') }}</label><input id="backup-passphrase" name="passphrase" type="password" autocomplete="new-password" minlength="{{ \App\Services\BackupPassphrase::MIN_LENGTH }}" maxlength="1024" required></div>
+              <div class="field"><label for="backup-passphrase-confirmation">{{ __('Repeat passphrase') }}</label><input id="backup-passphrase-confirmation" name="passphrase_confirmation" type="password" autocomplete="new-password" required></div>
+            </div>
+            @error('passphrase')<p class="errors">{{ $message }}</p>@enderror
+            <p class="op-dim">{{ __('Stored on this server, encrypted with APP_KEY, because scheduled uploads need it. Open an archive with php artisan pharos:backup:decrypt followed by the file name.') }}</p>
+            <div class="op-acts"><button class="btn op-sm">{{ __('Save passphrase') }}</button></div>
+          </form>
+          @if ($passphraseSet)
+            <form method="post" action="{{ route('admin.backup-passphrase.destroy') }}"
+                  data-confirm-title="{{ __('Remove the backup passphrase?') }}"
+                  data-confirm="{{ __('Remote archives are then no longer encrypted and leave .env out. Archives made before keep needing the passphrase.') }}"
+                  data-confirm-action="{{ __('Remove passphrase') }}">
+              @csrf @method('DELETE')<button class="btn danger op-sm">{{ __('Remove passphrase') }}</button>
+            </form>
+          @endif
+        </section>
         @forelse ($destinations as $destination)
           <article class="backup-destination">
             <div class="op-acts"><h3>{{ $destination->name }}</h3><span class="op-pill">{{ strtoupper($destination->driver) }}</span></div>
