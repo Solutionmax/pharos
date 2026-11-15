@@ -176,5 +176,5 @@
   </div>
 </div>
 
-<script defer src="{{ asset('assets/pharos-ops.js') }}?v=0.7.0"></script>
+<script @nonce defer src="{{ asset('assets/pharos-ops.js') }}?v=0.7.0"></script>
 @endsection

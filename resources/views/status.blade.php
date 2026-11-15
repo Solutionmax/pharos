@@ -126,7 +126,7 @@
            aria-label="{{ __('Uptime per day for every service. Use the left and right arrow keys to read a day.') }}" @endif>
         @if ($hasTracks)
           <div class="readout" aria-live="polite">{{ __('Point at a day, or use the arrow keys, to read what happened.') }}</div>
-          <script type="application/json" data-notes class="when">@json($dayNotes)</script>
+          <script @nonce type="application/json" data-notes class="when">@json($dayNotes)</script>
         @endif
 
         @if ($modules['page.show_uptime'] && $daysShown > 0)
@@ -259,7 +259,7 @@
   </footer>
 </div></div>
 @include('partials.daytip')
-<script defer src="{{ asset('assets/pharos-v06.js') }}?v={{ @filemtime(public_path('assets/pharos-v06.js')) }}"></script>
-<script defer src="{{ asset('assets/pharos-status.js') }}?v={{ @filemtime(public_path('assets/pharos-status.js')) }}"></script>
+<script @nonce defer src="{{ asset('assets/pharos-v06.js') }}?v={{ @filemtime(public_path('assets/pharos-v06.js')) }}"></script>
+<script @nonce defer src="{{ asset('assets/pharos-status.js') }}?v={{ @filemtime(public_path('assets/pharos-status.js')) }}"></script>
 </body>
 </html>

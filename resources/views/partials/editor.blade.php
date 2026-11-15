@@ -5,5 +5,5 @@
 <link rel="stylesheet" href="{{ asset('assets/editor/editor.css') }}?v=0.6.0">
 <link rel="stylesheet" href="{{ asset('assets/editor/dark.css') }}?v=0.6.0">
 @endpush
-<script defer src="{{ asset('assets/editor/editor.js') }}?v=0.6.0"></script>
+<script @nonce defer src="{{ asset('assets/editor/editor.js') }}?v=0.6.0"></script>
 @endonce

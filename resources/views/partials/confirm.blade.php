@@ -19,7 +19,7 @@
   </div>
 </dialog>
 
-<script>
+<script @nonce>
 window.pharosConfirm = (function () {
   var dialog = document.getElementById('confirm-dialog');
   var title  = document.getElementById('confirm-title');

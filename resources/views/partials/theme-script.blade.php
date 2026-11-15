@@ -1,4 +1,4 @@
-<script>
+<script @nonce>
 (function () {
   if (window.pharosThemeReady) return;   // belt and braces: never bind twice
   window.pharosThemeReady = true;

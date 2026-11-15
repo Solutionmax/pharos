@@ -19,7 +19,7 @@
 @media (prefers-reduced-motion:reduce){.daytip{transition:none}}
 </style>
 <div class="daytip" role="tooltip" id="daytip" aria-hidden="true"></div>
-<script>
+<script @nonce>
 (function () {
   var tip = document.getElementById('daytip');
   if (!tip || window.pharosDaytipReady) return;

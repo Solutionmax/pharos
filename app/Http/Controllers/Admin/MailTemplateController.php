@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\SecurityHeaders;
 use App\Mail\TemplatePreviewMail;
 use App\Services\Audit;
 use App\Services\License;
@@ -106,7 +107,7 @@ class MailTemplateController extends Controller
         // its own origin; the middleware leaves headers already set untouched.
         return response($rendered['html'])->withHeaders([
             'X-Frame-Options' => 'SAMEORIGIN',
-            'Content-Security-Policy' => "frame-ancestors 'self'",
+            'Content-Security-Policy' => SecurityHeaders::policy("'self'"),
         ]);
     }
 

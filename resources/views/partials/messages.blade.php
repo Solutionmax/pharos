@@ -82,7 +82,7 @@ $keys = [
 ];
 $messages = array_combine($keys, array_map(fn ($key) => __($key), $keys));
 @endphp
-<script id="pharos-messages">
+<script @nonce id="pharos-messages">
 window.pharosMessages = @json($messages);
 window.pharosTranslate = function (message, values) {
   var text = Object.prototype.hasOwnProperty.call(window.pharosMessages, message) ? window.pharosMessages[message] : message;

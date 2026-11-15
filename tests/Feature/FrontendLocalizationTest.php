@@ -16,7 +16,7 @@ class FrontendLocalizationTest extends TestCase
     {
         $admin = User::factory()->create(['role' => UserRole::Admin, 'locale' => 'nl']);
         $html = $this->actingAs($admin)->get('/admin/profile')->assertOk()->getContent();
-        $this->assertSame(1, preg_match('/<script id="pharos-messages">(.*?)<\/script>/s', $html, $match));
+        $this->assertSame(1, preg_match('/<script nonce="[^"]+" id="pharos-messages">(.*?)<\/script>/s', $html, $match));
         $node = <<<'JS'
 const fs = require('fs'), vm = require('vm');
 function element() { return { children: [], attributes: {}, append(...nodes) {this.children.push(...nodes);},

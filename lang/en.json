@@ -1755,5 +1755,7 @@
     "Sign in page": "Sign in page",
     "Simple": "Simple",
     "With status": "With status",
-    "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.": "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published."
+    "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.": "For everyone who signs in to this installation. With status shows the default status page beside the form, only while that page is published.",
+    "Remove the key?": "Remove the key?",
+    "Your logo, favicon and mail wording stay saved; they show again the moment you paste a key.": "Your logo, favicon and mail wording stay saved; they show again the moment you paste a key."
 }

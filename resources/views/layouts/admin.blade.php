@@ -439,7 +439,7 @@ pre .k{color:var(--brand)}
 @include('partials.search-dialog')
 {{-- Where a note's dismiss form actually lives; see components/note.blade.php. --}}
 @stack('deferred-forms')
-<script>
+<script @nonce>
 // Each picker filters only its own already-authorized choices.
 document.addEventListener('input', function (event) {
   if (!event.target.matches('[data-page-filter]')) return;
@@ -482,13 +482,13 @@ document.addEventListener('click', function (event) {
 @endif
 @if (session('theme_saved'))
 {{-- A saved preference replaces whatever the quick toggles remembered in this browser. --}}
-<script>try { localStorage.removeItem('pharos-theme'); localStorage.removeItem('pharos-layout'); } catch (e) {}
+<script @nonce>try { localStorage.removeItem('pharos-theme'); localStorage.removeItem('pharos-layout'); } catch (e) {}
 // The early script may have painted the browser's old quick choice; the saved preference wins from here.
 document.documentElement.setAttribute('data-layout', @json($navLayout));</script>
 @endif
 @include('partials.theme-script', ['theme' => $adminTheme])
-<script defer src="{{ asset('assets/pharos-v06.js') }}?v={{ @filemtime(public_path('assets/pharos-v06.js')) }}"></script>
-@if ($signedInShell)<script defer src="{{ asset('assets/pharos-ui.js') }}?v={{ @filemtime(public_path('assets/pharos-ui.js')) }}"></script>
-<script defer src="{{ asset('assets/pharos-search.js') }}?v={{ @filemtime(public_path('assets/pharos-search.js')) }}"></script>@endif
+<script @nonce defer src="{{ asset('assets/pharos-v06.js') }}?v={{ @filemtime(public_path('assets/pharos-v06.js')) }}"></script>
+@if ($signedInShell)<script @nonce defer src="{{ asset('assets/pharos-ui.js') }}?v={{ @filemtime(public_path('assets/pharos-ui.js')) }}"></script>
+<script @nonce defer src="{{ asset('assets/pharos-search.js') }}?v={{ @filemtime(public_path('assets/pharos-search.js')) }}"></script>@endif
 </body>
 </html>

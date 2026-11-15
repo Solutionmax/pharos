@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ComponentStatus;
+use App\Http\Middleware\SecurityHeaders;
 use App\Models\Component;
 use App\Models\ComponentGroup;
 use App\Models\Incident;
@@ -87,7 +88,7 @@ class StatusPageController extends Controller
         // origin; the middleware leaves headers that are already set untouched.
         return response($page)->withHeaders([
             'X-Frame-Options' => 'SAMEORIGIN',
-            'Content-Security-Policy' => "frame-ancestors 'self'",
+            'Content-Security-Policy' => SecurityHeaders::policy("'self'"),
         ]);
     }
 

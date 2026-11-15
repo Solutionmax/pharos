@@ -41,5 +41,5 @@
       <p class="pa-cap-kinds"><b class="nf-path">{{ $asked }}</b><span>{{ __('requested address') }}</span></p>
     </div>
   </aside>
-  <script defer src="{{ asset($scene) }}?v={{ @filemtime(public_path($scene)) }}"></script>
+  <script @nonce defer src="{{ asset($scene) }}?v={{ @filemtime(public_path($scene)) }}"></script>
 @endsection

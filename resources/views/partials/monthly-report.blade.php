@@ -44,4 +44,4 @@
     <p>{{ __('Historical daily totals may include maintenance observations. They are preserved and are not reconstructed.') }}</p>
   </aside>
 </div>
-<script defer src="{{ asset('assets/pharos-month-picker.js') }}?v={{ filemtime(public_path('assets/pharos-month-picker.js')) }}"></script>
+<script @nonce defer src="{{ asset('assets/pharos-month-picker.js') }}?v={{ filemtime(public_path('assets/pharos-month-picker.js')) }}"></script>

@@ -42,5 +42,5 @@
   @yield('aside')
 </div>
 <p class="pa-sr" role="status" aria-live="polite" data-pa-live></p>
-<script defer src="{{ asset('assets/pharos-auth.js') }}?v={{ @filemtime(public_path('assets/pharos-auth.js')) }}"></script>
+<script @nonce defer src="{{ asset('assets/pharos-auth.js') }}?v={{ @filemtime(public_path('assets/pharos-auth.js')) }}"></script>
 @endsection

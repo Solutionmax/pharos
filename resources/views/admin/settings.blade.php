@@ -207,7 +207,7 @@
 </div>
 @endif
 
-<script>
+<script @nonce>
 // Old links say /admin/settings#mail and #sso. The hash never reaches the server,
 // so when it names a tab that is not the one shown, ask for that tab instead.
 (function () {

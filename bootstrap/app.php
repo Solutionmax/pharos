@@ -38,7 +38,9 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         // nosniff and friends on every answer, also the API and /up.
         $middleware->append(BaselineHeaders::class);
-        $middleware->web(append: SecurityHeaders::class);
+        // First in the group, so that what the session, CSRF and binding steps
+        // answer themselves (a 419, a 404 for a missing record) gets it too.
+        $middleware->web(prepend: SecurityHeaders::class);
         $middleware->appendToGroup('web', UseLocale::class);
         $middleware->appendToGroup('web', CentralAdministration::class);
         // Invited with "two factor first": only the profile until it is on.

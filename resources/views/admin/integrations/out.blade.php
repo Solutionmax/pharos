@@ -120,7 +120,7 @@
         </ol>
       </form>
       <p id="destination-announcement" class="sr-only" aria-live="polite"></p>
-      <script type="application/json" id="integration-profiles">@json($destinationProfiles)</script>
+      <script @nonce type="application/json" id="integration-profiles">@json($destinationProfiles)</script>
       @else
         <div class="ix-note"><span aria-hidden="true">ⓘ</span><span>{{ __('Editors of this page add destinations. You can see what is connected and whether it works.') }}</span></div>
       @endif
@@ -212,5 +212,5 @@
   </div>
 </div>
 
-<script defer src="{{ asset('assets/pharos-ops.js') }}?v=0.7.0"></script>
+<script @nonce defer src="{{ asset('assets/pharos-ops.js') }}?v=0.7.0"></script>
 @endsection

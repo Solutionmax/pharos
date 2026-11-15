@@ -18,8 +18,9 @@ class SecurityHeadersTest extends TestCase
                 ->assertHeader('X-Content-Type-Options', 'nosniff')
                 ->assertHeader('X-Frame-Options', 'DENY')
                 ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
-                ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
-                ->assertHeader('Content-Security-Policy', "frame-ancestors 'none'");
+                ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+            // The full policy is ContentSecurityPolicyTest's; framing is ruled out on every page.
+            $this->assertStringEndsWith("frame-ancestors 'none'", (string) $this->get($path)->headers->get('Content-Security-Policy'));
         }
     }
 

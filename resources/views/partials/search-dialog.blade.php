@@ -40,7 +40,7 @@
     </footer>
     <p class="sr-only" data-search-status role="status" aria-live="polite"></p>
   </div>
-  <script type="application/json" data-search-start>@json($searchStart['actions'])</script>
+  <script @nonce type="application/json" data-search-start>@json($searchStart['actions'])</script>
   <template data-search-icons>
     @foreach (['pages', 'components', 'services', 'incidents', 'maintenance', 'users', 'screen', 'action', 'recent', 'enter', 'search'] as $searchIcon)
       <span data-icon="{{ $searchIcon }}">@include('partials.icon', ['name' => $searchIcon, 'size' => 16])</span>

@@ -80,8 +80,9 @@ class NotFoundPageTest extends TestCase
     }
 
     /** The session token differs per request and says nothing about the page. */
+    /** The CSRF token and the script nonce are new on every response by design. */
     protected function withoutCsrfNoise(string $html): string
     {
-        return (string) preg_replace('/<meta name="csrf-token" content="[^"]*">/', '', $html);
+        return (string) preg_replace(['/<meta name="csrf-token" content="[^"]*">/', '/ nonce="[^"]*"/'], '', $html);
     }
 }

@@ -113,7 +113,7 @@
     </form>
   </div>
 </div>
-<script>
+<script @nonce>
 (function () {
   var mode = document.getElementById('mode');
   var fields = document.getElementById('page-smtp-fields');
