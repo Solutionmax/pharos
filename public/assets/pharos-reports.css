@@ -49,3 +49,17 @@
 .month-picker button:disabled{opacity:.35;cursor:not-allowed}
 .month-picker :focus-visible,.report :focus-visible{outline:2px solid var(--brand);outline-offset:3px}
 @media(max-width:650px){.report-toolbar{padding:16px}.report-field,.month-picker{width:100%;min-width:0}.report-exports{margin-left:0;width:100%}.report-exports .btn{flex:1}.report-summary{gap:8px}.report-stat{padding:12px}.report-stat strong{font-size:17px}.report-stat .k{font-size:9px;letter-spacing:.04em}.report-stat small{display:block;margin:3px 0 0}.report-section-title{padding:14px 16px}.report-note{padding:16px}}
+/* The visitor's report: no cards, thin lines, three plain numbers per service. */
+.report-visitor{gap:20px}
+.report-visitor .report-toolbar{padding:0 0 22px;border-bottom:1px solid var(--line)}
+.report-visitor .report-lead{font-size:14px;color:var(--ink-2)}
+.report-visitor .report-scroll{border-radius:0}
+.report-visitor .report-table{min-width:520px;font-size:14px}
+.report-visitor .report-table th{background:none;font:500 11px/1.4 var(--mono);letter-spacing:.09em;text-transform:uppercase;padding:0 12px 10px;border-bottom:1px solid var(--line)}
+.report-visitor .report-table td{padding:13px 12px;border-top:0;border-bottom:1px solid var(--line)}
+.report-visitor .report-table th:first-child,.report-visitor .report-table td:first-child{padding-left:0}
+.report-visitor .report-table th:last-child,.report-visitor .report-table td:last-child{padding-right:0}
+.report-visitor .report-table tbody tr:hover{background:none}
+.report-visitor .report-table td.quiet{color:var(--ink-3)}
+.report-visitor .btn{align-self:auto}
+@media(max-width:650px){.report-visitor .report-toolbar{padding:0 0 18px}.report-visitor .report-table{min-width:0;font-size:13px}.report-visitor .report-table th{letter-spacing:.04em;padding:0 6px 10px}.report-visitor .report-table td{padding:12px 6px}.report-visitor .report-table th:first-child,.report-visitor .report-table td:first-child{min-width:0}}

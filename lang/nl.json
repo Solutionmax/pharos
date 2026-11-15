@@ -1792,5 +1792,11 @@
     "Remove passphrase": "Wachtzin verwijderen",
     "Manifest refused: older than a release this installation already saw": "Manifest geweigerd: ouder dan een release die deze installatie al heeft gezien",
     "Ongoing since :time": "Lopend sinds :time",
-    ":from to :to": ":from tot :to"
+    ":from to :to": ":from tot :to",
+    "Nothing was measured this month.": "Deze maand is niets gemeten.",
+    "Measured since :date.": "Gemeten sinds :date.",
+    "Planned maintenance does not count as downtime.": "Gepland onderhoud telt niet als uitval.",
+    "Downtime": "Uitval",
+    "none": "geen",
+    "< 1 min": "< 1 min"
 }

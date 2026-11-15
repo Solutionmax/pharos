@@ -1792,5 +1792,11 @@
     "Remove passphrase": "Eliminar frase de contraseña",
     "Manifest refused: older than a release this installation already saw": "Manifiesto rechazado: es más antiguo que una versión que esta instalación ya vio",
     "Ongoing since :time": "En curso desde :time",
-    ":from to :to": ":from a :to"
+    ":from to :to": ":from a :to",
+    "Nothing was measured this month.": "Este mes no se midió nada.",
+    "Measured since :date.": "Medido desde el :date.",
+    "Planned maintenance does not count as downtime.": "El mantenimiento programado no cuenta como tiempo de inactividad.",
+    "Downtime": "Inactividad",
+    "none": "ninguna",
+    "< 1 min": "< 1 min"
 }

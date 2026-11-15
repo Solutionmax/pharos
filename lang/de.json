@@ -1792,5 +1792,11 @@
     "Remove passphrase": "Passphrase entfernen",
     "Manifest refused: older than a release this installation already saw": "Manifest abgelehnt: älter als ein Release, das diese Installation bereits gesehen hat",
     "Ongoing since :time": "Laufend seit :time",
-    ":from to :to": ":from bis :to"
+    ":from to :to": ":from bis :to",
+    "Nothing was measured this month.": "In diesem Monat wurde nichts gemessen.",
+    "Measured since :date.": "Gemessen seit :date.",
+    "Planned maintenance does not count as downtime.": "Geplante Wartung zählt nicht als Ausfallzeit.",
+    "Downtime": "Ausfallzeit",
+    "none": "keine",
+    "< 1 min": "< 1 Min."
 }

@@ -53,4 +53,50 @@ class MonthlyUptimeReport
 
         return ['month' => $month, 'timezone' => 'UTC', 'rows' => $rows, 'elapsed_seconds' => $elapsed];
     }
+
+    /**
+     * What a visitor reads beside the numbers: the day measuring began when the
+     * month was not measured whole (or is still under way), whether planned
+     * maintenance was left out, and the public incidents of each service.
+     *
+     * @return array{measured: bool, since: ?CarbonImmutable, maintenance: bool, incidents: array<int, int>}
+     */
+    public function visitorNotes(array $report): array
+    {
+        $start = CarbonImmutable::createFromFormat('!Y-m', $report['month'], 'UTC');
+        $ids = array_column($report['rows'], 'id');
+        $first = UptimeDay::whereIn('component_id', $ids)->where('day', '>=', $start)->where('day', '<', $start->addMonth())
+            ->whereRaw('up_seconds + down_seconds > 0')->min('day');
+        $since = $first ? CarbonImmutable::parse($first, 'UTC')->startOfDay() : null;
+        $whole = $since?->equalTo($start) && $report['month'] !== now('UTC')->format('Y-m');
+
+        return [
+            'measured' => $since !== null,
+            'since' => $whole ? null : $since,
+            'maintenance' => array_sum(array_column($report['rows'], 'excluded_seconds')) > 0,
+            'incidents' => Component::whereKey($ids)
+                ->withCount(['incidents' => fn ($q) => $q->public()->where('occurred_at', '>=', $start)->where('occurred_at', '<', $start->addMonth())])
+                ->pluck('incidents_count', 'id')->all(),
+        ];
+    }
+
+    /** Downtime the way a person says it: "none", "6 min", "1 h 12 min", "2 d 3 h". */
+    public static function downtime(int $seconds): string
+    {
+        if ($seconds <= 0) {
+            return __('none');
+        }
+        if ($seconds < 60) {
+            return __('< 1 min');
+        }
+        $minutes = (int) round($seconds / 60);
+        [$days, $hours, $rest] = [intdiv($minutes, 1440), intdiv($minutes % 1440, 60), $minutes % 60];
+        $parts = match (true) {
+            $days > 0 => [__(':n d', ['n' => $days]), $hours > 0 ? __(':n h', ['n' => $hours]) : null],
+            $hours > 0 => [__(':n h', ['n' => $hours]), $rest > 0 ? __(':n min', ['n' => $rest]) : null],
+            default => [__(':n min', ['n' => $rest])],
+        };
+
+        return implode(' ', array_filter($parts));
+    }
 }
