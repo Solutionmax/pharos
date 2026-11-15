@@ -52,6 +52,15 @@ class FallbackCopy
         return is_numeric($id) ? BackupDestination::find((int) $id) : null;
     }
 
+    /**
+     * The chosen destination is meant to be readable by anyone, so no backup
+     * archive goes there while it is chosen, also with the copy switched off.
+     */
+    public static function holds(BackupDestination $destination): bool
+    {
+        return self::destination()?->is($destination) ?? false;
+    }
+
     /** @return array{destination: ?BackupDestination, last_at: ?Carbon, bytes: ?int, error: ?string} */
     public static function status(): array
     {

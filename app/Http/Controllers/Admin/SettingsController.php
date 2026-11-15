@@ -176,7 +176,12 @@ class SettingsController extends Controller
             Audit::record('settings.saved', null, $changes);
         }
 
-        return redirect()->route('admin.settings')->with('status', 'Settings saved.');
+        // The copy's destination gets no backups; when it is the only one, say so now.
+        $onlyDestination = FallbackCopy::destination() !== null && BackupDestination::count() === 1;
+
+        return redirect()->route('admin.settings')->with('status', $onlyDestination
+            ? 'Settings saved. No backups go anywhere else: the fallback copy uses your only backup destination. Add another one under Scheduler and backups.'
+            : 'Settings saved.');
     }
 
     /**

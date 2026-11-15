@@ -39,8 +39,12 @@
             <div class="op-acts"><h3>{{ $destination->name }}</h3><span class="op-pill">{{ strtoupper($destination->driver) }}</span></div>
             <p class="op-dim">{{ __('Last success') }}: {{ $destination->last_success_at?->diffForHumans() ?? __('Never') }}</p>
             @if ($destination->last_error)<p class="errors">{{ $destination->last_error }}</p>@endif
+            @php $isFallback = $fallbackId !== null && $fallbackId === $destination->getKey(); @endphp
+            @if ($isFallback)<p class="op-dim"><b>{{ __('Used for the fallback copy. Backups do not go here.') }}</b></p>@endif
             <div class="op-acts">
-              <form method="post" action="{{ route('admin.backup-destinations.run', $destination) }}">@csrf<button class="btn op-sm">{{ __('Back up now') }}</button></form>
+              @unless ($isFallback)
+                <form method="post" action="{{ route('admin.backup-destinations.run', $destination) }}">@csrf<button class="btn op-sm">{{ __('Back up now') }}</button></form>
+              @endunless
               <form method="post" action="{{ route('admin.backup-destinations.destroy', $destination) }}">@csrf @method('DELETE')<button class="btn danger op-sm">{{ __('Remove destination') }}</button></form>
             </div>
           </article>

@@ -98,7 +98,10 @@
                 <option value="{{ $destination->id }}" @selected((string) old('fallback_destination', $fallback['destination']?->id) === (string) $destination->id)>{{ $destination->name }} ({{ strtoupper($destination->driver) }})</option>
               @endforeach
             </select>
-            <span class="help">{{ __('Nightly backups to the same destination land next to the copy. On S3, let the bucket policy publish only index.html and status/*; over SFTP, backup files stay readable for their owner only.') }}</span>
+            <span class="help"><b>{{ __('Backups stop going to the destination chosen here, as people may be able to read it.') }}</b> {{ __('Choose none to let backups go there again.') }}</span>
+            @if ($destinations->count() === 1)
+              <span class="help" style="color:var(--red-ink)">{{ __('This is your only backup destination: with the copy there, no backups go anywhere else.') }}</span>
+            @endif
           @endif
           @if ($fallback['destination'] && $fallback['last_at'])
             <span class="help">{{ __(':where · last copy :time · :size', [

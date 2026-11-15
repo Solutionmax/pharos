@@ -195,6 +195,62 @@ class FallbackCopyTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => UserRole::User]))->get('/admin/settings')->assertForbidden();
     }
 
+    public function test_the_nightly_backup_skips_the_fallback_destination(): void
+    {
+        $other = BackupDestination::create(['name' => 'Archive', 'driver' => 'sftp', 'configuration' => [], 'credentials' => []]);
+        Setting::put(FallbackCopy::DESTINATION, (string) $this->destination->id);
+        $this->mock(RemoteBackup::class, fn ($mock) => $mock->shouldReceive('run')->once()
+            ->withArgs(fn (BackupDestination $d) => $d->is($other))->andReturn(true));
+
+        $this->artisan('pharos:backup-remote')
+            ->expectsOutputToContain('Skipped Bucket site: used for the fallback copy. Backups do not go here.')
+            ->assertExitCode(0);
+    }
+
+    public function test_back_up_now_on_the_fallback_destination_is_refused(): void
+    {
+        $admin = User::where('role', UserRole::Admin)->firstOrFail();
+        $other = BackupDestination::create(['name' => 'Archive', 'driver' => 'sftp', 'configuration' => [], 'credentials' => []]);
+        Setting::put(FallbackCopy::DESTINATION, (string) $this->destination->id);
+        $this->mock(RemoteBackup::class, fn ($mock) => $mock->shouldNotReceive('run'));
+
+        $this->actingAs($admin)->from('/admin/system-monitoring')->post('/admin/backup-destinations/'.$this->destination->id.'/run')
+            ->assertRedirect('/admin/system-monitoring')
+            ->assertSessionHasErrors(['destination' => 'Used for the fallback copy. Backups do not go here.']);
+        $this->assertNull($this->destination->fresh()->last_attempt_at);
+
+        $page = $this->get('/admin/system-monitoring')->assertOk()->getContent();
+        $this->assertSame(1, substr_count($page, 'Used for the fallback copy. Backups do not go here.'));
+        $this->assertStringNotContainsString('/admin/backup-destinations/'.$this->destination->id.'/run', $page);
+        $this->assertStringContainsString('/admin/backup-destinations/'.$other->id.'/run', $page);
+    }
+
+    public function test_the_service_itself_never_backs_up_to_the_fallback_destination(): void
+    {
+        Setting::put(FallbackCopy::DESTINATION, (string) $this->destination->id);
+
+        $this->assertFalse(app(RemoteBackup::class)->run($this->destination));
+        $this->assertNull($this->destination->fresh()->last_attempt_at, 'not even attempted');
+    }
+
+    public function test_choosing_the_only_destination_warns_that_no_backups_go_anywhere_else(): void
+    {
+        $admin = User::where('role', UserRole::Admin)->firstOrFail();
+        $general = ['timezone' => 'UTC', 'audit_days' => 180, 'keep_backups' => 3];
+
+        $this->actingAs($admin)->get('/admin/settings')->assertOk()
+            ->assertSee('Backups stop going to the destination chosen here')
+            ->assertSee('This is your only backup destination: with the copy there, no backups go anywhere else.');
+
+        $this->put('/admin/settings', $general + ['fallback_copy' => '1', 'fallback_destination' => $this->destination->id])
+            ->assertSessionHas('status', 'Settings saved. No backups go anywhere else: the fallback copy uses your only backup destination. Add another one under Scheduler and backups.');
+
+        BackupDestination::create(['name' => 'Archive', 'driver' => 'sftp', 'configuration' => [], 'credentials' => []]);
+        $this->put('/admin/settings', $general + ['fallback_copy' => '1', 'fallback_destination' => $this->destination->id])
+            ->assertSessionHas('status', 'Settings saved.');
+        $this->get('/admin/settings')->assertDontSee('This is your only backup destination');
+    }
+
     private function switchOn(): void
     {
         Setting::put(FallbackCopy::ENABLED, '1');
