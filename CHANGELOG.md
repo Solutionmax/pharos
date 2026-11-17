@@ -13,6 +13,7 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ### Fixed
 - In the Docker image, `/.well-known/security.txt` was refused by the web server before Pharos could answer it, so the security contact from 1.2.2 did not show on Docker installs.
+- A check that runs every minute could skip a minute. Cron starts the scheduler a second or two into each minute and never at the same second twice; when it started a moment earlier than the time before, the check was judged not yet due and waited for the next minute. On a server with a plain cron line about one run in three was missed, so an outage could be noticed a minute late. The interval now counts from the minute of the last run. Monthly reports show the missed time as lower coverage; past months keep that figure, because that time was not measured.
 
 ## [1.2.2] — 2026-11-15
 

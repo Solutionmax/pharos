@@ -175,6 +175,27 @@ class CheckRunnerTest extends TestCase
         $this->assertTrue($check->isDue(now()->addMinutes(6)));
     }
 
+    public function test_a_minute_check_runs_on_every_tick_however_the_tick_drifts_within_the_minute(): void
+    {
+        // Cron starts schedule:run a few seconds into the minute, and never at the
+        // same second twice. These are tick times as a live installation logged them.
+        $check = $this->makeCheck(['interval_seconds' => 60]);
+        $runner = $this->runner(true);
+
+        foreach (['14:46:03', '14:47:02', '14:48:04', '14:49:03', '14:50:05'] as $tick) {
+            $runner->runDue(Carbon::parse('2026-11-17 '.$tick, 'UTC'));
+        }
+
+        $this->assertSame(5, CheckResult::count());
+    }
+
+    public function test_a_check_does_not_run_twice_in_the_same_minute(): void
+    {
+        $check = $this->makeCheck(['interval_seconds' => 60, 'last_run_at' => Carbon::parse('2026-11-17 14:46:03', 'UTC')]);
+
+        $this->assertFalse($check->isDue(Carbon::parse('2026-11-17 14:46:59', 'UTC')));
+    }
+
     public function test_disabled_checks_never_run(): void
     {
         $this->makeCheck(['enabled' => false]);

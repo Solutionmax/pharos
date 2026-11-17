@@ -62,6 +62,10 @@ class Check extends Model
         }
         $now ??= now();
 
-        return $this->last_run_at->copy()->addSeconds($this->interval_seconds) <= $now;
+        // The scheduler ticks once a minute and never at the same second twice, so
+        // the interval counts from the minute the last run fell in. Counted from the
+        // exact second, a tick that starts a moment earlier than the one before it
+        // finds the check not yet due and leaves that minute unmeasured.
+        return $this->last_run_at->copy()->startOfMinute()->addSeconds($this->interval_seconds) <= $now;
     }
 }
