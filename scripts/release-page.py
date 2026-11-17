@@ -170,10 +170,6 @@ FOOTER = r"""<footer class="footer">
           <li><a href="/sales-es.html" lang="es" hreflang="es">Condiciones en español</a></li>
         </ul>
       </nav>
-      <div>
-        <h2>Who you buy from</h2>
-        <address>SolutionMAX<br>Lafayette Raymon Matulessy<br>Carrer de Creta 105, 03130 Santa Pola (Alicante), Spain<br>VAT ESZ2822653Y</address>
-      </div>
     </div>
     <p class="footer-end">© 2026 SolutionMAX · Core licensed AGPL-3.0 · These pages set no cookies and load nothing from third parties.</p>
   </div>
