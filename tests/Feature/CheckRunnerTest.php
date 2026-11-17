@@ -194,6 +194,16 @@ class CheckRunnerTest extends TestCase
         $check = $this->makeCheck(['interval_seconds' => 60, 'last_run_at' => Carbon::parse('2026-11-17 14:46:03', 'UTC')]);
 
         $this->assertFalse($check->isDue(Carbon::parse('2026-11-17 14:46:59', 'UTC')));
+        $this->assertTrue($check->isDue(Carbon::parse('2026-11-17 14:47:00', 'UTC')));
+    }
+
+    public function test_a_five_minute_check_runs_on_the_fifth_tick_even_when_that_tick_starts_earlier(): void
+    {
+        $check = $this->makeCheck(['interval_seconds' => 300, 'last_run_at' => Carbon::parse('2026-11-17 14:46:03', 'UTC')]);
+
+        $this->assertFalse($check->isDue(Carbon::parse('2026-11-17 14:50:05', 'UTC')));
+        // 4 min 59 s after the last run: the fifth tick, which used to wait a sixth.
+        $this->assertTrue($check->isDue(Carbon::parse('2026-11-17 14:51:02', 'UTC')));
     }
 
     public function test_disabled_checks_never_run(): void
