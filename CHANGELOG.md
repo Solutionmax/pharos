@@ -6,7 +6,7 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
-## [1.2.3] — 2026-11-15
+## [1.2.3] — 2026-11-17
 
 ### Added
 - An OpenAPI 3.1 description of the whole API in `docs/openapi.json`, also published at https://pharos.solutionmax.net/assets/openapi.json. Load it in an API client or a code generator; a test keeps it in step with the routes.
