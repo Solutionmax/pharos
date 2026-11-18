@@ -8,6 +8,7 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ### Added
 - A switch for the monthly reports under Status page, next to the other parts of the page. Switched off, the link leaves the footer and the report page with its CSV and PDF downloads answers "not found" for visitors. The reports in the admin stay. On by default, so nothing changes until you switch it off.
+- Pinning an incident now does what it says. A pinned incident stays at the top of the incident log under "Pinned", also after it is resolved and outside the days the page shows, until you unpin it. The incident list in the admin has Pin and Unpin on every incident. Before, the pin on the form was stored and never used, and there was no way to take it off.
 
 ### Changed
 - A status page with no incidents in the days it shows no longer puts the last incident under the log. Alone on a calm page it read as an incident that was still open. The log is now one line: "No incidents in the past N days" in its head, also on a phone, with "Older incidents" beside it, which opens the part of the log that holds the last one. Open incidents and planned work show as before.

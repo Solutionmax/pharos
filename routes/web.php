@@ -126,6 +126,7 @@ Route::prefix('admin')->name('admin.')->middleware(NoStore::class)->group(functi
         ]))->name('incidents.update-form');
         Route::post('incidents/{incident}/update', [IncidentController::class, 'addUpdate'])->name('incidents.update');
         Route::post('incidents/{incident}/resolve', [IncidentController::class, 'resolve'])->name('incidents.resolve');
+        Route::post('incidents/{incident}/pin', [IncidentController::class, 'pin'])->name('incidents.pin');
         Route::delete('incidents/{incident}', [IncidentController::class, 'destroy'])->name('incidents.destroy');
 
         Route::get('maintenance', [MaintenanceController::class, 'index'])->name('maintenance');

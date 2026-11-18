@@ -25,6 +25,9 @@ class StatusPageController extends Controller
     /** Far beyond any real history, and small enough that page × span never overflows. */
     public const MAX_PAGE = 10000;
 
+    /** A pin is for the one or two things people should read first; more than this is a second log. */
+    public const MAX_PINNED = 5;
+
     public function __construct(protected Uptime $uptime, protected Branding $branding) {}
 
     public function show(Request $request)
@@ -207,6 +210,12 @@ class StatusPageController extends Controller
             'live' => $live,
             'planned' => $maintenances->diff($live)->values(),
             'ongoing' => $page === 1 ? $open : collect(),
+            // Pinned and over: on the first page only, and not a second time when the
+            // days of that page already show it. An open one leads under Ongoing anyway.
+            'pinned' => $page === 1 && $modules['page.show_incidents']
+                ? $past()->where('pinned', true)->with(['updates', 'components' => $publicComponents])->latest('occurred_at')->limit(self::MAX_PINNED)->get()
+                    ->reject(fn (Incident $incident) => collect($incidentDays)->flatten()->contains('id', $incident->id))->values()
+                : collect(),
             'days' => $incidentDays,
             'quiet' => $quiet,
             'quietDays' => max($days, $last?->resolved_at ? (int) $last->resolved_at->startOfDay()->diffInDays(Carbon::today(Clock::timezone())) : 0),

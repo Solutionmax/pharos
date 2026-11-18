@@ -166,6 +166,20 @@ class IncidentController extends Controller
             ->with('status', "Incident \"{$incident->name}\" resolved. Its components are operational again.");
     }
 
+    /**
+     * Pins or unpins: a pinned incident stays at the top of the public log, also
+     * after it is resolved, until someone takes the pin off here.
+     */
+    public function pin(Request $request, Incident $incident)
+    {
+        $data = $request->validate(['pinned' => ['required', 'boolean']]);
+        $incident->update(['pinned' => (bool) $data['pinned']]);
+
+        return redirect()->to(PageUrls::route('admin.incidents'))->with('status', $incident->pinned
+            ? "Incident \"{$incident->name}\" is pinned to the top of the status page."
+            : "Incident \"{$incident->name}\" is no longer pinned.");
+    }
+
     protected function postUpdate(Incident $incident, IncidentStatus $status, string $message): void
     {
         DB::transaction(function () use ($incident, $status, $message) {

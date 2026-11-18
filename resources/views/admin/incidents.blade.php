@@ -112,6 +112,10 @@
             <button class="btn ghost op-sm" type="submit" style="color:var(--green-ink)">{{ __('✓ Resolve') }}</button>
           </form>
           <a class="btn ghost op-sm" href="{{ \App\Services\PageUrls::route('admin.incidents.update-form', $incident) }}">{{ __('Full timeline') }}</a>
+          <form method="POST" action="{{ \App\Services\PageUrls::route('admin.incidents.pin', $incident) }}">
+            @csrf <input type="hidden" name="pinned" value="{{ $incident->pinned ? 0 : 1 }}">
+            <button class="btn ghost op-sm" type="submit">{{ $incident->pinned ? __('Unpin') : __('Pin') }}</button>
+          </form>
           <span class="spacer"></span>
           <form method="POST" action="{{ \App\Services\PageUrls::route('admin.incidents.destroy', $incident) }}"
                 data-confirm-title="Delete {{ $incident->name }}?"
@@ -161,6 +165,7 @@
             <span class="op-pill">{{ __($incident->impact->label() ?? '') }}</span>
             @if ($incident->visibility !== 'public')<span class="op-pill">{{ $incident->visibility === 'internal' ? __('Internal') : __('Signed in only') }}</span>@endif
             @if ($incident->source === 'check')<span class="op-pill">{{ __('By a check') }}</span>@endif
+            @if ($incident->pinned)<span class="op-pill">{{ __('Pinned on the status page') }}</span>@endif
             @if ($incident->grouping_key && ($repeats[$incident->grouping_key] ?? 0) > 1)<span class="op-pill st-b">{{ $repeats[$incident->grouping_key] }} {{ __('occurrences in 30 days') }}</span>@endif
           </div>
         </td>
@@ -169,6 +174,10 @@
         <td class="hide-sm">{{ $incident->components->pluck('name')->join(', ') ?: __('None') }}</td>
         <td class="right">
           @if ($canEditPage)<span class="rowacts">
+            <form method="POST" action="{{ \App\Services\PageUrls::route('admin.incidents.pin', $incident) }}">
+              @csrf <input type="hidden" name="pinned" value="{{ $incident->pinned ? 0 : 1 }}">
+              <button  type="submit">{{ $incident->pinned ? __('Unpin') : __('Pin') }}</button>
+            </form>
             <a href="{{ \App\Services\PageUrls::route('admin.incidents.update-form', $incident) }}">{{ __('Timeline') }}</a>
             <form method="POST" action="{{ \App\Services\PageUrls::route('admin.incidents.destroy', $incident) }}"
                   data-confirm-title="Delete {{ $incident->name }}?"

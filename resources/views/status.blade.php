@@ -205,7 +205,7 @@
           <p class="when keep">{{ __('No incidents in the past :n days', ['n' => $quietDays]) }}@if ($chrome && $olderPage) <a href="{{ \App\Services\PageUrls::route('status', ['page' => $olderPage]) }}">{{ __('Older incidents →') }}</a>@endif</p>
         @endif
       </div>
-      <div class="log{{ $quiet && $live->isEmpty() && $planned->isEmpty() ? ' is-quiet' : '' }}">
+      <div class="log{{ $quiet && $live->isEmpty() && $planned->isEmpty() && $pinned->isEmpty() ? ' is-quiet' : '' }}">
         @if ($ongoing->isNotEmpty() || $live->isNotEmpty())
           <h3 class="label sect">{{ __('Ongoing') }}</h3>
           @foreach ($ongoing as $incident)
@@ -213,6 +213,14 @@
           @endforeach
           @foreach ($live as $maintenance)
             @include('partials.timeline-maintenance', ['maintenance' => $maintenance])
+          @endforeach
+        @endif
+
+        {{-- Kept on top by hand: over, outside the days below, and still worth reading first. --}}
+        @if ($pinned->isNotEmpty())
+          <h3 class="label sect">{{ __('Pinned') }}</h3>
+          @foreach ($pinned as $incident)
+            @include('partials.timeline-incident', ['incident' => $incident])
           @endforeach
         @endif
 

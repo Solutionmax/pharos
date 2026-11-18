@@ -93,7 +93,7 @@
             <textarea id="message" name="message" rows="5" required placeholder="{{ __('What you know, what you are doing, when you will post again.') }}">{{ old('message') }}</textarea>
           </div>
           <div class="switchrow" style="margin-top:14px">
-            <span class="t"><strong>{{ __('Pin to the top of the status page') }}</strong><span class="s">{{ __('For an ongoing incident people should see first.') }}</span></span>
+            <span class="t"><strong>{{ __('Pin to the top of the status page') }}</strong><span class="s">{{ __('Stays at the top of the incident log, also after it is resolved, until you unpin it.') }}</span></span>
             <label class="check"><input type="checkbox" name="pinned" value="1" @checked(old('pinned'))> {{ __('Pin') }}</label>
           </div>
           <div class="switchrow" style="margin-top:10px">
