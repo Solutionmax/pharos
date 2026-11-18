@@ -256,7 +256,7 @@
   <footer>
     <div class="links">
       <a href="{{ \App\Services\PageUrls::route('public.feed') }}">{{ __('RSS feed') }}</a>
-      <a href="{{ \App\Services\PageUrls::route('public.reports') }}">{{ __('Monthly reports') }}</a>
+      @if ($modules['page.show_reports'])<a href="{{ \App\Services\PageUrls::route('public.reports') }}">{{ __('Monthly reports') }}</a>@endif
       @if ($modules['page.show_api_link'])<a href="{{ \App\Services\PageUrls::api('components') }}">{{ __('API') }}</a>@endif
       <span>{{ __('Times in :zone', ['zone' => \App\Services\Clock::offsetLabel()]) }}</span>
       @if ($chrome)<span id="live-refresh" class="live-refresh">{{ __('Refreshes every 30 seconds') }}</span>@endif

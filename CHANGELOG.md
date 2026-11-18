@@ -6,6 +6,9 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ## [Unreleased]
 
+### Added
+- A switch for the monthly reports under Status page, next to the other parts of the page. Switched off, the link leaves the footer and the report page with its CSV and PDF downloads answers "not found" for visitors. The reports in the admin stay. On by default, so nothing changes until you switch it off.
+
 ## [1.2.3] — 2026-11-17
 
 ### Added

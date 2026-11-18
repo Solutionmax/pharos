@@ -1246,6 +1246,7 @@
     "Uptime Kuma": "Uptime Kuma",
     "Uptime bar and percentage": "Barra de disponibilidad y porcentaje",
     "Uptime bar per component": "Barra de disponibilidad por componente",
+    "Uptime per month for visitors, with CSV and PDF downloads. Off also closes the report addresses.": "Disponibilidad por mes para los visitantes, con descargas en CSV y PDF. Desactivado también cierra las direcciones de los informes.",
     "Uptime, 90 days": "Disponibilidad, 90 días",
     "Use a recovery code": "Usar un código de recuperación",
     "Use a template": "Usar una plantilla",

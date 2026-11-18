@@ -25,6 +25,9 @@ class ReportController extends Controller
     public function show(Request $request, MonthlyUptimeReport $reports)
     {
         $admin = $request->is('admin/*');
+        // Switched off, the reports are gone for visitors, downloads included: a
+        // hidden link alone would leave every address answering.
+        abort_if(! $admin && ! app(Branding::class)->module('page.show_reports'), 404);
         $month = $reports->month($request);
         $format = str_ends_with($request->path(), '.csv') ? 'csv' : (str_ends_with($request->path(), '.pdf') ? 'pdf' : 'html');
         if ($format === 'html') {
