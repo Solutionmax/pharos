@@ -174,7 +174,7 @@ class StatusPageController extends Controller
             ? Incident::public()->whereNotNull('resolved_at')->with(['components' => $publicComponents])->latest('resolved_at')->first()
             : null;
         $incidentDays = $modules['page.show_incidents'] ? $this->incidentDays($days, $modules, $page) : [];
-        // A quiet span says so once, and shows the last incident instead of a row per empty day.
+        // A quiet span says so once, in the head of the log, instead of a row per empty day.
         $quiet = $page === 1 && $modules['page.show_incidents'] && $open->isEmpty()
             && collect($incidentDays)->every(fn (Collection $day) => $day->isEmpty());
 
@@ -202,14 +202,13 @@ class StatusPageController extends Controller
                 $all->reject(fn (Component $c) => $c->status === ComponentStatus::Operational)->pluck('id'),
                 $now,
             ),
-            'last' => $last,
             'live' => $live,
             'planned' => $maintenances->diff($live)->values(),
             'ongoing' => $page === 1 ? $open : collect(),
             'days' => $incidentDays,
             'quiet' => $quiet,
             'quietDays' => max($days, $last?->resolved_at ? (int) $last->resolved_at->startOfDay()->diffInDays(Carbon::today(Clock::timezone())) : 0),
-            // The page of the log that holds the last incident, for "All incidents".
+            // The page of the log that holds the last incident, for "Older incidents" on a quiet page.
             'lastPage' => $quiet && $last ? min(self::MAX_PAGE, intdiv((int) $last->occurred_at->startOfDay()->diffInDays(Carbon::today(Clock::timezone())), $days) + 1) : null,
             'description' => $this->description($groups->filter(fn (ComponentGroup $g) => $g->components->isNotEmpty())->pluck('name')->merge($loose->pluck('name'))),
             'page' => $page,

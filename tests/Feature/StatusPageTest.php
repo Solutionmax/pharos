@@ -8,6 +8,7 @@ use App\Models\Component;
 use App\Models\ComponentGroup;
 use App\Models\Incident;
 use App\Models\IncidentUpdate;
+use App\Models\Maintenance;
 use App\Models\Setting;
 use App\Models\UptimeDay;
 use App\Models\User;
@@ -465,8 +466,11 @@ class StatusPageTest extends TestCase
             ->assertSee('<link rel="canonical" href="'.url('/incidents/'.$incident->id).'">', false);
     }
 
-    /** Review U5: a quiet span says so once, and shows the last incident instead of a row per day. */
-    public function test_a_quiet_span_says_so_once_and_shows_the_last_incident(): void
+    /**
+     * A quiet span says so once, in the head of the log, and shows nothing else: an old
+     * incident left alone on a calm page reads as one that is still open.
+     */
+    public function test_a_quiet_span_says_so_once_and_shows_no_old_incident(): void
     {
         Setting::put('page.incident_days', 5);
         Setting::put('page.show_empty_days', '1');
@@ -476,29 +480,43 @@ class StatusPageTest extends TestCase
         $incident->components()->attach($component->id, ['status' => ComponentStatus::MajorOutage->value]);
 
         $this->get('/')->assertOk()
-            ->assertSee('No incidents in the past 20 days.')
-            ->assertDontSee('class="entry quiet"', false)
+            ->assertSee('<p class="when keep">No incidents in the past 20 days</p>', false)
+            ->assertSee('class="log is-quiet"', false)
+            ->assertDontSee('class="entry', false)
             ->assertDontSee('Nothing in the past')
-            ->assertSee('Last incident')
-            ->assertSee('Router swap')
-            ->assertSee('Resolved after 4 min')
-            ->assertSee('Affected web-01')
-            ->assertSee('href="'.url('/incidents/'.$incident->id).'"', false)
-            // "All incidents" opens the span of the log that holds it.
-            ->assertSee('href="'.url('/').'?page=5">All incidents →', false);
+            ->assertDontSee('Last incident')
+            ->assertDontSee('Router swap')
+            ->assertDontSee('href="'.url('/incidents/'.$incident->id).'"', false)
+            // The history is one step away: the span of the log that holds the last incident.
+            ->assertSee('href="'.url('/').'?page=5">Older incidents →', false)
+            ->assertDontSee('All incidents →');
 
         $this->get('/?page=5')->assertOk()->assertSee('Router swap');
     }
 
-    public function test_a_page_that_never_had_an_incident_says_so_without_a_card(): void
+    public function test_a_quiet_span_still_shows_what_is_planned(): void
+    {
+        Setting::put('page.incident_days', 5);
+        $component = $this->makeComponent();
+        $work = Maintenance::create(['title' => 'Database upgrade', 'message' => 'Short restart.', 'starts_at' => now()->addDays(2), 'ends_at' => now()->addDays(2)->addHour()]);
+        $work->components()->attach($component->id);
+
+        $this->get('/')->assertOk()
+            ->assertSee('No incidents in the past 5 days')
+            ->assertSee('Database upgrade')
+            // With an entry in it the log keeps its spine.
+            ->assertDontSee('class="log is-quiet"', false);
+    }
+
+    public function test_a_page_that_never_had_an_incident_says_so_without_a_link_to_older_ones(): void
     {
         Setting::put('page.incident_days', 7);
         $this->makeComponent();
 
         $this->get('/')->assertOk()
-            ->assertSee('No incidents in the past 7 days.')
-            ->assertDontSee('Last incident')
-            ->assertDontSee('All incidents →');
+            ->assertSee('<p class="when keep">No incidents in the past 7 days</p>', false)
+            ->assertSee('class="log is-quiet"', false)
+            ->assertDontSee('Older incidents →');
     }
 
     /** Review U9: the credit and the links are one landmark, and the credit is a line, not a banner. */

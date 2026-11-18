@@ -197,6 +197,10 @@
         <h2 id="h-log">{{ __('Incident log') }}</h2>
         @if (! $quiet && $ongoing->isEmpty() && $live->isEmpty() && ($hero['ago'] ?? 0) >= 2)
           <p class="when">{{ __('Nothing in the past :n days', ['n' => $hero['ago']]) }}</p>
+        @elseif ($quiet)
+          {{-- All a quiet log says, so unlike the note above it also shows on a phone. No old
+               incident under it: left alone on a calm page, the last one reads as still open. --}}
+          <p class="when keep">{{ __('No incidents in the past :n days', ['n' => $quietDays]) }}</p>
         @endif
       </div>
       <div class="log{{ $quiet && $live->isEmpty() && $planned->isEmpty() ? ' is-quiet' : '' }}">
@@ -215,10 +219,6 @@
           @foreach ($planned as $maintenance)
             @include('partials.timeline-maintenance', ['maintenance' => $maintenance])
           @endforeach
-        @endif
-
-        @if ($quiet)
-          @include('partials.quiet-log')
         @endif
 
         @php $month = null; $anyDay = false; $openDays = $ongoing->map(fn ($i) => $i->occurred_at->format('Y-m-d'))->all(); @endphp
@@ -247,6 +247,11 @@
         <nav class="pager" aria-label="{{ __('Incident history') }}">
           @if ($page > 1)<a href="{{ \App\Services\PageUrls::route('status', $page === 2 ? [] : ['page' => $page - 1]) }}">{{ __('← Newer incidents') }}</a>@endif
           @if ($hasOlder)<a class="older" href="{{ \App\Services\PageUrls::route('status', ['page' => $page + 1]) }}">{{ __('Older incidents →') }}</a>@endif
+        </nav>
+      @elseif ($chrome && $quiet && $lastPage)
+        {{-- Straight to the span of the log that holds the last incident, past the empty ones. --}}
+        <nav class="pager" aria-label="{{ __('Incident history') }}">
+          <a class="older" href="{{ \App\Services\PageUrls::route('status', ['page' => $lastPage]) }}">{{ __('Older incidents →') }}</a>
         </nav>
       @endif
     </section>

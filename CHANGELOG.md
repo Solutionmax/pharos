@@ -9,6 +9,12 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 ### Added
 - A switch for the monthly reports under Status page, next to the other parts of the page. Switched off, the link leaves the footer and the report page with its CSV and PDF downloads answers "not found" for visitors. The reports in the admin stay. On by default, so nothing changes until you switch it off.
 
+### Changed
+- A status page with no incidents in the days it shows no longer puts the last incident under the log. Alone on a calm page it read as an incident that was still open. The log now says "No incidents in the past N days" in its head, also on a phone, and "Older incidents" below it opens the part of the log that holds the last one. Open incidents and planned work show as before.
+
+### Fixed
+- In the incident log, a day without incidents sat one column too far to the right.
+
 ## [1.2.3] — 2026-11-17
 
 ### Added
