@@ -245,6 +245,38 @@ class StatusPageTest extends TestCase
             ->assertDontSee('Older incidents');
     }
 
+    /** A page of two days and an incident three weeks back: the links go to where something happened. */
+    public function test_older_and_newer_links_skip_the_spans_without_incidents(): void
+    {
+        Setting::put('page.incident_days', 2);
+        Setting::put('page.show_empty_days', '1');
+        $this->makeComponent();
+        foreach (['Fresh outage' => 0, 'Nine days ago' => 9, 'Twenty days ago' => 20] as $name => $ago) {
+            Incident::create(['name' => $name, 'status' => IncidentStatus::Resolved,
+                'occurred_at' => now()->subDays($ago)->setTime(10, 0), 'resolved_at' => now()->subDays($ago)->setTime(10, 4)]);
+        }
+        $home = url('/');
+
+        $this->get('/')->assertOk()
+            ->assertSee('href="'.$home.'?page=5">Older incidents →', false)
+            ->assertDontSee('Newer incidents');
+
+        $this->get('/?page=5')->assertOk()
+            ->assertSee('Nine days ago')
+            ->assertSee('href="'.$home.'">← Newer incidents', false)
+            ->assertSee('href="'.$home.'?page=11">Older incidents →', false);
+
+        $this->get('/?page=11')->assertOk()
+            ->assertSee('Twenty days ago')
+            ->assertSee('href="'.$home.'?page=5">← Newer incidents', false)
+            ->assertDontSee('Older incidents');
+
+        // A span someone opened by hand, with nothing in it, still leads to both neighbours.
+        $this->get('/?page=7')->assertOk()
+            ->assertSee('href="'.$home.'?page=5">← Newer incidents', false)
+            ->assertSee('href="'.$home.'?page=11">Older incidents →', false);
+    }
+
     public function test_the_older_link_only_appears_when_there_is_something_older(): void
     {
         Setting::put('page.incident_days', 2);

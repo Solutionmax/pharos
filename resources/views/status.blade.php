@@ -202,7 +202,7 @@
                phone: the message and the way to the span of the log that holds the last incident,
                past the empty ones. No old incident under it: left alone on a calm page, the last
                one reads as still open. --}}
-          <p class="when keep">{{ __('No incidents in the past :n days', ['n' => $quietDays]) }}@if ($chrome && $lastPage) <a href="{{ \App\Services\PageUrls::route('status', ['page' => $lastPage]) }}">{{ __('Older incidents →') }}</a>@endif</p>
+          <p class="when keep">{{ __('No incidents in the past :n days', ['n' => $quietDays]) }}@if ($chrome && $olderPage) <a href="{{ \App\Services\PageUrls::route('status', ['page' => $olderPage]) }}">{{ __('Older incidents →') }}</a>@endif</p>
         @endif
       </div>
       <div class="log{{ $quiet && $live->isEmpty() && $planned->isEmpty() ? ' is-quiet' : '' }}">
@@ -245,10 +245,10 @@
           <p class="label sect">{{ __('No incidents reported') }}</p>
         @endif
       </div>
-      @if ($chrome && ! $quiet && ($page > 1 || $hasOlder))
+      @if ($chrome && ! $quiet && ($page > 1 || $olderPage))
         <nav class="pager" aria-label="{{ __('Incident history') }}">
-          @if ($page > 1)<a href="{{ \App\Services\PageUrls::route('status', $page === 2 ? [] : ['page' => $page - 1]) }}">{{ __('← Newer incidents') }}</a>@endif
-          @if ($hasOlder)<a class="older" href="{{ \App\Services\PageUrls::route('status', ['page' => $page + 1]) }}">{{ __('Older incidents →') }}</a>@endif
+          @if ($page > 1)<a href="{{ \App\Services\PageUrls::route('status', $newerPage === 1 ? [] : ['page' => $newerPage]) }}">{{ __('← Newer incidents') }}</a>@endif
+          @if ($olderPage)<a class="older" href="{{ \App\Services\PageUrls::route('status', ['page' => $olderPage]) }}">{{ __('Older incidents →') }}</a>@endif
         </nav>
       @endif
     </section>

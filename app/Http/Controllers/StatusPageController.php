@@ -187,6 +187,8 @@ class StatusPageController extends Controller
                 ->get()
             : collect();
 
+        $past = fn () => Incident::public()->whereNotNull('resolved_at');
+
         return view('status', [
             'groups' => $groups,
             'loose' => $loose,
@@ -208,14 +210,17 @@ class StatusPageController extends Controller
             'days' => $incidentDays,
             'quiet' => $quiet,
             'quietDays' => max($days, $last?->resolved_at ? (int) $last->resolved_at->startOfDay()->diffInDays(Carbon::today(Clock::timezone())) : 0),
-            // The page of the log that holds the last incident, for "Older incidents" on a quiet page.
-            'lastPage' => $quiet && $last ? min(self::MAX_PAGE, intdiv((int) $last->occurred_at->startOfDay()->diffInDays(Carbon::today(Clock::timezone())), $days) + 1) : null,
             'description' => $this->description($groups->filter(fn (ComponentGroup $g) => $g->components->isNotEmpty())->pluck('name')->merge($loose->pluck('name'))),
             'page' => $page,
-            // The "Older" link is offered only when a public incident exists before
-            // the oldest day on this page; otherwise it would lead to empty pages.
-            'hasOlder' => $chrome && $modules['page.show_incidents']
-                && Incident::public()->whereNotNull('resolved_at')->where('occurred_at', '<', $this->windowStart($days, $page))->exists(),
+            // The nearest pages of the log that hold an incident, on either side of this
+            // one. The links go straight there: with a few days per page, walking back one
+            // page at a time meant clicking through weeks in which nothing happened.
+            'olderPage' => $chrome && $modules['page.show_incidents']
+                ? $this->pageOf($past()->where('occurred_at', '<', $this->windowStart($days, $page))->latest('occurred_at')->first(), $days)
+                : null,
+            'newerPage' => $page > 1
+                ? min($page - 1, $this->pageOf($past()->where('occurred_at', '>=', $this->windowStart($days, $page)->addDays($days))->oldest('occurred_at')->first(), $days) ?? 1)
+                : null,
             'modules' => $modules,
             'theme' => $theme,
             'chrome' => $chrome,
@@ -235,6 +240,18 @@ class StatusPageController extends Controller
      * Midnight, in the customer's zone, of the oldest day on the given page.
      * Page 1 covers today and the span-1 days before it; page 2 the span before that.
      */
+    /** The page of the log whose span of days holds this incident; null without one. */
+    protected function pageOf(?Incident $incident, int $span): ?int
+    {
+        if (! $incident) {
+            return null;
+        }
+
+        $daysAgo = (int) $incident->occurred_at->copy()->startOfDay()->diffInDays(Carbon::today(Clock::timezone()));
+
+        return min(self::MAX_PAGE, intdiv(max(0, $daysAgo), $span) + 1);
+    }
+
     protected function windowStart(int $span, int $page): Carbon
     {
         return Carbon::today(Clock::timezone())->subDays($span * $page - 1);
