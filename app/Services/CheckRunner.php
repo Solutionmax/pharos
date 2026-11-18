@@ -46,7 +46,16 @@ class CheckRunner
     public function runOne(Check $check, ?\DateTimeInterface $now = null): ProbeResult
     {
         $now ??= now();
-        $result = app(ProbeQuorum::class)->combine($check, $this->probe->run($check));
+        $probe = $this->probe->run($check);
+        // One more try on the spot before a miss counts. Most single misses are a lost
+        // packet between this server and the service, not the service, and each one
+        // drew a blip on the page. Only for a check that was healthy: one that is
+        // already failing is not asked twice, or a round of checks would take twice
+        // as long during an outage. A heartbeat either called in or it did not.
+        if (! $probe->ok && $check->consecutive_failures === 0 && $check->type !== CheckType::Heartbeat) {
+            $probe = $this->probe->run($check);
+        }
+        $result = app(ProbeQuorum::class)->combine($check, $probe);
 
         if ($result->inconclusive) {
             if ($check->component->status !== ComponentStatus::UnderMaintenance) {

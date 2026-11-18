@@ -33,6 +33,22 @@ class FakeProbe extends Probe
     }
 }
 
+/** Probe stub that answers from a script, one outcome per attempt, and counts the attempts. */
+class ScriptedProbe extends Probe
+{
+    public int $attempts = 0;
+
+    /** @param  list<bool>  $outcomes */
+    public function __construct(public array $outcomes) {}
+
+    public function run(Check $check): ProbeResult
+    {
+        $ok = $this->outcomes[$this->attempts++] ?? false;
+
+        return new ProbeResult($ok, 12, $ok ? 'HTTP 200' : 'Timed out');
+    }
+}
+
 class CheckRunnerTest extends TestCase
 {
     use RefreshDatabase;
@@ -180,6 +196,61 @@ class CheckRunnerTest extends TestCase
         $this->runAt($check, false, '2026-10-28 17:40:03');
 
         $this->assertSame('2026-10-28 17:39:03', Incident::sole()->occurred_at->utc()->format('Y-m-d H:i:s'));
+    }
+
+    /**
+     * Most single misses are a lost packet between the probe and the service, not the
+     * service: a healthy check that misses gets one more try on the spot before it counts.
+     */
+    public function test_a_healthy_check_that_misses_is_tried_once_more_before_it_counts(): void
+    {
+        $check = $this->makeCheck(['retries' => 2]);
+        $probe = new ScriptedProbe([false, true]);
+
+        $result = (new CheckRunner($probe, app(OutgoingWebhook::class)))->runOne($check);
+
+        $this->assertTrue($result->ok);
+        $this->assertSame(2, $probe->attempts);
+        $this->assertSame([true], CheckResult::pluck('ok')->all());
+        $this->assertSame(0, $check->fresh()->consecutive_failures);
+    }
+
+    public function test_two_misses_in_a_row_count_as_one_failed_check(): void
+    {
+        $check = $this->makeCheck(['retries' => 2]);
+        $probe = new ScriptedProbe([false, false]);
+
+        $result = (new CheckRunner($probe, app(OutgoingWebhook::class)))->runOne($check);
+
+        $this->assertFalse($result->ok);
+        $this->assertSame(2, $probe->attempts);
+        $this->assertSame([false], CheckResult::pluck('ok')->all());
+        $this->assertSame(1, $check->fresh()->consecutive_failures);
+        $this->assertSame(0, Incident::count());
+    }
+
+    /** A service that is already failing is not asked twice: a round of checks would take twice as long during an outage. */
+    public function test_a_check_that_is_already_failing_gets_no_second_try(): void
+    {
+        $check = $this->makeCheck(['retries' => 2]);
+        (new CheckRunner(new ScriptedProbe([false, false]), app(OutgoingWebhook::class)))->runOne($check);
+        $probe = new ScriptedProbe([false, true]);
+
+        (new CheckRunner($probe, app(OutgoingWebhook::class)))->runOne($check->fresh());
+
+        $this->assertSame(1, $probe->attempts);
+        $this->assertSame(1, Incident::count());
+    }
+
+    /** A heartbeat is not something to ask again: it either called in or it did not. */
+    public function test_a_heartbeat_gets_no_second_try(): void
+    {
+        $check = $this->makeCheck(['type' => CheckType::Heartbeat, 'target' => 'nightly', 'retries' => 2]);
+        $probe = new ScriptedProbe([false, true]);
+
+        (new CheckRunner($probe, app(OutgoingWebhook::class)))->runOne($check);
+
+        $this->assertSame(1, $probe->attempts);
     }
 
     /** Visitors read these on the status page: the service by name, the reason in plain words. */
