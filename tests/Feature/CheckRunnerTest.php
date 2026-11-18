@@ -9,12 +9,14 @@ use App\Models\Check;
 use App\Models\CheckResult;
 use App\Models\Component;
 use App\Models\Incident;
+use App\Models\IncidentUpdate;
 use App\Models\Setting;
 use App\Models\UptimeDay;
 use App\Services\CheckRunner;
 use App\Services\OutgoingWebhook;
 use App\Services\Probe;
 use App\Services\ProbeResult;
+use App\Services\StatusTimeline;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -110,6 +112,74 @@ class CheckRunnerTest extends TestCase
         $this->assertSame(ComponentStatus::Operational, $check->component->fresh()->status);
         $this->assertTrue($incident->updates->first()->automatic);
         $this->assertSame('web-06 is working again and has stayed up for 3 checks in a row.', $incident->updates->firstWhere('status', IncidentStatus::Resolved)->message);
+    }
+
+    /** Runs the check as the scheduler would at that moment, with the clock there too. */
+    protected function runAt(Check $check, bool $ok, string $time): void
+    {
+        $this->travelTo(Carbon::parse($time, 'UTC'));
+        $this->runner($ok)->runOne($check->fresh(), now());
+    }
+
+    /**
+     * The record says when the service was down, not when Pharos was sure of it: it opened on
+     * the second failed check and closed on the third good one, which read as four minutes
+     * for a site that hung for two.
+     */
+    public function test_an_incident_runs_from_the_first_failed_check_to_the_first_good_one(): void
+    {
+        $check = $this->makeCheck(['retries' => 2]);
+        $this->runAt($check, true, '2026-10-28 17:38:03');
+        $this->runAt($check, false, '2026-10-28 17:39:03');
+        $this->assertSame(0, Incident::count());
+        $this->runAt($check, false, '2026-10-28 17:40:03');
+
+        $incident = Incident::sole();
+        $this->assertSame('2026-10-28 17:39:03', $incident->occurred_at->utc()->format('Y-m-d H:i:s'));
+        // The first message sits at the start too, so the course strip and the duration agree.
+        $this->assertSame('2026-10-28 17:39:03', $incident->updates->sole()->created_at->utc()->format('Y-m-d H:i:s'));
+
+        $this->runAt($check, true, '2026-10-28 17:41:03');
+        $this->runAt($check, true, '2026-10-28 17:42:03');
+        $this->assertNull($incident->fresh()->resolved_at);
+        $this->runAt($check, true, '2026-10-28 17:43:03');
+
+        $incident = $incident->fresh('updates');
+        $this->assertSame('2026-10-28 17:41:03', $incident->resolved_at->utc()->format('Y-m-d H:i:s'));
+        $closing = $incident->updates->firstWhere('status', IncidentStatus::Resolved);
+        $this->assertSame('2026-10-28 17:41:03', $closing->created_at->utc()->format('Y-m-d H:i:s'));
+        // Newest first: the closing message still leads the timeline.
+        $this->assertTrue($incident->updates->first()->is($closing));
+        $this->assertSame(2, StatusTimeline::incidentMinutes($incident, now()));
+    }
+
+    /** Someone who writes about the outage after the first good check is not contradicted by an earlier "resolved". */
+    public function test_an_update_posted_during_recovery_keeps_the_incident_open_until_it_is_confirmed(): void
+    {
+        $check = $this->makeCheck(['retries' => 1]);
+        $this->runAt($check, false, '2026-10-28 17:39:03');
+        $this->runAt($check, true, '2026-10-28 17:40:03');
+        $this->travelTo(Carbon::parse('2026-10-28 17:40:30', 'UTC'));
+        $note = IncidentUpdate::create(['incident_id' => Incident::sole()->id, 'status' => IncidentStatus::Identified, 'message' => 'A switch is being replaced.']);
+        $this->runAt($check, true, '2026-10-28 17:41:03');
+        $this->runAt($check, true, '2026-10-28 17:42:03');
+
+        $incident = Incident::sole()->fresh('updates');
+        $this->assertSame('2026-10-28 17:42:03', $incident->resolved_at->utc()->format('Y-m-d H:i:s'));
+        $this->assertSame(IncidentStatus::Resolved, $incident->updates->first()->status);
+        $this->assertTrue($incident->updates->first()->created_at->gt($note->created_at));
+    }
+
+    /** With one failure enough, the incident starts at that failure and not at an older one from before a good check. */
+    public function test_the_start_does_not_reach_back_past_a_good_check(): void
+    {
+        $check = $this->makeCheck(['retries' => 2]);
+        $this->runAt($check, false, '2026-10-28 17:30:03');
+        $this->runAt($check, true, '2026-10-28 17:31:03');
+        $this->runAt($check, false, '2026-10-28 17:39:03');
+        $this->runAt($check, false, '2026-10-28 17:40:03');
+
+        $this->assertSame('2026-10-28 17:39:03', Incident::sole()->occurred_at->utc()->format('Y-m-d H:i:s'));
     }
 
     /** Visitors read these on the status page: the service by name, the reason in plain words. */

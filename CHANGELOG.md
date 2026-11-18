@@ -11,6 +11,8 @@ versions follow [SemVer](https://semver.org/). The signed manifest at
 
 ### Changed
 - A status page with no incidents in the days it shows no longer puts the last incident under the log. Alone on a calm page it read as an incident that was still open. The log is now one line: "No incidents in the past N days" in its head, also on a phone, with "Older incidents" beside it, which opens the part of the log that holds the last one. Open incidents and planned work show as before.
+- "Older incidents" and "Newer incidents" on the status page now go straight to the nearest part of the log that holds an incident. With a few days per page, walking back meant clicking through weeks in which nothing happened.
+- An incident opened by a check now runs from the first failed check to the first good one. Before, it started at the check that made Pharos sure (the second failure by default) and ended after the three good checks that confirmed the recovery, so a site that hung for two minutes was on record for four. The automatic messages carry the same two moments. Incidents that are already closed keep their times.
 
 ### Fixed
 - In the incident log, a day without incidents sat one column too far to the right.

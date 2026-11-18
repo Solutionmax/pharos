@@ -11,6 +11,7 @@ use App\Models\Incident;
 use App\Models\IncidentUpdate;
 use App\Models\Maintenance;
 use App\Models\UptimeDay;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -185,9 +186,32 @@ class CheckRunner
         return $check->type === CheckType::Heartbeat ? 1 : self::RECOVERY_STREAK;
     }
 
+    /**
+     * When the streak that this run completes began. An outage starts at the first
+     * failed check, not at the one that made Pharos sure, and ends at the first good
+     * one, not after the checks that confirmed it: opened on the second failure and
+     * closed on the third success, a site that hung for two minutes read as four.
+     * Looks back no further than the streak itself, so the record moves by a few
+     * intervals at most.
+     */
+    protected function streakStart(Check $check, bool $ok, int $length, \DateTimeInterface $now): CarbonInterface
+    {
+        $start = Carbon::instance($now);
+        foreach (CheckResult::recentFor($check->component_id, max(1, $length))->reverse() as $result) {
+            if ($result->ok !== $ok) {
+                break;
+            }
+            $start = $result->checked_at;
+        }
+
+        return $start;
+    }
+
     protected function openIncident(Check $check, ProbeResult $result, \DateTimeInterface $now): Incident
     {
-        $incident = DB::transaction(function () use ($check, $result, $now) {
+        $since = $this->streakStart($check, false, $check->retries, $now);
+
+        $incident = DB::transaction(function () use ($check, $result, $since) {
             $incident = Incident::create([
                 'name' => __(':component unreachable', ['component' => $check->component->name], Localization::page()),
                 'status' => IncidentStatus::Investigating,
@@ -197,7 +221,7 @@ class CheckRunner
                 'visibility' => PublicComponents::automaticVisibility([$check->component_id]),
                 'auto_resolve' => true,
                 'grouping_key' => 'check:'.$check->component_id,
-                'occurred_at' => $now,
+                'occurred_at' => $since,
             ]);
 
             $incident->components()->attach($check->component_id, [
@@ -209,6 +233,8 @@ class CheckRunner
                 'status' => IncidentStatus::Investigating,
                 'message' => CheckMessages::opened($check, $result),
                 'automatic' => true,
+                // At the start as well, so the course on the page begins where the duration does.
+                'created_at' => $since,
             ]);
 
             return $incident;
@@ -231,14 +257,23 @@ class CheckRunner
             return;
         }
 
-        DB::transaction(function () use ($incident, $now, $check) {
-            $incident->update(['status' => IncidentStatus::Resolved, 'resolved_at' => $now]);
+        $until = $this->streakStart($check, true, $this->recoveryStreak($check), $now);
+        // Someone still wrote about it after the first good check, or it would end before
+        // it began: then it ends now, so "resolved" never sits before what came after it.
+        $lastWord = $incident->updates()->max('created_at');
+        if ($until->lt($incident->occurred_at) || ($lastWord && $until->lt(Carbon::parse($lastWord, 'UTC')))) {
+            $until = Carbon::instance($now);
+        }
+
+        DB::transaction(function () use ($incident, $until, $check) {
+            $incident->update(['status' => IncidentStatus::Resolved, 'resolved_at' => $until]);
 
             IncidentUpdate::create([
                 'incident_id' => $incident->id,
                 'status' => IncidentStatus::Resolved,
                 'message' => CheckMessages::resolved($check, $this->recoveryStreak($check)),
                 'automatic' => true,
+                'created_at' => $until,
             ]);
         });
 
