@@ -480,15 +480,15 @@ class StatusPageTest extends TestCase
         $incident->components()->attach($component->id, ['status' => ComponentStatus::MajorOutage->value]);
 
         $this->get('/')->assertOk()
-            ->assertSee('<p class="when keep">No incidents in the past 20 days</p>', false)
+            // One line: the message and the way to the history, with nothing under it.
+            ->assertSee('<p class="when keep">No incidents in the past 20 days <a href="'.url('/').'?page=5">Older incidents →</a></p>', false)
+            ->assertDontSee('class="pager"', false)
             ->assertSee('class="log is-quiet"', false)
             ->assertDontSee('class="entry', false)
             ->assertDontSee('Nothing in the past')
             ->assertDontSee('Last incident')
             ->assertDontSee('Router swap')
             ->assertDontSee('href="'.url('/incidents/'.$incident->id).'"', false)
-            // The history is one step away: the span of the log that holds the last incident.
-            ->assertSee('href="'.url('/').'?page=5">Older incidents →', false)
             ->assertDontSee('All incidents →');
 
         $this->get('/?page=5')->assertOk()->assertSee('Router swap');
