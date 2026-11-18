@@ -213,8 +213,8 @@ class StatusPageController extends Controller
             // Pinned and over: on the first page only, and not a second time when the
             // days of that page already show it. An open one leads under Ongoing anyway.
             'pinned' => $page === 1 && $modules['page.show_incidents']
-                ? $past()->where('pinned', true)->with(['updates', 'components' => $publicComponents])->latest('occurred_at')->limit(self::MAX_PINNED)->get()
-                    ->reject(fn (Incident $incident) => collect($incidentDays)->flatten()->contains('id', $incident->id))->values()
+                ? $past()->where('pinned', true)->whereNotIn('id', collect($incidentDays)->flatten()->pluck('id'))
+                    ->with(['updates', 'components' => $publicComponents])->latest('occurred_at')->limit(self::MAX_PINNED)->get()
                 : collect(),
             'days' => $incidentDays,
             'quiet' => $quiet,

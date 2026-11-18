@@ -60,7 +60,7 @@ and token header; incident creation needs changes. See the compatibility guide b
 | **Checks** | HTTP (with optional expected text and a warning before the certificate expires), TCP, DNS (A, AAAA, CNAME, MX, TXT) and heartbeat. Two failures turn a component red, three healthy checks in a row close the incident. Optional remote probe locations vote on the result, and each service keeps a 24 hour latency chart. |
 | **Incidents** | Opened and closed by the checks themselves, or by hand. One incident can span several components, each with its own status. Templates with `{{variables}}` for the API. |
 | **Uptime** | Daily roll-ups into a 90 day chart and a percentage. Each day is coloured by what happened, not by a percentage: a brief blip (under 5 minutes lost, no incident) stays light green, Slow is a degraded performance incident, Disruption a partial outage or 5 to 59 minutes lost, Outage a major outage or an hour or more. A day grows taller with the time lost. Pharos measures the services it checks itself and counts the status that the API, Uptime Kuma, Alertmanager or Grafana reports for the others (marked as reported); services set by hand are not measured. Days without data are grey and left out of the average, never counted as green. |
-| **Public page** | Every section is a switch (banner, uptime bar, services, per-component bars, incident history, empty days, API link), per-service visibility, light and dark theme, and a live preview in the admin that renders the real page from values you have not saved yet. Visitors without a session get no cookie, so a proxy or CDN may cache the page for 30 seconds. A security contact under Settings → General publishes `/.well-known/security.txt`. |
+| **Public page** | Every section is a switch (banner, uptime bar, services, per-component bars, incident history, empty days, API link, monthly reports), per-service visibility, light and dark theme, and a live preview in the admin that renders the real page from values you have not saved yet. Visitors without a session get no cookie, so a proxy or CDN may cache the page for 30 seconds. A security contact under Settings → General publishes `/.well-known/security.txt`. |
 | **Sharing** | SVG status badges per service or group, an RSS feed, a page per incident and a status widget you embed with one script tag. |
 | **Subscribers** | A *Get notified* button, double opt-in, one e-mail per incident update, one-click unsubscribe. Visitors follow every service or pick the ones they care about. The five mails are editable Markdown templates. |
 | **Reports** | Monthly uptime per service as a page, CSV or PDF, public or for the team. |
@@ -246,8 +246,8 @@ first run.
 
 #### A specific version
 
-Both installers take the newest release unless you pin one: `--version 1.2.3` on the command,
-or `pharos-install.php?version=1.2.3` in the browser. Every release on
+Both installers take the newest release unless you pin one: `--version 1.2.4` on the command,
+or `pharos-install.php?version=1.2.4` in the browser. Every release on
 [the releases page](https://pharos.solutionmax.net/releases/) also has a pre-pinned
 `pharos-install-<version>.php`. Pharos never downgrades by itself; use Roll back under Updates.
 
@@ -264,7 +264,7 @@ php artisan migrate --force && php artisan storage:link
 
 ### Docker
 
-The image is `ghcr.io/solutionmax/pharos`: one tag per release (`:1.2.3`) plus `:latest`,
+The image is `ghcr.io/solutionmax/pharos`: one tag per release (`:1.2.4`) plus `:latest`,
 built for `linux/amd64` and `linux/arm64` by GitHub Actions on every release tag.
 
 ```bash
@@ -294,7 +294,7 @@ Caddy and nginx examples, and what a custom domain for a status page needs, are 
 [Custom domain and HTTPS](https://pharos.solutionmax.net/docs/https/). Pharos does not set
 up DNS or certificates itself.
 
-Pin a release with `PHAROS_VERSION=1.2.3` in `.env`. To build the image from your own checkout
+Pin a release with `PHAROS_VERSION=1.2.4` in `.env`. To build the image from your own checkout
 instead of pulling it, `docker compose up -d --build`; the `build:` block in `compose.yaml` stamps
 the same version into the image.
 
@@ -326,7 +326,8 @@ scheduler.
 | **Heartbeat** | Waits for *your* job to call in; silence is the failure | Backups, cron scripts, anything you cannot poll from outside |
 
 A check has to fail twice before the component goes red, and has to succeed three times in a row
-before the incident closes. That is deliberate: one dropped packet should not publish an outage.
+before the incident closes. That is deliberate: one dropped packet should not publish an outage. A healthy
+check that misses once is tried again on the spot before the miss counts at all.
 
 Checks run from wherever Pharos runs. Add **probe locations** to have other Pharos installs run
 the same checks: a strict majority of locations decides, so one broken route does not publish an

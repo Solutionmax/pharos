@@ -207,7 +207,8 @@ class CheckRunner
     {
         $start = Carbon::instance($now);
         foreach (CheckResult::recentFor($check->component_id, max(1, $length))->reverse() as $result) {
-            if ($result->ok !== $ok) {
+            // A result from before a pause belongs to another story: a gap ends the streak.
+            if ($result->ok !== $ok || $result->checked_at->diffInSeconds($start, true) > 3 * $check->interval_seconds) {
                 break;
             }
             $start = $result->checked_at;

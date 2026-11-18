@@ -169,6 +169,18 @@ class CheckRunnerTest extends TestCase
         $this->assertSame(2, StatusTimeline::incidentMinutes($incident, now()));
     }
 
+    /** A miss from before a pause is not the start of the outage that comes hours later. */
+    public function test_an_old_miss_from_before_a_pause_does_not_stretch_the_incident(): void
+    {
+        $check = $this->makeCheck(['retries' => 3]);
+        $this->runAt($check, true, '2026-10-28 11:59:03');
+        $this->runAt($check, false, '2026-10-28 12:00:03');
+        $this->runAt($check, false, '2026-10-28 17:39:03');
+        $this->runAt($check, false, '2026-10-28 17:40:03');
+
+        $this->assertSame('2026-10-28 17:39:03', Incident::sole()->occurred_at->utc()->format('Y-m-d H:i:s'));
+    }
+
     /** Someone who writes about the outage after the first good check is not contradicted by an earlier "resolved". */
     public function test_an_update_posted_during_recovery_keeps_the_incident_open_until_it_is_confirmed(): void
     {

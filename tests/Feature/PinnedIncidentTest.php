@@ -74,6 +74,16 @@ class PinnedIncidentTest extends TestCase
         $this->assertStringNotContainsString('<h3 class="label sect">Pinned</h3>', $html);
     }
 
+    public function test_a_pin_that_today_already_shows_takes_no_place_under_pinned(): void
+    {
+        $this->resolved('Today and pinned', 0, ['pinned' => true]);
+        foreach (range(1, 5) as $n) {
+            $this->resolved('Old pin '.$n, 10 + $n, ['pinned' => true]);
+        }
+
+        $this->get('/')->assertOk()->assertSeeInOrder(['Old pin 1', 'Old pin 2', 'Old pin 3', 'Old pin 4', 'Old pin 5']);
+    }
+
     public function test_an_admin_pins_and_unpins_from_the_list(): void
     {
         $incident = $this->resolved('Storage move', 12);
